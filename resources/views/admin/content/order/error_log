@@ -1,0 +1,8 @@
+[05-Jan-2026 09:49:47 UTC] PHP Fatal error:  Uncaught Error: Class "App\Models\Courier" not found in /home/workerco/selfshop.com.bd/resources/views/admin/content/order/edit.blade.php:78
+Stack trace:
+#0 {main}
+  thrown in /home/workerco/selfshop.com.bd/resources/views/admin/content/order/edit.blade.php on line 78
+[05-Jan-2026 09:49:47 UTC] PHP Fatal error:  Uncaught Error: Class "App\Models\Courier" not found in /home/workerco/selfshop.com.bd/resources/views/admin/content/order/edit.blade.php:78
+Stack trace:
+#0 {main}
+  thrown in /home/workerco/selfshop.com.bd/resources/views/admin/content/order/edit.blade.php on line 78

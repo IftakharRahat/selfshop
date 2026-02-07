@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-blue-primary: #3257d9;
+  --color-blue-secondary: #f2f4ff;
+   --font-poppins: var(--font-poppins);
+   /* container */
+   --container-max-width: 1440px;
+  --container-padding: 1rem;
+  --container-padding-mobile: 1rem;
+
+  /* add breakpoint */
+  --breakpoint-xs: 540px;
+}
+
+
+
+/* Override Tailwind's container utility */
+.container {
+  max-width: var(--container-max-width);
+  padding-left: var(--container-padding);
+  padding-right: var(--container-padding);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* HTML: <div class="loader"></div> */
+.loader {
+  width: fit-content;
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 30px;
+  clip-path: inset(0 3ch 0 0);
+  animation: l4 1s steps(4) infinite;
+}
+.loader:before {
+  content:"Loading..."
+}
+@keyframes l4 {to{clip-path: inset(0 -1ch 0 0)}}
+
+@media (max-width: var(--breakpoint-xs)) {
+  .container {
+    padding-left: var(--container-padding-mobile);
+    padding-right: var(--container-padding-mobile);
+  }
+}
+
+
+/* Make navigation arrows visible & clickable */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #000 !important;
+  z-index: 50 !important;
+}
+
+/* Slightly bigger arrows */
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 20px !important;
+  font-weight: bold;
+}

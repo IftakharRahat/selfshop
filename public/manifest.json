@@ -1,0 +1,23 @@
+{
+    "name": "Selfshop Reseller",
+    "short_name": "Selfshop Reseller",
+    "start_url": "https://selfshop.com.bd/",
+    "background_color": "#6777ef",
+    "description": "Selfshop reseller a name of dropshipping service",
+    "display": "fullscreen",
+    "theme_color": "#6777ef",
+    "icons": [
+        {
+            "src": "/app.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/app.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}
