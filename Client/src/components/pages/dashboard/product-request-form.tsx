@@ -9,6 +9,7 @@ import { Upload, X } from "lucide-react";
 import { ConfigProvider, Input, Select } from "antd";
 import "antd/dist/reset.css";
 import TextArea from "antd/es/input/TextArea";
+import { getImageUrl } from "@/lib/utils";
 import { useCreateRequestProductMutation, useGetAllRequestProductsQuery } from "@/redux/features/requestProductListApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -232,7 +233,7 @@ export default function ProductRequestForm() {
                       <td className="p-4 text-sm text-gray-900">{item.p_name}</td>
                       <td className="p-4 text-sm text-gray-600">
                         <img
-                          src={"https://api-v1.selfshop.com.bd" + "/" + item.attachment}
+                          src={getImageUrl(item.attachment)}
                           alt="product"
                           className="w-14 h-14 rounded object-cover"
                         />

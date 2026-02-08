@@ -122,9 +122,16 @@ const homeApi = baseApi.injectEndpoints({
       providesTags: ["categories"],
     }),
 
+    getCategoryProducts: builder.query({
+      query: (slug) => ({
+        url: `/products/${slug}`,
+        method: "GET",
+      }),
+      providesTags: ["categories"],
+    }),
     getSubcategoryProducts: builder.query({
-      query: (category) => ({
-        url: `/subcategory-products/${category}`,
+      query: (slug) => ({
+        url: `/subcategory-products/${slug}`,
         method: "GET",
       }),
       providesTags: ["categories"],
@@ -174,5 +181,6 @@ export const {
   useGetAllNewProductsQuery,
   useGetBasicInfoQuery,
   useGetAllFeaturedProductsQuery,
+  useGetCategoryProductsQuery,
   useGetSubcategoryProductsQuery,
 } = homeApi;

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import money from "@/assets/images/dashboard/Group (3).png";
+import { getImageUrl } from "@/lib/utils";
 import { useCreateWithdrawRequestMutation, useGetAllWithdrawMethodsQuery, useGetWithdrawListQuery } from "@/redux/features/withdrawApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -135,7 +136,7 @@ export function WithdrawIncome() {
                     }`}
                     onClick={() => setSelectedMethod(method.paymentTypeName)}
                   >
-                    <img src={`https://api-v1.selfshop.com.bd/${method.icon}`} alt={method.paymentTypeName} className="w-8 h-8" />
+                    <img src={getImageUrl(method.icon)} alt={method?.paymentTypeName || "Payment method"} className="w-8 h-8" />
                     <span className="text-sm font-medium">{method.paymentTypeName}</span>
                   </div>
                 ))

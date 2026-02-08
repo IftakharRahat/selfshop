@@ -10,6 +10,7 @@ import "swiper/css/scrollbar";
 
 import { useGetAllNavbarCategoryDropdownOptionsQuery } from "@/redux/features/home/homeApi";
 
+import { getImageUrl } from "@/lib/utils";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -57,8 +58,8 @@ export default function CategoriesPageComponent() {
                 `}
               >
                 <Image
-                  src={"https://selfshop.com.bd/" + cat?.icon}
-                  alt={cat.name}
+                  src={getImageUrl(cat?.icon)}
+                  alt={cat?.name || "Category"}
                   width={40}
                   height={40}
                   className="w-8 h-8 mx-auto"
@@ -107,10 +108,10 @@ export default function CategoriesPageComponent() {
             >
               <div className="w-16 h-16 mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition">
                 <Image
-                  src={`https://selfshop.com.bd/${sub.subcategory_icon}`}
+                  src={getImageUrl(sub.subcategory_icon)}
                   width={40}
                   height={40}
-                  alt={sub.sub_category_name}
+                  alt={sub?.sub_category_name || "Subcategory"}
                   className="w-10 h-10"
                 />
               </div>

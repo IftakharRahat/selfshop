@@ -32,9 +32,9 @@ import AuthModal from "../AuthModal";
 export default function Navbar() {
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.access_token);
-  const { data: user } = useGetMeQuery(token);
+  const { data: user } = useGetMeQuery(token, { skip: !token });
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { data: cartItems } = useGetAllCartItemsQuery(undefined);
+  const { data: cartItems } = useGetAllCartItemsQuery(undefined, { skip: !token });
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);

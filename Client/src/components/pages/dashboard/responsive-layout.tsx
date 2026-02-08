@@ -1,6 +1,7 @@
 "use client";
 
 import logo from "@/assets/icons/NavLogo.png";
+import { getImageUrl } from "@/lib/utils";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { Drawer } from "antd";
 import { Menu, User, X } from "lucide-react";
@@ -72,7 +73,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
               <div className="w-10 h-10 rounded-full overflow-hidden border">
                 {data?.data?.profile?.profile ? (
                   <Image
-                    src={`https://api-v1.selfshop.com.bd/${data?.data?.profile?.profile}`}
+                    src={getImageUrl(data?.data?.profile?.profile)}
                     alt="Profile"
                     width={96}
                     height={96}

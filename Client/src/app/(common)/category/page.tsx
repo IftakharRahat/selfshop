@@ -2,6 +2,7 @@
 "use client";
 
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
+import { getApiBaseUrl } from "@/lib/utils";
 import { useEffect, useState, useRef, useCallback } from "react";
 
 interface Product {
@@ -50,7 +51,7 @@ const CategoryPage = () => {
           limit: limit.toString(),
         });
 
-        const response = await fetch(`https://api-v1.selfshop.com.bd/api/collection/${category}?${params}`);
+        const response = await fetch(`${getApiBaseUrl()}/collection/${category}?${params}`);
 
         const result = await response.json();
 

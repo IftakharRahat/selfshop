@@ -119,17 +119,28 @@ class FrontendApiController extends Controller
 
     public function categoryData()
     {
-        $categories = Category::where('status', 'Active')
-            ->select('id', 'category_name', 'slug', 'category_icon', 'status')
-            ->with([
-                'subcategories' => function ($query) {
-                    $query->where('status', 'Active')
-                        ->select('id', 'sub_category_name', 'slug', 'category_id', 'subcategory_icon');
-                },
-                'subcategories.minicategories'
-            ])
-            ->get();
-
+        try {
+            $categories = Category::where('status', 'Active')
+                ->select('id', 'category_name', 'slug', 'category_icon', 'status')
+                ->with([
+                    'subcategories' => function ($query) {
+                        $query->where('status', 'Active')
+                            ->select('id', 'sub_category_name', 'slug', 'category_id', 'subcategory_icon');
+                    },
+                    'subcategories.minicategories'
+                ])
+                ->get();
+        } catch (\Throwable $e) {
+            $categories = Category::where('status', 'Active')
+                ->select('id', 'category_name', 'slug', 'category_icon', 'status')
+                ->with([
+                    'subcategories' => function ($query) {
+                        $query->where('status', 'Active')
+                            ->select('id', 'sub_category_name', 'slug', 'category_id', 'subcategory_icon');
+                    }
+                ])
+                ->get();
+        }
 
         if ($categories->count() > 0) {
             return response()->json([
@@ -138,7 +149,6 @@ class FrontendApiController extends Controller
                 'data' => $categories
             ], 200);
         }
-
 
         return response()->json([
             'status' => false,
@@ -156,19 +166,11 @@ class FrontendApiController extends Controller
             'status'
         )->get();
 
-
-        if ($categories->count() > 0) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Category Information',
-                'data' => $categories
-            ], 200);
-        }
-
         return response()->json([
-            'status' => false,
-            'message' => 'Category Information Not Found',
-        ], 404);
+            'status' => true,
+            'message' => 'Category Information',
+            'data' => $categories->count() > 0 ? $categories : []
+        ], 200);
     }
 
     public function menusData()
@@ -202,38 +204,22 @@ class FrontendApiController extends Controller
     {
         $sliders = Slider::where('status', 'Active')->select('slider_title', 'slider_btn_link', 'slider_image')->get();
 
-        if ($sliders) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Slider Information',
-                'data' => $sliders
-            ], 200);
-        }
-
-
         return response()->json([
-            'status' => false,
-            'message' => 'Slider Information Not Found',
-        ], 404);
+            'status' => true,
+            'message' => 'Slider Information',
+            'data' => $sliders->count() > 0 ? $sliders : []
+        ], 200);
     }
 
     public function bottombanners()
     {
         $adsbanner = Addbanner::where('status', 'Inactive')->select('icon')->get();
 
-        if ($adsbanner) {
-            return response()->json([
-                'status' => true,
-                'message' => 'Slider Bottom Banners',
-                'data' => $adsbanner
-            ], 200);
-        }
-
-
         return response()->json([
-            'status' => false,
-            'message' => 'lider Bottom Banner Not Found',
-        ], 404);
+            'status' => true,
+            'message' => 'Slider Bottom Banners',
+            'data' => $adsbanner->count() > 0 ? $adsbanner : []
+        ], 200);
     }
 
     public function brands()
@@ -257,7 +243,11 @@ class FrontendApiController extends Controller
 
     public function collection(Request $request, $slug)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 15;
+        $total = 0;
+        $searchcontents = null;
+        $title = 'Products';
+
         if ($slug == 'hot_selling') {
             $title = 'Hot Selling Products';
             $total = Product::where('status', 'Active')->where('hot_list', 'On')->count();
@@ -282,18 +272,15 @@ class FrontendApiController extends Controller
             $title = 'Summer Collection Products';
             $total = Product::where('status', 'Active')->where('summer', 'On')->count();
             $searchcontents = Product::where('status', 'Active')->where('summer', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
-        } else {
-            $title = 'Product Not Found';
-            $searchcontents = [];
         }
 
-        if ($searchcontents->count() == 0) {
+        if ($searchcontents === null || $searchcontents->count() == 0) {
             return response()->json([
-                'status' => false,
-                'message' => 'No Product Found',
+                'status' => true,
+                'message' => $title,
                 'total' => $total,
-                'data' => []
-            ], 404);
+                'data' => $searchcontents ? $searchcontents->items() : []
+            ], 200);
         }
 
         return response()->json([
@@ -306,7 +293,7 @@ class FrontendApiController extends Controller
 
     public function newarrivels(Request $request)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 15;
         $total = Product::where('status', 'Active')->where('show_new_product', 'On')->count();
 
         $searchcontents = Product::where('status', 'Active')->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
@@ -329,7 +316,7 @@ class FrontendApiController extends Controller
 
     public function newproducts(Request $request)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 15;
         $total = Product::where('status', 'Active')->where('show_new_product', 'On')->count();
 
         $searchcontents = Product::where('status', 'Active')->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
@@ -352,7 +339,7 @@ class FrontendApiController extends Controller
 
     public function featuredproducts(Request $request)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 15;
         $total = Product::where('status', 'Active')->where('frature', '0')->count();
 
         $searchcontents = Product::where('status', 'Active')->where('frature', '0')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
@@ -422,17 +409,18 @@ class FrontendApiController extends Controller
 
     public function bigselling(Request $request)
     {
-        $limit = $request->limit;
+        $limit = $request->limit ?? 15;
         $total = Product::where('status', 'Active')->where('top_rated', '1')->count();
         $searchcontents = Product::where('status', 'Active')->where('top_rated', '1')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
 
 
         if ($searchcontents->count() == 0) {
             return response()->json([
-                'status' => false,
-                'total' => $total,
+                'status' => true,
                 'message' => 'No big selling products Found',
-            ], 404);
+                'total' => 0,
+                'data' => [],
+            ], 200);
         }
 
         return response()->json([
@@ -446,14 +434,15 @@ class FrontendApiController extends Controller
     public function productbycategory($slug)
     {
         $category = Category::where('slug', $slug)->first();
-        $categoryproducts = Product::where('status', 'Active')->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
-
-        if ($categoryproducts->count() == 0) {
+        if (!$category) {
             return response()->json([
-                'status' => false,
-                'message' => 'No products found with this category',
-            ], 404);
+                'status' => true,
+                'message' => 'No products found',
+                'data' => []
+            ], 200);
         }
+
+        $categoryproducts = Product::where('status', 'Active')->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
 
         return response()->json([
             'status' => true,
@@ -464,15 +453,27 @@ class FrontendApiController extends Controller
 
     public function productbysubcategory($slug)
     {
-        $subcategory = Subcategory::where('slug', $slug)->first();
-        $subcategoryproducts = Product::where('status', 'Active')->where('subcategory_id', $subcategory->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
+        $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage'];
 
-        if ($subcategoryproducts->count() == 0) {
+        if (empty($slug)) {
+            $subcategoryproducts = Product::where('status', 'Active')->select(...$selects)->latest()->get();
             return response()->json([
-                'status' => false,
-                'message' => 'No products found with this sub-category',
-            ], 404);
+                'status' => true,
+                'message' => 'All products',
+                'data' => $subcategoryproducts
+            ], 200);
         }
+
+        $subcategory = Subcategory::where('slug', $slug)->first();
+        if (!$subcategory) {
+            return response()->json([
+                'status' => true,
+                'message' => 'No products found',
+                'data' => []
+            ], 200);
+        }
+
+        $subcategoryproducts = Product::where('status', 'Active')->where('subcategory_id', $subcategory->id)->select(...$selects)->get();
 
         return response()->json([
             'status' => true,

@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Ensure Turbopack uses Client as root (fixes "Cannot find the middleware module" when multiple lockfiles exist)
+  turbopack: {
+    root: process.cwd(),
+  },
   images: {
     remotePatterns: [
       {
@@ -12,9 +16,19 @@ const nextConfig: NextConfig = {
         hostname: "**",
       },
       {
-        protocol: "http", // Allow HTTP protocol for localhost
+        protocol: "http",
         hostname: "localhost",
-        port: "5000", // Specify the port your local server is running on
+        port: "5000",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "8000",
+      },
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        port: "8000",
       },
     ],
   },

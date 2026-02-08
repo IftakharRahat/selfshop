@@ -32,6 +32,11 @@ class Product extends Model
         return $this->hasMany(Varient::class);
     }
 
+    public function priceTiers()
+    {
+        return $this->hasMany(ProductPriceTier::class)->orderBy('min_qty');
+    }
+
 
     public function getSlugOptions(): SlugOptions
     {

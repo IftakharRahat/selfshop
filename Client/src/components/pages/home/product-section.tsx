@@ -1,35 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import StarRating from "@/components/ui-library/star-rating";
-import { cn } from "@/lib/utils";
+import { cn, getImageUrl } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
+import { useAppSelector } from "@/redux/hooks";
 import { TProductSectionProps } from "@/types/product";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 import { Heart, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function ProductSection({ title, featuredProducts = [], regularProducts = [], className = "" }: TProductSectionProps) {
-  
-    const [addToCart] = useAddToCartMutation();
-    const handleAddToCart = async (product: any) => {
-      const formData = new FormData();
-      formData.append("product_id", product.id);
-      formData.append("price", product.ProductRegularPrice.toString());
-      formData.append("qty", "1");
-      formData.append("size", product.sizes?.[0] || ""); // fallback to empty if no size
-  
-      console.log("Added to cart:", {
-        product_id: product.id,
-        price: product.ProductRegularPrice,
-        qty: 1,
-        size: product.sizes?.[0] || "",
-      });
-  
-      await handleAsyncWithToast(async () => {
-        return addToCart(formData);
-      });
-    };
+  const token = useAppSelector((state) => state.auth.access_token);
+  const [addToCart] = useAddToCartMutation();
+  const handleAddToCart = async (product: any) => {
+    if (!token) {
+      toast.info("Please log in to add to cart");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("product_id", product.id);
+    formData.append("price", product.ProductRegularPrice.toString());
+    formData.append("qty", "1");
+    formData.append("size", product.sizes?.[0] || ""); // fallback to empty if no size
+
+    await handleAsyncWithToast(async () => {
+      return addToCart(formData);
+    });
+  };
   
   return (
     <div className={`w-full bg-white py-6 sm:py-8 lg:py-12 ${className}`}>
@@ -47,7 +46,7 @@ export default function ProductSection({ title, featuredProducts = [], regularPr
                   <div className={` flex-shrink-0 w-full sm:w-64 h-48 sm:h-auto flex items-center justify-center p-6 `}>
                     <Link href={`/product/${product?.ProductSlug}`}>
                     <Image
-                      src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
+                      src={getImageUrl(product?.ViewProductImage)}
                       alt="image"
                       width={200}
                       height={200}
@@ -98,8 +97,8 @@ export default function ProductSection({ title, featuredProducts = [], regularPr
                   <div className="relative  w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 flex items-center justify-center p-2">
                     <Link href={`/product/${product?.ProductSlug}`}>
                     <Image
-                      src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                      alt={product.alt}
+                      src={getImageUrl(product?.ViewProductImage)}
+                      alt={product?.ProductName || product?.alt || "Product"}
                       width={80}
                       height={80}
                       className="w-full h-full object-fill group-hover:scale-105 transition-transform duration-300"

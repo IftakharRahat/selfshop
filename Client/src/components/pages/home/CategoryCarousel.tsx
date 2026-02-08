@@ -6,6 +6,7 @@ import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
+import { getImageUrl } from "@/lib/utils";
 import { useGetAllMenusQuery } from "@/redux/features/home/homeApi";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -53,7 +54,7 @@ export default function CategoryCarousel() {
               onClick={() => router.push(`/product-filter?category=${category?.slug}`)}
             >
               <div className="w-16 h-16 mb-2 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                <Image src={"https://selfshop.com.bd/" + category?.icon} alt={category.name} width={40} height={40} className="w-8 h-8" />
+                <Image src={getImageUrl(category?.icon)} alt={category?.name || "Category"} width={40} height={40} className="w-8 h-8" />
               </div>
               <span className="text-xs text-gray-700 font-medium group-hover:text-pink-600 transition-colors">{category.name}</span>
             </div>
@@ -88,8 +89,8 @@ export default function CategoryCarousel() {
                 <a href={`/${cat.slug || "category"}`} className="flex flex-col items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
                   <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center shadow-sm overflow-hidden">
                     <img
-                      src={cat.icon?.startsWith("http") ? cat.icon : `https://selfshop.com.bd/${cat.icon}`}
-                      alt={cat.name}
+                      src={getImageUrl(cat.icon)}
+                      alt={cat?.name || "Category"}
                       className="w-full h-full object-contain"
                       loading="lazy"
                       onError={(e) => {

@@ -26,6 +26,7 @@ class User extends Authenticatable
         'country',
         'phone',
         'status',
+        'is_verified_wholesaler',
         'my_referral_code',
         'refer_by',
     ];
@@ -47,6 +48,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_verified_wholesaler' => 'boolean',
     ];
 
     public static function getPermissionGroups()

@@ -6,6 +6,7 @@ import banner3 from "@/assets/images/newImages/2.png";
 import banner4 from "@/assets/images/newImages/subel112.png";
 import banner5 from "@/assets/images/newImages/Profit.png";
 import banner6 from "@/assets/images/newImages/4.png";
+import { getImageUrl } from "@/lib/utils";
 import { useGetAllCollectionsQuery } from "@/redux/features/home/homeApi";
 import Image from "next/image";
 import Link from "next/link";
@@ -57,8 +58,8 @@ export default function PromotionalSection() {
                     <Link href={`/product/${product?.ProductSlug}`}>
                       <div className="bg-gray-1 rounded-lg p-4 mb-2 hover:bg-gray-200 transition-colors cursor-pointer">
                         <Image
-                          src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                          alt={product.name}
+                          src={getImageUrl(product?.ViewProductImage)}
+                          alt={product?.ProductName || product?.name || "Product"}
                           width={100}
                           height={100}
                           className="w-full h-20 object-contain"
@@ -104,8 +105,8 @@ export default function PromotionalSection() {
                     <Link href={`/product/${product?.ProductSlug}`}>
                       <div className="bg-gray-1 rounded-lg p-4 mb-2 hover:bg-gray-200 transition-colors cursor-pointer">
                         <Image
-                          src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                          alt={product.name}
+                          src={getImageUrl(product?.ViewProductImage)}
+                          alt={product?.ProductName || product?.name || "Product"}
                           width={100}
                           height={100}
                           className="w-full h-20 object-contain"
@@ -149,8 +150,8 @@ export default function PromotionalSection() {
                     <Link href={`/product/${product?.ProductSlug}`}>
                       <div className="bg-gray-1 rounded-lg p-4 mb-2 hover:bg-gray-200 transition-colors cursor-pointer">
                         <Image
-                          src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                          alt={product.name}
+                          src={getImageUrl(product?.ViewProductImage)}
+                          alt={product?.ProductName || product?.name || "Product"}
                           width={100}
                           height={100}
                           className="w-full h-20 object-contain"
@@ -194,8 +195,8 @@ export default function PromotionalSection() {
                     <Link href={`/product/${product?.ProductSlug}`}>
                       <div className="bg-gray-1 rounded-lg p-4 mb-2 hover:bg-gray-200 transition-colors cursor-pointer">
                         <Image
-                          src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                          alt={product.name}
+                          src={getImageUrl(product?.ViewProductImage)}
+                          alt={product?.ProductName || product?.name || "Product"}
                           width={100}
                           height={100}
                           className="w-full h-20 object-contain"
@@ -239,8 +240,8 @@ export default function PromotionalSection() {
                     <Link href={`/product/${product?.ProductSlug}`}>
                       <div className="bg-gray-1 rounded-lg p-4 mb-2 hover:bg-gray-200 transition-colors cursor-pointer">
                         <Image
-                          src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                          alt={product.name}
+                          src={getImageUrl(product?.ViewProductImage)}
+                          alt={product?.ProductName || product?.name || "Product"}
                           width={100}
                           height={100}
                           className="w-full h-20 object-contain"
@@ -284,8 +285,8 @@ export default function PromotionalSection() {
                     <Link href={`/product/${product?.ProductSlug}`}>
                       <div className="bg-gray-1 rounded-lg p-4 mb-2 hover:bg-gray-200 transition-colors cursor-pointer">
                         <Image
-                          src={"https://selfshop.com.bd/" + product?.ViewProductImage || "/placeholder.svg"}
-                          alt={product.name}
+                          src={getImageUrl(product?.ViewProductImage)}
+                          alt={product?.ProductName || product?.name || "Product"}
                           width={100}
                           height={100}
                           className="w-full h-20 object-contain"

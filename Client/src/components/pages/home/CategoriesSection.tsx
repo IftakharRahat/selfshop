@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { getImageUrl } from "@/lib/utils";
 import { useGetAllSlidersQuery } from "@/redux/features/home/homeApi";
 import Image from "next/image";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
@@ -47,8 +48,8 @@ export default function CategoriesSection() {
             <SwiperSlide key={index}>
               <div className="relative w-full h-[180px] sm:h-[250px] md:h-[350px] lg:h-[500px]">
                 <Image
-                  src={"https://selfshop.com.bd/" + slider.image}
-                  alt={slider.title}
+                  src={getImageUrl(slider.image)}
+                  alt={slider?.title || "Slide"}
                   fill
                   priority={index === 0}
                   className="object-cover rounded-lg"

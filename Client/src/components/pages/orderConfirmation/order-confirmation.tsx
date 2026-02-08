@@ -13,6 +13,7 @@ import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import { FaCheckCircle } from "react-icons/fa";
+import { getImageUrl } from "@/lib/utils";
 import { useGetPricingQuery } from "@/redux/features/pricingApi";
 
 // ✅ Zod Schema for Validation
@@ -253,8 +254,8 @@ export default function OrderConfirmation() {
                     <div key={item.id} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg">
                       <div className="w-20 h-20 sm:w-16 sm:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
                         <Image
-                          src={`https://api-v1.selfshop.com.bd/${item.image}`}
-                          alt={item.name}
+                          src={getImageUrl(item.image)}
+                          alt={item?.name || "Order item"}
                           width={64}
                           height={64}
                           className="w-full h-full object-cover"

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(UserSeeder::class);
         // $this->call(RolePermissionSeeder::class);
         // $this->call(UserRolePermissionSeeder::class);
+        // $this->call(ProductPriceTierSeeder::class); // Vendor wholesale tiers (Tier 1/2/3) for first 20 products
         // \App\Models\User::factory(10)->create();
         // \App\Models\Basicinfo::factory(1)->create();
         // \App\Models\Addbanner::factory(4)->create();

@@ -5,7 +5,9 @@
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import { cn } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
+import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { toast } from "sonner";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -13,20 +15,18 @@ import { Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 export default function ProductShowSection({ title, className, productData }: any) {
+  const token = useAppSelector((state) => state.auth.access_token);
   const [addToCart] = useAddToCartMutation();
   const handleAddToCart = async (product: any) => {
+    if (!token) {
+      toast.info("Please log in to add to cart");
+      return;
+    }
     const formData = new FormData();
     formData.append("product_id", product.id);
     formData.append("price", product.ProductRegularPrice.toString());
     formData.append("qty", "1");
     formData.append("size", product.sizes?.[0] || ""); // fallback to empty if no size
-
-    console.log("Added to cart:", {
-      product_id: product.id,
-      price: product.ProductRegularPrice,
-      qty: 1,
-      size: product.sizes?.[0] || "",
-    });
 
     await handleAsyncWithToast(async () => {
       return addToCart(formData);

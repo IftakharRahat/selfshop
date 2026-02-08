@@ -21,7 +21,8 @@ import { useAppSelector } from "@/redux/hooks";
 import Swal from "sweetalert2";
 import OrderNowModal from "./OrderNowModal";
 import { MdOutlineFileDownload } from "react-icons/md";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { cn, getImageUrl } from "@/lib/utils";
 
 type ColorOption = {
   id: string | number;
@@ -165,7 +166,7 @@ export default function ProductDetailPage({ product }: any) {
   const [selectedColor, setSelectedColor] = useState<ColorOption>(derivedColors[0]);
 
   const handleDownloadImage = (imgPath: string) => {
-    const imageUrl = `https://api-v1.selfshop.com.bd/${imgPath}`;
+    const imageUrl = getImageUrl(imgPath);
     const link = document.createElement("a");
     link.href = imageUrl;
     // Optional: extract filename from URL
@@ -210,7 +211,7 @@ export default function ProductDetailPage({ product }: any) {
                   <SwiperSlide key={index} className="relative">
                     <div className="w-full h-full flex items-center justify-center relative">
                       <Image
-                        src={`https://api-v1.selfshop.com.bd/${image || "/placeholder.svg"}`}
+                        src={getImageUrl(image) || "/placeholder.svg"}
                         alt={`${productData.name} - View ${index + 1}`}
                         width={500}
                         height={600}
@@ -254,7 +255,7 @@ export default function ProductDetailPage({ product }: any) {
                   <SwiperSlide key={index}>
                     <div className=" rounded-lg overflow-hidden border-2 border-gray-200 cursor-pointer hover:border-pink-500 transition-colors">
                       <Image
-                        src={`https://api-v1.selfshop.com.bd/${thumbnail || "/placeholder.svg"}`}
+                        src={getImageUrl(thumbnail) || "/placeholder.svg"}
                         alt={`Product thumbnail ${index + 1}`}
                         width={80}
                         height={80}
@@ -293,7 +294,14 @@ export default function ProductDetailPage({ product }: any) {
               </div>
             </div>
 
-            {/* Bulk */}
+            {/* Bulk Order (Vendor / Matrix) */}
+            <Link
+              href={`/vendor/product/${product.ProductSlug || product.id}`}
+              className="inline-flex items-center justify-center w-full sm:w-auto bg-[#E5005F] text-white font-medium py-3 px-5 rounded-lg hover:bg-pink-700 transition-colors mb-4"
+            >
+              Bulk Order (mixed sizes · tier discount)
+            </Link>
+
             {/* Bulk (Variants) */}
             <OrderNowModal open={orderOpen} onClose={() => setOrderOpen(false)} variant={selectedVarient} />
 

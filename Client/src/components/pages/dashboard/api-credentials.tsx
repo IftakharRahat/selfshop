@@ -1,5 +1,6 @@
 "use client";
 
+import { getApiBaseUrl } from "@/lib/utils";
 import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import {
@@ -32,7 +33,7 @@ export default function ApiCredentials() {
 
   const credentials = {
     userUuid: apiData?.user_id?.toString() || "",
-    apiUrl: apiData?.domain || "selfshop.com.bd/api/...",
+    apiUrl: apiData?.domain || getApiBaseUrl(),
     apiKey: apiData?.api_key || "",
     apiSecret: apiData?.api_secret || "",
     status: apiData?.status || "Inactive",

@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\FrontendApiController;
+use App\Http\Controllers\VendorApiController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -31,7 +32,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/category-products', [FrontendApiController::class, 'categoryproducts'])->name('api.user.categoryproducts');
     Route::get('/big-selling', [FrontendApiController::class, 'bigselling'])->name('api.user.bigselling');
     Route::get('/products/{slug}', [FrontendApiController::class, 'productbycategory'])->name('api.user.productbycategory');
-    Route::get('/subcategory-products/{slug}', [FrontendApiController::class, 'productbysubcategory'])->name('api.user.productbysubcategory');
+    Route::get('/subcategory-products/{slug?}', [FrontendApiController::class, 'productbysubcategory'])->name('api.user.productbysubcategory');
     Route::get('/brand-products/{slug}', [FrontendApiController::class, 'productbybrand'])->name('api.user.productbybrand');
     Route::get('/search', [FrontendApiController::class, 'search'])->name('api.user.search');
     Route::get('/product-details/{slug}', [FrontendApiController::class, 'productdetails'])->name('api.user.productdetails');
@@ -146,6 +147,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/get-wishlist', [FrontendApiController::class, 'getWishlist'])->name('api.get.wishlist');
     Route::post('/remove-wishlist', [FrontendApiController::class, 'removeWishlist'])->name('api.destroy.wishlist');
     Route::post('/clear-wishlist', [FrontendApiController::class, 'clearWishlist'])->name('api.clear.wishlist');
+
+    // Vendor (Wholesale) – for Next.js vendor subdomain / bulk order matrix (verified wholesalers only)
+    Route::middleware('verified.wholesaler')->group(function () {
+        Route::get('/vendor/product-details/{slug}', [VendorApiController::class, 'productDetails'])->name('api.vendor.product-details');
+        Route::post('/vendor/bulk-add-to-cart', [VendorApiController::class, 'bulkAddToCart'])->name('api.vendor.bulk-add-to-cart');
+    });
 });
 
 

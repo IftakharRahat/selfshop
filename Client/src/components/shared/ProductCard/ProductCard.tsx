@@ -4,30 +4,31 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Heart, ShoppingCart } from "lucide-react";
+import { getImageUrl } from "@/lib/utils";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast"; // adjust if needed
 import React from "react";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
+import { useAppSelector } from "@/redux/hooks";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: any;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const token = useAppSelector((state) => state.auth.access_token);
   const [addToCart] = useAddToCartMutation();
 
   const handleAddToCart = async () => {
+    if (!token) {
+      toast.info("Please log in to add to cart");
+      return;
+    }
     const formData = new FormData();
     formData.append("product_id", product.id);
     formData.append("price", product.ProductRegularPrice.toString());
     formData.append("qty", "1");
     formData.append("size", product.sizes?.[0] || "");
-
-    console.log("Added to cart:", {
-      product_id: product.id,
-      price: product.ProductRegularPrice,
-      qty: 1,
-      size: product.sizes?.[0] || "",
-    });
 
     await handleAsyncWithToast(async () => {
       return addToCart(formData);
@@ -51,8 +52,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="relative rounded-md overflow-hidden mb-4">
         <Link href={`/product/${product?.ProductSlug}`}>
           <Image
-            src={product.ViewProductImage ? `https://api-v1.selfshop.com.bd/${product.ViewProductImage}` : "/placeholder.svg"}
-            alt={product.ProductName}
+            src={product.ViewProductImage ? getImageUrl(product.ViewProductImage) : "/placeholder.svg"}
+            alt={product?.ProductName || "Product"}
             width={600}
             height={400}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

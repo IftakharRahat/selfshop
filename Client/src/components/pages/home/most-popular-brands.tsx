@@ -3,6 +3,7 @@
 
 import React from "react";
 import Image from "next/image";
+import { getImageUrl } from "@/lib/utils";
 import { useGetAllBrandsQuery } from "@/redux/features/home/homeApi";
 
 // Swiper imports
@@ -33,7 +34,7 @@ const MostPopularBrands = () => {
           {brands.map((brand: any) => (
             <SwiperSlide key={brand.id} className=" h-full my-auto">
               <div className="flex justify-center items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-300">
-                <Image src={"https://selfshop.com.bd/" + brand.icon} alt={brand.name} width={120} height={180} className="object-contain my-auto" />
+                <Image src={getImageUrl(brand.icon)} alt={brand?.name || "Brand"} width={120} height={180} className="object-contain my-auto" />
               </div>
             </SwiperSlide>
           ))}
@@ -47,7 +48,7 @@ const MostPopularBrands = () => {
             key={brand.id}
             className="flex justify-center items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-300"
           >
-            <Image src={"https://selfshop.com.bd/" + brand.icon} alt={brand.name} width={120} height={80} className="object-contain" />
+            <Image src={getImageUrl(brand.icon)} alt={brand?.name || "Brand"} width={120} height={80} className="object-contain" />
           </div>
         ))}
       </div>

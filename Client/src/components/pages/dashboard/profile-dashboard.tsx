@@ -11,6 +11,7 @@ import {
 import { Modal, Button, Upload, DatePicker, Input, message } from "antd";
 import { Controller, useForm } from "react-hook-form";
 import dayjs from "dayjs";
+import { getImageUrl } from "@/lib/utils";
 import Image from "next/image";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -165,7 +166,7 @@ export default function ProfileDashboard() {
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center">
                 {profile?.profile ? (
                   <Image
-                    src={`https://api-v1.selfshop.com.bd/${profile.profile}`}
+                    src={getImageUrl(profile.profile)}
                     alt="Profile"
                     width={96}
                     height={96}

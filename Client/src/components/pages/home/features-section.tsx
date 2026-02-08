@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { getImageUrl } from "@/lib/utils";
 import Image from "next/image";
 import { useGetAllSliderBottomBannersQuery } from "@/redux/features/home/homeApi";
 
@@ -28,7 +29,7 @@ export default function FeaturesSection() {
               <div className="flex justify-center py-3 px-4">
                 <div className="h-full w-full flex items-center justify-center">
                   <Image
-                    src={`https://api-v1.selfshop.com.bd/${feature.icon}`}
+                    src={getImageUrl(feature.icon)}
                     alt={`Feature ${index + 1}`}
                     width={400}
                     height={400}

@@ -63,7 +63,7 @@ export default function NewArrivalSection() {
               <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 aspect-square">
                 <Image
                   src={product.image || "/placeholder.svg"}
-                  alt={product.alt}
+                  alt={product?.ProductName || product?.alt || "Product"}
                   width={300}
                   height={300}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

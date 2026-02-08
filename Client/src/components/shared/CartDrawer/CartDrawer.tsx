@@ -4,7 +4,9 @@ import { Drawer } from "antd";
 import Link from "next/link";
 import { Minus, Plus } from "lucide-react";
 import { MdDeleteOutline } from "react-icons/md";
+import { getImageUrl } from "@/lib/utils";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { useAppSelector } from "@/redux/hooks";
 import { useDeleteCartItemMutation, useGetAllCartItemsQuery, useUpdateCartItemMutation } from "@/redux/features/cartApi";
 
 interface CartDrawerProps {
@@ -13,7 +15,8 @@ interface CartDrawerProps {
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
-  const { data: cartItems } = useGetAllCartItemsQuery(undefined);
+  const token = useAppSelector((state) => state.auth.access_token);
+  const { data: cartItems } = useGetAllCartItemsQuery(undefined, { skip: !token });
 
   const [updateCartItem] = useUpdateCartItemMutation();
   const [deleteCartItem] = useDeleteCartItemMutation();
@@ -42,7 +45,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             <div className="space-y-4">
               {cartItems.data.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3 border-b pb-3">
-                  <img src={`https://api-v1.selfshop.com.bd/${item.image}`} alt={item.name} className="w-14 h-14 object-cover rounded" />
+                  <img src={getImageUrl(item.image)} alt={item?.name || "Cart item"} className="w-14 h-14 object-cover rounded" />
                   <div className="flex-1">
                     <p className="text-sm font-medium">{item.name}</p>
                     <p className="text-gray-500 text-xs">Code: {item.code}</p>

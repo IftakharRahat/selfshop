@@ -20,7 +20,7 @@ interface AuthModalProps {
 export default function AuthModal({ open, onClose, setIsPricingModalOpen }: AuthModalProps) {
   const dispatch = useAppDispatch();
   const token = useAppSelector((state) => state.auth.access_token);
-  const { data: user } = useGetMeQuery(token);
+  const { data: user } = useGetMeQuery(token, { skip: !token });
   const [isLogin, setIsLogin] = useState(true);
   const [activeTab, setActiveTab] = useState("reseller");
 
