@@ -2,7 +2,7 @@
     <nav class="px-4 py-0 navbar navbar-expand bg-info navbar-dark sticky-top" style="background-color: #f3f0f0 !important">
 
         <a href="{{ url('/admin/dashboard') }}" class="p-0 navbar-brand">
-            <img src="{{ asset(\App\Models\Basicinfo::first()->logo) }}" alt="logo"
+            <img src="{{ asset(preg_replace('#^public/#', '', \App\Models\Basicinfo::first()->logo ?? '')) }}" alt="logo"
                     style="width:150px">
 
         </a>
@@ -15,9 +15,9 @@
 
         <h4 style="color:#000;margin:0;"></h4>
         <div class="p-1 mr-4 navbar-nav align-items-center ms-auto">
-            <img src="{{asset('public/noti.jpg')}}" style="border-radius: 4px;margin-right: 20px;">
+            <img src="{{ asset('backend/img/user.jpg') }}" style="border-radius: 4px;margin-right: 20px;" alt="noti">
             <div class="profile d-flex">
-                 <img src="{{asset('public/pro.png')}}" style="width:40px">
+                 <img src="{{ asset('backend/img/user.jpg') }}" style="width:40px" alt="profile">
                  <div class="d-none d-lg-block name ps-2">
                      <h4 class="m-0" style="font-size: 16px;color:black;">{{Auth::user()->name}}</h4>
                      <small style="color:black;">admin</small>

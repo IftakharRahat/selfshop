@@ -1,12 +1,12 @@
-import OrderTracking from '@/components/pages/dashboard/order-tracking';
-import React from 'react';
+import React from "react";
+import OrderTracking from "@/components/pages/dashboard/order-tracking";
 
 const page = () => {
-    return (
-        <>
-            <OrderTracking/>
-        </>
-    );
+	return (
+		<>
+			<OrderTracking />
+		</>
+	);
 };
 
 export default page;

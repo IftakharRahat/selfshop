@@ -125,7 +125,7 @@
                                 <th>Date</th>
                                 <th>Payment Info</th>
                                 <th>Amount</th>
-                                <th>Blance</th>
+                                <th>Balance</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>

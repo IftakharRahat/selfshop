@@ -53,7 +53,7 @@
                             </div>
                             <div class="m-3 ms-0" style="text-align: center;height: 50px;">
                                 <h4 style="width:30%;float: left;text-align: left;">LOGO : </h4>
-                                <img src="{{ asset($webinfo->logo) }}" alt="" srcset=""
+                                <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->logo ?? '')) }}" alt="" srcset=""
                                     style="max-height: 50px;">
                             </div>
                             <br>
@@ -64,7 +64,7 @@
                             </div>
                             <div class="m-3 ms-0" style="text-align: center;height: 50px;">
                                 <h4 style="width:30%;float: left;text-align: left;">FAV ICON : </h4>
-                                <img src="{{ asset($webinfo->fav_icon) }}" alt="" srcset=""
+                                <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->fav_icon ?? '')) }}" alt="" srcset=""
                                     style="max-height: 100px;">
                             </div>
                             
@@ -288,7 +288,7 @@
                             </div>
                             <div class="m-3 ms-0" style="text-align: center;height: 85px;margin-top:50px !important">
                                 <h4 style="width:30%;float: left;text-align: left;">Meta Image : </h4>
-                                <img src="{{ asset($webinfo->meta_image) }}" alt="" srcset=""
+                                <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->meta_image ?? '')) }}" alt="" srcset=""
                                     style="max-height: 100px;">
                             </div>
 

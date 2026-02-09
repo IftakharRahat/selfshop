@@ -1,12 +1,12 @@
-import ProfileDashboard from '@/components/pages/dashboard/profile-dashboard';
-import React from 'react';
+import React from "react";
+import ProfileDashboard from "@/components/pages/dashboard/profile-dashboard";
 
 const page = () => {
-    return (
-        <>
-            <ProfileDashboard/>
-        </>
-    );
+	return (
+		<>
+			<ProfileDashboard />
+		</>
+	);
 };
 
 export default page;

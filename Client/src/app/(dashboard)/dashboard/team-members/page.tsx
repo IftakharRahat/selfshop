@@ -1,12 +1,12 @@
-import TeamShowcase from '@/components/pages/dashboard/team-showcase';
-import React from 'react';
+import React from "react";
+import TeamShowcase from "@/components/pages/dashboard/team-showcase";
 
 const page = () => {
-    return (
-        <>
-            <TeamShowcase/>
-        </>
-    );
+	return (
+		<>
+			<TeamShowcase />
+		</>
+	);
 };
 
 export default page;

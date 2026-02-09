@@ -34,13 +34,13 @@
                 <div class="mb-4 row">
                     <div class="col-lg-3">
                         <div class="card card-body">
-                            <p>Paid Blance</p>
+                            <p>Paid Balance</p>
                             <h4>{{$blances->sum('amount')}}</h4>
                         </div>
                     </div>
                     <div class="col-lg-3">
                         <div class="card card-body">
-                            <p>Available Blance</p>
+                            <p>Available Balance</p>
                             <h4>{{Auth::guard()->user()->account_balance}}</h4>
                         </div>
                     </div>
@@ -66,7 +66,7 @@
                                 <th>SL</th>
                                 <th>Invoice</th>
                                 <th>Amount</th>
-                                <th>Blance</th>
+                                <th>Balance</th>
                                 <th>status</th>
                             </tr>
                         </thead>

@@ -34,7 +34,7 @@
                 <div class="mb-4 row">
                     <div class="col-lg-3">
                         <div class="card card-body">
-                            <p>Available Blance</p>
+                            <p>Available Balance</p>
                             <h4>{{Auth::guard()->user()->account_balance}}</h4>
                         </div>
                     </div>
@@ -46,7 +46,7 @@
                     </div>
                     <div class="col-lg-3">
                         <div class="card card-body">
-                            <p>Paid Blance</p>
+                            <p>Paid Balance</p>
                             <h4>{{App\Models\Vencomment::where('type', 'Withdraw')->where('shop_id', Auth::guard('admin')->user()->id)->where('status','Success')->get()->sum('amount')}}</h4>
                         </div>
                     </div>
@@ -116,7 +116,7 @@
                                 <th>Date</th>
                                 <th>Payment Info</th>
                                 <th>Amount</th>
-                                <th>Blance</th>
+                                <th>Balance</th>
                                 <th>status</th>
                             </tr>
                         </thead>

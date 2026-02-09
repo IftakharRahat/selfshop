@@ -1,12 +1,12 @@
-import ContactMethodsSection from '@/components/pages/Contact/contact-methods-section';
-import React from 'react';
+import React from "react";
+import ContactMethodsSection from "@/components/pages/Contact/contact-methods-section";
 
 const page = () => {
-    return (
-        <>
-            <ContactMethodsSection/>
-        </>
-    );
+	return (
+		<>
+			<ContactMethodsSection />
+		</>
+	);
 };
 
 export default page;

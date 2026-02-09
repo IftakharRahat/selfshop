@@ -1,12 +1,12 @@
-import AboutUsComponent from '@/components/pages/aboutUs/AboutUsComponent';
-import React from 'react';
+import React from "react";
+import AboutUsComponent from "@/components/pages/aboutUs/AboutUsComponent";
 
 const page = () => {
-    return (
-        <>
-            <AboutUsComponent/>
-        </>
-    );
+	return (
+		<>
+			<AboutUsComponent />
+		</>
+	);
 };
 
 export default page;

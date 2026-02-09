@@ -1,12 +1,12 @@
-import CourseDetailsPage from '@/components/pages/dashboard/CourseDetailsPage';
-import React from 'react';
+import React from "react";
+import CourseDetailsPage from "@/components/pages/dashboard/CourseDetailsPage";
 
 const page = () => {
-    return (
-        <>
-          <CourseDetailsPage/>  
-        </>
-    );
+	return (
+		<>
+			<CourseDetailsPage />
+		</>
+	);
 };
 
 export default page;

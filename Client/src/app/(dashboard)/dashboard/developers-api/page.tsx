@@ -1,12 +1,12 @@
-import ApiCredentials from '@/components/pages/dashboard/api-credentials';
-import React from 'react';
+import React from "react";
+import ApiCredentials from "@/components/pages/dashboard/api-credentials";
 
 const page = () => {
-    return (
-        <>
-            <ApiCredentials/>
-        </>
-    );
+	return (
+		<>
+			<ApiCredentials />
+		</>
+	);
 };
 
 export default page;

@@ -1,12 +1,12 @@
-import FAQSectionDashboard from '@/components/pages/dashboard/faq-section-dashboard';
-import React from 'react';
+import React from "react";
+import FAQSectionDashboard from "@/components/pages/dashboard/faq-section-dashboard";
 
 const page = () => {
-    return (
-        <>
-            <FAQSectionDashboard/>
-        </>
-    );
+	return (
+		<>
+			<FAQSectionDashboard />
+		</>
+	);
 };
 
 export default page;

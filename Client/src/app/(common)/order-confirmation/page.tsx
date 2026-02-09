@@ -1,12 +1,12 @@
-import OrderConfirmationComponent from '@/components/pages/orderConfirmation/orderConfirmationComponent';
-import React from 'react';
+import React from "react";
+import OrderConfirmationComponent from "@/components/pages/orderConfirmation/orderConfirmationComponent";
 
 const page = () => {
-    return (
-        <>
-            <OrderConfirmationComponent />
-        </>
-    );
+	return (
+		<>
+			<OrderConfirmationComponent />
+		</>
+	);
 };
 
 export default page;
