@@ -1,17 +1,53 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
-import { Mousewheel, Scrollbar } from "swiper/modules";
-import { Swiper, SwiperSlide } from "swiper/react";
-
-import "swiper/css";
-import "swiper/css/scrollbar";
+import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getImageUrl } from "@/lib/utils";
 import { useGetAllNavbarCategoryDropdownOptionsQuery } from "@/redux/features/home/homeApi";
+import { ChevronDown, Package } from "lucide-react";
+
+/** Image with fallback — shows a Package icon when the image is missing or broken */
+function CategoryImage({
+	src,
+	alt,
+	width,
+	height,
+	className,
+}: {
+	src: string | null | undefined;
+	alt: string;
+	width: number;
+	height: number;
+	className?: string;
+}) {
+	const [hasError, setHasError] = useState(false);
+	const imageUrl = src ? getImageUrl(src) : "";
+
+	if (!imageUrl || hasError) {
+		return (
+			<Package
+				className={className}
+				style={{ width, height }}
+				strokeWidth={1.5}
+				color="#9ca3af"
+			/>
+		);
+	}
+
+	return (
+		<Image
+			src={imageUrl}
+			alt={alt}
+			width={width}
+			height={height}
+			className={className}
+			onError={() => setHasError(true)}
+		/>
+	);
+}
 
 export default function CategoriesPageComponent() {
 	const router = useRouter();
@@ -25,101 +61,177 @@ export default function CategoriesPageComponent() {
 			name: menu?.category_name,
 			icon: menu?.category_icon,
 			slug: menu?.slug,
-			subcategories: menu?.subcategories,
+			subcategories: menu?.subcategories?.map((sub: any) => ({
+				...sub,
+				minicategories: sub?.minicategories || [],
+			})),
 		})) || [];
 
-	const [selectedCategory, setSelectedCategory] = useState<any>(
-		categories[0] || null,
-	);
+	const [selectedCategory, setSelectedCategory] = useState<any>(null);
+	const [expandedSubcategory, setExpandedSubcategory] = useState<
+		number | null
+	>(null);
+
+	// Auto-select first category when data loads
+	useEffect(() => {
+		if (categories.length > 0 && !selectedCategory) {
+			setSelectedCategory(categories[0]);
+		}
+	}, [menuOptions]);
+
+	const handleSubcategoryClick = (sub: any) => {
+		if (sub.minicategories && sub.minicategories.length > 0) {
+			setExpandedSubcategory(
+				expandedSubcategory === sub.id ? null : sub.id,
+			);
+		} else {
+			router.push(
+				`/product-filter?category=${selectedCategory?.slug}&subcategory=${sub.slug}`,
+			);
+		}
+	};
 
 	return (
-		<div className="flex gap-1  py-6">
-			{/* LEFT SIDE — ALL CATEGORIES LIST */}
-			<div className="w-20 h-screen">
-				<Swiper
-					direction="vertical"
-					slidesPerView="auto"
-					modules={[Scrollbar, Mousewheel]}
-					scrollbar={{ draggable: true }}
-					mousewheel={{ forceToAxis: true }}
-					className="h-full"
-				>
-					{categories.map((cat: any) => (
-						<SwiperSlide key={cat.id} className="!w-full !h-auto">
+		<div className="flex h-screen overflow-hidden">
+			{/* LEFT SIDE — CATEGORY SIDEBAR */}
+			<div className="w-[85px] flex-shrink-0 bg-gray-50/80 border-r border-gray-100 overflow-y-auto py-3 flex flex-col gap-0.5">
+				{categories.map((cat: any) => {
+					const isSelected = selectedCategory?.id === cat.id;
+					return (
+						<div
+							key={cat.id}
+							onClick={() => {
+								setSelectedCategory(cat);
+								setExpandedSubcategory(null);
+								// Scroll right panel to top
+								document.getElementById("subcategory-panel")?.scrollTo(0, 0);
+							}}
+							className={`flex flex-col items-center gap-1.5 px-1.5 py-2.5 mx-1 cursor-pointer rounded-xl transition-all duration-200
+								${isSelected
+									? "bg-white shadow-sm"
+									: "hover:bg-white/60"
+								}
+							`}
+						>
 							<div
-								onClick={() => setSelectedCategory(cat)}
-								className={` gap-2 p-3 cursor-pointer rounded-md transition-all
-                  ${
-										selectedCategory?.id === cat.id
-											? "bg-green-100 text-green-700"
-											: "hover:bg-gray-100"
+								className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200
+									${isSelected
+										? "bg-pink-50 border-2 border-[#E5005F]"
+										: "bg-white border border-gray-200"
 									}
-                `}
+								`}
 							>
-								<Image
-									src={getImageUrl(cat?.icon)}
+								<CategoryImage
+									src={cat?.icon}
 									alt={cat?.name || "Category"}
-									width={40}
-									height={40}
-									className="w-8 h-8 mx-auto"
+									width={24}
+									height={24}
+									className="w-6 h-6"
 								/>
-								<span className="text-sm font-medium truncate">
-									{cat.name.length > 5
-										? cat.name.slice(0, 5) + "..."
-										: cat.name}
-								</span>
 							</div>
-						</SwiperSlide>
-					))}
-				</Swiper>
+							<span
+								className={`text-[10px] leading-tight text-center line-clamp-2 transition-colors duration-200
+									${isSelected
+										? "font-semibold text-[#E5005F]"
+										: "font-medium text-gray-500"
+									}
+								`}
+							>
+								{cat.name}
+							</span>
+						</div>
+					);
+				})}
 			</div>
 
-			{/* RIGHT SIDE — SELECTED CATEGORY DETAILS */}
-			<div className="flex-1">
-				<h2 className="text-xl font-semibold mb-4 text-wrap">
+			{/* RIGHT SIDE — SUBCATEGORY LIST VIEW */}
+			<div className="flex-1 overflow-y-auto px-3 py-3" id="subcategory-panel">
+				<h2 className="text-lg font-semibold mb-3">
 					{selectedCategory?.name}
 				</h2>
 
-				{/* {selectedCategory?.subcategories?.length > 0 && (
-          <select
-            className="border border-gray-300 rounded-lg px-3 py-2 mb-6"
-            onChange={(e) =>
-              router.push(`/product-filter?subcategory=${e.target.value}`)
-            }
-          >
-            <option value="">Select Subcategory</option>
-            {selectedCategory.subcategories.map((sub: any) => (
-              <option key={sub.id} value={sub.slug}>
-                {sub.sub_category_name}
-              </option>
-            ))}
-          </select>
-        )} */}
-
-				<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+				<div className="flex flex-col gap-1.5">
 					{selectedCategory?.subcategories?.map((sub: any) => (
-						<div
-							key={sub.id}
-							onClick={() =>
-								router.push(
-									`/product-filter?category=${sub.slug}&subcategory=${sub.slug}`,
-								)
-							}
-							className="flex flex-col items-center text-center cursor-pointer group"
-						>
-							<div className="w-16 h-16 mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition">
-								<Image
-									src={getImageUrl(sub.subcategory_icon)}
-									width={40}
-									height={40}
-									alt={sub?.sub_category_name || "Subcategory"}
-									className="w-10 h-10"
-								/>
+						<div key={sub.id}>
+							{/* Subcategory row */}
+							<div
+								onClick={() => handleSubcategoryClick(sub)}
+								className={`flex items-center justify-between px-2.5 py-2 rounded-xl border cursor-pointer transition-all
+									${expandedSubcategory === sub.id
+										? "border-blue-200 bg-blue-50/50"
+										: "border-gray-200 bg-white hover:border-gray-300"
+									}
+								`}
+							>
+								<div className="flex items-center gap-2.5">
+									<div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+										<CategoryImage
+											src={sub.subcategory_icon}
+											alt={
+												sub?.sub_category_name ||
+												"Subcategory"
+											}
+											width={28}
+											height={28}
+											className="w-7 h-7"
+										/>
+									</div>
+									<span className="text-sm font-medium text-gray-800">
+										{sub.sub_category_name}
+									</span>
+								</div>
+
+								{sub.minicategories &&
+									sub.minicategories.length > 0 && (
+										<ChevronDown
+											className={`w-5 h-5 text-gray-400 transition-transform duration-300 flex-shrink-0 ${expandedSubcategory === sub.id
+												? "rotate-180"
+												: ""
+												}`}
+										/>
+									)}
 							</div>
 
-							<span className="text-xs font-medium group-hover:text-green-600">
-								{sub.sub_category_name}
-							</span>
+							{/* Expanded child categories (minicategories) */}
+							{expandedSubcategory === sub.id &&
+								sub.minicategories &&
+								sub.minicategories.length > 0 && (
+									<div className="grid grid-cols-3 gap-3 pt-3 pb-1 px-2">
+										{sub.minicategories.map(
+											(mini: any) => (
+												<div
+													key={mini.id}
+													onClick={() =>
+														router.push(
+															`/product-filter?category=${selectedCategory?.slug}&subcategory=${sub.slug}&minicategory=${mini.slug}`,
+														)
+													}
+													className="flex flex-col items-center text-center cursor-pointer group"
+												>
+													<div className="w-12 h-12 mb-1 rounded-lg bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition">
+														<CategoryImage
+															src={
+																mini.minicategory_icon
+															}
+															alt={
+																mini?.mini_category_name ||
+																"Mini Category"
+															}
+															width={36}
+															height={36}
+															className="w-9 h-9"
+														/>
+													</div>
+													<span className="text-[11px] font-medium text-gray-600 group-hover:text-blue-600 leading-tight">
+														{
+															mini.mini_category_name
+														}
+													</span>
+												</div>
+											),
+										)}
+									</div>
+								)}
 						</div>
 					))}
 				</div>
