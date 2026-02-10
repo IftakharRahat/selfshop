@@ -3,7 +3,6 @@
 
 import Image from "next/image";
 import React, { useState } from "react";
-// Swiper imports
 import { Swiper, SwiperSlide } from "swiper/react";
 import { getImageUrl } from "@/lib/utils";
 import { useGetAllBrandsQuery } from "@/redux/features/home/homeApi";
@@ -72,20 +71,19 @@ const MostPopularBrands = () => {
 			<div className="block md:hidden">
 				<Swiper
 					slidesPerView={3.5}
-					spaceBetween={5}
+					spaceBetween={8}
 					freeMode={true}
 					modules={[FreeMode]}
-					className=" h-full flex items-center"
 				>
 					{brands.map((brand: any) => (
-						<SwiperSlide key={brand.id} className=" h-full my-auto">
-							<div className="flex justify-center items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-300">
+						<SwiperSlide key={brand.id}>
+							<div className="w-full aspect-square bg-white border border-gray-100 rounded-xl flex items-center justify-center p-3 cursor-pointer hover:shadow-md transition-shadow">
 								<BrandImage
 									icon={brand.icon}
 									name={brand.name}
-									width={120}
-									height={180}
-									className="object-contain my-auto"
+									width={72}
+									height={72}
+									className="object-contain max-w-full max-h-full"
 								/>
 							</div>
 						</SwiperSlide>
@@ -93,19 +91,19 @@ const MostPopularBrands = () => {
 				</Swiper>
 			</div>
 
-			{/* ---------- DESKTOP GRID / FLEX ---------- */}
-			<div className="hidden md:flex md:flex-wrap md:items-center md:justify-center gap-6 sm:gap-8">
+			{/* ---------- DESKTOP GRID ---------- */}
+			<div className="hidden md:grid md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
 				{brands.map((brand: any) => (
 					<div
 						key={brand.id}
-						className="flex justify-center items-center p-4 bg-white rounded-lg cursor-pointer hover:shadow-md transition-shadow duration-300"
+						className="aspect-square bg-white border border-gray-100 rounded-xl flex items-center justify-center p-4 cursor-pointer hover:shadow-md transition-shadow"
 					>
 						<BrandImage
 							icon={brand.icon}
 							name={brand.name}
-							width={120}
+							width={80}
 							height={80}
-							className="object-contain"
+							className="object-contain max-w-full max-h-full"
 						/>
 					</div>
 				))}

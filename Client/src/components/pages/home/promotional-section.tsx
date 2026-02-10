@@ -21,7 +21,7 @@ interface CategoryCardProps {
 
 function CategoryCard({ title, banner, slug, products }: CategoryCardProps) {
 	return (
-		<div className="bg-white rounded-lg border border-[#CFEDFF] overflow-hidden flex flex-col">
+		<div className="bg-white rounded-lg border border-pink-100 overflow-hidden flex flex-col">
 			{/* Banner Section */}
 			<div className="relative h-32 sm:h-44 lg:h-52 overflow-hidden">
 				<Image
