@@ -52,9 +52,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 	};
 
 	return (
-		<div className="group cursor-pointer shadow-lg p-3 rounded-lg hover:shadow-xl transition">
+		<div className="group cursor-pointer shadow-lg p-3 rounded-lg hover:shadow-xl transition h-full flex flex-col">
 			{/* Image */}
-			<div className="relative rounded-md overflow-hidden mb-4">
+			<div className="relative rounded-md overflow-hidden mb-4 aspect-square">
 				<Link href={`/product/${product?.ProductSlug}`}>
 					<Image
 						src={
@@ -75,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 			</div>
 
 			{/* Info */}
-			<div className="space-y-1">
+			<div className="space-y-1 mt-auto">
 				<div className="flex items-center justify-between">
 					<Link href={`/product/${product?.ProductSlug}`}>
 						<h3 className="text-gray-900 font-medium text-[10px] xs:text-sm lg:text-base">
@@ -97,7 +97,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 						className="cursor-pointer p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-full flex items-center justify-center"
 						onClick={handleAddToCart}
 					>
-						<ShoppingCart className="w-3 h-3 xs:w-4 xs:h-4" />
+						<ShoppingCart className="w-3 h-3 xs:w-4 xs:h-4 text-white" />
 					</button>
 				</div>
 			</div>

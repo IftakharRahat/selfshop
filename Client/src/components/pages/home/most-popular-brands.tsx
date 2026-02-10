@@ -94,7 +94,7 @@ const MostPopularBrands = () => {
 			</div>
 
 			{/* ---------- DESKTOP GRID / FLEX ---------- */}
-			<div className="hidden md:grid grid-cols-3 lg:flex lg:items-center lg:justify-between gap-6 sm:gap-8">
+			<div className="hidden md:flex md:flex-wrap md:items-center md:justify-center gap-6 sm:gap-8">
 				{brands.map((brand: any) => (
 					<div
 						key={brand.id}

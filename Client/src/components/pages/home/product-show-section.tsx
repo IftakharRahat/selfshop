@@ -64,23 +64,26 @@ export default function ProductShowSection({
 				</div>
 
 				{/* Swiper Slider */}
-				<Swiper
-					modules={[Navigation, Pagination]}
-					navigation
-					pagination={false}
-					spaceBetween={20}
-					breakpoints={{
-						0: { slidesPerView: 2, spaceBetween: 10 },
-						1024: { slidesPerView: 4 },
-					}}
-					loop={true}
-				>
-					{products.map((product: any) => (
-						<SwiperSlide key={product.id}>
-							<ProductCard product={product} />
-						</SwiperSlide>
-					))}
-				</Swiper>
+				<div className="-my-2">
+					<Swiper
+						modules={[Navigation, Pagination]}
+						navigation
+						pagination={false}
+						spaceBetween={20}
+						breakpoints={{
+							0: { slidesPerView: 2, spaceBetween: 10 },
+							1024: { slidesPerView: 4 },
+						}}
+						loop={true}
+						className="!overflow-x-clip !overflow-y-visible py-2"
+					>
+						{products.map((product: any) => (
+							<SwiperSlide key={product.id} className="!h-auto">
+								<ProductCard product={product} />
+							</SwiperSlide>
+						))}
+					</Swiper>
+				</div>
 
 				<div className="flex items-center justify-center mt-4">
 					{/* <button className="px-4 py-2 bg-[#E5005F] text-xs text-white rounded-md">View All</button> */}
