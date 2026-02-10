@@ -2,6 +2,8 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
+import { ImageOff } from "lucide-react";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { getImageUrl } from "@/lib/utils";
@@ -11,6 +13,32 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import CategoryCarousel from "./CategoryCarousel";
+
+function BannerSlide({ slider, index }: { slider: any; index: number }) {
+	const [imgError, setImgError] = useState(false);
+
+	return (
+		<div className="relative w-full h-[180px] sm:h-[250px] md:h-[350px] lg:h-[500px]">
+			{imgError || !slider.image ? (
+				<div className="w-full h-full rounded-lg bg-gradient-to-br from-pink-50 via-gray-100 to-pink-50 flex flex-col items-center justify-center gap-3">
+					<div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center shadow-sm">
+						<ImageOff className="w-8 h-8 text-[#E5005F]/30" />
+					</div>
+					<p className="text-gray-400 text-sm font-medium">Image unavailable</p>
+				</div>
+			) : (
+				<Image
+					src={getImageUrl(slider.image)}
+					alt={slider?.title || "Slide"}
+					fill
+					priority={index === 0}
+					className="object-cover rounded-lg"
+					onError={() => setImgError(true)}
+				/>
+			)}
+		</div>
+	);
+}
 
 export default function CategoriesSection() {
 	const { data: sliderOptions } = useGetAllSlidersQuery(undefined);
@@ -46,15 +74,7 @@ export default function CategoriesSection() {
 				>
 					{sliders.map((slider: any, index: number) => (
 						<SwiperSlide key={index}>
-							<div className="relative w-full h-[180px] sm:h-[250px] md:h-[350px] lg:h-[500px]">
-								<Image
-									src={getImageUrl(slider.image)}
-									alt={slider?.title || "Slide"}
-									fill
-									priority={index === 0}
-									className="object-cover rounded-lg"
-								/>
-							</div>
+							<BannerSlide slider={slider} index={index} />
 						</SwiperSlide>
 					))}
 				</Swiper>

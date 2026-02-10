@@ -180,8 +180,12 @@ export default function ProductSection({
 
 				{/* Empty State */}
 				{featuredProducts.length === 0 && regularProducts.length === 0 && (
-					<div className="text-center py-12">
-						<p className="text-gray-500 text-lg">No products available</p>
+					<div className="flex flex-col items-center justify-center py-16 px-4">
+						<div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mb-4">
+							<ShoppingCart className="w-10 h-10 text-[#E5005F]/40" />
+						</div>
+						<p className="text-gray-800 text-lg font-semibold mb-1">No products yet</p>
+						<p className="text-gray-400 text-sm">Products will appear here once they&apos;re added</p>
 					</div>
 				)}
 			</div>
