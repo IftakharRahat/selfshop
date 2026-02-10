@@ -23,7 +23,7 @@ function CategoryCard({ title, banner, slug, products }: CategoryCardProps) {
 	return (
 		<div className="bg-white rounded-lg border border-[#CFEDFF] overflow-hidden flex flex-col">
 			{/* Banner Section */}
-			<div className="relative h-48 sm:h-52 lg:h-52 overflow-hidden">
+			<div className="relative h-32 sm:h-44 lg:h-52 overflow-hidden">
 				<Image
 					src={banner || "/placeholder.svg"}
 					alt={title}
@@ -33,24 +33,24 @@ function CategoryCard({ title, banner, slug, products }: CategoryCardProps) {
 			</div>
 
 			{/* Title and Explore Button */}
-			<div className="p-4 flex items-center justify-between">
-				<h3 className="text-lg lg:text-xl font-bold text-[#E5005F]">
+			<div className="p-2.5 sm:p-4 flex items-center justify-between">
+				<h3 className="text-base sm:text-lg lg:text-xl font-bold text-[#E5005F]">
 					{title}
 				</h3>
 				<Link href={`/category?category=${slug}`} scroll>
-					<button className="cursor-pointer bg-[#E5005F] text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-pink-700 transition-colors">
+					<button className="cursor-pointer bg-[#E5005F] text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium hover:bg-pink-700 transition-colors">
 						Explore
 					</button>
 				</Link>
 			</div>
 
 			{/* Products Grid */}
-			<div className="px-4 pb-4 flex-1">
+			<div className="px-2.5 pb-2.5 sm:px-4 sm:pb-4 flex-1">
 				<div className="grid grid-cols-2 gap-4">
 					{products?.map((product: any) => (
 						<div key={product.id} className="text-center">
 							<Link href={`/product/${product?.ProductSlug}`}>
-								<div className="bg-gray-100 rounded-lg mb-2 hover:bg-gray-200 transition-colors cursor-pointer aspect-square flex items-center justify-center p-3 overflow-hidden">
+								<div className="rounded-lg mb-1.5 sm:mb-2 cursor-pointer aspect-square flex items-center justify-center overflow-hidden">
 									<Image
 										src={getImageUrl(product?.ViewProductImage)}
 										alt={
@@ -61,7 +61,7 @@ function CategoryCard({ title, banner, slug, products }: CategoryCardProps) {
 										className="w-full h-full object-cover rounded"
 									/>
 								</div>
-								<p className="text-sm text-gray-700 font-medium line-clamp-2">
+								<p className="text-xs sm:text-sm text-gray-700 font-medium line-clamp-2">
 									{product?.ProductName}
 								</p>
 							</Link>
@@ -114,9 +114,9 @@ export default function PromotionalSection() {
 	];
 
 	return (
-		<div className="w-full bg-gray-50 py-8 lg:py-12">
-			<div className="container mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+		<div className="w-full bg-gray-50 py-4 sm:py-8 lg:py-12">
+			<div className="container mx-auto px-3 sm:px-6 lg:px-8">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
 					{categories.map((cat) => (
 						<CategoryCard
 							key={cat.slug}
