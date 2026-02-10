@@ -24,7 +24,7 @@ const HomeComponent = () => {
 	const { data: featuredProductsData } =
 		useGetAllFeaturedProductsQuery(undefined);
 	return (
-		<div>
+		<div className="space-y-2 sm:space-y-4 lg:space-y-6">
 			<CategoriesSection />
 			<FeaturesSection />
 			<PromotionalSection />
@@ -38,7 +38,6 @@ const HomeComponent = () => {
 				className="bg-[#FDF0F6]"
 				productData={featuredProductsData?.data?.data}
 			/>
-			{/* <ProductShowSection title="MEN'S FASHION" className="bg-white"/> */}
 			<BigSellingSection />
 			<NewProducts />
 			<MostPopularBrands />

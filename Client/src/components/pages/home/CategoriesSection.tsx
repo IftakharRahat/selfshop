@@ -58,7 +58,7 @@ export default function CategoriesSection() {
 			</div>
 
 			{/* Promotional Banner Slider */}
-			<div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-6 lg:pb-8">
+			<div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-2 sm:pb-4 lg:pb-6">
 				<Swiper
 					modules={[Autoplay, Pagination, Navigation]}
 					spaceBetween={20}

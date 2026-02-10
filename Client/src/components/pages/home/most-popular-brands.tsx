@@ -62,9 +62,9 @@ const MostPopularBrands = () => {
 		})) || [];
 
 	return (
-		<div className="container mx-auto py-4 sm:py-6 lg:py-8">
+		<div className="container mx-auto py-3 sm:py-6 lg:py-10 px-3 sm:px-6 lg:px-8">
 			{/* Section title */}
-			<h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold text-[#322F35] mb-5 text-center">
+			<h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-semibold text-[#322F35] mb-3 sm:mb-5 text-center">
 				Most Popular Brands
 			</h2>
 
