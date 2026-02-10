@@ -159,8 +159,8 @@ export default function Navbar() {
 			</div>
 			<div className="bg-gradient-to-r from-[#D701640F] to-[#D701640F] ">
 				{/* Main navbar */}
-				<div className="container  py-3 lg:py-5 border-b border-b-[#4E4E4E17] ">
-					<div className="flex items-center justify-between h-16">
+				<div className="container  py-3 lg:py-3 border-b border-b-[#4E4E4E17] ">
+					<div className="flex items-center justify-between h-12">
 						{/* Logo */}
 						<Link href="/">
 							<img src={logo.src} alt="SelfShop Logo" className="w-44 " />
@@ -291,19 +291,19 @@ export default function Navbar() {
 				<div className="">
 					<div className="container px-4 sm:px-6 lg:px-8">
 						{/* Desktop categories */}
-						<div className="hidden lg:flex items-center gap-5 space-x-1 py-3 ">
+						<div className="hidden lg:flex items-center gap-3 space-x-1 py-2 ">
 							{/* All Categories Dropdown Menu */}
 							<DropDownBtn title="All Categories" menuData={mappedMenuData} />
-							<div>
-								{/* {categories.map((category: any) => (
-                  <button
-                    key={category?.id}
-                    onClick={() => router.push(`/product-filter?category=${category?.slug}`)}
-                    className="text-gray-700 hover:text-pink-600 hover:bg-pink-50 rounded-full px-4 py-2 whitespace-nowrap font-[18px] cursor-pointer"
-                  >
-                    {category?.item}
-                  </button>
-                ))} */}
+							<div className="flex items-center gap-2 overflow-hidden">
+								{categories.slice(0, 8).map((category: any) => (
+									<button
+										key={category?.slug}
+										onClick={() => router.push(`/product-filter?category=${category?.slug}`)}
+										className="cursor-pointer text-gray-700 hover:text-[#E5005F] hover:border-[#E5005F] border border-gray-200 rounded-full px-4 py-1.5 whitespace-nowrap text-sm font-medium transition-colors"
+									>
+										{category?.item}
+									</button>
+								))}
 							</div>
 						</div>
 
@@ -328,19 +328,18 @@ export default function Navbar() {
 												category.sub_items && category.sub_items.length === 0
 													? router.push(category.href)
 													: setExpandedCategory(
-															expandedCategory === category.id
-																? null
-																: category.id,
-														)
+														expandedCategory === category.id
+															? null
+															: category.id,
+													)
 											}
 											className="w-full flex text-xs justify-between items-center text-gray-800 hover:text-pink-600 hover:bg-pink-50 rounded-lg px-4 py-3 font-semibold transition-all duration-200"
 										>
 											<span className="text-sm">{category.name}</span>
 											{category.sub_items && category.sub_items.length > 0 && (
 												<svg
-													className={`w-5 h-5 ml-2 text-gray-400 transition-transform duration-300 ${
-														expandedCategory === category.id ? "rotate-180" : ""
-													}`}
+													className={`w-5 h-5 ml-2 text-gray-400 transition-transform duration-300 ${expandedCategory === category.id ? "rotate-180" : ""
+														}`}
 													fill="none"
 													stroke="currentColor"
 													viewBox="0 0 24 24"
