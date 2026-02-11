@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { getImageUrl } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
-import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast"; // adjust if needed
+import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 interface ProductCardProps {
 	product: any;
@@ -37,24 +37,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 		});
 	};
 
-	// Optional simple star renderer
-	const renderStars = (rating = 4) => {
-		return Array(5)
-			.fill(0)
-			.map((_, i) => (
-				<span
-					key={i}
-					className={i < rating ? "text-yellow-400" : "text-gray-300"}
-				>
-					★
-				</span>
-			));
-	};
-
 	return (
-		<div className="group cursor-pointer shadow-lg p-3 rounded-lg hover:shadow-xl transition">
+		<div className="group cursor-pointer bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-200 h-full flex flex-col overflow-hidden">
 			{/* Image */}
-			<div className="relative rounded-md overflow-hidden mb-4">
+			<div className="relative overflow-hidden aspect-square">
 				<Link href={`/product/${product?.ProductSlug}`}>
 					<Image
 						src={
@@ -69,35 +55,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 						onError={() => setImgError(true)}
 					/>
 				</Link>
-				<button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-gray-50">
-					<Heart className="w-4 h-4 text-gray-600 hover:text-pink-600" />
+				<button className="absolute top-2 right-2 w-7 h-7 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white hover:scale-110 transition-all">
+					<Heart className="w-3.5 h-3.5 text-gray-500 hover:text-[#E5005F]" />
 				</button>
 			</div>
 
 			{/* Info */}
-			<div className="space-y-1">
-				<div className="flex items-center justify-between">
-					<Link href={`/product/${product?.ProductSlug}`}>
-						<h3 className="text-gray-900 font-medium text-[10px] xs:text-sm lg:text-base">
-							{product.ProductName.length > 35
-								? product.ProductName.slice(0, 35) + "..."
-								: product.ProductName}
-						</h3>
-					</Link>
-					<div className="hidden xs:flex items-center text-xl">
-						{renderStars(product.rating)}
-					</div>
-				</div>
+			<div className="p-2.5 sm:p-3 flex flex-col gap-1.5 mt-auto">
+				<Link href={`/product/${product?.ProductSlug}`}>
+					<h3 className="text-gray-800 font-medium text-xs sm:text-sm leading-snug line-clamp-2">
+						{product.ProductName}
+					</h3>
+				</Link>
 
 				<div className="flex items-center justify-between">
-					<span className="text-[12px] xs:text-base md:text-lg font-bold text-gray-900">
+					<span className="text-sm sm:text-base font-bold text-gray-900">
 						৳{product.ProductRegularPrice}
 					</span>
 					<button
-						className="cursor-pointer p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-full flex items-center justify-center"
+						className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
 						onClick={handleAddToCart}
 					>
-						<ShoppingCart className="w-3 h-3 xs:w-4 xs:h-4" />
+						<ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
 					</button>
 				</div>
 			</div>
