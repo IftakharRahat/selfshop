@@ -34,7 +34,7 @@ export default function CategoryCarousel() {
 	return (
 		<div>
 			{/* MOBILE VIEW */}
-			<div className="lg:hidden mb-1">
+			<div className="lg:hidden mb-4">
 				<div className="flex items-center justify-between my-2">
 					<h4 className="font-semibold text-sm">Popular Categories</h4>
 					{categories.length > 8 && (
@@ -57,18 +57,20 @@ export default function CategoryCarousel() {
 								router.push(`/product-filter?category=${category?.slug}`)
 							}
 						>
-							<div className="w-12 h-12 sm:w-16 sm:h-16 mb-1 sm:mb-2 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center group-hover:border-[#E5005F]/20 transition-all overflow-hidden p-1.5 sm:p-2">
-								<Image
-									src={getImageUrl(category?.icon)}
-									alt={category?.name || "Category"}
-									width={40}
-									height={40}
-									className="w-full h-full object-contain"
-								/>
+							<div className="w-full aspect-square bg-white rounded-xl shadow-sm flex flex-col items-center justify-center gap-1 group-hover:shadow-md transition-all overflow-hidden p-2">
+								<div className="w-8 h-8 sm:w-10 sm:h-10 flex-shrink-0">
+									<Image
+										src={getImageUrl(category?.icon)}
+										alt={category?.name || "Category"}
+										width={40}
+										height={40}
+										className="w-full h-full object-contain"
+									/>
+								</div>
+								<span className="text-[9px] sm:text-[11px] text-gray-700 font-medium group-hover:text-[#E5005F] transition-colors line-clamp-2 leading-tight">
+									{category.name}
+								</span>
 							</div>
-							<span className="text-[10px] sm:text-xs text-gray-700 font-medium group-hover:text-[#E5005F] transition-colors line-clamp-2 leading-tight">
-								{category.name}
-							</span>
 						</div>
 					))}
 				</div>
