@@ -15,7 +15,24 @@ export function getImageUrl(path: string | undefined | null): string {
 	if (!p || p.length < 2 || p === "image") return "/placeholder.svg";
 	if (p.startsWith("http")) return p;
 	const base = process.env.NEXT_PUBLIC_IMAGE_BASE || "http://localhost:8000";
-	// Laravel's web root is public/, so strip leading "public/" so URL is base/images/...
-	const pathWithoutPublic = p.replace(/^\//, "").replace(/^public\/?/, "");
-	return `${base}/${pathWithoutPublic}`;
+	const clean = p.replace(/^\//, "");
+
+	// Paths starting with "public/" are in Laravel's web root directly (e.g. public/images/product/...)
+	if (clean.startsWith("public/")) {
+		return `${base}/${clean.replace(/^public\/?/, "")}`;
+	}
+
+	// Paths starting with "storage/" are already prefixed for the storage symlink
+	if (clean.startsWith("storage/")) {
+		return `${base}/${clean}`;
+	}
+
+	// Paths starting with "images/" are directly in the public web root
+	if (clean.startsWith("images/")) {
+		return `${base}/${clean}`;
+	}
+
+	// Anything else (e.g. "products/vendor/xyz.png" from Laravel's public disk)
+	// needs the "storage/" prefix because it's served via the storage:link symlink
+	return `${base}/storage/${clean}`;
 }

@@ -28,17 +28,32 @@ class UserController extends Controller
 
     public function userdata(Request $request)
     {
+        // Base query with vendor relation so we can distinguish vendor users
+        $users = User::with('vendor');
+
         if ($request['phone'] != '') {
-            $users = User::where('users.email', 'LIKE', '%' . $request['phone'] . '%');
-        } else {
-            if ($request['startDate'] != '' && $request['endDate'] != '') {
-                $users = User::whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
-            }
+            $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
         }
+
+        if ($request['startDate'] != '' && $request['endDate'] != '') {
+            $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+        }
+
         return Datatables::of($users)
 
             ->editColumn('user', function ($users) {
                 return '<a href="../../resellerinvoice/user/view-dashboard/' . $users->id . '" target="_blank">' . User::where('id', $users->id)->first()->name . '( <span style="color:#613EEA">' . User::where('id', $users->id)->first()->my_referral_code . ' </span>)</a>';
+            })
+            ->addColumn('type', function ($users) {
+                if ($users->vendor) {
+                    return '<span class="badge bg-primary">Vendor</span>';
+                }
+
+                if ($users->is_verified_wholesaler) {
+                    return '<span class="badge bg-success">Wholesaler</span>';
+                }
+
+                return '<span class="badge bg-secondary">Customer</span>';
             })
             ->addColumn('action', function ($users) {
                 return '<a href="../admin/users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>

@@ -7,6 +7,10 @@ use App\Http\Controllers\FrontendApiController;
 use App\Http\Controllers\VendorApiController;
 use App\Http\Controllers\VendorAccountController;
 use App\Http\Controllers\VendorAuthController;
+use App\Http\Controllers\VendorProductController;
+use App\Http\Controllers\VendorOrderController;
+use App\Http\Controllers\VendorCategoryDiscountController;
+use App\Http\Controllers\VendorReviewController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -161,6 +165,38 @@ Route::middleware('auth:sanctum')->group(function () {
         // KYC documents
         Route::get('/kyc-documents', [VendorAccountController::class, 'kycDocuments'])->name('api.vendor.kyc.index');
         Route::post('/kyc-documents', [VendorAccountController::class, 'storeKycDocument'])->name('api.vendor.kyc.store');
+
+        // Vendor products (CRUD)
+        Route::get('/products', [VendorProductController::class, 'index'])->name('api.vendor.products.index');
+        Route::post('/products', [VendorProductController::class, 'store'])->name('api.vendor.products.store');
+        Route::get('/products/bulk-template', [VendorProductController::class, 'bulkTemplate'])->name('api.vendor.products.bulk-template');
+        Route::post('/products/bulk-upload', [VendorProductController::class, 'bulkUpload'])->name('api.vendor.products.bulk-upload');
+        Route::get('/products/{id}', [VendorProductController::class, 'show'])->name('api.vendor.products.show');
+        Route::put('/products/{id}', [VendorProductController::class, 'update'])->name('api.vendor.products.update');
+        Route::post('/products/{id}', [VendorProductController::class, 'update'])->name('api.vendor.products.update.post'); // POST for file uploads (PHP does not populate $_FILES for PUT)
+        Route::put('/products/{id}/status', [VendorProductController::class, 'updateStatus'])->name('api.vendor.products.status');
+        Route::put('/products/{id}/featured', [VendorProductController::class, 'updateFeatured'])->name('api.vendor.products.featured');
+        Route::get('/products/{id}/variants', [VendorProductController::class, 'variants'])->name('api.vendor.products.variants');
+        Route::post('/products/{id}/variants', [VendorProductController::class, 'storeVariant'])->name('api.vendor.products.variants.store');
+        Route::put('/products/{id}/variants/{variantId}', [VendorProductController::class, 'updateVariant'])->name('api.vendor.products.variants.update');
+        Route::delete('/products/{id}/variants/{variantId}', [VendorProductController::class, 'destroyVariant'])->name('api.vendor.products.variants.destroy');
+        Route::get('/products/{id}/price-tiers', [VendorProductController::class, 'priceTiers'])->name('api.vendor.products.price-tiers');
+        Route::post('/products/{id}/price-tiers', [VendorProductController::class, 'storePriceTier'])->name('api.vendor.products.price-tiers.store');
+        Route::put('/products/{id}/price-tiers/{tierId}', [VendorProductController::class, 'updatePriceTier'])->name('api.vendor.products.price-tiers.update');
+        Route::delete('/products/{id}/price-tiers/{tierId}', [VendorProductController::class, 'destroyPriceTier'])->name('api.vendor.products.price-tiers.destroy');
+        Route::delete('/products/{id}', [VendorProductController::class, 'destroy'])->name('api.vendor.products.destroy');
+
+        // Orders (Phase 4 – Order Management)
+        Route::get('/orders', [VendorOrderController::class, 'index'])->name('api.vendor.orders.index');
+        Route::get('/orders/{id}', [VendorOrderController::class, 'show'])->name('api.vendor.orders.show');
+
+        // Category-wise discount
+        Route::get('/category-discounts', [VendorCategoryDiscountController::class, 'index'])->name('api.vendor.category-discounts.index');
+        Route::post('/category-discounts/{categoryId}', [VendorCategoryDiscountController::class, 'set'])->name('api.vendor.category-discounts.set');
+
+        // Product reviews (vendor view)
+        Route::get('/reviews', [VendorReviewController::class, 'index'])->name('api.vendor.reviews.index');
+        Route::get('/reviews/{productId}', [VendorReviewController::class, 'show'])->name('api.vendor.reviews.show');
 
         // Bulk order matrix (existing)
         Route::middleware('verified.wholesaler')->group(function () {

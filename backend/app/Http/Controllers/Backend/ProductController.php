@@ -370,14 +370,17 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $product = Product::where('id', $id)->first();
-        if (isset($request->shop_id)) {
-            $product->shop_id = $request->shop_id;
-        } else {
-            if (Auth::guard('admin')->user()->type == 'Shop') {
-                $product->shop_id = Auth::guard('admin')->user()->id;
+        // For vendor products, preserve vendor_id and do not overwrite shop_id
+        if (!$product->vendor_id) {
+            if (isset($request->shop_id)) {
+                $product->shop_id = $request->shop_id;
             } else {
-                $shop = Admin::where('id', Auth::guard('admin')->user()->add_by)->first();
-                $product->shop_id = $shop->id;
+                if (Auth::guard('admin')->user()->type == 'Shop') {
+                    $product->shop_id = Auth::guard('admin')->user()->id;
+                } else {
+                    $shop = Admin::where('id', Auth::guard('admin')->user()->add_by)->first();
+                    $product->shop_id = $shop->id;
+                }
             }
         }
         $product->category_id = $request->category_id;
@@ -447,7 +450,12 @@ class ProductController extends Controller
             $product->meta_image = $meta_imageImgUrl;
         }
 
-        $product->ProductSku = $this->sku();
+        // Preserve SKU for vendor products; regenerate for others
+        if ($product->vendor_id) {
+            $product->ProductSku = $request->ProductSku ?? $product->ProductSku;
+        } else {
+            $product->ProductSku = $this->sku();
+        }
         $product->ProductWholesalePrice = $request->ProductWholesalePrice;
         $product->ProductResellerPrice = $request->ProductResellerPrice;
         $product->ProductRegularPrice = $request->ProductRegularPrice;
@@ -466,6 +474,10 @@ class ProductController extends Controller
             $product->show_stock_text = 'On';
         } else {
             $product->show_stock_text = 'Off';
+        }
+        // Admin can set vendor approval status when editing a vendor product
+        if ($product->vendor_id && $request->has('vendor_approval_status')) {
+            $product->vendor_approval_status = $request->vendor_approval_status;
         }
         if (isset($request->show_new_product)) {
             $product->show_new_product = 'On';

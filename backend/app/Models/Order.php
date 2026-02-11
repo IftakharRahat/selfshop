@@ -33,6 +33,12 @@ protected $casts = [
         return $this->hasOne('App\Models\Comment', 'order_id', 'id')->latest();
     }
 
+    public function customer()
+    {
+        return $this->hasOne(Customer::class, 'order_id');
+    }
+
+    /** @deprecated use customer() */
     public function customers()
     {
         return $this->hasOne(Customer::class, 'order_id');

@@ -463,6 +463,21 @@
                                     </div>
                                 </div>
                             </div>
+                            @if($product->vendor_id)
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="mb-2 form-group">
+                                        <label for="vendor_approval_status">Vendor approval status</label>
+                                        <select name="vendor_approval_status" id="vendor_approval_status" class="form-control">
+                                            <option value="pending" {{ ($product->vendor_approval_status ?? '') == 'pending' ? 'selected' : '' }}>Pending</option>
+                                            <option value="approved" {{ ($product->vendor_approval_status ?? '') == 'approved' ? 'selected' : '' }}>Approved</option>
+                                            <option value="rejected" {{ ($product->vendor_approval_status ?? '') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                        </select>
+                                        <small class="text-muted">Vendor products need admin approval to appear on the storefront.</small>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                             <div class="mb-2 form-group">
                                 <label for="ProductRegularPrice">Quantity<span
                                         class="text-danger">*</span></label>

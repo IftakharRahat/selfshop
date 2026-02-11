@@ -30,6 +30,17 @@ class VendorController extends Controller
     }
 
     /**
+     * Show full vendor details for admin.
+     * GET /admin/vendors/{vendor}
+     */
+    public function show(Vendor $vendor)
+    {
+        $vendor->load(['user', 'kycDocuments', 'warehouses', 'payoutAccounts']);
+
+        return view('backend.content.vendors.show', compact('vendor'));
+    }
+
+    /**
      * Approve a vendor and activate its user account.
      * POST /admin/vendors/{vendor}/approve
      */

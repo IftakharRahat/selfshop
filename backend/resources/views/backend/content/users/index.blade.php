@@ -63,6 +63,7 @@ td {
                             <tr>
                                 <th>SL</th>
                                 <th>User</th>
+                                <th>Type</th>
                                 <th>Phone</th>
                                 <th>Analytics</th>
                                 <th>Status</th>
@@ -99,11 +100,17 @@ $(document).ready(function() {
                 phone: function() { return $('#phone').val() }
             }
         },
-        columns: [{
+        columns: [
+            {
                 data: 'id'
             },
             {
                 data: 'user'
+            },
+            {
+                data: 'type',
+                orderable: false,
+                searchable: false,
             },
             {
                 data: 'email'

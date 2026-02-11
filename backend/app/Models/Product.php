@@ -37,6 +37,10 @@ class Product extends Model
         return $this->hasMany(ProductPriceTier::class)->orderBy('min_qty');
     }
 
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
+    }
 
     public function getSlugOptions(): SlugOptions
     {
@@ -53,5 +57,17 @@ class Product extends Model
     public function getRouteKeyNameCategory()
     {
         return 'ProductSlug';
+    }
+
+    /**
+     * Scope: products visible on storefront (Active + vendor products only if approved).
+     */
+    public function scopeVisibleOnStorefront($query)
+    {
+        return $query->where('status', 'Active')
+            ->where(function ($q) {
+                $q->whereNull('vendor_id')
+                    ->orWhere('vendor_approval_status', 'approved');
+            });
     }
 }

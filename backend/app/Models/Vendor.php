@@ -58,5 +58,10 @@ class Vendor extends Model
     {
         return $this->hasMany(VendorPayoutAccount::class);
     }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 }
 

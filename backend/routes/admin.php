@@ -47,6 +47,9 @@ use App\Http\Controllers\Backend\CourseController;
 use App\Http\Controllers\VarientController;
 use App\Http\Controllers\VencommentController;
 use App\Http\Controllers\Backend\VendorController;
+use App\Http\Controllers\Backend\AdminReviewController;
+use App\Http\Controllers\Backend\AdminVendorCategoryDiscountController;
+use App\Http\Controllers\Backend\AdminVendorProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -239,10 +242,23 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::put('course/status', [CourseController::class, 'updatestatus']);
     Route::get('course/data', [CourseController::class, 'coursedata'])->name('course.data');
 
-    // Vendors (JSON review endpoints – can be wired into admin UI later)
+    // Vendors (supplier portal)
     Route::get('vendors', [VendorController::class, 'index'])->name('admin.vendors.index');
+    Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show');
     Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
+
+    // Product reviews (admin view & moderate)
+    Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
+    Route::post('reviews/{id}/status', [AdminReviewController::class, 'updateStatus'])->name('admin.reviews.status');
+
+    // Vendor category discounts (admin view)
+    Route::get('vendor-category-discounts', [AdminVendorCategoryDiscountController::class, 'index'])->name('admin.vendor-category-discounts.index');
+
+    // Vendor products (verify, approve/reject, edit)
+    Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index');
+    Route::post('vendor-products/{id}/approve', [AdminVendorProductController::class, 'approve'])->name('admin.vendor-products.approve');
+    Route::post('vendor-products/{id}/reject', [AdminVendorProductController::class, 'reject'])->name('admin.vendor-products.reject');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {
