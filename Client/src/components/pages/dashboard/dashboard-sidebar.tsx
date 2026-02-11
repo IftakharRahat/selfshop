@@ -16,6 +16,7 @@ import {
 	Ticket,
 	TrainTrack,
 	Users,
+	Wallet,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,6 +26,16 @@ import Swal from "sweetalert2";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
+
+function getInitials(name: string | undefined): string {
+	if (!name) return "U";
+	return name
+		.split(" ")
+		.map((n) => n[0])
+		.join("")
+		.toUpperCase()
+		.slice(0, 2);
+}
 
 const menuItems = [
 	{ icon: Home, label: "Home", href: "/" },
@@ -101,21 +112,38 @@ export default function DashboardSidebar({
 	};
 
 	return (
-		<aside className="w-full bg-whit border-r border-gray-200  sticky top-0 h-full max-h-[calc(100vh-75px)]  overflow-hidden">
+		<aside className="w-full bg-white  sticky top-0 h-full max-h-[calc(100vh-75px)] overflow-hidden">
 			{/* User Info */}
-			<div className="p-6 bg-gray-100 border-b border-gray-200">
-				<h3 className="font-semibold text-gray-900 mb-1">
-					{profile?.name || "Unknown"}
-				</h3>
-				<p className="text-sm text-gray-600 mb-1">
-					{profile?.email || "Unknown"}
-				</p>
-				<p className="text-sm text-gray-600 mb-3">
-					ID: {profile?.id || "Unknown"}
-				</p>
-				<p className="text-sm font-medium text-green-600">
-					Your Income {profile?.income || 0}TK
-				</p>
+			<div className="p-5 bg-gradient-to-br from-[#E5005F] to-[#b80050]">
+				<div className="flex items-center gap-3 mb-3">
+					{/* Avatar */}
+					<div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center flex-shrink-0">
+						<span className="text-white font-bold text-sm">
+							{getInitials(profile?.name)}
+						</span>
+					</div>
+					{/* Name & Email */}
+					<div className="min-w-0">
+						<h3 className="font-semibold text-white text-sm truncate">
+							{profile?.name || "Unknown"}
+						</h3>
+						<p className="text-[12px] text-white/70 truncate">
+							{profile?.email || "Unknown"}
+						</p>
+					</div>
+				</div>
+				{/* ID & Income row */}
+				<div className="flex items-center justify-between gap-2">
+					<span className="text-[11px] text-white/60 bg-white/10 px-2.5 py-0.5 rounded-full truncate">
+						ID: {profile?.id || "—"}
+					</span>
+					<div className="flex items-center gap-1 bg-white/15 px-2.5 py-1 rounded-full">
+						<Wallet className="w-3.5 h-3.5 text-white/80" />
+						<span className="text-[12px] font-semibold text-white">
+							{(profile?.income || 0).toLocaleString()}TK
+						</span>
+					</div>
+				</div>
 			</div>
 
 			{/* Navigation Menu */}
@@ -129,11 +157,10 @@ export default function DashboardSidebar({
 								<Link href={item.href}>
 									<button
 										onClick={onItemClick}
-										className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors cursor-pointer ${
-											isActive
-												? "bg-[#E5005F] !text-white"
-												: "text-gray-700 hover:bg-gray-100"
-										}`}
+										className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors cursor-pointer ${isActive
+											? "bg-[#E5005F] !text-white"
+											: "text-gray-700 hover:bg-gray-100"
+											}`}
 									>
 										<item.icon className="w-5 h-5" />
 										<span className="font-medium">{item.label}</span>

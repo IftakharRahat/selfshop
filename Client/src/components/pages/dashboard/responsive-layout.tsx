@@ -1,7 +1,7 @@
 "use client";
 
 import { Drawer } from "antd";
-import { Menu, User, X } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type React from "react";
@@ -40,14 +40,6 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 				className="lg:hidden"
 				zIndex={1000}
 			>
-				<div className="flex justify-end p-4 border-b bg-white">
-					<button
-						onClick={() => setDrawerOpen(false)}
-						className="h-8 w-8 hover:bg-gray-100"
-					>
-						<X className="h-4 w-4" />
-					</button>
-				</div>
 				<DashboardSidebar onItemClick={() => setDrawerOpen(false)} />
 			</Drawer>
 
