@@ -86,7 +86,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 				</div>
 
 				{/* Main Content */}
-				<div className=" h-full max-h-[calc(100vh-75px)] overflow-hidden overflow-y-auto">
+				<div className="h-full max-h-[calc(100vh-75px)] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
 					{children}
 				</div>
 			</div>
