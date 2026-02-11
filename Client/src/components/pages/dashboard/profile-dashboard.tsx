@@ -3,7 +3,7 @@
 
 import { Button, DatePicker, Input, Modal, message, Upload } from "antd";
 import dayjs from "dayjs";
-import { Copy, Edit, User } from "lucide-react";
+import { Copy, Edit, Package, ShoppingBag, TrendingUp, User, Wallet } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -148,137 +148,130 @@ export default function ProfileDashboard() {
 	};
 
 	return (
-		<div className="px-3 sm:px-4 lg:px-6 py-4 lg:py-6 mb-10">
+		<div className="px-3 sm:px-4 lg:px-6 py-4 lg:py-6 pb-20">
 			<div className="p-0 md:p-6 space-y-6">
 				{/* PROFILE + BANK GRID */}
 				<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 					{/* PROFILE CARD */}
-					<div className="bg-white p-4 sm:p-6 rounded-xl shadow border border-gray-100">
-						<div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
-							{/* AVATAR */}
-							<div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-gray-300 flex items-center justify-center">
+					<div className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+						{/* Gradient accent bar */}
+						<div className="h-20 bg-gradient-to-r from-[#E5005F] to-[#ff3d8a]" />
+						<div className="px-4 sm:px-6 pb-5 -mt-10">
+							{/* Avatar */}
+							<div className="w-20 h-20 rounded-full overflow-hidden bg-white border-4 border-white shadow-md flex items-center justify-center mb-4">
 								{profile?.profile ? (
 									<Image
 										src={getImageUrl(profile.profile)}
 										alt="Profile"
 										width={96}
 										height={96}
-										className="w-full h-full object-fill"
+										className="w-full h-full object-cover"
 									/>
 								) : (
-									<User className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" />
+									<div className="w-full h-full bg-gray-100 flex items-center justify-center">
+										<User className="w-8 h-8 text-gray-400" />
+									</div>
 								)}
 							</div>
 
-							{/* PROFILE INFO */}
-							<div className="flex-1 space-y-3">
-								<div>
-									<h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-										{profile?.name || "N/A"}
-									</h2>
-									<p className="text-gray-600">{profile?.email || "N/A"}</p>
-									<p className="text-gray-600">
-										Shop: {profile?.shop_name || "Not set"}
-									</p>
-									<p className="text-gray-600">
-										ID: {profile?.my_referral_code || "N/A"}
-									</p>
+							{/* Name & Email */}
+							<h2 className="text-lg sm:text-xl font-bold text-gray-900">
+								{profile?.name || "N/A"}
+							</h2>
+							<p className="text-sm text-gray-500 mt-0.5">
+								{profile?.email || "N/A"}
+							</p>
+
+							{/* Info rows */}
+							<div className="mt-4 space-y-2 text-sm">
+								<div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+									<span className="text-gray-500">Shop</span>
+									<span className="font-medium text-gray-800">{profile?.shop_name || "Not set"}</span>
 								</div>
+								<div className="flex items-center justify-between py-1.5 border-b border-gray-50">
+									<span className="text-gray-500">Referral Code</span>
+									<span className="font-medium text-gray-800">{profile?.my_referral_code || "N/A"}</span>
+								</div>
+							</div>
 
-								{/* BUTTON WRAP */}
-								<div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-									<button
-										onClick={openModal}
-										className="flex items-center gap-2 px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-100"
-									>
-										<Edit className="w-4 h-4" />
-										Edit profile
-									</button>
+							{/* Buttons */}
+							<div className="flex flex-wrap gap-2 mt-5">
+								<button
+									onClick={openModal}
+									className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+								>
+									<Edit className="w-4 h-4" />
+									Edit Profile
+								</button>
 
-									<button
-										onClick={handleCopyReferralCode}
-										className={`flex items-center gap-2 px-3 py-1 rounded text-white ${
-											copied ? "bg-green-500" : "bg-pink-600 hover:bg-pink-700"
+								<button
+									onClick={handleCopyReferralCode}
+									className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white transition-colors cursor-pointer ${copied ? "bg-green-500" : "bg-[#E5005F] hover:bg-[#c0004d]"
 										}`}
-									>
-										<Copy className="w-4 h-4" />
-										{copied ? "Copied!" : "Copy code"}
-									</button>
-								</div>
+								>
+									<Copy className="w-4 h-4" />
+									{copied ? "Copied!" : "Copy Code"}
+								</button>
 							</div>
 						</div>
 					</div>
 
 					{/* BANK INFO CARD */}
-					<div className="bg-white p-4 sm:p-6 rounded-xl shadow border border-gray-100">
-						<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-3">
+					<div className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+						<div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100">
 							<h3 className="text-lg font-semibold text-gray-900">
-								Payout info:
+								Payout Info
 							</h3>
-
 							<button
 								onClick={openBankModal}
-								className="flex items-center gap-2 px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-100"
+								className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
 							>
-								<Edit className="w-4 h-4" />
+								<Edit className="w-3.5 h-3.5" />
 								Edit
 							</button>
 						</div>
 
-						<div className="space-y-2 text-sm sm:text-base leading-relaxed">
-							<p>
-								<span className="font-medium">Bank name:</span>{" "}
-								{bankinfo?.bank_name || "Not set"}
-							</p>
-							<p>
-								<span className="font-medium">Account title:</span>{" "}
-								{bankinfo?.account_name || "Not set"}
-							</p>
-							<p>
-								<span className="font-medium">Account number:</span>{" "}
-								{bankinfo?.account_number || "Not set"}
-							</p>
-							<p>
-								<span className="font-medium">Routing number:</span>{" "}
-								{bankinfo?.routing_number || "Not set"}
-							</p>
+						<div className="px-4 sm:px-6 py-4">
+							<div className="space-y-0 text-sm">
+								<div className="flex items-center justify-between py-3 border-b border-gray-50">
+									<span className="text-gray-500">Bank Name</span>
+									<span className="font-medium text-gray-800">{bankinfo?.bank_name || "Not set"}</span>
+								</div>
+								<div className="flex items-center justify-between py-3 border-b border-gray-50">
+									<span className="text-gray-500">Account Title</span>
+									<span className="font-medium text-gray-800">{bankinfo?.account_name || "Not set"}</span>
+								</div>
+								<div className="flex items-center justify-between py-3 border-b border-gray-50">
+									<span className="text-gray-500">Account Number</span>
+									<span className="font-medium text-gray-800">{bankinfo?.account_number || "Not set"}</span>
+								</div>
+								<div className="flex items-center justify-between py-3">
+									<span className="text-gray-500">Routing Number</span>
+									<span className="font-medium text-gray-800">{bankinfo?.routing_number || "Not set"}</span>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 
-				{/* STATS GRID */}
-				<div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mt-6">
-					<div className="bg-white p-3 sm:p-5 rounded-xl shadow border border-gray-100 text-center">
-						<div className="text-2xl sm:text-4xl font-bold text-gray-900">
-							{shopproducts}
+				{/* STATS */}
+				<div className="bg-white rounded-xl shadow border border-gray-100 overflow-hidden">
+					<div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
+						<div className="p-4 sm:p-6">
+							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Products</p>
+							<p className="text-2xl sm:text-3xl font-bold text-gray-900">{shopproducts}</p>
 						</div>
-						<div className="text-gray-600 text-xs sm:text-sm">
-							Total products
+						<div className="p-4 sm:p-6">
+							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Orders</p>
+							<p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalorders}</p>
 						</div>
-					</div>
-
-					<div className="bg-white p-3 sm:p-5 rounded-xl shadow border border-gray-100 text-center">
-						<div className="text-2xl sm:text-4xl font-bold text-gray-900">
-							{totalorders}
+						<div className="p-4 sm:p-6">
+							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sold</p>
+							<p className="text-2xl sm:text-3xl font-bold text-gray-900">৳{soldamount.toLocaleString()}</p>
 						</div>
-						<div className="text-gray-600 text-xs sm:text-sm">Total orders</div>
-					</div>
-
-					<div className="bg-white p-3 sm:p-5 rounded-xl shadow border border-gray-100 text-center">
-						<div className="flex justify-center text-2xl sm:text-4xl font-bold text-gray-900">
-							<span className="text-base sm:text-xl mr-1">৳</span>
-							{soldamount}
-						</div>
-						<div className="text-gray-600 text-xs sm:text-sm">Sold amount</div>
-					</div>
-
-					<div className="bg-white p-3 sm:p-5 rounded-xl shadow border border-gray-100 text-center">
-						<div className="flex justify-center text-2xl sm:text-4xl font-bold text-gray-900">
-							<span className="text-base sm:text-xl mr-1">৳</span>
-							{walletbalance}
-						</div>
-						<div className="text-gray-600 text-xs sm:text-sm">
-							Wallet balance
+						<div className="p-4 sm:p-6">
+							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Wallet</p>
+							<p className="text-2xl sm:text-3xl font-bold text-gray-900">৳{walletbalance.toLocaleString()}</p>
 						</div>
 					</div>
 				</div>

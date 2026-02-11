@@ -23,9 +23,9 @@ const orderApi = baseApi.injectEndpoints({
 			providesTags: ["orderApi"],
 		}),
 		pendingOrderData: builder.query({
-			query: () => {
+			query: (page: number = 1) => {
 				return {
-					url: `/order-data/Pending`,
+					url: `/order-data/Pending?page=${page}`,
 					method: "GET",
 				};
 			},

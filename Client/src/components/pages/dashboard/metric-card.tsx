@@ -21,50 +21,40 @@ export default function MetricCard({
 	icon,
 }: MetricCardProps) {
 	return (
-		<div className="relative overflow-hidden bg-white rounded-lg shadow-sm  hover:shadow-md transition-shadow duration-200">
-			<div className="p-4 sm:p-6">
-				<div className="flex items-start justify-between mb-3 sm:mb-4">
-					<h3 className="text-xs sm:text-sm font-medium text-gray-600">
-						{title}
-					</h3>
-					<div
-						className={` rounded-full flex items-center justify-center bg-[#E5005F14] p-2`}
-					>
-						<span className="text-white font-bold text-xs sm:text-sm   bg-white w-6 h-6 sm:w-8 sm:h-8  rounded-full">
-							{typeof icon === "string" ? (
-								icon
-							) : typeof icon === "object" && icon !== null && "src" in icon ? (
-								// StaticImageData
-								<Image
-									src={icon.src}
-									alt={title}
-									width={32}
-									height={32}
-									className="w-full h-full object-cover"
-								/>
-							) : React.isValidElement(icon) ? (
-								icon
-							) : null}
-							৳
-						</span>
+		<div className="relative overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 group">
+			<div className="p-5">
+				<div className="flex items-center gap-3 mb-3">
+					<div className="w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
+						{typeof icon === "string" ? (
+							<span className="text-sm">{icon}</span>
+						) : typeof icon === "object" && icon !== null && "src" in icon ? (
+							<Image
+								src={icon.src}
+								alt={title}
+								width={22}
+								height={22}
+								className="w-[22px] h-[22px] object-contain"
+							/>
+						) : React.isValidElement(icon) ? (
+							icon
+						) : null}
 					</div>
+					<h3 className="text-sm font-medium text-gray-500">{title}</h3>
 				</div>
 
-				<div className="mb-2">
-					<p className="text-xl sm:text-2xl font-bold text-gray-900">{value}</p>
-				</div>
+				<p className="text-2xl font-bold text-gray-900">{value}</p>
 
 				{change && (
-					<div className="flex items-center gap-1">
+					<div className="flex items-center gap-1 mt-2">
 						{changeType === "positive" ? (
-							<div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-full">
+							<div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full">
 								<TrendingUp className="w-3 h-3 text-green-600" />
 								<span className="text-xs font-medium text-green-600">
 									{change}
 								</span>
 							</div>
 						) : (
-							<div className="flex items-center gap-1 px-2 py-1 bg-red-100 rounded-full">
+							<div className="flex items-center gap-1 px-2 py-0.5 bg-red-50 rounded-full">
 								<TrendingDown className="w-3 h-3 text-red-600" />
 								<span className="text-xs font-medium text-red-600">
 									{change}
@@ -74,7 +64,7 @@ export default function MetricCard({
 					</div>
 				)}
 
-				{subtitle && <p className="text-xs text-gray-500 mt-2">{subtitle}</p>}
+				{subtitle && <p className="text-xs text-gray-400 mt-2">{subtitle}</p>}
 			</div>
 		</div>
 	);

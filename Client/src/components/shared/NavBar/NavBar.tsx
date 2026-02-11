@@ -174,6 +174,7 @@ export default function Navbar() {
 									placeholder="Search product or Store"
 									value={searchValue}
 									onChange={(e) => setSearchValue(e.target.value)}
+									onKeyDown={(e) => e.key === "Enter" && searchValue.trim() && router.push(`/search?keywords=${searchValue}`)}
 									className="w-full pl-4 pr-12 py-2 border bg-white border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#E7005E] "
 								/>
 								<button
@@ -274,6 +275,7 @@ export default function Navbar() {
 								type="text"
 								value={searchValue}
 								onChange={(e) => setSearchValue(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && searchValue.trim() && router.push(`/search?keywords=${searchValue}`)}
 								placeholder="Search product or Store"
 								className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#E7005E] focus:border-transparent"
 							/>
