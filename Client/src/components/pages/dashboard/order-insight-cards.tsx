@@ -25,29 +25,29 @@ export default function OrderInsightCards() {
 	];
 
 	return (
-		<div className="p-4">
+		<div>
 			<h2 className="text-lg font-semibold text-gray-900 mb-4">
-				Order insight
+				Order Insight
 			</h2>
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
+			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 				{insights.map((insight, index) => (
 					<div
 						key={index}
-						className={`bg-[#F3F3F3] hover:shadow-md transition-shadow rounded-md p-4`}
+						className="bg-gray-50/80 border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all rounded-xl p-4"
 					>
-						<div className="flex items-start space-x-3">
-							<div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+						<div className="flex items-center gap-3">
+							<div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
 								<img
 									src={insight.icon.src}
 									alt={insight.title}
-									className="w-8 h-8"
+									className="w-6 h-6"
 								/>
 							</div>
 							<div>
-								<p className="text-sm font-medium text-gray-600">
+								<p className="text-sm text-gray-500">
 									{insight.title}
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
+								<p className="text-xl font-bold text-gray-900">
 									{insight.value}
 								</p>
 							</div>
