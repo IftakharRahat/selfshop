@@ -46,6 +46,7 @@ use App\Http\Controllers\Backend\CoursecategoryController;
 use App\Http\Controllers\Backend\CourseController;
 use App\Http\Controllers\VarientController;
 use App\Http\Controllers\VencommentController;
+use App\Http\Controllers\Backend\VendorController;
 
 /*
 |--------------------------------------------------------------------------
@@ -237,6 +238,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::post('course/{id}', [CourseController::class, 'update']);
     Route::put('course/status', [CourseController::class, 'updatestatus']);
     Route::get('course/data', [CourseController::class, 'coursedata'])->name('course.data');
+
+    // Vendors (JSON review endpoints – can be wired into admin UI later)
+    Route::get('vendors', [VendorController::class, 'index'])->name('admin.vendors.index');
+    Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
+    Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {

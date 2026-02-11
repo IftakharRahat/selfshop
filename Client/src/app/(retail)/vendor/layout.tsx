@@ -4,8 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
- * Vendor (Wholesale) layout for verified wholesalers.
- * Served when visiting vendor.selfshop.com (middleware rewrites to /vendor).
+ * Shared layout shell for the vendor area (header + container).
+ * Auth is handled per-page so that /vendor/login stays accessible.
  */
 export default function VendorLayout({ children }: { children: ReactNode }) {
 	return (
@@ -15,9 +15,14 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 					<Link href="/vendor" className="text-xl font-bold text-[#E5005F]">
 						SelfShop Vendor
 					</Link>
-					<span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-						Wholesale
-					</span>
+					<nav className="flex items-center gap-4 text-sm text-gray-600">
+						<Link href="/vendor/profile" className="hover:text-gray-900">
+							Profile &amp; KYC
+						</Link>
+						<Link href="/vendor" className="hover:text-gray-900">
+							Wholesale
+						</Link>
+					</nav>
 				</div>
 			</header>
 			<main className="container mx-auto px-4 py-6 pb-24">{children}</main>

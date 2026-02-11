@@ -17,6 +17,7 @@ class VerifyCsrfToken extends Middleware
         '/success',
         '/cancel',
         '/fail',
-        '/ipn'
+        '/ipn',
+        'admin/login', // avoid 419 when session cookie not sent (e.g. 127.0.0.1 vs localhost)
     ];
 }

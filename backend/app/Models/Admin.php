@@ -74,5 +74,31 @@ class Admin extends Authenticatable
         return $this->hasMany(Complain::class, 'admin_id');
     }
 
+    /**
+     * Whether this admin should see the full admin menu (categories, banners, users, vendors, settings, etc.).
+     * Checks both capitalised (DB originals) and lowercase role names for safety.
+     */
+    public function isFullAdmin(): bool
+    {
+        if (!$this->exists) {
+            return false;
+        }
+        // Match both DB originals (Superadmin, Manager) and lowercase variants (superadmin, admin, manager)
+        $fullRoles = ['Superadmin', 'superadmin', 'admin', 'Admin', 'Manager', 'manager'];
+        foreach ($fullRoles as $role) {
+            if ($this->hasRole($role)) {
+                return true;
+            }
+        }
+        // Legacy: no role assigned => treat as full admin (e.g. seeded super admin)
+        return $this->roles()->count() === 0;
+    }
 
+    /**
+     * Whether this admin is a shop (store) admin with limited menu (Accounts, etc.).
+     */
+    public function isShopAdmin(): bool
+    {
+        return $this->exists && $this->hasRole('Shop');
+    }
 }

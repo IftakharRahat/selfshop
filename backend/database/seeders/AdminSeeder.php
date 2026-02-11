@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Admin;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class AdminSeeder extends Seeder
 {
@@ -24,6 +25,9 @@ class AdminSeeder extends Seeder
             $user->status= 'Active';
             $user->password= Hash::make('password');
             $user->save();
+            if (Role::where('name', 'admin')->where('guard_name', 'admin')->exists()) {
+                $user->assignRole('admin');
+            }
         }
     }
 }

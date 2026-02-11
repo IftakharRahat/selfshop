@@ -1,27 +1,24 @@
 <div class="pb-3 sidebar" style="background-color: #f3f0f0 !important;">
     <nav class="pt-0 navbar bg-info navbar-dark" style="background-color: #f3f0f0 !important;">
         @php
-            $admin=App\Models\Admin::where('id',Auth::guard('admin')->user()->id)->where('add_by',1)->first();
-            $adm=App\Models\Admin::where('id',Auth::guard('admin')->user()->id)->first();
-            if ($adm->hasrole('Shop')) {
+            $adm = App\Models\Admin::where('id', Auth::guard('admin')->user()->id)->first();
+            $admin = $adm && $adm->add_by ? App\Models\Admin::where('id', Auth::guard('admin')->user()->id)->where('add_by', 1)->first() : $adm;
+            $admin = $admin ?? $adm;
+            $isFullAdmin = $adm && $adm->isFullAdmin();
+            if ($adm && $adm->isShopAdmin()) {
                 $orders =  App\Models\Order::where('store_id', Auth::guard('admin')->user()->id);
+            } elseif ($adm->hasRole('Manager') || $adm->hasRole('manager')) {
+                $orders =  App\Models\Order::where('store_id', $adm->add_by);
+            } elseif ($adm->hasRole('Superadmin') || $adm->hasRole('superadmin')) {
+                $orders =  App\Models\Order::where('status','!=','');
             } else {
-                if ($adm->hasrole('Manager')) {
-                    $orders =  App\Models\Order::where('store_id', $adm->add_by);
-                } else {
-                    if ($adm->hasrole('Superadmin')) {
-                        $orders =  App\Models\Order::where('status','!=','');
-
-                    } else {
-                        $orders =  App\Models\Order::where('admin_id', Auth::guard('admin')->user()->id);
-                    }
-                }
+                $orders =  App\Models\Order::where('admin_id', Auth::guard('admin')->user()->id);
             }
         @endphp
 
         <div class="navbar-nav w-100">
             <a href="{{ url('admin/dashboard') }}" class="nav-item nav-link">Dashboard</a>
-            @if($admin->hasRole('Superadmin') || $admin->hasRole('Manager') || $admin->hasRole('Executive'))
+            @if($isFullAdmin)
 
             <small style="text-align: center;text-transform: uppercase;font-size: 12px;background: aliceblue;font-weight: bold; color: red;">-Information-</small>
             <div class="nav-item dropdown">
@@ -49,7 +46,7 @@
             </div>
             @endif
             <a href="{{ route('admin.products.index') }}" class="nav-item nav-link">Products</a>
-            @if($admin->hasRole('Superadmin') || $admin->hasRole('Manager') || $admin->hasRole('Executive'))
+            @if($isFullAdmin)
             <a href="{{ url('admin/shop/products') }}" class="nav-item nav-link">Shops Products</a>
             @endif
 
@@ -69,7 +66,7 @@
 
 
 
-                @if (Auth::guard('admin')->user()->id == 1)
+                @if($adm->isFullAdmin())
                     <a href="{{ route('admin.basicinfos.index') }}" class="nav-item nav-link">Settings</a>
                     <div class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Shops</a>
@@ -79,18 +76,16 @@
                             <a href="{{ url('admin/executive') }}" class="dropdown-item">H.R / Executive</a>
                         </div>
                     </div>
-                @else
-                    @if($admin->hasRole('Shop'))
-                        <div class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Accounts</a>
-                            <div class="bg-transparent border-0 dropdown-menu">
-                                <a href="{{ url('admin/accounts') }}" class="dropdown-item">Payments</a>
-                                <a href="{{ url('admin/withdraws') }}" class="dropdown-item">Withdraws</a>
-                            </div>
+                @elseif($adm->isShopAdmin())
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Accounts</a>
+                        <div class="bg-transparent border-0 dropdown-menu">
+                            <a href="{{ url('admin/accounts') }}" class="dropdown-item">Payments</a>
+                            <a href="{{ url('admin/withdraws') }}" class="dropdown-item">Withdraws</a>
                         </div>
-                    @endif
+                    </div>
                 @endif
-                @if($admin->hasRole('Superadmin') || $admin->hasRole('Manager'))
+                @if($isFullAdmin)
                 <a href="{{ route('admin.users.index') }}" class="nav-item nav-link">Users</a>
                 <a href="{{ url('admin/view-active/user') }}" class="nav-item nav-link">Active User</a>
                 <div class="nav-item dropdown">
@@ -106,7 +101,7 @@
                 </div>
                 @endif
 
-            @if($admin->hasRole('Superadmin') || $admin->hasRole('Manager'))
+            @if($isFullAdmin)
 
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Others</a>
@@ -125,7 +120,7 @@
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Reports</a>
                 <div class="bg-transparent border-0 dropdown-menu">
-                    @if($admin->hasRole('Shop'))
+                    @if($adm->isShopAdmin())
                         <a href="{{ route('courieruserreport') }}" class="dropdown-item">Sales Report</a>
                     @else
                     <a href="{{ route('courieruserreport') }}" class="dropdown-item">Sales Report</a>
@@ -136,7 +131,7 @@
                     @endif
                 </div>
             </div>
-            @if($admin->hasRole('Superadmin') || $admin->hasRole('Manager') || $admin->hasRole('Executive'))
+            @if($isFullAdmin)
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Tickets</a>
                 <div class="bg-transparent border-0 dropdown-menu">
@@ -144,7 +139,7 @@
                 </div>
             </div>
             @endif
-            @if($admin->hasRole('Superadmin') || $admin->hasRole('Manager'))
+            @if($isFullAdmin)
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Frauds</a>
                 <div class="bg-transparent border-0 dropdown-menu">
@@ -182,6 +177,9 @@
                     <a href="{{ route('courses.index') }}" class="dropdown-item">Courses</a>
                 </div>
             </div>
+            @if($isFullAdmin)
+            <a href="{{ url('admin/vendors') }}" class="nav-item nav-link">Vendor Requests</a>
+            @endif
             <br>
             @endif
 

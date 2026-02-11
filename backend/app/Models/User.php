@@ -73,6 +73,11 @@ class User extends Authenticatable
         }
         return $hasPermission;
     }
+    public function vendor()
+    {
+        return $this->hasOne(Vendor::class);
+    }
+
     public function replays()
     {
         return $this->hasMany(Replay::class, 'from_user_id');

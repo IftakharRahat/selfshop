@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\FrontendApiController;
 use App\Http\Controllers\VendorApiController;
+use App\Http\Controllers\VendorAccountController;
+use App\Http\Controllers\VendorAuthController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -39,6 +41,8 @@ Route::middleware('guest')->group(function () {
 
     Route::post('/register', [FrontendApiController::class, 'userRegister'])->name('api.user.register');
     Route::post('/login', [FrontendApiController::class, 'userLogin'])->name('api.user.login');
+    // Vendor registration (separate vendor portal)
+    Route::post('/vendor/register', [VendorAuthController::class, 'register'])->name('api.vendor.register');
     Route::post('/reset-password', [FrontendApiController::class, 'userResetPassword'])->name('api.user.reset-password');
 
     //Shops
@@ -148,10 +152,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/remove-wishlist', [FrontendApiController::class, 'removeWishlist'])->name('api.destroy.wishlist');
     Route::post('/clear-wishlist', [FrontendApiController::class, 'clearWishlist'])->name('api.clear.wishlist');
 
-    // Vendor (Wholesale) – for Next.js vendor subdomain / bulk order matrix (verified wholesalers only)
-    Route::middleware('verified.wholesaler')->group(function () {
-        Route::get('/vendor/product-details/{slug}', [VendorApiController::class, 'productDetails'])->name('api.vendor.product-details');
-        Route::post('/vendor/bulk-add-to-cart', [VendorApiController::class, 'bulkAddToCart'])->name('api.vendor.bulk-add-to-cart');
+    // Vendor (Wholesale / Supplier) – vendor portal APIs
+    Route::prefix('vendor')->group(function () {
+        // Account & profile
+        Route::get('/profile', [VendorAccountController::class, 'profile'])->name('api.vendor.profile');
+        Route::post('/profile', [VendorAccountController::class, 'upsertProfile'])->name('api.vendor.profile.upsert');
+
+        // KYC documents
+        Route::get('/kyc-documents', [VendorAccountController::class, 'kycDocuments'])->name('api.vendor.kyc.index');
+        Route::post('/kyc-documents', [VendorAccountController::class, 'storeKycDocument'])->name('api.vendor.kyc.store');
+
+        // Bulk order matrix (existing)
+        Route::middleware('verified.wholesaler')->group(function () {
+            Route::get('/product-details/{slug}', [VendorApiController::class, 'productDetails'])->name('api.vendor.product-details');
+            Route::post('/bulk-add-to-cart', [VendorApiController::class, 'bulkAddToCart'])->name('api.vendor.bulk-add-to-cart');
+        });
     });
 });
 
