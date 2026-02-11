@@ -45,6 +45,10 @@ export const baseApi = createApi({
 	baseQuery: baseQueryWithRefreshToken,
 	tagTypes: [
 		"user",
+		"vendorProducts",
+		"vendorOrders",
+		"vendorCategoryDiscounts",
+		"vendorReviews",
 		"example",
 		"navbarCategoryDropdownOptions",
 		"supportTicket",

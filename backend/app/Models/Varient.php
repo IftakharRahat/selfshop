@@ -9,6 +9,13 @@ class Varient extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['product_id', 'title', 'qty', 'price', 'status'];
+
+    protected $casts = [
+        'qty' => 'integer',
+        'price' => 'integer',
+    ];
+
     public function product()
     {
         return $this->belongsTo(Product::class);

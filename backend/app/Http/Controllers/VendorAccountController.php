@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class VendorAccountController extends Controller
 {
@@ -76,7 +77,7 @@ class VendorAccountController extends Controller
 
         // Default slug if not provided
         if (empty($data['slug'])) {
-            $base = str($data['company_name'])->slug('-');
+            $base = Str::slug($data['company_name'], '-');
             $slug = $base;
             $i = 1;
             while (
@@ -133,7 +134,9 @@ class VendorAccountController extends Controller
     }
 
     /**
-     * Submit a KYC document (metadata only for now – file upload can be added later).
+     * Submit a KYC document.
+     * Supports optional file upload (image/PDF).
+     *
      * POST /api/vendor/kyc-documents
      */
     public function storeKycDocument(Request $request)
@@ -152,6 +155,7 @@ class VendorAccountController extends Controller
         $validator = Validator::make($request->all(), [
             'document_type' => ['required', 'string', 'max:100'], // e.g. nid, trade_license
             'document_number' => ['nullable', 'string', 'max:255'],
+            'file' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ]);
 
         if ($validator->fails()) {
@@ -164,10 +168,16 @@ class VendorAccountController extends Controller
 
         $data = $validator->validated();
 
+        $path = null;
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('vendor-kyc', 'public');
+        }
+
         $document = VendorKycDocument::create([
             'vendor_id' => $vendor->id,
             'document_type' => $data['document_type'],
             'document_number' => $data['document_number'] ?? null,
+            'document_path' => $path,
             'status' => 'pending',
         ]);
 

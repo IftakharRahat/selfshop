@@ -86,8 +86,18 @@
                     </div>
                 @endif
                 @if($isFullAdmin)
-                <a href="{{ route('admin.users.index') }}" class="nav-item nav-link">Users</a>
-                <a href="{{ url('admin/view-active/user') }}" class="nav-item nav-link">Active User</a>
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Users</a>
+                    <div class="bg-transparent border-0 dropdown-menu">
+                        <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
+                        <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
+                        <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">Vendor Requests</a>
+                        <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Vendor Products</a>
+                        <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
+                        <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Vendor Category Discounts</a>
+                    </div>
+                </div>
+
                 <div class="nav-item dropdown">
                     <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Pages</a>
                     <div class="bg-transparent border-0 dropdown-menu">
@@ -177,9 +187,6 @@
                     <a href="{{ route('courses.index') }}" class="dropdown-item">Courses</a>
                 </div>
             </div>
-            @if($isFullAdmin)
-            <a href="{{ url('admin/vendors') }}" class="nav-item nav-link">Vendor Requests</a>
-            @endif
             <br>
             @endif
 

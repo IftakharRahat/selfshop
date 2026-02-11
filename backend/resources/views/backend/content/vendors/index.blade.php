@@ -50,18 +50,19 @@
                             </td>
                             <td>{{ $vendor->created_at->format('Y-m-d H:i') }}</td>
                             <td>
+                                <a href="{{ route('admin.vendors.show', $vendor->id) }}" class="btn btn-sm btn-primary mb-1">
+                                    View
+                                </a>
                                 @if($vendor->status === 'pending')
-                                <form action="{{ url('admin/vendors/'.$vendor->id.'/approve') }}" method="post" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                                </form>
-                                <form action="{{ url('admin/vendors/'.$vendor->id.'/reject') }}" method="post" class="d-inline">
-                                    @csrf
-                                    <input type="text" name="reason" placeholder="Reason (optional)" class="form-control form-control-sm d-inline-block w-auto">
-                                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                                </form>
-                                @else
-                                    -
+                                    <form action="{{ url('admin/vendors/'.$vendor->id.'/approve') }}" method="post" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                    </form>
+                                    <form action="{{ url('admin/vendors/'.$vendor->id.'/reject') }}" method="post" class="d-inline mt-1">
+                                        @csrf
+                                        <input type="text" name="reason" placeholder="Reason (optional)" class="form-control form-control-sm d-inline-block w-auto mb-1">
+                                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>

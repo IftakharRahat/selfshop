@@ -13,7 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // Run in this order: roles first, then admin, then fix default admin role
+        // Run in this order: roles first, then admin, then fix default admin role, then vendor examples
+        // NOTE: Commented out items can be enabled when you are ready.
+
         // $this->call(RolePermissionSeeder::class);
         // $this->call(AdminSeeder::class);
         // $this->call(FixAdminRoleSeeder::class);
@@ -21,9 +23,11 @@ class DatabaseSeeder extends Seeder
         // $this->call(UserSeeder::class);
         // $this->call(UserRolePermissionSeeder::class);
         // $this->call(ProductPriceTierSeeder::class); // Vendor wholesale tiers (Tier 1/2/3) for first 20 products
-        // \App\Models\User::factory(10)->create();
-        // \App\Models\Basicinfo::factory(1)->create();
-        // \App\Models\Addbanner::factory(4)->create();
+
+        // Minimal vendor demo data for local/testing environments only.
+        if (app()->environment(['local', 'development'])) {
+            $this->call(VendorDemoSeeder::class);
+        }
 
     }
 }

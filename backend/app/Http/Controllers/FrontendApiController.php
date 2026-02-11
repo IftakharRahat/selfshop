@@ -250,28 +250,28 @@ class FrontendApiController extends Controller
 
         if ($slug == 'hot_selling') {
             $title = 'Hot Selling Products';
-            $total = Product::where('status', 'Active')->where('hot_list', 'On')->count();
-            $searchcontents = Product::where('status', 'Active')->where('hot_list', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $total = Product::visibleOnStorefront()->where('hot_list', 'On')->count();
+            $searchcontents = Product::visibleOnStorefront()->where('hot_list', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
         } elseif ($slug == 'ready_to_bost') {
             $title = 'Ready To Bost Products';
-            $total = Product::where('status', 'Active')->where('ready_bost', 'On')->count();
-            $searchcontents = Product::where('status', 'Active')->where('ready_bost', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $total = Product::visibleOnStorefront()->where('ready_bost', 'On')->count();
+            $searchcontents = Product::visibleOnStorefront()->where('ready_bost', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
         } elseif ($slug == 'profitable_product') {
             $title = 'Profitable Products';
-            $total = Product::where('status', 'Active')->where('profitable', 'On')->count();
-            $searchcontents = Product::where('status', 'Active')->where('profitable', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $total = Product::visibleOnStorefront()->where('profitable', 'On')->count();
+            $searchcontents = Product::visibleOnStorefront()->where('profitable', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
         } elseif ($slug == 'new_arrivel') {
             $title = 'New Arrivel Products';
-            $total = Product::where('status', 'Active')->where('show_new_product', 'On')->count();
-            $searchcontents = Product::where('status', 'Active')->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
+            $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
         } elseif ($slug == 'limited_offer') {
             $title = 'Limited Offer Products';
-            $total = Product::where('status', 'Active')->where('limited', 'On')->count();
-            $searchcontents = Product::where('status', 'Active')->where('limited', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $total = Product::visibleOnStorefront()->where('limited', 'On')->count();
+            $searchcontents = Product::visibleOnStorefront()->where('limited', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
         } elseif ($slug == 'summer_collection') {
             $title = 'Summer Collection Products';
-            $total = Product::where('status', 'Active')->where('summer', 'On')->count();
-            $searchcontents = Product::where('status', 'Active')->where('summer', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $total = Product::visibleOnStorefront()->where('summer', 'On')->count();
+            $searchcontents = Product::visibleOnStorefront()->where('summer', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
         }
 
         if ($searchcontents === null || $searchcontents->count() == 0) {
@@ -294,9 +294,9 @@ class FrontendApiController extends Controller
     public function newarrivels(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $total = Product::where('status', 'Active')->where('show_new_product', 'On')->count();
+        $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
 
-        $searchcontents = Product::where('status', 'Active')->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -317,9 +317,9 @@ class FrontendApiController extends Controller
     public function newproducts(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $total = Product::where('status', 'Active')->where('show_new_product', 'On')->count();
+        $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
 
-        $searchcontents = Product::where('status', 'Active')->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -340,9 +340,9 @@ class FrontendApiController extends Controller
     public function featuredproducts(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $total = Product::where('status', 'Active')->where('frature', '0')->count();
+        $total = Product::visibleOnStorefront()->where('frature', '0')->count();
 
-        $searchcontents = Product::where('status', 'Active')->where('frature', '0')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('frature', '0')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -410,8 +410,8 @@ class FrontendApiController extends Controller
     public function bigselling(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $total = Product::where('status', 'Active')->where('top_rated', '1')->count();
-        $searchcontents = Product::where('status', 'Active')->where('top_rated', '1')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $total = Product::visibleOnStorefront()->where('top_rated', '1')->count();
+        $searchcontents = Product::visibleOnStorefront()->where('top_rated', '1')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
 
 
         if ($searchcontents->count() == 0) {
@@ -442,7 +442,7 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        $categoryproducts = Product::where('status', 'Active')->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
+        $categoryproducts = Product::visibleOnStorefront()->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
 
         return response()->json([
             'status' => true,
@@ -456,7 +456,7 @@ class FrontendApiController extends Controller
         $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage'];
 
         if (empty($slug)) {
-            $subcategoryproducts = Product::where('status', 'Active')->select(...$selects)->latest()->get();
+            $subcategoryproducts = Product::visibleOnStorefront()->select(...$selects)->latest()->get();
             return response()->json([
                 'status' => true,
                 'message' => 'All products',
@@ -473,7 +473,7 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        $subcategoryproducts = Product::where('status', 'Active')->where('subcategory_id', $subcategory->id)->select(...$selects)->get();
+        $subcategoryproducts = Product::visibleOnStorefront()->where('subcategory_id', $subcategory->id)->select(...$selects)->get();
 
         return response()->json([
             'status' => true,
@@ -485,7 +485,7 @@ class FrontendApiController extends Controller
     public function productbybrand($slug)
     {
         $brand = Brand::where('slug', $slug)->first();
-        $brandproducts = Product::where('status', 'Active')->where('brand_id', $brand->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
+        $brandproducts = Product::visibleOnStorefront()->where('brand_id', $brand->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
 
         if ($brandproducts->count() == 0) {
             return response()->json([
@@ -503,7 +503,7 @@ class FrontendApiController extends Controller
 
     public function search(Request $request)
     {
-        $products = Product::where('status', 'Active')->where('ProductName', 'LIKE', '%' . $request->keywords . '%')->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
+        $products = Product::visibleOnStorefront()->where('ProductName', 'LIKE', '%' . $request->keywords . '%')->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
 
         if ($products->count() == 0) {
             return response()->json([
@@ -522,14 +522,14 @@ class FrontendApiController extends Controller
     public function productdetails($slug)
     {
         $product = Product::with('varients')->where('ProductSlug', $slug)->first();
-        $relatedproducts = Product::where('category_id', $product->category_id)->where('status', 'Active')->latest()->paginate(12);
-
-        if ($product->count() == 0) {
-            return response()->json([
-                'status' => false,
-                'message' => 'No Products Details & Related Products',
-            ], 404);
+        if (!$product) {
+            return response()->json(['status' => false, 'message' => 'Product not found'], 404);
         }
+        // Hide unapproved vendor products from storefront
+        if ($product->vendor_id && ($product->vendor_approval_status ?? '') !== 'approved') {
+            return response()->json(['status' => false, 'message' => 'Product not found'], 404);
+        }
+        $relatedproducts = Product::where('category_id', $product->category_id)->visibleOnStorefront()->latest()->paginate(12);
 
         return response()->json([
             'status' => true,
