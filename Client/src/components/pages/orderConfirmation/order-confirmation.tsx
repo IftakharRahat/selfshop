@@ -40,7 +40,7 @@ export default function OrderConfirmation() {
 	const [updateCartItem] = useUpdateCartItemMutation();
 	const [deleteCartItem] = useDeleteCartItemMutation();
 	const [createOrder] = useCreateOrderMutation();
-	const [selected, setSelected] = useState("ssl");
+	const [selected, setSelected] = useState("cod");
 	const [selectedLocation, setSelectedLocation] = useState("inside");
 	const { data: pricingData } = useGetPricingQuery(undefined);
 	console.log("invoice id:", pricingData?.data?.invoice?.invoiceID);
@@ -95,7 +95,7 @@ export default function OrderConfirmation() {
 		);
 		formData.append(
 			"balance_from",
-			selected === "account" ? "from_account" : "online_pay",
+			selected === "account" ? "from_account" : selected === "ssl" ? "online_pay" : "cash_on_delivery",
 		);
 
 		const result = await handleAsyncWithToast(
@@ -158,11 +158,10 @@ export default function OrderConfirmation() {
 										placeholder={`Enter customer ${field}`}
 										value={customerData[field as keyof typeof customerData]}
 										onChange={(e) => handleInputChange(field, e.target.value)}
-										className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${
-											errors[field]
-												? "border-red-500 focus:ring-red-500"
-												: "border-gray-300 focus:ring-pink-500"
-										}`}
+										className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 ${errors[field]
+											? "border-red-500 focus:ring-red-500"
+											: "border-gray-300 focus:ring-pink-500"
+											}`}
 									/>
 									{errors[field] && (
 										<p className="text-red-500 text-sm mt-1">{errors[field]}</p>
@@ -239,14 +238,31 @@ export default function OrderConfirmation() {
 							Please pay the delivery charge before confirm the order.
 						</p>
 
-						<div className="flex items-center justify-between w-full gap-3 mt-5">
-							{/* Account Payment */}
+						<div className="flex flex-wrap items-center w-full gap-3 mt-5">
+							{/* Cash on Delivery */}
 							<label
-								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all w-full ${
-									selected === "account"
+								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "cod"
 										? "border-pink-500 text-pink-500"
 										: "border-gray-300 text-gray-700"
-								}`}
+									}`}
+							>
+								<input
+									type="radio"
+									name="paymentMethod"
+									value="cod"
+									checked={selected === "cod"}
+									onChange={() => setSelected("cod")}
+									className="accent-pink-500"
+								/>
+								Cash on Delivery
+							</label>
+
+							{/* Account Payment */}
+							<label
+								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "account"
+										? "border-pink-500 text-pink-500"
+										: "border-gray-300 text-gray-700"
+									}`}
 							>
 								<input
 									type="radio"
@@ -259,15 +275,12 @@ export default function OrderConfirmation() {
 								Account wallet
 							</label>
 
-							<span className="text-gray-500">or</span>
-
 							{/* SSL Commerce */}
 							<label
-								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all w-full ${
-									selected === "ssl"
+								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "ssl"
 										? "border-pink-500 text-pink-500"
 										: "border-gray-300 text-gray-700"
-								}`}
+									}`}
 							>
 								<input
 									type="radio"
@@ -281,92 +294,123 @@ export default function OrderConfirmation() {
 							</label>
 						</div>
 
-						<button
-							onClick={handleOrderConfirm}
-							className="w-full mt-8 bg-pink-600 hover:bg-pink-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
-						>
-							Confirm order
-						</button>
+					<button
+						onClick={handleOrderConfirm}
+						className="w-full mt-8 bg-pink-600 hover:bg-pink-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
+					>
+						Confirm order
+					</button>
+				</div>
+
+				{/* Right Side - Order Summary */}
+				<div className="bg-white rounded-lg p-6 shadow-sm order-1 lg:order-2">
+					{/* Customer Order Section */}
+					<div className="mb-8">
+						<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+							Customer order
+						</h2>
+						<div className="space-y-4">
+							{cartItems?.data?.length ? (
+								cartItems?.data.map((item: any) => (
+									<div
+										key={item.id}
+										className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg"
+									>
+										<div className="w-20 h-20 sm:w-16 sm:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
+											<Image
+												src={getImageUrl(item.image)}
+												alt={item?.name || "Order item"}
+												width={64}
+												height={64}
+												className="w-full h-full object-cover"
+											/>
+										</div>
+
+										<div className="flex-1 text-center sm:text-left">
+											<h3 className="font-medium text-gray-900">
+												{item.name}
+											</h3>
+											<p className="text-sm text-gray-500">{item.code}</p>
+											<p className="font-semibold text-gray-900 flex items-center">
+												<TbCurrencyTaka size={20} />
+												{item.price}
+											</p>
+										</div>
+
+										<div className="flex justify-center sm:justify-end items-center gap-3">
+											<button
+												onClick={() =>
+													handleUpdateCartItem(item.product_id, item.qty - 1)
+												}
+												disabled={item.qty <= 1}
+												className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+											>
+												<Minus className="w-4 h-4" />
+											</button>
+											<span className="w-8 text-center font-medium">
+												{item.qty}
+											</span>
+											<button
+												onClick={() =>
+													handleUpdateCartItem(item.product_id, item.qty + 1)
+												}
+												className="w-8 h-8 rounded-full border border-pink-500 text-pink-500 flex items-center justify-center hover:bg-pink-50"
+											>
+												<Plus className="w-4 h-4" />
+											</button>
+											<button
+												onClick={() => handleDeleteCartItem(item.product_id)}
+												className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-red-50 hover:border-red-300 hover:text-red-500 ml-2"
+											>
+												<Trash2 className="w-4 h-4" />
+											</button>
+										</div>
+									</div>
+								))
+							) : (
+								<p className="text-gray-500">No items in cart.</p>
+							)}
+						</div>
 					</div>
 
-					{/* Right Side - Order Summary */}
-					<div className="bg-white rounded-lg p-6 shadow-sm order-1 lg:order-2">
-						{/* Customer Order Section */}
-						<div className="mb-8">
-							<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
-								Customer order
-							</h2>
-							<div className="space-y-4">
-								{cartItems?.data?.length ? (
-									cartItems?.data.map((item: any) => (
-										<div
-											key={item.id}
-											className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg"
-										>
-											<div className="w-20 h-20 sm:w-16 sm:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
-												<Image
-													src={getImageUrl(item.image)}
-													alt={item?.name || "Order item"}
-													width={64}
-													height={64}
-													className="w-full h-full object-cover"
-												/>
-											</div>
-
-											<div className="flex-1 text-center sm:text-left">
-												<h3 className="font-medium text-gray-900">
-													{item.name}
-												</h3>
-												<p className="text-sm text-gray-500">{item.code}</p>
-												<p className="font-semibold text-gray-900 flex items-center">
-													<TbCurrencyTaka size={20} />
-													{item.price}
-												</p>
-											</div>
-
-											<div className="flex justify-center sm:justify-end items-center gap-3">
-												<button
-													onClick={() =>
-														handleUpdateCartItem(item.product_id, item.qty - 1)
-													}
-													disabled={item.qty <= 1}
-													className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
-												>
-													<Minus className="w-4 h-4" />
-												</button>
-												<span className="w-8 text-center font-medium">
-													{item.qty}
-												</span>
-												<button
-													onClick={() =>
-														handleUpdateCartItem(item.product_id, item.qty + 1)
-													}
-													className="w-8 h-8 rounded-full border border-pink-500 text-pink-500 flex items-center justify-center hover:bg-pink-50"
-												>
-													<Plus className="w-4 h-4" />
-												</button>
-												<button
-													onClick={() => handleDeleteCartItem(item.product_id)}
-													className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-red-50 hover:border-red-300 hover:text-red-500 ml-2"
-												>
-													<Trash2 className="w-4 h-4" />
-												</button>
-											</div>
-										</div>
-									))
-								) : (
-									<p className="text-gray-500">No items in cart.</p>
-								)}
+					{/* Product Summary Section */}
+					<div>
+						<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+							Product Summary
+						</h2>
+						<div className="space-y-4">
+							<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+								<span>Total Price</span>
+								<span className="flex items-center">
+									{" "}
+									<TbCurrencyTaka size={20} />
+									{cartItems?.data
+										.reduce(
+											(total: number, item: any) =>
+												total + parseFloat(item.price) * item.qty,
+											0,
+										)
+										.toFixed(2)}
+								</span>
 							</div>
-						</div>
-
-						{/* Product Summary Section */}
-						<div>
-							<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
-								Product Summary
-							</h2>
-							<div className="space-y-4">
-								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+							<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+								<span>Total Price (Discount)</span>
+								<span className="flex items-center">
+									{" "}
+									<TbCurrencyTaka size={20} />
+									{discount}
+								</span>
+							</div>
+							<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+								<span>Tax & Fee</span>
+								<span className="flex items-center">
+									{" "}
+									<TbCurrencyTaka size={20} />
+									{taxAndFee}
+								</span>
+							</div>
+							<div className="border-t pt-4">
+								<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
 									<span>Total Price</span>
 									<span className="flex items-center">
 										{" "}
@@ -380,43 +424,12 @@ export default function OrderConfirmation() {
 											.toFixed(2)}
 									</span>
 								</div>
-								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-									<span>Total Price (Discount)</span>
-									<span className="flex items-center">
-										{" "}
-										<TbCurrencyTaka size={20} />
-										{discount}
-									</span>
-								</div>
-								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-									<span>Tax & Fee</span>
-									<span className="flex items-center">
-										{" "}
-										<TbCurrencyTaka size={20} />
-										{taxAndFee}
-									</span>
-								</div>
-								<div className="border-t pt-4">
-									<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
-										<span>Total Price</span>
-										<span className="flex items-center">
-											{" "}
-											<TbCurrencyTaka size={20} />
-											{cartItems?.data
-												.reduce(
-													(total: number, item: any) =>
-														total + parseFloat(item.price) * item.qty,
-													0,
-												)
-												.toFixed(2)}
-										</span>
-									</div>
-								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+		</div >
 	);
 }
