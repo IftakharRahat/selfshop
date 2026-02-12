@@ -154,17 +154,17 @@ export default function DashboardSidebar({
 
 						return (
 							<li key={index}>
-								<Link href={item.href}>
-									<button
+								<Link href={item.href} className="flex-1 text-inherit no-underline">
+									<div
 										onClick={onItemClick}
 										className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors cursor-pointer ${isActive
-											? "bg-[#E5005F] !text-white"
+											? "bg-[#E5005F] text-white"
 											: "text-gray-700 hover:bg-gray-100"
 											}`}
 									>
 										<item.icon className="w-5 h-5" />
 										<span className="font-medium">{item.label}</span>
-									</button>
+									</div>
 								</Link>
 							</li>
 						);

@@ -89,8 +89,8 @@ export default function ProductRequestForm() {
 	};
 
 	return (
-		<div className=" bg-gray-50 ms:p-4 md:m-8 rounded-md">
-			<div className=" mx-auto bg-white shadow rounded-lg p-5 md:p-8">
+		<div className="m-3 sm:m-4 lg:m-6 mb-24">
+			<div className="mx-auto bg-white shadow-sm rounded-xl border border-gray-100 p-4 sm:p-5 lg:p-8">
 				<h1 className="text-2xl font-semibold text-gray-900 mb-8">
 					Product request list
 				</h1>
@@ -246,88 +246,125 @@ export default function ProductRequestForm() {
 			</div>
 
 			{/* Requested Products Table */}
-			<div className="w-full m-4 lg:m-6 md:bg-white rounded-md md:p-8">
-				<div className="p-0">
-					<h2 className="text-lg font-semibold text-gray-900">
-						Requested Products
-					</h2>
-					<div className="flex items-center justify-between p-4 border-b border-gray-200">
-						<h2 className="text-sm font-medium text-gray-900">All Requests</h2>
-					</div>
+			<div className="w-full mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
+				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+					Requested Products
+				</h2>
 
-					<div className="overflow-x-auto">
+				{/* Loading */}
+				{!data?.data && (
+					<div className="py-10 text-center text-gray-500 text-sm">
+						Loading requested products...
+					</div>
+				)}
+
+				{/* Mobile Card Layout */}
+				{data?.data && (
+					<div className="md:hidden space-y-3">
+						{data.data.length > 0 ? (
+							data.data.map((item: any) => (
+								<div
+									key={item.id}
+									className="bg-gray-50/60 border border-gray-100 rounded-xl p-3"
+								>
+									<div className="flex items-start gap-3">
+										<img
+											src={getImageUrl(item.attachment)}
+											alt="product"
+											className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+										/>
+										<div className="flex-1 min-w-0">
+											<div className="flex items-center justify-between mb-1">
+												<p className="text-sm font-semibold text-gray-900 truncate mr-2">{item.p_name}</p>
+												<span
+													className={`px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${item.status === "Paid"
+															? "bg-green-50 text-green-700 border border-green-200"
+															: item.status === "Pending"
+																? "bg-amber-50 text-amber-700 border border-amber-200"
+																: "bg-red-50 text-red-700 border border-red-200"
+														}`}
+												>
+													{item.status}
+												</span>
+											</div>
+											<div className="flex items-center justify-between text-xs text-gray-400">
+												<span>#{item.id}</span>
+												<span>{new Date(item.created_at).toLocaleDateString()}</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							))
+						) : (
+							<div className="py-10 text-center text-gray-400 text-sm">
+								No requested products found.
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Desktop Table Layout */}
+				{data?.data && (
+					<div className="hidden md:block overflow-x-auto">
 						<table className="w-full">
 							<thead>
-								<tr>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+								<tr className="bg-gray-50/80">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										ID
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Product Name
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Image
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Status
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Date
 									</th>
 								</tr>
 							</thead>
 
 							<tbody>
-								{!data?.data ? (
-									<tr>
-										<td
-											colSpan={5}
-											className="p-4 text-center text-sm text-gray-500"
-										>
-											Loading requested products...
-										</td>
-									</tr>
-								) : data.data.length > 0 ? (
+								{data.data.length > 0 ? (
 									data.data.map((item: any) => (
 										<tr
 											key={item.id}
-											className="border-b border-gray-100 hover:bg-gray-50"
+											className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
 										>
-											<td className="p-4 text-sm text-gray-900">#{item.id}</td>
+											<td className="p-4 text-sm font-medium text-gray-900">#{item.id}</td>
 											<td className="p-4 text-sm text-gray-900">
 												{item.p_name}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4">
 												<img
 													src={getImageUrl(item.attachment)}
 													alt="product"
-													className="w-14 h-14 rounded object-cover"
+													className="w-12 h-12 rounded-lg object-cover"
 												/>
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4">
 												<span
-													className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-														item.status === "Paid"
-															? "bg-green-100 text-green-800"
+													className={`px-2.5 py-1 rounded-full text-xs font-medium ${item.status === "Paid"
+															? "bg-green-50 text-green-700 border border-green-200"
 															: item.status === "Pending"
-																? "bg-yellow-100 text-yellow-800"
-																: "bg-red-100 text-red-800"
-													}`}
+																? "bg-amber-50 text-amber-700 border border-amber-200"
+																: "bg-red-50 text-red-700 border border-red-200"
+														}`}
 												>
 													{item.status}
 												</span>
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4 text-sm text-gray-500">
 												{new Date(item.created_at).toLocaleDateString()}
 											</td>
 										</tr>
 									))
 								) : (
 									<tr>
-										<td
-											colSpan={5}
-											className="p-4 text-center text-sm text-gray-500"
-										>
+										<td colSpan={5} className="py-12 text-center text-gray-400 text-sm">
 											No requested products found.
 										</td>
 									</tr>
@@ -335,7 +372,7 @@ export default function ProductRequestForm() {
 							</tbody>
 						</table>
 					</div>
-				</div>
+				)}
 			</div>
 		</div>
 	);

@@ -68,17 +68,17 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 							{/* <button className="h-8 w-8 hover:bg-gray-100">
                 <Bell className="w-4 h-4 text-gray-600" />
               </button> */}
-							<div className="w-10 h-10 rounded-full overflow-hidden border">
+							<div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50">
 								{data?.data?.profile?.profile ? (
 									<Image
 										src={getImageUrl(data?.data?.profile?.profile)}
 										alt="Profile"
 										width={96}
 										height={96}
-										className="w-full h-full object-fill"
+										className="w-full h-full object-cover"
 									/>
 								) : (
-									<User className="w-12 h-12" />
+									<User className="w-5 h-5 text-gray-400" />
 								)}
 							</div>
 						</div>

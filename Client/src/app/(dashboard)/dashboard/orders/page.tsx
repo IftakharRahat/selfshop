@@ -1,29 +1,32 @@
 "use client";
+import { useState } from "react";
 import order from "@/assets/images/dashboard/Group 1321314503 (1).png";
 import cancelled from "@/assets/images/dashboard/Group 1321314503 (2).png";
 import returnIcon from "@/assets/images/dashboard/Group 1321314504.png";
 import delivery from "@/assets/images/dashboard/Group 1321314505.png";
 import delivered from "@/assets/images/dashboard/Group 1321314506 (3).png";
 import OrdersTable from "@/components/pages/dashboard/orders-table";
-import { cn } from "@/lib/utils";
 import { useOrderCountQuery } from "@/redux/features/orderApi";
 
 const OrderPage = () => {
 	const { data, error, isLoading } = useOrderCountQuery(undefined);
+	const [activeStatus, setActiveStatus] = useState("Pending");
 
 	const stats = [
-		{ title: "New order", value: data?.data?.pending ?? 0, icon: order },
-		{ title: "Cancelled", value: data?.data?.canceled ?? 0, icon: cancelled },
-		{ title: "Returned", value: data?.data?.return ?? 0, icon: returnIcon },
-		{ title: "On delivery", value: data?.data?.ontheway ?? 0, icon: delivery },
-		{ title: "Delivered", value: data?.data?.delivered ?? 0, icon: delivered },
+		{ title: "New order", value: data?.data?.pending ?? 0, icon: order, status: "Pending" },
+		{ title: "Cancelled", value: data?.data?.canceled ?? 0, icon: cancelled, status: "Canceled" },
+		{ title: "Returned", value: data?.data?.return ?? 0, icon: returnIcon, status: "Return" },
+		{ title: "On delivery", value: data?.data?.ontheway ?? 0, icon: delivery, status: "On the way" },
+		{ title: "Delivered", value: data?.data?.delivered ?? 0, icon: delivered, status: "Delivered" },
 	];
 
+	const activeLabel = stats.find((s) => s.status === activeStatus)?.title ?? "Orders";
+
 	return (
-		<div className="m-4 lg:m-6 bg-white rounded-md p-4">
-			<div className="flex items-center justify-between">
-				<h1 className="text-2xl font-semibold text-gray-900">Order insight</h1>
-			</div>
+		<div className="m-3 sm:m-4 lg:m-6 bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 lg:p-6 mb-24">
+			<h1 className="text-lg sm:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">
+				Order Insight
+			</h1>
 
 			{/* Loading / Error */}
 			{isLoading && (
@@ -33,42 +36,45 @@ const OrderPage = () => {
 
 			{/* Order Statistics */}
 			{!isLoading && !error && (
-				<div className="grid grid-cols-1 gap-4 xs:grid-cols-2 lg:grid-cols-5 xl:border-b xl:pb-3 xl:mb-3 border-gray-200">
+				<div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-5 lg:border-b lg:pb-4 lg:mb-4 border-gray-100">
 					{stats.map((stat, index) => (
-						<div key={index} className="bg-white">
-							<div className="p-6 flex items-center justify-between">
-								<div className="flex items-start space-x-3">
-									<div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
-										<img
-											src={stat.icon.src}
-											alt={stat.title}
-											className="w-6 h-6"
-										/>
-									</div>
-									<div>
-										<p className="text-sm font-medium text-gray-600">
-											{stat.title}
-										</p>
-										<p className="text-2xl font-bold text-gray-900">
-											{stat.value}
-										</p>
-									</div>
+						<button
+							key={index}
+							type="button"
+							onClick={() => setActiveStatus(stat.status)}
+							className={`rounded-xl p-3 sm:p-4 transition-all cursor-pointer text-left bg-gray-50/80 hover:shadow-sm ${activeStatus === stat.status
+									? "border-2 border-[#E5005F]/30"
+									: "border border-gray-100 hover:border-gray-200"
+								}`}
+						>
+							<div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3">
+								<div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+									<img
+										src={stat.icon.src}
+										alt={stat.title}
+										className="w-5 h-5 sm:w-6 sm:h-6"
+									/>
 								</div>
-
-								<div
-									className={cn(
-										index === stats.length - 1
-											? ""
-											: "hidden 2xl:block h-12 w-[0.2px] bg-gray-300",
-									)}
-								></div>
+								<div className="text-center sm:text-left">
+									<p className="text-[10px] sm:text-sm font-medium text-gray-500 leading-tight">
+										{stat.title}
+									</p>
+									<p className="text-lg sm:text-2xl font-bold text-gray-900">
+										{stat.value}
+									</p>
+								</div>
 							</div>
-						</div>
+						</button>
 					))}
 				</div>
 			)}
 
-			<OrdersTable />
+			<div className="mt-3 sm:mt-4">
+				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+					{activeLabel} Orders
+				</h2>
+				<OrdersTable status={activeStatus} />
+			</div>
 		</div>
 	);
 };
