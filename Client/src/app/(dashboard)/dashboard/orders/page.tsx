@@ -8,9 +8,24 @@ import delivered from "@/assets/images/dashboard/Group 1321314506 (3).png";
 import OrdersTable from "@/components/pages/dashboard/orders-table";
 import { useOrderCountQuery } from "@/redux/features/orderApi";
 
+const statusTabs = [
+	{ label: "All", value: "all" },
+	{ label: "Pending", value: "Pending" },
+	{ label: "Confirmed", value: "Confirmed" },
+	{ label: "Processing", value: "Processing" },
+	{ label: "On delivery", value: "Ontheway" },
+	{ label: "Delivered", value: "Delivered" },
+	{ label: "Cancelled", value: "Canceled" },
+	{ label: "Returned", value: "Return" },
+];
+
 const OrderPage = () => {
 	const { data, error, isLoading } = useOrderCountQuery(undefined);
+<<<<<<< HEAD
 	const [activeStatus, setActiveStatus] = useState("Pending");
+=======
+	const [activeStatus, setActiveStatus] = useState("all");
+>>>>>>> feature/latest-backend-fix
 
 	const stats = [
 		{ title: "New order", value: data?.data?.pending ?? 0, icon: order, status: "Pending" },
@@ -69,12 +84,34 @@ const OrderPage = () => {
 				</div>
 			)}
 
+<<<<<<< HEAD
 			<div className="mt-3 sm:mt-4">
 				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
 					{activeLabel} Orders
 				</h2>
 				<OrdersTable status={activeStatus} />
 			</div>
+=======
+			{/* Status Tabs */}
+			<div className="flex flex-wrap gap-2 mb-4 border-b border-gray-100 pb-3">
+				{statusTabs.map((tab) => (
+					<button
+						key={tab.value}
+						onClick={() => setActiveStatus(tab.value)}
+						className={cn(
+							"px-3 py-1.5 text-sm font-medium rounded-lg transition-colors cursor-pointer",
+							activeStatus === tab.value
+								? "bg-[#E5005F] text-white"
+								: "bg-gray-50 text-gray-600 hover:bg-gray-100"
+						)}
+					>
+						{tab.label}
+					</button>
+				))}
+			</div>
+
+			<OrdersTable status={activeStatus} />
+>>>>>>> feature/latest-backend-fix
 		</div>
 	);
 };

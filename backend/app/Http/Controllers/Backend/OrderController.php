@@ -628,7 +628,7 @@ class OrderController extends Controller
     {
 
         $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
-        $columns = $request->input('columns');
+        $columns = $request->input('columns') ?? [];
         $status = $request->input('status');
 
         if ($abc == 'orderall') {
@@ -1010,9 +1010,9 @@ class OrderController extends Controller
                                 'zones' => function ($query) {
                                     $query->select('id', 'courier_id', 'city_id', 'zoneName');
                                 }
-                            ]
-                        )
-                            ->join('customers', 'customers.order_id', '=', 'orders.id')
+                                ]
+                            )
+                            ->leftJoin('customers', 'customers.order_id', '=', 'orders.id')
                             ->select('orders.*', 'customers.customerPhone', 'customers.customerName', 'customers.customerAddress');
                     }
                 }
@@ -1026,36 +1026,52 @@ class OrderController extends Controller
             $orders = $orders->where('orders.status', 'like', $abc);
         }
 
-        if ($columns[1]['search']['value']) {
-            $orders = $orders->Where('orders.invoiceID', 'like', "%{$columns[1]['search']['value']}%")
-                ->orWhere('orders.web_ID', 'like', "%{$columns[1]['search']['value']}%");
+        $colSearch = function ($index) use ($columns) {
+            return $columns[$index]['search']['value'] ?? null;
+        };
+        $s1  = $colSearch(1);
+        $s2  = $colSearch(2);
+        $s5  = $colSearch(5);
+        $s8  = $colSearch(8);
+        $s10 = $colSearch(10);
+
+        if ($s1) {
+            $orders = $orders->where(function ($q) use ($s1) {
+                $q->where('orders.invoiceID', 'like', "%{$s1}%")
+                  ->orWhere('orders.web_ID', 'like', "%{$s1}%");
+            });
         }
-        if ($columns[2]['search']['value']) {
-            $orders = $orders->Where('customers.customerPhone', 'like', "%{$columns[2]['search']['value']}%");
+        if ($s2) {
+            $orders = $orders->where('customers.customerPhone', 'like', "%{$s2}%");
         }
-        if ($columns[5]['search']['value']) {
-            $orders = $orders->Where('orders.courier_id', '=', $columns[5]['search']['value']);
+        if ($s5) {
+            $orders = $orders->where('orders.courier_id', '=', $s5);
         }
-        if ($columns[8]['search']['value']) {
-            $orders = $orders->Where('orders.orderDate', 'like', "%{$columns[8]['search']['value']}%");
+        if ($s8) {
+            $orders = $orders->where('orders.orderDate', 'like', "%{$s8}%");
         }
 
         if ($admin->hasRole('Executive')) {
-            if ($columns[10]['search']['value']) {
-                $orders = $orders->Where('orders.memo', '=', $columns[10]['search']['value']);
+            if ($s10) {
+                $orders = $orders->where('orders.memo', '=', $s10);
             }
         } else {
-            if ($columns[10]['search']['value']) {
-                $orders = $orders->Where('orders.user_id', '=', $columns[10]['search']['value']);
+            if ($s10) {
+                $orders = $orders->where('orders.user_id', '=', $s10);
             }
         }
 
         return Datatables::of($orders->orderBy('orders.updated_at', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {
-                return $orders->customerName . '<br>' . $orders->customerPhone . '<br>' . $orders->customerAddress . '<br> <span style="color:red;font-weight:bold;">' . $orders->entry_complete . '</span><br><button class="btn btn-success btn-sm" style="margin: 4px;padding: 0px 4px;" data-num="' . $orders->customerPhone . '" data-inv="' . $orders->invoiceID . '" id="checkfraud">Check</button>';
+                $name = $orders->customerName ?? '—';
+                $phone = $orders->customerPhone ?? '—';
+                $address = $orders->customerAddress ?? '—';
+                $entry = $orders->entry_complete ?? '';
+                return $name . '<br>' . $phone . '<br>' . $address . '<br> <span style="color:red;font-weight:bold;">' . $entry . '</span><br><button class="btn btn-success btn-sm" style="margin: 4px;padding: 0px 4px;" data-num="' . ($orders->customerPhone ?? '') . '" data-inv="' . $orders->invoiceID . '" id="checkfraud">Check</button>';
             })
             ->addColumn('invoice', function ($orders) {
-                return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . $orders->web_ID . '<br>' . $orders->updated_at->diffForhumans();
+                $ago = $orders->updated_at ? $orders->updated_at->diffForhumans() : '';
+                return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . ($orders->web_ID ?? '') . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
                 $orderProducts = '';

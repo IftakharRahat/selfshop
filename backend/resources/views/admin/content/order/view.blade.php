@@ -224,15 +224,15 @@
                                                         </tr>
                                                         <tr>
                                                             <td class="w-50 strong-600">Customer:</td>
-                                                            <td>{{ $orders->customers->customerName }}</td>
+                                                            <td>{{ $orders->customers?->customerName ?? '—' }}</td>
                                                         </tr>
                                                         <tr>
                                                             <td class="w-50 strong-600">Phone:</td>
-                                                            <td>{{ $orders->customers->customerPhone }}</td>
+                                                            <td>{{ $orders->customers?->customerPhone ?? '—' }}</td>
                                                         </tr>
                                                         <tr>
                                                             <td class="w-50 strong-600">Shipping address:</td>
-                                                            <td>{{ $orders->customers->customerAddress }},@if (isset($orders->zones))
+                                                            <td>{{ $orders->customers?->customerAddress ?? '—' }},@if (isset($orders->zones))
                                                                     {{ $orders->zones->zoneName }},
                                                                 @else
                                                                     @endif @if (isset($orders->cities))
@@ -258,12 +258,17 @@
                                                     <tbody>
                                                         <tr>
                                                             <td class="w-50 strong-600">Order date:</td>
-                                                            <td>{{ $orders->created_at->format('Y-m-d') }} ,
-                                                                {{ date('h:i A', strtotime($orders->created_at)) }}</td>
+                                                            <td>
+                                                                @if($orders->created_at)
+                                                                    {{ $orders->created_at->format('Y-m-d') }} , {{ $orders->created_at->format('h:i A') }}
+                                                                @else
+                                                                    —
+                                                                @endif
+                                                            </td>
                                                         </tr>
                                                         <tr>
                                                             <td class="w-50 strong-600">Total order amount:</td>
-                                                            <td>৳ {{ ($orders->subTotal+$orders->paymentAmount )-$orders->deliveryCharge}} + <span style="color: red">( Charge : {{ $orders->deliveryCharge}} ৳)</span> </td>
+                                                            <td>৳ {{ (float)($orders->subTotal ?? 0) + (float)($orders->paymentAmount ?? 0) - (float)($orders->deliveryCharge ?? 0) }} + <span style="color: red">( Charge : {{ $orders->deliveryCharge ?? 0 }} ৳)</span> </td>
                                                         </tr>
 
                                                         <tr>
@@ -316,7 +321,7 @@
                                                     @endforelse
                                                     <tr>
                                                         <td class="w-50 strong-600">Completed By:</td>
-                                                        <td>{{ $orders->admins->name }}</td>
+                                                        <td>{{ $orders->admins?->name ?? '—' }}</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
