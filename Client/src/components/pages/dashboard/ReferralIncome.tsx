@@ -5,15 +5,12 @@ import orderIcon from "@/assets/images/dashboard/Group 1321314503 (1).png";
 import myReferralIcon from "@/assets/images/dashboard/Group 1321314503 (2).png";
 import activeMemberIcon from "@/assets/images/dashboard/Group 1321314504.png";
 import paidMemberIcon from "@/assets/images/dashboard/Group 1321314505.png";
-import { cn } from "@/lib/utils";
 import { useGetAllReferralDataQuery } from "@/redux/features/dashboardApi";
 
 const ReferralIncome = () => {
 	const { data } = useGetAllReferralDataQuery(undefined);
 
-	// FIX API DATA FORMAT
 	const statsData = data?.data || {};
-
 	const history = statsData?.history?.data || [];
 
 	const orderStats = [
@@ -40,122 +37,123 @@ const ReferralIncome = () => {
 	];
 
 	return (
-		<div className="m-4 lg:m-6 bg-white rounded-md p-4">
-			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
-					My Referral
-				</h1>
-			</div>
+		<div className="m-3 sm:m-4 lg:m-6 bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 lg:p-6 mb-24">
+			{/* Header */}
+			<h1 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">
+				My Referral
+			</h1>
 
-			{/* Referral Statistics Cards */}
-			<div
-				className="
-        grid 
-        grid-cols-2
-        xs:grid-cols-2 
-        lg:grid-cols-4 
-        gap-4 
-        xl:border-b 
-        xl:pb-3 
-        xl:mb-3 
-        border-gray-200
-      "
-			>
+			{/* Stats Cards */}
+			<div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
 				{orderStats.map((stat, index) => (
-					<div key={index} className="bg-white">
-						<div className="p-4 sm:p-6 flex items-center justify-between">
-							<div className="flex items-start space-x-3">
-								<div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 flex items-center justify-center">
-									<img
-										src={stat.icon.src}
-										alt={stat.title}
-										className="w-6 h-6"
-									/>
-								</div>
-
-								<div>
-									<p className="text-sm font-medium text-gray-600">
-										{stat.title}
-									</p>
-									<p className="text-xl sm:text-2xl font-bold text-gray-900">
-										{stat.value}
-									</p>
-								</div>
+					<div
+						key={index}
+						className="bg-gray-50/60 border border-gray-100 rounded-xl p-3 sm:p-4"
+					>
+						<div className="flex items-center gap-2.5">
+							<div className="w-9 h-9 rounded-full bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+								<img
+									src={stat.icon.src}
+									alt={stat.title}
+									className="w-5 h-5"
+								/>
 							</div>
-
-							{/* Vertical Line on Large Screens */}
-							<div
-								className={cn(
-									index === orderStats.length - 1
-										? ""
-										: "hidden 2xl:block h-12 w-[1px] bg-gray-300",
-								)}
-							></div>
+							<div>
+								<p className="text-xs text-gray-500">{stat.title}</p>
+								<p className="text-lg sm:text-xl font-bold text-gray-900">
+									{stat.value}
+								</p>
+							</div>
 						</div>
 					</div>
 				))}
 			</div>
 
-			{/* Referral History Table */}
-			<div className="bg-white mt-6 rounded-md border border-gray-200">
-				<div className="flex items-center justify-between p-4 border-b border-gray-200">
-					<h2 className="text-lg font-semibold text-gray-900">
-						Referral Income
-					</h2>
-				</div>
+			{/* Section Title */}
+			<h2 className="text-sm sm:text-base font-semibold text-gray-900 mb-3">
+				Referral Income
+			</h2>
 
-				<div className="overflow-x-auto">
-					<table className="w-full min-w-[700px]">
-						<thead>
-							<tr>
-								<th className="text-left p-4 text-sm font-medium text-gray-600">
-									Serial No
-								</th>
-								<th className="text-left p-4 text-sm font-medium text-gray-600">
-									Message For
-								</th>
-								<th className="text-left p-4 text-sm font-medium text-gray-600">
-									Message
-								</th>
-								<th className="text-left p-4 text-sm font-medium text-gray-600">
-									Date
-								</th>
-								<th className="text-left p-4 text-sm font-medium text-gray-600">
-									Income
-								</th>
-							</tr>
-						</thead>
+			{/* Mobile Card Layout */}
+			<div className="md:hidden space-y-3">
+				{history.length > 0 ? (
+					history.map((row: any, index: number) => (
+						<div
+							key={row.id}
+							className="bg-gray-50/60 border border-gray-100 rounded-xl p-3"
+						>
+							<div className="flex items-center justify-between mb-1">
+								<p className="text-sm font-semibold text-gray-900 truncate mr-2">
+									{row.message_for}
+								</p>
+								<span className="text-sm font-semibold text-green-600 flex-shrink-0">
+									৳{row.amount}
+								</span>
+							</div>
+							<p className="text-xs text-gray-500 mb-1.5 line-clamp-2">{row.message}</p>
+							<div className="flex items-center justify-between text-xs text-gray-400">
+								<span>#{index + 1}</span>
+								<span>{row.date}</span>
+							</div>
+						</div>
+					))
+				) : (
+					<div className="py-10 text-center text-gray-400 text-sm">
+						No referral income data found.
+					</div>
+				)}
+			</div>
 
-						<tbody>
-							{history.length > 0 ? (
-								history.map((row: any, index: number) => (
-									<tr
-										key={row.id}
-										className="border-b border-gray-100 hover:bg-gray-50"
-									>
-										<td className="p-4 text-sm text-gray-900">{index + 1}</td>
+			{/* Desktop Table Layout */}
+			<div className="hidden md:block overflow-x-auto">
+				<table className="w-full">
+					<thead>
+						<tr className="bg-gray-50/80">
+							<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+								Serial No
+							</th>
+							<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+								Message For
+							</th>
+							<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+								Message
+							</th>
+							<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+								Date
+							</th>
+							<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+								Income
+							</th>
+						</tr>
+					</thead>
 
-										<td className="p-4 text-sm text-gray-900">
-											{row.message_for}
-										</td>
-
-										<td className="p-4 text-sm text-gray-700">{row.message}</td>
-
-										<td className="p-4 text-sm text-gray-600">{row.date}</td>
-
-										<td className="p-4 text-sm text-gray-900">৳{row.amount}</td>
-									</tr>
-								))
-							) : (
-								<tr>
-									<td colSpan={5} className="text-center p-4 text-gray-500">
-										No referral income data found.
+					<tbody>
+						{history.length > 0 ? (
+							history.map((row: any, index: number) => (
+								<tr
+									key={row.id}
+									className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+								>
+									<td className="p-4 text-sm text-gray-500">{index + 1}</td>
+									<td className="p-4 text-sm font-medium text-gray-900">
+										{row.message_for}
+									</td>
+									<td className="p-4 text-sm text-gray-600">{row.message}</td>
+									<td className="p-4 text-sm text-gray-500">{row.date}</td>
+									<td className="p-4 text-sm font-semibold text-green-600">
+										৳{row.amount}
 									</td>
 								</tr>
-							)}
-						</tbody>
-					</table>
-				</div>
+							))
+						) : (
+							<tr>
+								<td colSpan={5} className="text-center p-8 text-gray-400 text-sm">
+									No referral income data found.
+								</td>
+							</tr>
+						)}
+					</tbody>
+				</table>
 			</div>
 		</div>
 	);

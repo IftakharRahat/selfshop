@@ -1,29 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ConfigProvider, Input, Modal, Select } from "antd";
+import TextArea from "antd/es/input/TextArea";
 import { File, Upload, X } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import "antd/dist/reset.css";
 import { useCreateSupportTicketMutation } from "@/redux/features/supportTicket/supportTicketApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -138,134 +124,139 @@ export function CreateTicketModal() {
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>
-				<Button className="bg-[#E91E63] hover:bg-[#C2185B] !text-white">
-					+ Add now
-				</Button>
-			</DialogTrigger>
-			<DialogContent className="sm:max-w-[600px] p-0 gap-0 bg-white">
-				<DialogHeader className="px-6 pt-6 pb-4">
-					<DialogTitle className="text-xl font-semibold">
-						Create New Ticket
-					</DialogTitle>
-				</DialogHeader>
+		<ConfigProvider
+			theme={{
+				token: {
+					colorPrimary: "#E5005F",
+				},
+			}}
+		>
+			<button
+				onClick={() => setOpen(true)}
+				className="bg-[#E5005F] hover:bg-pink-600 !text-white text-sm font-medium rounded-md px-4 py-2 cursor-pointer transition-colors"
+			>
+				+ Add now
+			</button>
 
-				<form onSubmit={handleSubmit(onSubmit)} className="px-6 pb-6 space-y-4">
+			<Modal
+				title="Create New Ticket"
+				open={open}
+				onCancel={handleCancel}
+				footer={null}
+				width={600}
+				centered
+			>
+				<form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
 					{/* Subject */}
-					<div className="space-y-2">
-						<Label htmlFor="subject" className="text-sm font-medium">
+					<div>
+						<p className="text-sm font-medium text-gray-700 mb-1">
 							Subject
-						</Label>
+						</p>
 						<Controller
 							name="subject"
 							control={control}
 							render={({ field }) => (
 								<Input
+									size="large"
+									placeholder="Enter the subject"
 									{...field}
-									id="subject"
-									placeholder="Enter the Subject"
-									className={`w-full ${errors.subject ? "border-red-500" : ""}`}
+									status={errors.subject ? "error" : undefined}
+									className="w-full"
 								/>
 							)}
 						/>
 						{errors.subject && (
-							<p className="text-sm text-red-500">{errors.subject.message}</p>
+							<p className="text-sm text-red-500 mt-1">{errors.subject.message}</p>
 						)}
 					</div>
 
 					{/* Department and Priority */}
 					<div className="grid grid-cols-2 gap-4">
-						<div className="space-y-2 bg-white">
-							<Label htmlFor="department" className="text-sm font-medium">
+						<div>
+							<p className="text-sm font-medium text-gray-700 mb-1">
 								Department
-							</Label>
+							</p>
 							<Controller
 								name="department"
 								control={control}
 								render={({ field }) => (
-									<Select value={field.value} onValueChange={field.onChange}>
-										<SelectTrigger
-											id="department"
-											className={errors.department ? "border-red-500" : ""}
-										>
-											<SelectValue placeholder="Select department" />
-										</SelectTrigger>
-										<SelectContent className="bg-white">
-											<SelectItem value="Billing">Billing</SelectItem>
-											<SelectItem value="Parcel Support">
-												Parcel Support
-											</SelectItem>
-											<SelectItem value="Technical Support">
-												Technical Support
-											</SelectItem>
-										</SelectContent>
-									</Select>
+									<Select
+										size="large"
+										{...field}
+										placeholder="Select department"
+										className="w-full"
+										status={errors.department ? "error" : undefined}
+										onChange={(value) => field.onChange(value)}
+										options={[
+											{ value: "Billing", label: "Billing" },
+											{ value: "Parcel Support", label: "Parcel Support" },
+											{ value: "Technical Support", label: "Technical Support" },
+										]}
+									/>
 								)}
 							/>
 							{errors.department && (
-								<p className="text-sm text-red-500">
-									{errors.department.message}
-								</p>
+								<p className="text-sm text-red-500 mt-1">{errors.department.message}</p>
 							)}
 						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="priority" className="text-sm font-medium">
+						<div>
+							<p className="text-sm font-medium text-gray-700 mb-1">
 								Priority
-							</Label>
+							</p>
 							<Controller
 								name="priority"
 								control={control}
 								render={({ field }) => (
-									<Select value={field.value} onValueChange={field.onChange}>
-										<SelectTrigger
-											id="priority"
-											className={errors.priority ? "border-red-500" : ""}
-										>
-											<SelectValue placeholder="Select priority" />
-										</SelectTrigger>
-										<SelectContent className="bg-white">
-											<SelectItem value="Low">Low</SelectItem>
-											<SelectItem value="Medium">Medium</SelectItem>
-											<SelectItem value="High">High</SelectItem>
-										</SelectContent>
-									</Select>
+									<Select
+										size="large"
+										{...field}
+										placeholder="Select priority"
+										className="w-full"
+										status={errors.priority ? "error" : undefined}
+										onChange={(value) => field.onChange(value)}
+										options={[
+											{ value: "Low", label: "Low" },
+											{ value: "Medium", label: "Medium" },
+											{ value: "High", label: "High" },
+										]}
+									/>
 								)}
 							/>
 							{errors.priority && (
-								<p className="text-sm text-red-500">
-									{errors.priority.message}
-								</p>
+								<p className="text-sm text-red-500 mt-1">{errors.priority.message}</p>
 							)}
 						</div>
 					</div>
 
 					{/* Message */}
-					<div className="space-y-2">
-						<Label htmlFor="message" className="text-sm font-medium">
+					<div>
+						<p className="text-sm font-medium text-gray-700 mb-1">
 							Message
-						</Label>
+						</p>
 						<Controller
 							name="message"
 							control={control}
 							render={({ field }) => (
-								<Textarea
-									{...field}
-									id="message"
+								<TextArea
+									rows={4}
 									placeholder="Enter the message..."
-									className={`min-h-[120px] resize-none ${errors.message ? "border-red-500" : ""}`}
+									{...field}
+									status={errors.message ? "error" : undefined}
+									className="w-full min-h-[120px] resize-none"
 								/>
 							)}
 						/>
 						{errors.message && (
-							<p className="text-sm text-red-500">{errors.message.message}</p>
+							<p className="text-sm text-red-500 mt-1">{errors.message.message}</p>
 						)}
 					</div>
 
 					{/* Attachment */}
-					<div className="space-y-2">
-						<Label className="text-sm font-medium">Attachment</Label>
+					<div>
+						<p className="text-sm font-medium text-gray-700 mb-1">
+							Attachment
+						</p>
 						<input
 							ref={fileInputRef}
 							type="file"
@@ -276,7 +267,7 @@ export function CreateTicketModal() {
 						/>
 						<div
 							className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${dragActive
-									? "border-primary bg-primary/5"
+									? "border-[#E5005F] bg-pink-50"
 									: "border-gray-300 hover:border-gray-400"
 								}`}
 							onDragEnter={handleDrag}
@@ -285,8 +276,8 @@ export function CreateTicketModal() {
 							onDrop={handleDrop}
 							onClick={handleUploadClick}
 						>
-							<Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-							<p className="text-sm text-gray-500">drag & drop or upload now</p>
+							<Upload className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+							<p className="text-gray-500">Upload image</p>
 						</div>
 
 						{files.length > 0 && (
@@ -307,42 +298,31 @@ export function CreateTicketModal() {
 												</p>
 											</div>
 										</div>
-										<Button
-											variant="ghost"
-											size="sm"
+										<button
+											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
 												removeFile(index);
 											}}
-											className="h-8 w-8 p-0 hover:bg-gray-200 flex-shrink-0"
+											className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-gray-200 flex-shrink-0 cursor-pointer"
 										>
 											<X className="h-4 w-4 text-gray-500" />
-										</Button>
+										</button>
 									</div>
 								))}
 							</div>
 						)}
 					</div>
 
-					{/* Action Buttons */}
-					<div className="flex gap-3 pt-2">
-						<Button
-							type="button"
-							variant="outline"
-							className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 border-0"
-							onClick={handleCancel}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							className="flex-1 bg-[#4CAF50] hover:bg-[#45a049] text-white"
-						>
-							Save
-						</Button>
-					</div>
+					{/* Submit Button */}
+					<button
+						type="submit"
+						className="w-full bg-[#E5005F] hover:bg-pink-600 !text-white py-3 text-base font-medium rounded-md cursor-pointer transition-colors"
+					>
+						Submit Ticket
+					</button>
 				</form>
-			</DialogContent>
-		</Dialog>
+			</Modal>
+		</ConfigProvider>
 	);
 }
