@@ -3,14 +3,19 @@
 import { Spin } from "antd";
 import { Package } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getImageUrl } from "@/lib/utils";
-import { usePendingOrderDataQuery } from "@/redux/features/orderApi";
+import { useOrdersByStatusQuery } from "@/redux/features/orderApi";
 
-export default function OrdersTable() {
+export default function OrdersTable({ status = "Pending" }: { status?: string }) {
 	const [page, setPage] = useState(1);
 
-	const { data, isLoading } = usePendingOrderDataQuery(page);
+	// Reset to page 1 when status changes
+	useEffect(() => {
+		setPage(1);
+	}, [status]);
+
+	const { data, isLoading } = useOrdersByStatusQuery({ status, page });
 
 	const orders = data?.data?.data || [];
 	const pagination = data?.data;

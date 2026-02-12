@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import order from "@/assets/images/dashboard/Group 1321314503 (1).png";
 import cancelled from "@/assets/images/dashboard/Group 1321314503 (2).png";
 import returnIcon from "@/assets/images/dashboard/Group 1321314504.png";
@@ -9,14 +10,17 @@ import { useOrderCountQuery } from "@/redux/features/orderApi";
 
 const OrderPage = () => {
 	const { data, error, isLoading } = useOrderCountQuery(undefined);
+	const [activeStatus, setActiveStatus] = useState("Pending");
 
 	const stats = [
-		{ title: "New order", value: data?.data?.pending ?? 0, icon: order },
-		{ title: "Cancelled", value: data?.data?.canceled ?? 0, icon: cancelled },
-		{ title: "Returned", value: data?.data?.return ?? 0, icon: returnIcon },
-		{ title: "On delivery", value: data?.data?.ontheway ?? 0, icon: delivery },
-		{ title: "Delivered", value: data?.data?.delivered ?? 0, icon: delivered },
+		{ title: "New order", value: data?.data?.pending ?? 0, icon: order, status: "Pending" },
+		{ title: "Cancelled", value: data?.data?.canceled ?? 0, icon: cancelled, status: "Canceled" },
+		{ title: "Returned", value: data?.data?.return ?? 0, icon: returnIcon, status: "Return" },
+		{ title: "On delivery", value: data?.data?.ontheway ?? 0, icon: delivery, status: "On the way" },
+		{ title: "Delivered", value: data?.data?.delivered ?? 0, icon: delivered, status: "Delivered" },
 	];
+
+	const activeLabel = stats.find((s) => s.status === activeStatus)?.title ?? "Orders";
 
 	return (
 		<div className="m-3 sm:m-4 lg:m-6 bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 lg:p-6 mb-24">
@@ -34,9 +38,14 @@ const OrderPage = () => {
 			{!isLoading && !error && (
 				<div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-5 lg:border-b lg:pb-4 lg:mb-4 border-gray-100">
 					{stats.map((stat, index) => (
-						<div
+						<button
 							key={index}
-							className="bg-gray-50/80 border border-gray-100 rounded-xl p-3 sm:p-4"
+							type="button"
+							onClick={() => setActiveStatus(stat.status)}
+							className={`rounded-xl p-3 sm:p-4 transition-all cursor-pointer text-left bg-gray-50/80 hover:shadow-sm ${activeStatus === stat.status
+									? "border-2 border-[#E5005F]/30"
+									: "border border-gray-100 hover:border-gray-200"
+								}`}
 						>
 							<div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3">
 								<div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
@@ -55,16 +64,16 @@ const OrderPage = () => {
 									</p>
 								</div>
 							</div>
-						</div>
+						</button>
 					))}
 				</div>
 			)}
 
 			<div className="mt-3 sm:mt-4">
 				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-					Pending Orders
+					{activeLabel} Orders
 				</h2>
-				<OrdersTable />
+				<OrdersTable status={activeStatus} />
 			</div>
 		</div>
 	);

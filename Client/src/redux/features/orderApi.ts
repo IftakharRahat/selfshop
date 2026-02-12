@@ -22,10 +22,10 @@ const orderApi = baseApi.injectEndpoints({
 			},
 			providesTags: ["orderApi"],
 		}),
-		pendingOrderData: builder.query({
-			query: (page: number = 1) => {
+		ordersByStatus: builder.query({
+			query: ({ status = "Pending", page = 1 }: { status?: string; page?: number }) => {
 				return {
-					url: `/order-data/Pending?page=${page}`,
+					url: `/order-data/${status}?page=${page}`,
 					method: "GET",
 				};
 			},
@@ -95,6 +95,6 @@ export const {
 	useTrackOrderQuery,
 	useCreateOrderMutation,
 	useOrderCountQuery,
-	usePendingOrderDataQuery,
+	useOrdersByStatusQuery,
 	useIncomeHistoryQuery,
 } = orderApi;
