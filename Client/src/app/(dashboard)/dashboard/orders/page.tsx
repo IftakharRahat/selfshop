@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import order from "@/assets/images/dashboard/Group 1321314503 (1).png";
 import cancelled from "@/assets/images/dashboard/Group 1321314503 (2).png";
 import returnIcon from "@/assets/images/dashboard/Group 1321314504.png";
@@ -21,11 +22,7 @@ const statusTabs = [
 
 const OrderPage = () => {
 	const { data, error, isLoading } = useOrderCountQuery(undefined);
-<<<<<<< HEAD
-	const [activeStatus, setActiveStatus] = useState("Pending");
-=======
 	const [activeStatus, setActiveStatus] = useState("all");
->>>>>>> feature/latest-backend-fix
 
 	const stats = [
 		{ title: "New order", value: data?.data?.pending ?? 0, icon: order, status: "Pending" },
@@ -58,8 +55,8 @@ const OrderPage = () => {
 							type="button"
 							onClick={() => setActiveStatus(stat.status)}
 							className={`rounded-xl p-3 sm:p-4 transition-all cursor-pointer text-left bg-gray-50/80 hover:shadow-sm ${activeStatus === stat.status
-									? "border-2 border-[#E5005F]/30"
-									: "border border-gray-100 hover:border-gray-200"
+								? "border-2 border-[#E5005F]/30"
+								: "border border-gray-100 hover:border-gray-200"
 								}`}
 						>
 							<div className="flex flex-col sm:flex-row items-center sm:items-center gap-1.5 sm:gap-3">
@@ -84,14 +81,6 @@ const OrderPage = () => {
 				</div>
 			)}
 
-<<<<<<< HEAD
-			<div className="mt-3 sm:mt-4">
-				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-					{activeLabel} Orders
-				</h2>
-				<OrdersTable status={activeStatus} />
-			</div>
-=======
 			{/* Status Tabs */}
 			<div className="flex flex-wrap gap-2 mb-4 border-b border-gray-100 pb-3">
 				{statusTabs.map((tab) => (
@@ -111,7 +100,6 @@ const OrderPage = () => {
 			</div>
 
 			<OrdersTable status={activeStatus} />
->>>>>>> feature/latest-backend-fix
 		</div>
 	);
 };
