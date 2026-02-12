@@ -22,27 +22,27 @@ export default function MetricCard({
 }: MetricCardProps) {
 	return (
 		<div className="relative overflow-hidden bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 group">
-			<div className="p-5">
-				<div className="flex items-center gap-3 mb-3">
-					<div className="w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
+			<div className="p-3 sm:p-5">
+				<div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+					<div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-pink-50 flex items-center justify-center flex-shrink-0">
 						{typeof icon === "string" ? (
-							<span className="text-sm">{icon}</span>
+							<span className="text-xs sm:text-sm">{icon}</span>
 						) : typeof icon === "object" && icon !== null && "src" in icon ? (
 							<Image
 								src={icon.src}
 								alt={title}
 								width={22}
 								height={22}
-								className="w-[22px] h-[22px] object-contain"
+								className="w-4 h-4 sm:w-[22px] sm:h-[22px] object-contain"
 							/>
 						) : React.isValidElement(icon) ? (
 							icon
 						) : null}
 					</div>
-					<h3 className="text-sm font-medium text-gray-500">{title}</h3>
+					<h3 className="text-xs sm:text-sm font-medium text-gray-500 leading-tight">{title}</h3>
 				</div>
 
-				<p className="text-2xl font-bold text-gray-900">{value}</p>
+				<p className="text-lg sm:text-2xl font-bold text-gray-900">{value}</p>
 
 				{change && (
 					<div className="flex items-center gap-1 mt-2">

@@ -19,9 +19,9 @@ export default function Dashboard() {
 	};
 
 	return (
-		<main className="flex-1 p-4 sm:p-5 lg:p-6 pb-20">
+		<main className="flex-1 p-3 sm:p-5 lg:p-6 pb-24">
 			{/* Metrics Cards */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 mb-6 lg:mb-8">
+			<div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-4 lg:mb-8">
 				<MetricCard
 					title="Total Sale"
 					value={`৳ ${metrics.total_sales ?? 0}`}
@@ -53,11 +53,11 @@ export default function Dashboard() {
 			</div>
 
 			{/* Order Insight + Orders Table */}
-			<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 lg:p-6">
+			<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-5 lg:p-6">
 				<OrderInsightCards />
 
-				<div className="mt-6 pt-6 border-t border-gray-100">
-					<h2 className="text-lg font-semibold text-gray-900 mb-4">
+				<div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
+					<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
 						Pending Orders
 					</h2>
 					<OrdersTable />
