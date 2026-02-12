@@ -3,14 +3,30 @@
 import { Spin } from "antd";
 import { Package } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { getImageUrl } from "@/lib/utils";
-import { usePendingOrderDataQuery } from "@/redux/features/orderApi";
+import { useOrderDataByStatusQuery } from "@/redux/features/orderApi";
 
-export default function OrdersTable() {
+const statusColors: Record<string, string> = {
+	Pending: "bg-amber-50 text-amber-700 border-amber-200",
+	Confirmed: "bg-blue-50 text-blue-700 border-blue-200",
+	Processing: "bg-indigo-50 text-indigo-700 border-indigo-200",
+	Packageing: "bg-purple-50 text-purple-700 border-purple-200",
+	Ontheway: "bg-cyan-50 text-cyan-700 border-cyan-200",
+	Delivered: "bg-green-50 text-green-700 border-green-200",
+	Canceled: "bg-red-50 text-red-700 border-red-200",
+	Return: "bg-gray-50 text-gray-700 border-gray-200",
+};
+
+interface OrdersTableProps {
+	status?: string;
+}
+
+export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 	const [page, setPage] = useState(1);
 
-	const { data, isLoading } = usePendingOrderDataQuery(page);
+	const { data, isLoading } = useOrderDataByStatusQuery({ status, page });
 
 	const orders = data?.data?.data || [];
 	const pagination = data?.data;
@@ -95,15 +111,18 @@ export default function OrdersTable() {
 								<td className="p-4 text-sm text-gray-500">{order.orderDate}</td>
 
 								<td className="p-4">
-									<span className="bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full text-xs font-medium">
+									<span className={`border px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[order.status] || "bg-gray-50 text-gray-700 border-gray-200"}`}>
 										{order.status}
 									</span>
 								</td>
 
 								<td className="p-4">
-									<button className="text-xs font-medium px-3 py-1.5 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer">
+									<Link
+										href={`/dashboard/track-orders?invoiceID=${order.invoiceID || ""}`}
+										className="inline-block text-xs font-medium px-3 py-1.5 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
+									>
 										View
-									</button>
+									</Link>
 								</td>
 							</tr>
 						))}
@@ -111,7 +130,7 @@ export default function OrdersTable() {
 						{orders.length === 0 && (
 							<tr>
 								<td colSpan={8} className="py-12 text-center text-gray-400 text-sm">
-									No pending orders found.
+									No orders found.
 								</td>
 							</tr>
 						)}
@@ -120,7 +139,7 @@ export default function OrdersTable() {
 			</div>
 
 			{/* Pagination */}
-			{pagination && (
+			{pagination && pagination.last_page > 1 && (
 				<div className="flex justify-center items-center gap-3 py-4 border-t border-gray-100 mt-2">
 					<button
 						disabled={!pagination.prev_page_url}

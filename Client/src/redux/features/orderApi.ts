@@ -31,6 +31,15 @@ const orderApi = baseApi.injectEndpoints({
 			},
 			providesTags: ["orderApi"],
 		}),
+		orderDataByStatus: builder.query({
+			query: ({ status, page = 1 }: { status: string; page?: number }) => {
+				return {
+					url: `/order-data/${status}?page=${page}`,
+					method: "GET",
+				};
+			},
+			providesTags: ["orderApi"],
+		}),
 		incomeHistory: builder.query({
 			query: () => {
 				return {
@@ -96,5 +105,6 @@ export const {
 	useCreateOrderMutation,
 	useOrderCountQuery,
 	usePendingOrderDataQuery,
+	useOrderDataByStatusQuery,
 	useIncomeHistoryQuery,
 } = orderApi;
