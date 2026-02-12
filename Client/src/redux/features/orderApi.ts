@@ -67,16 +67,7 @@ const orderApi = baseApi.injectEndpoints({
 		//   providesTags: ["courseApi"],
 		// }),
 
-		createOrder: builder.mutation({
-			query: (data) => {
-				return {
-					url: "/order-now",
-					method: "POST",
-					body: data,
-				};
-			},
-			invalidatesTags: ["orderApi"],
-		}),
+
 
 		// updateExample: builder.mutation({
 		//   query: (data) => {
@@ -102,7 +93,6 @@ const orderApi = baseApi.injectEndpoints({
 
 export const {
 	useTrackOrderQuery,
-	useCreateOrderMutation,
 	useOrderCountQuery,
 	useOrdersByStatusQuery,
 	useOrderDataByStatusQuery,
