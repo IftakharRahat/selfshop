@@ -140,7 +140,7 @@ export function CreateTicketModal() {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button className="bg-[#E91E63] hover:bg-[#C2185B] text-white">
+				<Button className="bg-[#E91E63] hover:bg-[#C2185B] !text-white">
 					+ Add now
 				</Button>
 			</DialogTrigger>
@@ -275,11 +275,10 @@ export function CreateTicketModal() {
 							accept="*/*"
 						/>
 						<div
-							className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-								dragActive
+							className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${dragActive
 									? "border-primary bg-primary/5"
 									: "border-gray-300 hover:border-gray-400"
-							}`}
+								}`}
 							onDragEnter={handleDrag}
 							onDragLeave={handleDrag}
 							onDragOver={handleDrag}

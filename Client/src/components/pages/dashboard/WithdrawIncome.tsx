@@ -106,7 +106,7 @@ export function WithdrawIncome() {
 	return (
 		<>
 			{/* Withdraw Form */}
-			<div className="w-full m-4 lg:m-6 md:bg-white rounded-md md:p-8">
+			<div className="w-full">
 				{/* Balance Info */}
 				<div className="border-0 shadow-none bg-gray-100 p-4 rounded-md">
 					<div className="flex items-start justify-between">
@@ -151,26 +151,25 @@ export function WithdrawIncome() {
 						<label className="text-sm font-medium text-gray-900">
 							Select withdrawal method
 						</label>
-						<div className="flex items-center gap-4 flex-wrap">
+						<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 							{methodsLoading ? (
 								<p>Loading methods...</p>
 							) : (
 								withdrawMethods.map((method: any) => (
 									<div
 										key={method.id}
-										className={`flex items-center gap-2 cursor-pointer p-2 rounded-md border ${
-											selectedMethod === method.paymentTypeName
-												? "border-[#E5005F] bg-[#FDEDF4]"
-												: "border-gray-300"
-										}`}
+										className={`flex items-center gap-2 cursor-pointer px-3 py-2.5 rounded-lg border transition-colors h-12 ${selectedMethod === method.paymentTypeName
+											? "border-[#E5005F] bg-[#FDEDF4]"
+											: "border-gray-200 hover:border-gray-300"
+											}`}
 										onClick={() => setSelectedMethod(method.paymentTypeName)}
 									>
 										<img
 											src={getImageUrl(method.icon)}
 											alt={method?.paymentTypeName || "Payment method"}
-											className="w-8 h-8"
+											className="w-7 h-7 object-contain flex-shrink-0"
 										/>
-										<span className="text-sm font-medium">
+										<span className="text-sm font-medium truncate">
 											{method.paymentTypeName}
 										</span>
 									</div>
@@ -182,7 +181,7 @@ export function WithdrawIncome() {
 					{/* Account Info */}
 					<div className="space-y-2">
 						<label className="text-sm font-medium text-gray-900">
-							Please provide your payment information here
+							Please provide your payment information
 						</label>
 						<div className="relative flex items-center gap-2">
 							<div className="bg-gray-200/80 h-12 w-16 flex items-center justify-center rounded-md text-sm">
@@ -231,74 +230,108 @@ export function WithdrawIncome() {
 			</div>
 
 			{/* Payment History */}
-			<div className="w-full m-4 lg:m-6 md:bg-white rounded-md md:p-8">
-				<div className="p-0">
-					<h2 className="text-lg font-semibold text-gray-900">
-						Payment history
-					</h2>
-					<div className="flex items-center justify-between p-4 border-b border-gray-200">
-						<h2 className="text-sm font-medium text-gray-900">All incomes</h2>
-					</div>
+			<div className="w-full mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-100">
+				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+					Payment History
+				</h2>
 
-					{/* Desktop Table */}
-					<div className="overflow-x-auto">
+				{/* Loading */}
+				{listLoading && (
+					<div className="py-10 text-center text-gray-500 text-sm">
+						Loading payment history...
+					</div>
+				)}
+
+				{/* Mobile Card Layout */}
+				{!listLoading && (
+					<div className="md:hidden space-y-3">
+						{withdrawList.length > 0 ? (
+							withdrawList.map((withdraw: any) => (
+								<div
+									key={withdraw.id}
+									className="bg-gray-50/60 border border-gray-100 rounded-xl p-3"
+								>
+									<div className="flex items-center justify-between mb-1">
+										<p className="text-xs text-gray-500">#{withdraw.id}</p>
+										<span
+											className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${withdraw.status === "Completed"
+												? "bg-green-50 text-green-700 border border-green-200"
+												: withdraw.status === "Pending"
+													? "bg-amber-50 text-amber-700 border border-amber-200"
+													: "bg-red-50 text-red-700 border border-red-200"
+												}`}
+										>
+											{withdraw.status}
+										</span>
+									</div>
+
+									<p className="text-lg font-bold text-gray-900 mb-1.5">৳ {withdraw.withdrew_amount}</p>
+
+									<div className="flex items-center justify-between text-xs text-gray-400">
+										<span>{withdraw.paymenttype_name}</span>
+										<span>{new Date(withdraw.created_at).toLocaleDateString()}</span>
+									</div>
+								</div>
+							))
+						) : (
+							<div className="py-10 text-center text-gray-400 text-sm">
+								No withdrawal history found.
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Desktop Table Layout */}
+				{!listLoading && (
+					<div className="hidden md:block overflow-x-auto">
 						<table className="w-full">
 							<thead>
-								<tr>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+								<tr className="bg-gray-50/80">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Invoice ID
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Date
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Payment Method
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Amount
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Status
 									</th>
 								</tr>
 							</thead>
+
 							<tbody>
-								{listLoading ? (
-									<tr>
-										<td
-											colSpan={5}
-											className="p-4 text-center text-sm text-gray-500"
-										>
-											Loading payment history...
-										</td>
-									</tr>
-								) : withdrawList.length > 0 ? (
+								{withdrawList.length > 0 ? (
 									withdrawList.map((withdraw: any) => (
 										<tr
 											key={withdraw.id}
-											className="border-b border-gray-100 hover:bg-gray-50"
+											className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
 										>
-											<td className="p-4 text-sm text-gray-900">
+											<td className="p-4 text-sm font-medium text-gray-900">
 												#{withdraw.id}
 											</td>
-											<td className="p-4 text-sm text-gray-900">
+											<td className="p-4 text-sm text-gray-500">
 												{new Date(withdraw.created_at).toLocaleDateString()}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4 text-sm text-gray-700">
 												{withdraw.paymenttype_name}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
-												৳{withdraw.withdrew_amount}
+											<td className="p-4 text-sm font-bold text-gray-900">
+												৳ {withdraw.withdrew_amount}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4">
 												<span
-													className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-														withdraw.status === "Completed"
-															? "bg-green-100 text-green-800"
-															: withdraw.status === "Pending"
-																? "bg-yellow-100 text-yellow-800"
-																: "bg-red-100 text-red-800"
-													}`}
+													className={`px-2.5 py-1 rounded-full text-xs font-medium ${withdraw.status === "Completed"
+														? "bg-green-50 text-green-700 border border-green-200"
+														: withdraw.status === "Pending"
+															? "bg-amber-50 text-amber-700 border border-amber-200"
+															: "bg-red-50 text-red-700 border border-red-200"
+														}`}
 												>
 													{withdraw.status}
 												</span>
@@ -307,10 +340,7 @@ export function WithdrawIncome() {
 									))
 								) : (
 									<tr>
-										<td
-											colSpan={5}
-											className="p-4 text-center text-sm text-gray-500"
-										>
+										<td colSpan={5} className="py-12 text-center text-gray-400 text-sm">
 											No withdrawal history found.
 										</td>
 									</tr>
@@ -318,7 +348,7 @@ export function WithdrawIncome() {
 							</tbody>
 						</table>
 					</div>
-				</div>
+				)}
 			</div>
 		</>
 	);

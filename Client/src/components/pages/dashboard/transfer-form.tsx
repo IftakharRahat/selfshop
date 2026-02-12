@@ -160,74 +160,108 @@ export function TransferForm() {
 			</div>
 
 			{/* Transfer History */}
-			<div className="w-full m-4 lg:m-6 md:bg-white rounded-md md:p-8">
-				<div className="p-0">
-					<h2 className="text-lg font-semibold text-gray-900">
-						Transfer history
-					</h2>
-					<div className="flex items-center justify-between p-4 border-b border-gray-200">
-						<h2 className="text-sm font-medium text-gray-900">All transfers</h2>
-					</div>
+			<div className="w-full mt-4 sm:mt-6">
+				<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+					Transfer History
+				</h2>
 
-					<div className="overflow-x-auto">
+				{/* Loading */}
+				{isLoading && (
+					<div className="py-10 text-center text-gray-500 text-sm">
+						Loading transfer history...
+					</div>
+				)}
+
+				{/* Mobile Card Layout */}
+				{!isLoading && (
+					<div className="md:hidden space-y-3">
+						{balanceTransfersData?.data?.length > 0 ? (
+							balanceTransfersData.data.map((transfer: any) => (
+								<div
+									key={transfer.id}
+									className="bg-gray-50/60 border border-gray-100 rounded-xl p-3"
+								>
+									<div className="flex items-center justify-between mb-1">
+										<p className="text-xs text-gray-500">#{transfer.id}</p>
+										<span
+											className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${transfer.status === "Paid"
+													? "bg-green-50 text-green-700 border border-green-200"
+													: transfer.status === "Pending"
+														? "bg-amber-50 text-amber-700 border border-amber-200"
+														: "bg-red-50 text-red-700 border border-red-200"
+												}`}
+										>
+											{transfer.status}
+										</span>
+									</div>
+
+									<p className="text-lg font-bold text-gray-900 mb-1.5">৳ {transfer.withdrew_amount}</p>
+
+									<div className="flex items-center justify-between text-xs text-gray-400">
+										<span className="truncate mr-2">To: {transfer.to_account_number}</span>
+										<span className="flex-shrink-0">{new Date(transfer.created_at).toLocaleDateString()}</span>
+									</div>
+								</div>
+							))
+						) : (
+							<div className="py-10 text-center text-gray-400 text-sm">
+								No transfer history found.
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Desktop Table Layout */}
+				{!isLoading && (
+					<div className="hidden md:block overflow-x-auto">
 						<table className="w-full">
 							<thead>
-								<tr>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+								<tr className="bg-gray-50/80">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										ID
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Date
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										To Account
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Amount
 									</th>
-									<th className="text-left p-4 text-sm font-medium text-gray-600">
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Status
 									</th>
 								</tr>
 							</thead>
 
 							<tbody>
-								{isLoading ? (
-									<tr>
-										<td
-											colSpan={5}
-											className="p-4 text-center text-sm text-gray-500"
-										>
-											Loading transfer history...
-										</td>
-									</tr>
-								) : balanceTransfersData?.data?.length > 0 ? (
+								{balanceTransfersData?.data?.length > 0 ? (
 									balanceTransfersData.data.map((transfer: any) => (
 										<tr
 											key={transfer.id}
-											className="border-b border-gray-100 hover:bg-gray-50"
+											className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
 										>
-											<td className="p-4 text-sm text-gray-900">
+											<td className="p-4 text-sm font-medium text-gray-900">
 												#{transfer.id}
 											</td>
-											<td className="p-4 text-sm text-gray-900">
+											<td className="p-4 text-sm text-gray-500">
 												{new Date(transfer.created_at).toLocaleDateString()}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4 text-sm text-gray-700">
 												{transfer.to_account_number}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
-												৳{transfer.withdrew_amount}
+											<td className="p-4 text-sm font-bold text-gray-900">
+												৳ {transfer.withdrew_amount}
 											</td>
-											<td className="p-4 text-sm text-gray-600">
+											<td className="p-4">
 												<span
-													className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-														transfer.status === "Paid"
-															? "bg-green-100 text-green-800"
+													className={`px-2.5 py-1 rounded-full text-xs font-medium ${transfer.status === "Paid"
+															? "bg-green-50 text-green-700 border border-green-200"
 															: transfer.status === "Pending"
-																? "bg-yellow-100 text-yellow-800"
-																: "bg-red-100 text-red-800"
-													}`}
+																? "bg-amber-50 text-amber-700 border border-amber-200"
+																: "bg-red-50 text-red-700 border border-red-200"
+														}`}
 												>
 													{transfer.status}
 												</span>
@@ -236,10 +270,7 @@ export function TransferForm() {
 									))
 								) : (
 									<tr>
-										<td
-											colSpan={5}
-											className="p-4 text-center text-sm text-gray-500"
-										>
+										<td colSpan={5} className="py-12 text-center text-gray-400 text-sm">
 											No transfer history found.
 										</td>
 									</tr>
@@ -247,7 +278,7 @@ export function TransferForm() {
 							</tbody>
 						</table>
 					</div>
-				</div>
+				)}
 			</div>
 		</>
 	);
