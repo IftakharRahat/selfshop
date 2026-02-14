@@ -2,27 +2,36 @@
 "use client";
 
 import { Alert, ConfigProvider, Input, Spin } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTrackOrderQuery } from "@/redux/features/orderApi";
+import OrderDetailCard from "./order-detail-card";
 
 export default function OrderTracking() {
+	const searchParams = useSearchParams();
 	const [orderId, setOrderId] = useState("");
-	const [triggerId, setTriggerId] = useState(""); // for API call
+	const [triggerId, setTriggerId] = useState("");
 	const [showError, setShowError] = useState(false);
 
-	// API call only when triggerId changes
 	const { data, isFetching, isError } = useTrackOrderQuery(triggerId, {
 		skip: !triggerId,
 	});
 
 	const orderData = data?.data;
 
+	// Optional: prefill search box when invoiceID is in URL (user can still click Search)
+	useEffect(() => {
+		const invoiceID = searchParams?.get("invoiceID")?.trim();
+		if (invoiceID && !orderId) {
+			setOrderId(invoiceID);
+		}
+	}, [searchParams, orderId]);
+
 	const handleSearch = () => {
 		if (!orderId.trim()) {
 			setShowError(true);
 			return;
 		}
-
 		setTriggerId(orderId.trim());
 		setShowError(false);
 	};
@@ -87,59 +96,8 @@ export default function OrderTracking() {
 
 					{/* Order Details */}
 					{!isFetching && !isError && orderData && (
-						<div className="bg-gray-50/60 border border-gray-100 rounded-xl p-4 mt-2">
-							{/* Header: Invoice + Status */}
-							<div className="flex items-center justify-between mb-3">
-								<div>
-									<p className="text-sm font-semibold text-gray-900">Order: {orderData.invoiceID}</p>
-									<p className="text-xs text-gray-400 mt-0.5">{orderData.orderDate}</p>
-								</div>
-								<span className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-									{orderData.status}
-								</span>
-							</div>
-
-							{/* Info Grid */}
-							<div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm py-3 border-t border-gray-200">
-								<div>
-									<p className="text-xs text-gray-400">Customer</p>
-									<p className="font-medium text-gray-900">{orderData.customers?.customerName}</p>
-								</div>
-								<div>
-									<p className="text-xs text-gray-400">Phone</p>
-									<p className="font-medium text-gray-900">{orderData.customers?.customerPhone}</p>
-								</div>
-								<div>
-									<p className="text-xs text-gray-400">Delivery Charge</p>
-									<p className="font-medium text-gray-900">৳ {orderData.deliveryCharge}</p>
-								</div>
-								{orderData.customers?.customerAddress && (
-									<div className="col-span-2 sm:col-span-3">
-										<p className="text-xs text-gray-400">Address</p>
-										<p className="font-medium text-gray-900">{orderData.customers?.customerAddress}</p>
-									</div>
-								)}
-								{orderData.couriers?.courierName && (
-									<div>
-										<p className="text-xs text-gray-400">Courier</p>
-										<p className="font-medium text-gray-900">{orderData.couriers?.courierName}</p>
-									</div>
-								)}
-							</div>
-
-							{/* Products */}
-							<div className="pt-3 border-t border-gray-200">
-								<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Products</p>
-								{orderData.orderproducts?.map((item: any) => (
-									<div
-										key={item.id}
-										className="flex items-center justify-between text-sm py-1.5"
-									>
-										<span className="text-gray-700">{item.productName} <span className="text-gray-400">×{item.quantity}</span></span>
-										<span className="font-medium text-gray-900">৳ {item.productPrice}</span>
-									</div>
-								))}
-							</div>
+						<div className="mt-2">
+							<OrderDetailCard orderData={orderData} />
 						</div>
 					)}
 				</div>

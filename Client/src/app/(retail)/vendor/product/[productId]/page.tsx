@@ -171,7 +171,7 @@ export default function VendorProductPage() {
 				<button
 					type="button"
 					onClick={() => router.push("/vendor")}
-					className="mt-4 text-[#E5005F] font-medium"
+					className="mt-4 text-[#2d2a5d] font-medium"
 				>
 					Back to vendor
 				</button>

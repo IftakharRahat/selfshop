@@ -49,12 +49,12 @@ export default function VendorOrdersPage() {
 							placeholder="Search orders..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="rounded-md border border-gray-300 px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+							className="rounded-md border border-gray-300 px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 						/>
 						<select
 							value={status}
 							onChange={(e) => setStatus(e.target.value)}
-							className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+							className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						>
 							{statusOptions.map((o) => (
 								<option key={o.value} value={o.value}>{o.label}</option>
@@ -63,7 +63,7 @@ export default function VendorOrdersPage() {
 						<select
 							value={payment}
 							onChange={(e) => setPayment(e.target.value)}
-							className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+							className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						>
 							<option value="">All payments</option>
 							<option value="Cash on Delivery">Cash on Delivery</option>
@@ -114,7 +114,7 @@ export default function VendorOrdersPage() {
 											</td>
 											<td className="px-3 py-2 text-center text-gray-600">{o.Payment ?? "—"}</td>
 											<td className="px-3 py-2 text-center">
-												<Link href={`/vendor/orders/${o.id}`} className="text-xs font-medium text-pink-600 hover:underline">View</Link>
+												<Link href={`/vendor/orders/${o.id}`} className="text-xs font-medium text-[#2d2a5d] hover:underline">View</Link>
 											</td>
 										</tr>
 									))}

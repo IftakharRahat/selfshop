@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import WithVendorAuth from "../../../WithVendorAuth";
+import WithVendorAuth from "../../WithVendorAuth";
 import { useGetVendorProductReviewsQuery } from "@/redux/api/vendorApi";
 
 function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
@@ -119,11 +119,10 @@ export default function VendorProductReviewsPage() {
 									<div className="flex items-center gap-2">
 										<Stars rating={review.rating} />
 										<span
-											className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-												review.status === "Active"
+											className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${review.status === "Active"
 													? "bg-green-100 text-green-700"
 													: "bg-yellow-100 text-yellow-700"
-											}`}
+												}`}
 										>
 											{review.status}
 										</span>

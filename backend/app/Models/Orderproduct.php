@@ -17,6 +17,14 @@ class Orderproduct extends Model
         'productName',
         'productPrice',
         'quantity',
+        'tracking_number',
+        'shipped_at',
+        'fulfillment_status',
+        'fulfillment_type',
+    ];
+
+    protected $casts = [
+        'shipped_at' => 'datetime',
     ];
 
     public function order()

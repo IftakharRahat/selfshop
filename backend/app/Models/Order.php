@@ -21,6 +21,7 @@ protected $casts = [
     'deliveryCharge' => 'integer',
     'discountCharge' => 'integer',
     'paymentAmount' => 'integer',
+    'shipped_at'   => 'datetime',
 ];
     // Your existing relationships...
     public function orderproducts()

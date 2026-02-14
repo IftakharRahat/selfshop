@@ -43,6 +43,12 @@ const baseQueryWithRefreshToken: BaseQueryFn<
 export const baseApi = createApi({
 	reducerPath: "baseApi",
 	baseQuery: baseQueryWithRefreshToken,
+	// Vendor panel frequently navigates between sibling pages.
+	// Keep query cache longer to avoid repeated refetches and faster tab/page switches.
+	keepUnusedDataFor: 300,
+	refetchOnFocus: false,
+	refetchOnReconnect: false,
+	refetchOnMountOrArgChange: false,
 	tagTypes: [
 		"user",
 		"vendorProducts",
@@ -66,6 +72,14 @@ export const baseApi = createApi({
 		"orderApi",
 		"paymentApi",
 		"searchApi",
+		"vendorInventory",
+		"vendorWarehouses",
+		"vendorShippingMethods",
+		"vendorEarnings",
+		"vendorPayoutAccounts",
+		"vendorPayoutRequests",
+		"vendorReports",
+		"vendorDashboard",
 	],
 	endpoints: () => ({}),
 });

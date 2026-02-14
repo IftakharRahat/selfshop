@@ -18,8 +18,8 @@ export default function VendorNewProductPage() {
 	const router = useRouter();
 	const [saving, setSaving] = useState(false);
 	const [createProduct] = useCreateVendorProductMutation();
-	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery();
-	const { data: brandData } = useGetAllBrandsQuery();
+	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
+	const { data: brandData } = useGetAllBrandsQuery(undefined);
 	type CatItem = { id: number; category_name: string; subcategories?: { id: number; sub_category_name: string; category_id: number }[] };
 	const categories = (catData as { data?: CatItem[] })?.data ?? [];
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
@@ -155,25 +155,25 @@ export default function VendorNewProductPage() {
 									<input
 										required
 										name="name"
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									/>
 								</label>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Unit (e.g. Pc, Kg)
-										<input name="unit" placeholder="Pc" className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" />
+										<input name="unit" placeholder="Pc" className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Weight (kg)
-										<input type="number" min={0} step="0.01" name="product_weight" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" />
+										<input type="number" min={0} step="0.01" name="product_weight" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Minimum purchase qty
-										<input type="number" min={1} name="minimum_qty" defaultValue={1} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" />
+										<input type="number" min={1} name="minimum_qty" defaultValue={1} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Tags (comma separated)
-										<input name="tags" placeholder="tag1, tag2" className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" />
+										<input name="tags" placeholder="tag1, tag2" className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 									</label>
 								</div>
 							</div>
@@ -183,14 +183,14 @@ export default function VendorNewProductPage() {
 									Product price &amp; stock
 								</h2>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <label className="flex flex-col text-sm font-medium text-gray-700">
+									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Base price (reseller)
 										<input
 											type="number"
 											min={0}
 											step="0.01"
 											name="base_price"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 										/>
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -200,7 +200,7 @@ export default function VendorNewProductPage() {
 											min={0}
 											step="0.01"
 											name="regular_price"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 										/>
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -209,7 +209,7 @@ export default function VendorNewProductPage() {
 											type="number"
 											min={0}
 											name="qty"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 										/>
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -218,19 +218,19 @@ export default function VendorNewProductPage() {
 											type="number"
 											min={0}
 											name="low_stock"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 										/>
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										SKU
 										<input
 											name="sku"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 										/>
 									</label>
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Discount
-										<input type="number" min={0} step="0.01" name="discount" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" />
+										<input type="number" min={0} step="0.01" name="discount" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 									</label>
 								</div>
 								<p className="text-xs text-gray-600 font-medium mt-1">Stock visibility</p>
@@ -259,7 +259,7 @@ export default function VendorNewProductPage() {
 									<textarea
 										name="short_description"
 										rows={2}
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									/>
 								</label>
 								<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -267,7 +267,7 @@ export default function VendorNewProductPage() {
 									<textarea
 										name="description"
 										rows={4}
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									/>
 								</label>
 							</div>
@@ -285,7 +285,7 @@ export default function VendorNewProductPage() {
 										required
 										value={selectedCategoryId}
 										onChange={(e) => setSelectedCategoryId(e.target.value)}
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									>
 										<option value="">Select category</option>
 										{categories.map((c) => (
@@ -298,7 +298,7 @@ export default function VendorNewProductPage() {
 									<select
 										name="subcategory_id"
 										required
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									>
 										<option value="">Select subcategory</option>
 										{subcategories.map((s) => (
@@ -311,7 +311,7 @@ export default function VendorNewProductPage() {
 									<select
 										name="brand_id"
 										required
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									>
 										<option value="">Select brand</option>
 										{brands.map((b) => (
@@ -393,13 +393,13 @@ export default function VendorNewProductPage() {
 									))}
 									<tr className="border-t border-gray-200 bg-gray-50/50">
 										<td className="py-2 pr-3 align-middle">
-											<input placeholder="e.g. Red / S" value={newVariant.title} onChange={(e) => setNewVariant((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full max-w-[200px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
+											<input placeholder="e.g. Red / S" value={newVariant.title} onChange={(e) => setNewVariant((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full max-w-[200px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 										</td>
 										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newVariant.qty} onChange={(e) => setNewVariant((p) => ({ ...p, qty: e.target.value }))} className="mt-1 w-full max-w-[80px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
+											<input type="number" min={0} placeholder="0" value={newVariant.qty} onChange={(e) => setNewVariant((p) => ({ ...p, qty: e.target.value }))} className="mt-1 w-full max-w-[80px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 										</td>
 										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newVariant.price} onChange={(e) => setNewVariant((p) => ({ ...p, price: e.target.value }))} className="mt-1 w-full max-w-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
+											<input type="number" min={0} placeholder="0" value={newVariant.price} onChange={(e) => setNewVariant((p) => ({ ...p, price: e.target.value }))} className="mt-1 w-full max-w-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 										</td>
 										<td className="py-2 align-middle">
 											<button type="button" onClick={() => { if (newVariant.title.trim()) { setPendingVariants((prev) => [...prev, { ...newVariant }]); setNewVariant({ title: "", qty: "0", price: "0" }); } }} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-xs">Add variant</button>
@@ -437,13 +437,13 @@ export default function VendorNewProductPage() {
 									))}
 									<tr className="border-t border-gray-200 bg-gray-50/50">
 										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newTier.min_qty} onChange={(e) => setNewTier((p) => ({ ...p, min_qty: e.target.value }))} className="mt-1 w-full max-w-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
+											<input type="number" min={0} placeholder="0" value={newTier.min_qty} onChange={(e) => setNewTier((p) => ({ ...p, min_qty: e.target.value }))} className="mt-1 w-full max-w-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 										</td>
 										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} step="0.01" placeholder="0.00" value={newTier.unit_price} onChange={(e) => setNewTier((p) => ({ ...p, unit_price: e.target.value }))} className="mt-1 w-full max-w-[120px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
+											<input type="number" min={0} step="0.01" placeholder="0.00" value={newTier.unit_price} onChange={(e) => setNewTier((p) => ({ ...p, unit_price: e.target.value }))} className="mt-1 w-full max-w-[120px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 										</td>
 										<td className="py-2 pr-3 align-middle">
-											<input placeholder="e.g. Tier 1" value={newTier.tier_label} onChange={(e) => setNewTier((p) => ({ ...p, tier_label: e.target.value }))} className="mt-1 w-full max-w-[140px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
+											<input placeholder="e.g. Tier 1" value={newTier.tier_label} onChange={(e) => setNewTier((p) => ({ ...p, tier_label: e.target.value }))} className="mt-1 w-full max-w-[140px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
 										</td>
 										<td className="py-2 align-middle">
 											<button type="button" onClick={() => { if (newTier.unit_price !== "") { setPendingTiers((prev) => [...prev, { ...newTier }]); setNewTier({ min_qty: "0", unit_price: "", tier_label: "Tier 1" }); } }} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-xs">Add tier</button>
@@ -458,7 +458,7 @@ export default function VendorNewProductPage() {
 						<button
 							type="submit"
 							disabled={saving}
-							className="inline-flex items-center px-5 py-2.5 rounded-lg bg-[#E5005F] text-white text-sm font-medium hover:bg-pink-700 disabled:opacity-60"
+							className="inline-flex items-center px-5 py-2.5 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] disabled:opacity-60"
 						>
 							{saving ? "Saving..." : "Save product"}
 						</button>

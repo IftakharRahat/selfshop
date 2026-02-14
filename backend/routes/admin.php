@@ -50,6 +50,8 @@ use App\Http\Controllers\Backend\VendorController;
 use App\Http\Controllers\Backend\AdminReviewController;
 use App\Http\Controllers\Backend\AdminVendorCategoryDiscountController;
 use App\Http\Controllers\Backend\AdminVendorProductController;
+use App\Http\Controllers\Backend\AdminVendorPayoutController;
+use App\Http\Controllers\Backend\AdminVendorReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -259,6 +261,17 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index');
     Route::post('vendor-products/{id}/approve', [AdminVendorProductController::class, 'approve'])->name('admin.vendor-products.approve');
     Route::post('vendor-products/{id}/reject', [AdminVendorProductController::class, 'reject'])->name('admin.vendor-products.reject');
+
+    // Vendor payout requests (Phase 6.3 – admin processing)
+    Route::get('view-vendor-payout-requests', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests');
+    Route::get('view-vendor-payout-requests/{status}', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests.status');
+    Route::get('vendor-payout-requests', [AdminVendorPayoutController::class, 'index'])->name('admin.vendor-payout-requests.index');
+    Route::post('vendor-payout-requests/{id}/approve', [AdminVendorPayoutController::class, 'approve'])->name('admin.vendor-payout-requests.approve');
+    Route::post('vendor-payout-requests/{id}/reject', [AdminVendorPayoutController::class, 'reject'])->name('admin.vendor-payout-requests.reject');
+
+    // Vendor reports (Phase 7.2)
+    Route::get('vendor-reports/profit-commission', [AdminVendorReportController::class, 'profitCommission'])->name('admin.vendor-reports.profit-commission');
+    Route::get('vendor-reports/order-analytics', [AdminVendorReportController::class, 'orderAnalytics'])->name('admin.vendor-reports.order-analytics');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {

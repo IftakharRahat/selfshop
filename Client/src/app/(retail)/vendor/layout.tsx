@@ -14,6 +14,12 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 
 	const isActive = (href: string) =>
 		pathname === href || pathname?.startsWith(`${href}/`);
+	const navItemClass = (active: boolean) =>
+		`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
+			active
+				? "bg-[#2d2a5d] text-white"
+				: "text-gray-700 hover:bg-indigo-50 hover:text-[#2d2a5d]"
+		}`;
 
 	return (
 		<div className="min-h-screen bg-gray-50 flex">
@@ -21,7 +27,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 				<div className="h-14 flex items-center px-5 border-b border-gray-200">
 					<Link
 						href="/vendor"
-						className="text-lg font-semibold tracking-tight text-[#E5005F]"
+						className="text-lg font-semibold tracking-tight text-[#2d2a5d]"
 					>
 						SelfShop Vendor
 					</Link>
@@ -37,13 +43,17 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										pathname === "/vendor"
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(pathname === "/vendor")}
 								>
 									<span>Dashboard</span>
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/vendor/reports"
+									className={navItemClass(isActive("/vendor/reports"))}
+								>
+									<span>Reports</span>
 								</Link>
 							</li>
 						</ul>
@@ -58,13 +68,17 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor/orders"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										isActive("/vendor/orders")
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(isActive("/vendor/orders"))}
 								>
 									<span>All orders</span>
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/vendor/shipping"
+									className={navItemClass(isActive("/vendor/shipping"))}
+								>
+									<span>Shipping methods</span>
 								</Link>
 							</li>
 						</ul>
@@ -79,11 +93,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor/products"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										isActive("/vendor/products")
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(isActive("/vendor/products"))}
 								>
 									<span>Products</span>
 								</Link>
@@ -91,11 +101,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor/products/new"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										isActive("/vendor/products/new")
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(isActive("/vendor/products/new"))}
 								>
 									<span>Add new product</span>
 								</Link>
@@ -103,11 +109,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor/category-discount"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										isActive("/vendor/category-discount")
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(isActive("/vendor/category-discount"))}
 								>
 									<span>Category-Wise Discount</span>
 								</Link>
@@ -115,13 +117,67 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor/reviews"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										isActive("/vendor/reviews")
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(isActive("/vendor/reviews"))}
 								>
 									<span>Product Reviews</span>
+								</Link>
+							</li>
+						</ul>
+					</div>
+
+					{/* Earnings & Payouts */}
+					<div>
+						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+							Earnings &amp; Payouts
+						</p>
+						<ul className="space-y-1">
+							<li>
+								<Link
+									href="/vendor/earnings"
+									className={navItemClass(isActive("/vendor/earnings"))}
+								>
+									<span>Earnings</span>
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/vendor/payouts"
+									className={navItemClass(isActive("/vendor/payouts"))}
+								>
+									<span>Payouts</span>
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/vendor/payout-accounts"
+									className={navItemClass(isActive("/vendor/payout-accounts"))}
+								>
+									<span>Payout accounts</span>
+								</Link>
+							</li>
+						</ul>
+					</div>
+
+					{/* Inventory */}
+					<div>
+						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+							Inventory
+						</p>
+						<ul className="space-y-1">
+							<li>
+								<Link
+									href="/vendor/inventory"
+									className={navItemClass(isActive("/vendor/inventory"))}
+								>
+									<span>Inventory</span>
+								</Link>
+							</li>
+							<li>
+								<Link
+									href="/vendor/warehouses"
+									className={navItemClass(isActive("/vendor/warehouses"))}
+								>
+									<span>Warehouses</span>
 								</Link>
 							</li>
 						</ul>
@@ -136,11 +192,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							<li>
 								<Link
 									href="/vendor/profile"
-									className={`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
-										isActive("/vendor/profile")
-											? "bg-gray-900 text-white"
-											: "text-gray-700 hover:bg-gray-100"
-									}`}
+									className={navItemClass(isActive("/vendor/profile"))}
 								>
 									<span>Profile &amp; KYC</span>
 								</Link>
@@ -155,7 +207,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 					<div className="flex items-center justify-between">
 						<Link
 							href="/vendor"
-							className="text-lg font-semibold tracking-tight text-[#E5005F]"
+							className="text-lg font-semibold tracking-tight text-[#2d2a5d]"
 						>
 							SelfShop Vendor
 						</Link>

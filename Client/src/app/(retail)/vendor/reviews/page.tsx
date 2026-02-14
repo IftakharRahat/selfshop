@@ -52,7 +52,7 @@ export default function VendorReviewsPage() {
 							<select
 								value={ratingFilter}
 								onChange={(e) => setRatingFilter(e.target.value)}
-								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 							>
 								<option value="">Filter by Rating</option>
 								<option value="5">5 Stars</option>
@@ -66,7 +66,7 @@ export default function VendorReviewsPage() {
 								placeholder="Type Product Name & Hit E..."
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 w-56"
+								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-56"
 							/>
 						</div>
 					</div>

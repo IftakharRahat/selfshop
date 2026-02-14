@@ -186,7 +186,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 
 								<td className="p-4">
 									<Link
-										href={`/dashboard/track-orders?invoiceID=${order.invoiceID || ""}`}
+										href={`/dashboard/orders/view?invoiceID=${order.invoiceID || ""}`}
 										className="inline-block text-xs font-medium px-3 py-1.5 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
 									>
 										View

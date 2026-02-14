@@ -143,7 +143,7 @@ export default function VendorProfilePage() {
 									required
 									value={companyName}
 									onChange={(e) => setCompanyName(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 
@@ -153,7 +153,7 @@ export default function VendorProfilePage() {
 									value={businessType}
 									onChange={(e) => setBusinessType(e.target.value)}
 									placeholder="Manufacturer, wholesaler, importer..."
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 
@@ -162,7 +162,7 @@ export default function VendorProfilePage() {
 								<input
 									value={contactName}
 									onChange={(e) => setContactName(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 
@@ -172,7 +172,7 @@ export default function VendorProfilePage() {
 									type="email"
 									value={contactEmail}
 									onChange={(e) => setContactEmail(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 
@@ -181,7 +181,7 @@ export default function VendorProfilePage() {
 								<input
 									value={contactPhone}
 									onChange={(e) => setContactPhone(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 
@@ -190,7 +190,7 @@ export default function VendorProfilePage() {
 								<input
 									value={country}
 									onChange={(e) => setCountry(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 
@@ -199,7 +199,7 @@ export default function VendorProfilePage() {
 								<input
 									value={city}
 									onChange={(e) => setCity(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 						</div>
@@ -209,14 +209,14 @@ export default function VendorProfilePage() {
 							<input
 								value={addressLine1}
 								onChange={(e) => setAddressLine1(e.target.value)}
-								className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+								className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 							/>
 						</label>
 
 						<button
 							type="submit"
 							disabled={isSaving || isLoading}
-							className="inline-flex items-center px-4 py-2 rounded-lg bg-[#E5005F] text-white text-sm font-medium hover:bg-pink-700 disabled:opacity-60"
+							className="inline-flex items-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] disabled:opacity-60"
 						>
 							{isSaving ? "Saving..." : "Save profile"}
 						</button>
@@ -242,7 +242,7 @@ export default function VendorProfilePage() {
 									value={kycType}
 									onChange={(e) => setKycType(e.target.value)}
 									placeholder="nid, trade_license..."
-									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 							<label className="flex flex-col text-xs font-medium text-gray-700">
@@ -250,7 +250,7 @@ export default function VendorProfilePage() {
 								<input
 									value={kycNumber}
 									onChange={(e) => setKycNumber(e.target.value)}
-									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
 							<label className="flex flex-col text-xs font-medium text-gray-700">

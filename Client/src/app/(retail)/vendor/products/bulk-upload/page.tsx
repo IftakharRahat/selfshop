@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useCreateVendorBulkUploadMutation } from "@/redux/api/vendorApi";
 import { useAppSelector } from "@/redux/hooks";
 
-const inputCls = "mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500";
+const inputCls = "mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500";
 
 export default function VendorBulkUploadPage() {
 	const token = useAppSelector((s) => s.auth?.access_token);
@@ -85,7 +85,7 @@ export default function VendorBulkUploadPage() {
 							<span className="text-sm font-medium text-gray-700">CSV file</span>
 							<input type="file" accept=".csv,.txt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={inputCls} />
 						</label>
-						<button type="submit" disabled={isLoading || !file} className="rounded-lg bg-[#E5005F] text-white px-4 py-2 text-sm font-medium hover:bg-pink-700 disabled:opacity-50">
+						<button type="submit" disabled={isLoading || !file} className="rounded-lg bg-[#2d2a5d] text-white px-4 py-2 text-sm font-medium hover:bg-[#252947] disabled:opacity-50">
 							{isLoading ? "Uploading…" : "Upload"}
 						</button>
 					</form>

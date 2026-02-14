@@ -94,7 +94,7 @@ export default function VendorCategoryDiscountPage() {
 							placeholder="Type name & Enter"
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 w-56"
+							className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-56"
 						/>
 					</div>
 
@@ -166,7 +166,7 @@ export default function VendorCategoryDiscountPage() {
 														onChange={(ev) =>
 															updateEdit(cat.id, "discount_percent", ev.target.value)
 														}
-														className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+														className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 													/>
 												</td>
 												<td className="px-1 py-4 text-gray-500 font-medium align-middle">%</td>
@@ -178,7 +178,7 @@ export default function VendorCategoryDiscountPage() {
 															onChange={(ev) =>
 																updateEdit(cat.id, "start_date", ev.target.value)
 															}
-															className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 min-w-0"
+															className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
 														/>
 														<span className="text-gray-400 shrink-0">-</span>
 														<input
@@ -187,7 +187,7 @@ export default function VendorCategoryDiscountPage() {
 															onChange={(ev) =>
 																updateEdit(cat.id, "end_date", ev.target.value)
 															}
-															className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 min-w-0"
+															className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
 														/>
 													</div>
 												</td>

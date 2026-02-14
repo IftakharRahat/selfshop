@@ -139,6 +139,8 @@ class VendorOrderController extends Controller
                     'deliveryCharge' => $order->deliveryCharge,
                     'discountCharge' => $order->discountCharge,
                     'customerNote' => $order->customerNote,
+                    'tracking_number' => $order->tracking_number,
+                    'shipped_at' => $order->shipped_at?->toIso8601String(),
                 ],
                 'customer' => $customer ? [
                     'customerName' => $customer->customerName,
@@ -153,6 +155,10 @@ class VendorOrderController extends Controller
                     'productPrice' => $op->productPrice,
                     'quantity' => $op->quantity,
                     'line_total' => (float) $op->productPrice * (int) $op->quantity,
+                    'tracking_number' => $op->tracking_number,
+                    'shipped_at' => $op->shipped_at?->toIso8601String(),
+                    'fulfillment_status' => $op->fulfillment_status ?? 'pending',
+                    'fulfillment_type' => $op->fulfillment_type,
                     'product' => $op->product ? [
                         'id' => $op->product->id,
                         'ProductName' => $op->product->ProductName,
@@ -161,6 +167,97 @@ class VendorOrderController extends Controller
                 ]),
                 'vendor_subtotal' => round($vendorSubtotal, 2),
             ],
+        ]);
+    }
+
+    /**
+     * Add or update tracking for vendor's items in an order (order-level or per line item).
+     * Supports partial shipment: pass line_items with order_product_id and tracking_number.
+     */
+    public function addTracking(Request $request, $id)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) {
+            return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        }
+
+        $order = Order::with(['orderproducts' => function ($q) use ($vendor) {
+            $q->whereHas('product', fn($p) => $p->where('vendor_id', $vendor->id));
+        }])->findOrFail($id);
+
+        $vendorOrderProducts = $order->orderproducts;
+        if ($vendorOrderProducts->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'Order not found or contains no your products'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'tracking_number' => 'nullable|string|max:255',
+            'line_items' => 'nullable|array',
+            'line_items.*.order_product_id' => 'required_with:line_items|integer',
+            'line_items.*.tracking_number' => 'nullable|string|max:255',
+            'line_items.*.fulfillment_type' => 'nullable|in:standard,dropship',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        $vendorOrderProductIds = $vendorOrderProducts->pluck('id')->toArray();
+
+        try {
+            // Per-line tracking
+            if ($request->filled('line_items')) {
+                foreach ($request->line_items as $row) {
+                    $opId = (int) ($row['order_product_id'] ?? 0);
+                    if (!in_array($opId, $vendorOrderProductIds, true)) {
+                        continue;
+                    }
+                    $op = Orderproduct::find($opId);
+                    if (!$op) {
+                        continue;
+                    }
+                    $op->tracking_number = $row['tracking_number'] ?? null;
+                    $op->fulfillment_status = ($row['tracking_number'] ?? '') !== '' ? 'shipped' : ($op->fulfillment_status ?? 'pending');
+                    if (($row['tracking_number'] ?? '') !== '') {
+                        $op->shipped_at = $op->shipped_at ?? now();
+                    }
+                    if (isset($row['fulfillment_type']) && in_array($row['fulfillment_type'], ['standard', 'dropship'], true)) {
+                        $op->fulfillment_type = $row['fulfillment_type'];
+                    }
+                    $op->save();
+                }
+            }
+
+            // Order-level tracking (applies to order record; used when single shipment for whole order)
+            if ($request->filled('tracking_number')) {
+                $order->tracking_number = $request->tracking_number;
+                $order->shipped_at = $order->shipped_at ?? now();
+                $order->status = 'Shipped';
+                $order->save();
+            } else {
+                // If we only updated line items, check if all vendor items are now shipped → update order
+                $updated = Orderproduct::whereIn('id', $vendorOrderProductIds)->get();
+                $allShipped = $updated->every(fn($op) => ($op->fulfillment_status ?? 'pending') === 'shipped');
+                if ($allShipped && $updated->whereNotNull('tracking_number')->isNotEmpty()) {
+                    $order->shipped_at = $order->shipped_at ?? now();
+                    if (in_array($order->status, ['Processing', 'Pending'], true)) {
+                        $order->status = 'Shipped';
+                    }
+                    $order->save();
+                }
+            }
+        } catch (\Throwable $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'Unknown column') || str_contains($msg, 'tracking_number') || str_contains($msg, 'shipped_at') || str_contains($msg, 'fulfillment')) {
+                $msg = 'Database missing tracking columns. Run: php artisan migrate --path=database/migrations/2026_02_13_100001_add_tracking_to_orders_table.php and 2026_02_13_100002_add_fulfillment_to_orderproducts_table.php';
+            }
+            return response()->json(['status' => false, 'message' => 'Failed to update tracking: ' . $msg], 500);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Tracking updated',
+            'data' => ['order_id' => $order->id],
         ]);
     }
 }

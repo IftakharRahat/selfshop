@@ -177,7 +177,7 @@
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Withdrew</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
-                    <a href="{{ url('admin/view-withdraws/Pending') }}" class="dropdown-item">Vendor</a>
+                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Vendor</a>
                 </div>
             </div>
             <div class="nav-item dropdown">

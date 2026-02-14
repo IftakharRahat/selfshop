@@ -960,11 +960,7 @@ class FrontendApiController extends Controller
     public function orders($slug)
     {
         $id = Auth::user()->id;
-        $query = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('user_id', $id);
-        if ($slug !== 'all') {
-            $query = $query->where('status', $slug);
-        }
-        $orders = $query->orderBy('id', 'desc')->paginate(30);
+        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('user_id', $id)->where('status', $slug)->paginate(30);
 
         if ($orders) {
             return response()->json([

@@ -11,6 +11,14 @@ use App\Http\Controllers\VendorProductController;
 use App\Http\Controllers\VendorOrderController;
 use App\Http\Controllers\VendorCategoryDiscountController;
 use App\Http\Controllers\VendorReviewController;
+use App\Http\Controllers\VendorStockController;
+use App\Http\Controllers\VendorWarehouseController;
+use App\Http\Controllers\VendorShippingMethodController;
+use App\Http\Controllers\VendorEarningsController;
+use App\Http\Controllers\VendorPayoutAccountController;
+use App\Http\Controllers\VendorPayoutRequestController;
+use App\Http\Controllers\VendorReportsController;
+use App\Http\Controllers\VendorDashboardController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -158,6 +166,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Vendor (Wholesale / Supplier) – vendor portal APIs
     Route::prefix('vendor')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('api.vendor.dashboard');
+
         // Account & profile
         Route::get('/profile', [VendorAccountController::class, 'profile'])->name('api.vendor.profile');
         Route::post('/profile', [VendorAccountController::class, 'upsertProfile'])->name('api.vendor.profile.upsert');
@@ -189,6 +200,13 @@ Route::middleware('auth:sanctum')->group(function () {
         // Orders (Phase 4 – Order Management)
         Route::get('/orders', [VendorOrderController::class, 'index'])->name('api.vendor.orders.index');
         Route::get('/orders/{id}', [VendorOrderController::class, 'show'])->name('api.vendor.orders.show');
+        Route::post('/orders/{id}/tracking', [VendorOrderController::class, 'addTracking'])->name('api.vendor.orders.tracking');
+
+        // Shipping methods (Phase 5)
+        Route::get('/shipping-methods', [VendorShippingMethodController::class, 'index'])->name('api.vendor.shipping-methods.index');
+        Route::post('/shipping-methods', [VendorShippingMethodController::class, 'store'])->name('api.vendor.shipping-methods.store');
+        Route::put('/shipping-methods/{id}', [VendorShippingMethodController::class, 'update'])->name('api.vendor.shipping-methods.update');
+        Route::delete('/shipping-methods/{id}', [VendorShippingMethodController::class, 'destroy'])->name('api.vendor.shipping-methods.destroy');
 
         // Category-wise discount
         Route::get('/category-discounts', [VendorCategoryDiscountController::class, 'index'])->name('api.vendor.category-discounts.index');
@@ -197,6 +215,39 @@ Route::middleware('auth:sanctum')->group(function () {
         // Product reviews (vendor view)
         Route::get('/reviews', [VendorReviewController::class, 'index'])->name('api.vendor.reviews.index');
         Route::get('/reviews/{productId}', [VendorReviewController::class, 'show'])->name('api.vendor.reviews.show');
+
+        // Inventory & Stock (Phase 3)
+        Route::get('/inventory', [VendorStockController::class, 'index'])->name('api.vendor.inventory.index');
+        Route::get('/inventory/alerts', [VendorStockController::class, 'alerts'])->name('api.vendor.inventory.alerts');
+        Route::get('/inventory/export', [VendorStockController::class, 'export'])->name('api.vendor.inventory.export');
+        Route::get('/inventory/{productId}', [VendorStockController::class, 'show'])->name('api.vendor.inventory.show');
+        Route::post('/inventory/{productId}/adjust', [VendorStockController::class, 'adjust'])->name('api.vendor.inventory.adjust');
+        Route::post('/inventory/{productId}/update-threshold', [VendorStockController::class, 'updateThreshold'])->name('api.vendor.inventory.threshold');
+        Route::get('/inventory/{productId}/warehouses', [VendorStockController::class, 'warehouseStock'])->name('api.vendor.inventory.warehouses');
+        Route::post('/inventory/{productId}/allocate', [VendorStockController::class, 'allocate'])->name('api.vendor.inventory.allocate');
+        Route::post('/inventory/dropship-sync', [VendorStockController::class, 'syncDropshipStock'])->name('api.vendor.inventory.dropship-sync');
+
+        // Warehouses (Phase 3)
+        Route::get('/warehouses', [VendorWarehouseController::class, 'index'])->name('api.vendor.warehouses.index');
+        Route::post('/warehouses', [VendorWarehouseController::class, 'store'])->name('api.vendor.warehouses.store');
+        Route::put('/warehouses/{id}', [VendorWarehouseController::class, 'update'])->name('api.vendor.warehouses.update');
+        Route::delete('/warehouses/{id}', [VendorWarehouseController::class, 'destroy'])->name('api.vendor.warehouses.destroy');
+
+        // Earnings & Payouts (Phase 6)
+        Route::get('/earnings/summary', [VendorEarningsController::class, 'summary'])->name('api.vendor.earnings.summary');
+        Route::get('/earnings', [VendorEarningsController::class, 'index'])->name('api.vendor.earnings.index');
+        Route::get('/payout-accounts', [VendorPayoutAccountController::class, 'index'])->name('api.vendor.payout-accounts.index');
+        Route::post('/payout-accounts', [VendorPayoutAccountController::class, 'store'])->name('api.vendor.payout-accounts.store');
+        Route::put('/payout-accounts/{id}', [VendorPayoutAccountController::class, 'update'])->name('api.vendor.payout-accounts.update');
+        Route::delete('/payout-accounts/{id}', [VendorPayoutAccountController::class, 'destroy'])->name('api.vendor.payout-accounts.destroy');
+        Route::get('/payout-requests', [VendorPayoutRequestController::class, 'index'])->name('api.vendor.payout-requests.index');
+        Route::post('/payout-requests', [VendorPayoutRequestController::class, 'store'])->name('api.vendor.payout-requests.store');
+        Route::get('/payouts', [VendorPayoutRequestController::class, 'payouts'])->name('api.vendor.payouts.index');
+
+        // Reports (Phase 7)
+        Route::get('/reports/sales', [VendorReportsController::class, 'sales'])->name('api.vendor.reports.sales');
+        Route::get('/reports/top-products', [VendorReportsController::class, 'topProducts'])->name('api.vendor.reports.top-products');
+        Route::get('/reports/sales-breakdown', [VendorReportsController::class, 'salesBreakdown'])->name('api.vendor.reports.sales-breakdown');
 
         // Bulk order matrix (existing)
         Route::middleware('verified.wholesaler')->group(function () {

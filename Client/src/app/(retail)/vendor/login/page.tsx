@@ -67,7 +67,7 @@ const VendorLoginPage = () => {
 							required
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+							className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 						/>
 					</label>
 					<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -77,14 +77,14 @@ const VendorLoginPage = () => {
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+							className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 						/>
 					</label>
 
 					<button
 						type="submit"
 						disabled={isLoading}
-						className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#E5005F] text-white text-sm font-medium hover:bg-pink-700 disabled:opacity-60"
+						className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] disabled:opacity-60"
 					>
 						{isLoading ? "Signing in..." : "Sign in"}
 					</button>
@@ -94,7 +94,7 @@ const VendorLoginPage = () => {
 					New to SelfShop vendor?{" "}
 					<Link
 						href="/vendor/register"
-						className="font-medium text-[#E5005F] hover:underline"
+						className="font-medium text-[#2d2a5d] hover:underline"
 					>
 						Create vendor account
 					</Link>
