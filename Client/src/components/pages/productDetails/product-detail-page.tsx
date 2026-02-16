@@ -56,6 +56,12 @@ export default function ProductDetailPage({ product }: any) {
 			thumbnails: images,
 		},
 		varients: product.varients || [],
+		vendor: product.vendor
+			? {
+					companyName: product.vendor.company_name || "",
+					isVerifiedBadge: Boolean(product.vendor.is_verified_badge),
+				}
+			: null,
 	};
 	const sellingPriceSchema = z
 		.number({ required_error: "Selling price is required" })
@@ -288,6 +294,16 @@ export default function ProductDetailPage({ product }: any) {
 						<h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
 							{productData.name}
 						</h1>
+						{productData.vendor?.companyName && (
+							<div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
+								<span>Sold by {productData.vendor.companyName}</span>
+								{productData.vendor.isVerifiedBadge && (
+									<span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
+										Verified
+									</span>
+								)}
+							</div>
+						)}
 
 						<div className="space-y-3 text-sm">
 							<div className="flex items-center">

@@ -1,8 +1,88 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import {
+	ArrowUpDown,
+	BarChart3,
+	CreditCard,
+	Home,
+	MapPin,
+	Menu,
+	Package,
+	Plus,
+	ShoppingBag,
+	Star,
+	TrendingUp,
+	Truck,
+	User,
+	Wallet,
+	X,
+} from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAppSelector } from "@/redux/hooks";
+import VendorNotificationCenter from "@/components/vendor/VendorNotificationCenter";
+
+type NavItem = {
+	label: string;
+	href: string;
+	icon: ComponentType<{ className?: string }>;
+	exact?: boolean;
+};
+
+const navSections: Array<{ title: string; items: NavItem[] }> = [
+	{
+		title: "Main",
+		items: [
+			{ label: "Dashboard", href: "/vendor", icon: Home, exact: true },
+			{ label: "Reports", href: "/vendor/reports", icon: BarChart3 },
+		],
+	},
+	{
+		title: "Orders",
+		items: [
+			{ label: "All orders", href: "/vendor/orders", icon: ShoppingBag },
+			{ label: "Shipping methods", href: "/vendor/shipping", icon: Truck },
+		],
+	},
+	{
+		title: "Products",
+		items: [
+			{ label: "Products", href: "/vendor/products", icon: Package },
+			{ label: "Add new product", href: "/vendor/products/new", icon: Plus },
+			{
+				label: "Category-wise discount",
+				href: "/vendor/category-discount",
+				icon: ArrowUpDown,
+			},
+			{ label: "Product reviews", href: "/vendor/reviews", icon: Star },
+		],
+	},
+	{
+		title: "Earnings & Payouts",
+		items: [
+			{ label: "Earnings", href: "/vendor/earnings", icon: TrendingUp },
+			{ label: "Payouts", href: "/vendor/payouts", icon: Wallet },
+			{
+				label: "Payout accounts",
+				href: "/vendor/payout-accounts",
+				icon: CreditCard,
+			},
+		],
+	},
+	{
+		title: "Inventory",
+		items: [
+			{ label: "Inventory", href: "/vendor/inventory", icon: Package },
+			{ label: "Warehouses", href: "/vendor/warehouses", icon: MapPin },
+		],
+	},
+	{
+		title: "Account",
+		items: [{ label: "Profile & KYC", href: "/vendor/profile", icon: User }],
+	},
+];
 
 /**
  * Shared layout shell for the vendor area with left sidebar navigation,
@@ -11,216 +91,176 @@ import { usePathname } from "next/navigation";
  */
 export default function VendorLayout({ children }: { children: ReactNode }) {
 	const pathname = usePathname();
+	const [mobileNavOpen, setMobileNavOpen] = useState(false);
+	const token = useAppSelector((state) => state.auth.access_token);
+	const isAuthPage =
+		pathname === "/vendor/login" || pathname === "/vendor/register";
+	const notificationDisabled = isAuthPage || !token;
 
-	const isActive = (href: string) =>
-		pathname === href || pathname?.startsWith(`${href}/`);
+	useEffect(() => {
+		setMobileNavOpen(false);
+	}, [pathname]);
+
+	useEffect(() => {
+		if (!mobileNavOpen) return;
+		const originalOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		return () => {
+			document.body.style.overflow = originalOverflow;
+		};
+	}, [mobileNavOpen]);
+
+	const isActive = (item: NavItem) =>
+		item.exact
+			? pathname === item.href
+			: pathname === item.href || pathname?.startsWith(`${item.href}/`);
+
+	const activeHref = navSections
+		.flatMap((section) => section.items)
+		.filter((item) => isActive(item))
+		.sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
 	const navItemClass = (active: boolean) =>
-		`flex items-center justify-between rounded-md px-2.5 py-1.5 ${
+		`group flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors ${
 			active
-				? "bg-[#2d2a5d] text-white"
+				? "bg-[#2d2a5d] text-white shadow-sm"
 				: "text-gray-700 hover:bg-indigo-50 hover:text-[#2d2a5d]"
 		}`;
 
+	const renderNavigation = (onItemClick?: () => void) => (
+		<nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-4 space-y-6 text-sm">
+			{navSections.map((section) => (
+				<div key={section.title}>
+					<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+						{section.title}
+					</p>
+					<ul className="space-y-1">
+						{section.items.map((item) => {
+							const active = item.href === activeHref;
+							const Icon = item.icon;
+							return (
+								<li key={item.href}>
+									<Link
+										href={item.href}
+										onClick={onItemClick}
+										className={navItemClass(active)}
+									>
+										<Icon
+											className={`h-4 w-4 shrink-0 ${
+												active
+													? "text-white"
+													: "text-gray-500 group-hover:text-[#2d2a5d]"
+											}`}
+										/>
+										<span className="truncate">{item.label}</span>
+									</Link>
+								</li>
+							);
+						})}
+					</ul>
+				</div>
+			))}
+		</nav>
+	);
+
 	return (
 		<div className="min-h-screen bg-gray-50 flex">
-			<aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
-				<div className="h-14 flex items-center px-5 border-b border-gray-200">
-					<Link
-						href="/vendor"
-						className="text-lg font-semibold tracking-tight text-[#2d2a5d]"
-					>
-						SelfShop Vendor
-					</Link>
-				</div>
-
-				<nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 text-sm">
-					{/* Main */}
-					<div>
-						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-							Main
-						</p>
-						<ul className="space-y-1">
-							<li>
-								<Link
-									href="/vendor"
-									className={navItemClass(pathname === "/vendor")}
-								>
-									<span>Dashboard</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/reports"
-									className={navItemClass(isActive("/vendor/reports"))}
-								>
-									<span>Reports</span>
-								</Link>
-							</li>
-						</ul>
-					</div>
-
-					{/* Orders */}
-					<div>
-						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-							Orders
-						</p>
-						<ul className="space-y-1">
-							<li>
-								<Link
-									href="/vendor/orders"
-									className={navItemClass(isActive("/vendor/orders"))}
-								>
-									<span>All orders</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/shipping"
-									className={navItemClass(isActive("/vendor/shipping"))}
-								>
-									<span>Shipping methods</span>
-								</Link>
-							</li>
-						</ul>
-					</div>
-
-					{/* Products */}
-					<div>
-						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-							Products
-						</p>
-						<ul className="space-y-1">
-							<li>
-								<Link
-									href="/vendor/products"
-									className={navItemClass(isActive("/vendor/products"))}
-								>
-									<span>Products</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/products/new"
-									className={navItemClass(isActive("/vendor/products/new"))}
-								>
-									<span>Add new product</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/category-discount"
-									className={navItemClass(isActive("/vendor/category-discount"))}
-								>
-									<span>Category-Wise Discount</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/reviews"
-									className={navItemClass(isActive("/vendor/reviews"))}
-								>
-									<span>Product Reviews</span>
-								</Link>
-							</li>
-						</ul>
-					</div>
-
-					{/* Earnings & Payouts */}
-					<div>
-						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-							Earnings &amp; Payouts
-						</p>
-						<ul className="space-y-1">
-							<li>
-								<Link
-									href="/vendor/earnings"
-									className={navItemClass(isActive("/vendor/earnings"))}
-								>
-									<span>Earnings</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/payouts"
-									className={navItemClass(isActive("/vendor/payouts"))}
-								>
-									<span>Payouts</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/payout-accounts"
-									className={navItemClass(isActive("/vendor/payout-accounts"))}
-								>
-									<span>Payout accounts</span>
-								</Link>
-							</li>
-						</ul>
-					</div>
-
-					{/* Inventory */}
-					<div>
-						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-							Inventory
-						</p>
-						<ul className="space-y-1">
-							<li>
-								<Link
-									href="/vendor/inventory"
-									className={navItemClass(isActive("/vendor/inventory"))}
-								>
-									<span>Inventory</span>
-								</Link>
-							</li>
-							<li>
-								<Link
-									href="/vendor/warehouses"
-									className={navItemClass(isActive("/vendor/warehouses"))}
-								>
-									<span>Warehouses</span>
-								</Link>
-							</li>
-						</ul>
-					</div>
-
-					{/* Account */}
-					<div>
-						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-							Account
-						</p>
-						<ul className="space-y-1">
-							<li>
-								<Link
-									href="/vendor/profile"
-									className={navItemClass(isActive("/vendor/profile"))}
-								>
-									<span>Profile &amp; KYC</span>
-								</Link>
-							</li>
-						</ul>
-					</div>
-				</nav>
-			</aside>
-
-			<div className="flex-1 flex flex-col">
-				<header className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
-					<div className="flex items-center justify-between">
+			{!isAuthPage && (
+				<aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
+					<div className="h-14 flex items-center px-5 border-b border-gray-200">
 						<Link
 							href="/vendor"
 							className="text-lg font-semibold tracking-tight text-[#2d2a5d]"
 						>
 							SelfShop Vendor
 						</Link>
-						<Link
-							href="/vendor/profile"
-							className="text-sm text-gray-600 hover:text-gray-900"
-						>
-							Profile &amp; KYC
-						</Link>
+					</div>
+
+					{renderNavigation()}
+				</aside>
+			)}
+
+			{!isAuthPage && (
+				<>
+					<button
+						type="button"
+						aria-label="Close menu"
+						onClick={() => setMobileNavOpen(false)}
+						className={`fixed inset-0 z-30 bg-black/40 transition-opacity md:hidden ${
+							mobileNavOpen ? "opacity-100" : "pointer-events-none opacity-0"
+						}`}
+					/>
+					<aside
+						className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[86vw] bg-white border-r border-gray-200 md:hidden transform transition-transform ${
+							mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+						}`}
+					>
+						<div className="h-14 flex items-center justify-between px-4 border-b border-gray-200">
+							<Link
+								href="/vendor"
+								className="text-base font-semibold tracking-tight text-[#2d2a5d]"
+							>
+								SelfShop Vendor
+							</Link>
+							<button
+								type="button"
+								aria-label="Close menu"
+								onClick={() => setMobileNavOpen(false)}
+								className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-100"
+							>
+								<X className="h-4 w-4" />
+							</button>
+						</div>
+						{renderNavigation(() => setMobileNavOpen(false))}
+					</aside>
+				</>
+			)}
+
+			<div className="flex-1 min-w-0 flex flex-col">
+				{!isAuthPage && (
+					<header className="hidden md:flex sticky top-0 z-10 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 sm:px-6 md:px-8 justify-end">
+						<VendorNotificationCenter disabled={notificationDisabled} />
+					</header>
+				)}
+
+				<header className="md:hidden sticky top-0 z-20 bg-white border-b border-gray-200 px-3 py-3 shadow-sm sm:px-4">
+					<div className="flex items-center justify-between gap-2">
+						<div className="flex min-w-0 items-center gap-2">
+							{!isAuthPage && (
+								<button
+									type="button"
+									aria-label="Open menu"
+									onClick={() => setMobileNavOpen(true)}
+									className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
+								>
+									<Menu className="h-4 w-4" />
+								</button>
+							)}
+							<Link
+								href="/vendor"
+								className="truncate text-base font-semibold tracking-tight text-[#2d2a5d] sm:text-lg"
+							>
+								SelfShop Vendor
+							</Link>
+						</div>
+						{!isAuthPage && (
+							<div className="flex items-center gap-2">
+								<VendorNotificationCenter disabled={notificationDisabled} />
+								<Link
+									href="/vendor/profile"
+									className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+									aria-label="Profile"
+								>
+									<User className="h-4 w-4" />
+								</Link>
+							</div>
+						)}
 					</div>
 				</header>
 
-				<main className="px-4 py-6 md:px-8 md:py-8">{children}</main>
+				<main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
+					{children}
+				</main>
 			</div>
 		</div>
 	);

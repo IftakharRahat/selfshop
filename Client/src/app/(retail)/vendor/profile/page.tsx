@@ -30,6 +30,7 @@ export default function VendorProfilePage() {
 	const [city, setCity] = useState("");
 	const [addressLine1, setAddressLine1] = useState("");
 	const [vendorStatus, setVendorStatus] = useState<null | string>(null);
+	const [isVerifiedBadge, setIsVerifiedBadge] = useState(false);
 
 	const [kycType, setKycType] = useState("");
 	const [kycNumber, setKycNumber] = useState("");
@@ -51,11 +52,13 @@ export default function VendorProfilePage() {
 			setCity(vendor.city ?? "");
 			setAddressLine1(vendor.address_line_1 ?? "");
 			setVendorStatus(vendor.status ?? null);
+			setIsVerifiedBadge(Boolean(vendor.is_verified_badge));
 		} else if (user) {
 			// Fallback right after registration – prefill from user info
 			setContactName(user.name ?? "");
 			setContactEmail(user.email ?? "");
 			setContactPhone(user.phone ?? "");
+			setIsVerifiedBadge(false);
 		}
 	}, [data]);
 
@@ -100,7 +103,7 @@ export default function VendorProfilePage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">
 							Vendor account &amp; profile
@@ -127,6 +130,17 @@ export default function VendorProfilePage() {
 								{vendorStatus.charAt(0).toUpperCase() +
 									vendorStatus.slice(1)}
 							</span>
+							<span
+								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+									isVerifiedBadge
+										? "bg-sky-100 text-sky-700"
+										: "bg-gray-100 text-gray-600"
+								}`}
+							>
+								{isVerifiedBadge
+									? "Verified badge enabled"
+									: "Verified badge not granted"}
+							</span>
 						</div>
 					)}
 				</div>
@@ -134,7 +148,7 @@ export default function VendorProfilePage() {
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 					<form
 						onSubmit={handleSubmit}
-						className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 space-y-4 lg:col-span-2"
+						className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-4 lg:col-span-2"
 					>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -222,7 +236,7 @@ export default function VendorProfilePage() {
 						</button>
 					</form>
 
-					<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 space-y-4">
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-4">
 						<div className="flex items-center justify-between gap-2">
 							<div>
 								<h2 className="text-sm font-semibold text-gray-900">
@@ -328,4 +342,5 @@ export default function VendorProfilePage() {
 		</WithVendorAuth>
 	);
 }
+
 

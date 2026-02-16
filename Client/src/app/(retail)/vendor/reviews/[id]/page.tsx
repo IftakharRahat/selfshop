@@ -55,7 +55,7 @@ export default function VendorProductReviewsPage() {
 		<WithVendorAuth>
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
 					<div className="flex items-center gap-4">
 						{product.ViewProductImage ? (
 							<img
@@ -164,3 +164,4 @@ export default function VendorProductReviewsPage() {
 		</WithVendorAuth>
 	);
 }
+

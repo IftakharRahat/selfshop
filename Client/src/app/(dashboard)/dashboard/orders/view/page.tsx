@@ -5,9 +5,16 @@ import { useTrackOrderQuery } from "@/redux/features/orderApi";
 import OrderDetailCard from "@/components/pages/dashboard/order-detail-card";
 import Link from "next/link";
 
+function normalizeInvoiceId(value: string | null | undefined): string {
+	const raw = (value ?? "").trim();
+	if (!raw) return "";
+	return raw.replace(/^[^A-Za-z0-9]+/, "");
+}
+
 export default function OrderViewPage() {
 	const searchParams = useSearchParams();
-	const invoiceID = searchParams?.get("invoiceID")?.trim() ?? "";
+	const rawInvoiceID = searchParams?.get("invoiceID");
+	const invoiceID = normalizeInvoiceId(rawInvoiceID);
 
 	const { data, isFetching, isError } = useTrackOrderQuery(invoiceID, {
 		skip: !invoiceID,

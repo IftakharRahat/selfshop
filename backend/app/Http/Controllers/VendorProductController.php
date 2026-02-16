@@ -88,6 +88,17 @@ class VendorProductController extends Controller
         }
 
         $data = $validator->validated();
+        $catalogError = $this->validateCatalogSelection(
+            (int) $data['category_id'],
+            (int) $data['subcategory_id'],
+            (int) $data['brand_id']
+        );
+        if ($catalogError) {
+            return response()->json([
+                'status' => false,
+                'message' => $catalogError,
+            ], 422);
+        }
 
         $slug = Str::slug($data['ProductName']);
         $i = 1;
@@ -217,6 +228,28 @@ class VendorProductController extends Controller
         }
 
         $data = $validator->validated();
+        $effectiveCategoryId = array_key_exists('category_id', $data)
+            ? (int) $data['category_id']
+            : (int) $product->category_id;
+        $effectiveSubcategoryId = array_key_exists('subcategory_id', $data)
+            ? (int) $data['subcategory_id']
+            : (int) $product->subcategory_id;
+        $effectiveBrandId = array_key_exists('brand_id', $data)
+            ? (int) $data['brand_id']
+            : (int) $product->brand_id;
+
+        $catalogError = $this->validateCatalogSelection(
+            $effectiveCategoryId,
+            $effectiveSubcategoryId,
+            $effectiveBrandId
+        );
+        if ($catalogError) {
+            return response()->json([
+                'status' => false,
+                'message' => $catalogError,
+            ], 422);
+        }
+
         foreach (['ProductName', 'ProductBreaf', 'ProductDetails', 'ProductResellerPrice', 'ProductRegularPrice', 'qty', 'low_stock', 'ProductSku', 'show_stock', 'show_stock_text', 'status', 'MetaKey', 'Discount', 'category_id', 'subcategory_id', 'brand_id'] as $key) {
             if (array_key_exists($key, $data)) {
                 $product->{$key} = $data[$key];
@@ -445,6 +478,16 @@ class VendorProductController extends Controller
                 $errors[] = ['row' => $rowNum, 'message' => $validator->errors()->first()];
                 continue;
             }
+
+            $categoryId = (int) ($data['category_id'] ?? 0);
+            $subcategoryId = (int) ($data['subcategory_id'] ?? 0);
+            $brandId = (int) ($data['brand_id'] ?? 0);
+            $catalogError = $this->validateCatalogSelection($categoryId, $subcategoryId, $brandId);
+            if ($catalogError) {
+                $errors[] = ['row' => $rowNum, 'message' => $catalogError];
+                continue;
+            }
+
             $slug = Str::slug($name);
             $i = 1;
             while (Product::where('ProductSlug', $slug)->exists()) {
@@ -452,9 +495,9 @@ class VendorProductController extends Controller
             }
             $product = new Product();
             $product->vendor_id = $vendor->id;
-            $product->category_id = (int) ($data['category_id'] ?? 0);
-            $product->subcategory_id = (int) ($data['subcategory_id'] ?? 0);
-            $product->brand_id = (int) ($data['brand_id'] ?? 0);
+            $product->category_id = $categoryId;
+            $product->subcategory_id = $subcategoryId;
+            $product->brand_id = $brandId;
             $product->ProductName = $name;
             $product->ProductSlug = $slug;
             $product->ProductSku = !empty($data['ProductSku']) ? $data['ProductSku'] : ('VP' . time() . rand(100, 999) . $rowNum);
@@ -496,6 +539,27 @@ class VendorProductController extends Controller
             'message' => "Created {$created} product(s)" . (count($errors) ? ', ' . count($errors) . ' row(s) had errors.' : ''),
             'data' => ['created' => $created, 'errors' => $errors],
         ]);
+    }
+
+    /**
+     * Vendors must use existing active catalog records from the main website.
+     * Returns null when selection is valid; otherwise an error message.
+     */
+    private function validateCatalogSelection(int $categoryId, int $subcategoryId, int $brandId): ?string
+    {
+        if ($categoryId <= 0 || !Category::where('id', $categoryId)->where('status', 'Active')->exists()) {
+            return 'Selected category is invalid or inactive. Use an active category from main website.';
+        }
+
+        if ($subcategoryId <= 0 || !Subcategory::where('id', $subcategoryId)->where('category_id', $categoryId)->where('status', 'Active')->exists()) {
+            return 'Selected subcategory is invalid for the chosen category.';
+        }
+
+        if ($brandId <= 0 || !Brand::where('id', $brandId)->where('status', 'Active')->exists()) {
+            return 'Selected brand is invalid or inactive.';
+        }
+
+        return null;
     }
 
     /** GET /api/vendor/products/{id}/price-tiers */

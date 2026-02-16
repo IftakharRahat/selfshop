@@ -38,7 +38,7 @@ export default function VendorReportsPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h1 className="text-2xl font-bold text-gray-900 mb-1">Reports &amp; analytics</h1>
 					<p className="text-sm text-gray-600">
 						Sales over time, top products, and wholesale vs dropship breakdown.
@@ -46,7 +46,7 @@ export default function VendorReportsPage() {
 				</div>
 
 				{/* Sales over time */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-800 mb-3">Sales report</h2>
 					<div className="flex flex-wrap gap-2 mb-4">
 						<select
@@ -104,7 +104,7 @@ export default function VendorReportsPage() {
 				</div>
 
 				{/* Top products */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-800 mb-3">Top selling products</h2>
 					{topLoading ? (
 						<p className="text-sm text-gray-500 py-4">Loading...</p>
@@ -137,7 +137,7 @@ export default function VendorReportsPage() {
 				</div>
 
 				{/* Wholesale vs dropship */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-800 mb-3">Sales by fulfillment type</h2>
 					<p className="text-xs text-gray-500 mb-3">From {from} to {to}</p>
 					{breakdownLoading ? (
@@ -160,3 +160,4 @@ export default function VendorReportsPage() {
 		</WithVendorAuth>
 	);
 }
+

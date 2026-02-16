@@ -4,10 +4,15 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
 
 class AdminVendorProductController extends Controller
 {
+    public function __construct(
+        protected VendorAdminNotificationService $vendorNotificationService
+    ) {}
+
     /**
      * List all products added by vendors (vendor_id not null).
      * GET /admin/vendor-products
@@ -40,10 +45,22 @@ class AdminVendorProductController extends Controller
      */
     public function approve($id)
     {
-        $product = Product::whereNotNull('vendor_id')->findOrFail($id);
+        $product = Product::with('vendor.user')->whereNotNull('vendor_id')->findOrFail($id);
         $product->vendor_approval_status = 'approved';
         $product->status = 'Active';
         $product->save();
+
+        if ($product->vendor) {
+            $this->vendorNotificationService->notifyVendor(
+                $product->vendor,
+                'Product approved',
+                'Admin approved your product "' . $product->ProductName . '". It is now visible on the storefront.',
+                'success',
+                ['event' => 'vendor_product_approved', 'product_id' => $product->id, 'product_name' => $product->ProductName],
+                '/vendor/products'
+            );
+        }
+
         return redirect()->back()->with('message', 'Product approved. It is now visible on the storefront.');
     }
 
@@ -53,10 +70,22 @@ class AdminVendorProductController extends Controller
      */
     public function reject(Request $request, $id)
     {
-        $product = Product::whereNotNull('vendor_id')->findOrFail($id);
+        $product = Product::with('vendor.user')->whereNotNull('vendor_id')->findOrFail($id);
         $product->vendor_approval_status = 'rejected';
         $product->status = 'Inactive';
         $product->save();
+
+        if ($product->vendor) {
+            $this->vendorNotificationService->notifyVendor(
+                $product->vendor,
+                'Product rejected',
+                'Admin rejected your product "' . $product->ProductName . '". Please review and update it.',
+                'warning',
+                ['event' => 'vendor_product_rejected', 'product_id' => $product->id, 'product_name' => $product->ProductName],
+                '/vendor/products'
+            );
+        }
+
         return redirect()->back()->with('message', 'Product rejected.');
     }
 }

@@ -18,6 +18,9 @@ export interface VendorProfile {
 	address_line_2?: string | null;
 	pickup_location_label?: string | null;
 	status: "pending" | "approved" | "rejected" | "suspended";
+	is_verified_badge?: boolean;
+	verified_badge_at?: string | null;
+	verified_badge_by?: number | null;
 }
 
 export interface VendorKycDocument {
@@ -104,6 +107,11 @@ export interface VendorOrderListItem {
 	invoiceID: string;
 	orderDate: string | null;
 	status: string;
+	display_status?: string;
+	customer_status?: string;
+	steadfast_status?: string | null;
+	steadfast_last_synced_at?: string | null;
+	warehouse_sent_at?: string | null;
 	Payment: string | null;
 	paymentAmount: number | null;
 	subTotal: number;
@@ -120,6 +128,11 @@ export interface VendorOrderDetail {
 		orderDate: string | null;
 		deliveryDate: string | null;
 		status: string;
+		display_status?: string;
+		customer_status?: string;
+		steadfast_status?: string | null;
+		steadfast_last_synced_at?: string | null;
+		warehouse_sent_at?: string | null;
 		Payment: string | null;
 		paymentAmount: number | null;
 		subTotal: number;
@@ -127,6 +140,7 @@ export interface VendorOrderDetail {
 		discountCharge: number | null;
 		customerNote: string | null;
 		tracking_number?: string | null;
+		trackingLink?: string | null;
 		shipped_at?: string | null;
 	};
 	customer: { customerName: string; customerPhone: string; customerAddress: string } | null;
@@ -211,6 +225,25 @@ export interface VendorCategoryDiscountItem {
 	discount_percent: number;
 	start_date: string | null;
 	end_date: string | null;
+}
+
+export interface VendorCategoryCommissionItem {
+	category_id: number;
+	category_name: string;
+	category_slug: string;
+	commission_percent: number;
+}
+
+export interface VendorNotificationItem {
+	id: string;
+	title: string;
+	message: string;
+	type: "info" | "success" | "warning" | "error" | string;
+	action_url?: string | null;
+	meta?: Record<string, unknown>;
+	is_read: boolean;
+	read_at?: string | null;
+	created_at?: string | null;
 }
 
 export interface VendorReviewProduct {
@@ -537,8 +570,49 @@ export const vendorApi = baseApi.injectEndpoints({
 			query: (id) => ({ url: `/vendor/orders/${id}` }),
 			providesTags: (_r, _e, id) => [{ type: "vendorOrders", id }],
 		}),
+		updateVendorOrderStatus: build.mutation<
+			{ status: boolean; message?: string; data?: { order_id: number; status: string; customer_status: string; steadfast_status?: string | null } },
+			{ orderId: number; action: "accept" | "cancel"; cancel_reason?: string }
+		>({
+			query: ({ orderId, action, cancel_reason }) => ({
+				url: `/vendor/orders/${orderId}/status`,
+				method: "POST",
+				body: { action, cancel_reason },
+			}),
+			invalidatesTags: (_r, _e, { orderId }) => [
+				{ type: "vendorOrders", id: orderId },
+				{ type: "vendorOrders", id: "LIST" },
+				"vendorDashboard",
+			],
+		}),
+		sendVendorOrderToWarehouse: build.mutation<
+			{
+				status: boolean;
+				message?: string;
+				data?: {
+					order_id: number;
+					status: string;
+					customer_status: string;
+					steadfast_status?: string | null;
+					tracking_number?: string | null;
+					tracking_link?: string | null;
+					warehouse_sent_at?: string | null;
+				};
+			},
+			{ orderId: number }
+		>({
+			query: ({ orderId }) => ({
+				url: `/vendor/orders/${orderId}/send-to-warehouse`,
+				method: "POST",
+			}),
+			invalidatesTags: (_r, _e, { orderId }) => [
+				{ type: "vendorOrders", id: orderId },
+				{ type: "vendorOrders", id: "LIST" },
+				"vendorDashboard",
+			],
+		}),
 		addVendorOrderTracking: build.mutation<
-			{ status: boolean; message: string; data?: { order_id: number } },
+			{ status: boolean; message: string; data?: { order_id: number; customer_status?: string; steadfast_status?: string | null } },
 			{ orderId: number; tracking_number?: string; line_items?: Array<{ order_product_id: number; tracking_number?: string; fulfillment_type?: "standard" | "dropship" }> }
 		>({
 			query: ({ orderId, tracking_number, line_items }) => ({
@@ -546,7 +620,10 @@ export const vendorApi = baseApi.injectEndpoints({
 				method: "POST",
 				body: { tracking_number, line_items },
 			}),
-			invalidatesTags: (_r, _e, { orderId }) => [{ type: "vendorOrders", id: orderId }],
+			invalidatesTags: (_r, _e, { orderId }) => [
+				{ type: "vendorOrders", id: orderId },
+				{ type: "vendorOrders", id: "LIST" },
+			],
 		}),
 
 		// ── Shipping methods (Phase 5) ──
@@ -597,6 +674,21 @@ export const vendorApi = baseApi.injectEndpoints({
 				body,
 			}),
 			invalidatesTags: ["vendorCategoryDiscounts"],
+		}),
+
+		// Category-wise commission (admin-managed, vendor read-only)
+		getVendorCategoryCommissions: build.query<
+			{
+				status: boolean;
+				data?: {
+					global_default_commission_percent: number;
+					categories: VendorCategoryCommissionItem[];
+				};
+			},
+			void
+		>({
+			query: () => ({ url: "/vendor/category-commissions" }),
+			providesTags: ["vendorCategoryCommissions"],
 		}),
 
 		// ── Product reviews ──
@@ -932,6 +1024,45 @@ export const vendorApi = baseApi.injectEndpoints({
 			query: (params) => ({ url: "/vendor/reports/sales-breakdown", params: params ?? {} }),
 			providesTags: ["vendorReports"],
 		}),
+
+		// Notifications
+		getVendorNotifications: build.query<
+			{
+				status: boolean;
+				data?: {
+					notifications: VendorNotificationItem[];
+					unread_count: number;
+					pagination: { current_page: number; last_page: number; per_page: number; total: number };
+				};
+			},
+			{ page?: number; per_page?: number; unread_only?: boolean } | void
+		>({
+			query: (params) => ({
+				url: "/vendor/notifications",
+				params: params ?? {},
+			}),
+			providesTags: ["vendorNotifications"],
+		}),
+		markVendorNotificationRead: build.mutation<
+			{ status: boolean; message?: string; data?: { unread_count: number } },
+			{ id: string }
+		>({
+			query: ({ id }) => ({
+				url: `/vendor/notifications/${id}/read`,
+				method: "POST",
+			}),
+			invalidatesTags: ["vendorNotifications"],
+		}),
+		markAllVendorNotificationsRead: build.mutation<
+			{ status: boolean; message?: string; data?: { unread_count: number } },
+			void
+		>({
+			query: () => ({
+				url: "/vendor/notifications/read-all",
+				method: "POST",
+			}),
+			invalidatesTags: ["vendorNotifications"],
+		}),
 	}),
 });
 
@@ -958,6 +1089,8 @@ export const {
 	useDeleteVendorProductPriceTierMutation,
 	useGetVendorOrdersQuery,
 	useGetVendorOrderQuery,
+	useUpdateVendorOrderStatusMutation,
+	useSendVendorOrderToWarehouseMutation,
 	useAddVendorOrderTrackingMutation,
 	useGetVendorShippingMethodsQuery,
 	useCreateVendorShippingMethodMutation,
@@ -965,6 +1098,7 @@ export const {
 	useDeleteVendorShippingMethodMutation,
 	useGetVendorCategoryDiscountsQuery,
 	useSetVendorCategoryDiscountMutation,
+	useGetVendorCategoryCommissionsQuery,
 	useGetVendorReviewProductsQuery,
 	useGetVendorProductReviewsQuery,
 	// Phase 3: Inventory
@@ -993,5 +1127,7 @@ export const {
 	useGetVendorReportsSalesQuery,
 	useGetVendorReportsTopProductsQuery,
 	useGetVendorReportsSalesBreakdownQuery,
+	useGetVendorNotificationsQuery,
+	useMarkVendorNotificationReadMutation,
+	useMarkAllVendorNotificationsReadMutation,
 } = vendorApi;
-

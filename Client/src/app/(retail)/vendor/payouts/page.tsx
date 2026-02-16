@@ -64,7 +64,7 @@ export default function VendorPayoutsPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">Payouts</h1>
 						<p className="text-sm text-gray-600">
@@ -80,7 +80,7 @@ export default function VendorPayoutsPage() {
 				</div>
 
 				{/* Balance & Request */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<div className="flex flex-col sm:flex-row sm:items-end gap-4">
 						<div className="flex-1">
 							<p className="text-sm font-medium text-gray-600 mb-1">Available balance</p>
@@ -110,7 +110,7 @@ export default function VendorPayoutsPage() {
 										onChange={(e) => setPayoutAccountId(e.target.value === "" ? "" : Number(e.target.value))}
 										className="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
 									>
-										{accounts.map((a: { id: number; channel_type: string; account_name: string; account_number: string }) => (
+										{accounts.map((a) => (
 											<option key={a.id} value={a.id}>
 												{a.account_name || a.channel_type} •••{String(a.account_number).slice(-4)}
 											</option>
@@ -135,7 +135,7 @@ export default function VendorPayoutsPage() {
 				</div>
 
 				{/* Payout requests */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-800 mb-3">Payout requests</h2>
 					{requestsLoading ? (
 						<p className="text-sm text-gray-500 py-4">Loading...</p>
@@ -176,7 +176,7 @@ export default function VendorPayoutsPage() {
 								</table>
 							</div>
 							{reqPagination && reqPagination.last_page > 1 && (
-								<div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+								<div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
 									<p className="text-xs text-gray-500">Page {reqPagination.current_page} of {reqPagination.last_page}</p>
 									<div className="flex gap-1">
 										<button
@@ -197,7 +197,7 @@ export default function VendorPayoutsPage() {
 				</div>
 
 				{/* Payout history */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-800 mb-3">Payout history</h2>
 					{payoutsLoading ? (
 						<p className="text-sm text-gray-500 py-4">Loading...</p>
@@ -234,7 +234,7 @@ export default function VendorPayoutsPage() {
 								</table>
 							</div>
 							{histPagination && histPagination.last_page > 1 && (
-								<div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+								<div className="mt-3 flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
 									<p className="text-xs text-gray-500">Page {histPagination.current_page} of {histPagination.last_page}</p>
 									<div className="flex gap-1">
 										<button
@@ -257,3 +257,4 @@ export default function VendorPayoutsPage() {
 		</WithVendorAuth>
 	);
 }
+

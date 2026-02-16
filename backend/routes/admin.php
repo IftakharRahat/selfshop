@@ -52,6 +52,7 @@ use App\Http\Controllers\Backend\AdminVendorCategoryDiscountController;
 use App\Http\Controllers\Backend\AdminVendorProductController;
 use App\Http\Controllers\Backend\AdminVendorPayoutController;
 use App\Http\Controllers\Backend\AdminVendorReportController;
+use App\Http\Controllers\Backend\AdminVendorCommissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -249,6 +250,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show');
     Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
+    Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge');
+    Route::post('vendors/{vendor}/remove-verified-badge', [VendorController::class, 'removeVerifiedBadge'])->name('admin.vendors.remove-verified-badge');
 
     // Product reviews (admin view & moderate)
     Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
@@ -256,6 +259,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
 
     // Vendor category discounts (admin view)
     Route::get('vendor-category-discounts', [AdminVendorCategoryDiscountController::class, 'index'])->name('admin.vendor-category-discounts.index');
+
+    // Vendor category commission (admin manage)
+    Route::get('vendor-category-commissions', [AdminVendorCommissionController::class, 'index'])->name('admin.vendor-category-commissions.index');
+    Route::post('vendor-category-commissions/{category}', [AdminVendorCommissionController::class, 'update'])->name('admin.vendor-category-commissions.update');
 
     // Vendor products (verify, approve/reject, edit)
     Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index');

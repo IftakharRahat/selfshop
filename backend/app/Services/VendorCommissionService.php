@@ -15,20 +15,16 @@ class VendorCommissionService
 
     /**
      * Get effective commission rate for a vendor product (vendor_id + category_id).
-     * Priority: vendor-specific > category > global.
+     * Priority:
+     * 1) vendor + category
+     * 2) global category (admin-set, applies to all vendors)
+     * 3) vendor global (legacy fallback)
+     * 4) global default
      */
     public function getRateForProduct(?int $vendorId, ?int $categoryId): float
     {
         if (!$vendorId) {
             return 0;
-        }
-
-        $vendorRate = VendorCommissionConfig::where('vendor_id', $vendorId)
-            ->whereNull('category_id')
-            ->value('commission_percent');
-
-        if ($vendorRate !== null) {
-            return (float) $vendorRate;
         }
 
         if ($categoryId) {
@@ -47,6 +43,14 @@ class VendorCommissionService
             if ($globalCategoryRate !== null) {
                 return (float) $globalCategoryRate;
             }
+        }
+
+        $vendorRate = VendorCommissionConfig::where('vendor_id', $vendorId)
+            ->whereNull('category_id')
+            ->value('commission_percent');
+
+        if ($vendorRate !== null) {
+            return (float) $vendorRate;
         }
 
         $global = VendorCommissionConfig::whereNull('vendor_id')

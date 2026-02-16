@@ -16,7 +16,7 @@
                 <h5 class="mb-1">{{ $vendor->company_name }}</h5>
                 <p class="mb-1 small text-muted">
                     Vendor ID: #{{ $vendor->id }} &middot;
-                    User ID: #{{ $vendor->user->id ?? '—' }}
+                    User ID: #{{ $vendor->user->id ?? '-' }}
                 </p>
                 <p class="mb-1 small text-muted">
                     Status:
@@ -28,8 +28,16 @@
                         <span class="badge bg-danger">Rejected</span>
                     @endif
                 </p>
+                <p class="mb-1 small text-muted">
+                    Verified badge:
+                    @if($vendor->is_verified_badge)
+                        <span class="badge bg-primary">Verified</span>
+                    @else
+                        <span class="badge bg-secondary">Not verified</span>
+                    @endif
+                </p>
                 <p class="mb-0 small text-muted">
-                    Registered at: {{ $vendor->created_at?->format('Y-m-d H:i') ?? '—' }}
+                    Registered at: {{ $vendor->created_at?->format('Y-m-d H:i') ?? '-' }}
                 </p>
             </div>
 
@@ -38,31 +46,31 @@
                 <div class="row small text-muted">
                     <div class="col-md-6 mb-2">
                         <strong>Business type:</strong><br>
-                        {{ $vendor->business_type ?? '—' }}
+                        {{ $vendor->business_type ?? '-' }}
                     </div>
                     <div class="col-md-6 mb-2">
                         <strong>Slug:</strong><br>
-                        {{ $vendor->slug ?? '—' }}
+                        {{ $vendor->slug ?? '-' }}
                     </div>
                     <div class="col-md-6 mb-2">
                         <strong>Contact person:</strong><br>
-                        {{ $vendor->contact_name ?? '—' }}
+                        {{ $vendor->contact_name ?? '-' }}
                     </div>
                     <div class="col-md-6 mb-2">
                         <strong>Contact email:</strong><br>
-                        {{ $vendor->contact_email ?? ($vendor->user->email ?? '—') }}
+                        {{ $vendor->contact_email ?? ($vendor->user->email ?? '-') }}
                     </div>
                     <div class="col-md-6 mb-2">
                         <strong>Contact phone:</strong><br>
-                        {{ $vendor->contact_phone ?? ($vendor->user->phone ?? '—') }}
+                        {{ $vendor->contact_phone ?? ($vendor->user->phone ?? '-') }}
                     </div>
                     <div class="col-md-6 mb-2">
                         <strong>Country / City:</strong><br>
-                        {{ $vendor->country ?? '—' }} {{ $vendor->city ? ' / '.$vendor->city : '' }}
+                        {{ $vendor->country ?? '-' }} {{ $vendor->city ? ' / '.$vendor->city : '' }}
                     </div>
                     <div class="col-md-12 mb-2">
                         <strong>Address:</strong><br>
-                        {{ $vendor->address_line_1 ?? '—' }}
+                        {{ $vendor->address_line_1 ?? '-' }}
                     </div>
                 </div>
             </div>
@@ -73,7 +81,15 @@
                     <p class="small mb-1"><strong>Name:</strong> {{ $vendor->user->name }}</p>
                     <p class="small mb-1"><strong>Email:</strong> {{ $vendor->user->email }}</p>
                     <p class="small mb-1"><strong>Phone:</strong> {{ $vendor->user->phone }}</p>
-                    <p class="small mb-0"><strong>User status:</strong> {{ $vendor->user->status ?? '—' }}</p>
+                    <p class="small mb-1"><strong>User status:</strong> {{ $vendor->user->status ?? '-' }}</p>
+                    <p class="small mb-0">
+                        <strong>Wholesale access:</strong>
+                        @if($vendor->user->is_verified_wholesaler)
+                            <span class="badge bg-success">Enabled</span>
+                        @else
+                            <span class="badge bg-secondary">Disabled</span>
+                        @endif
+                    </p>
                 @else
                     <p class="small mb-0">No linked user record found.</p>
                 @endif
@@ -81,6 +97,43 @@
         </div>
 
         <div class="col-md-4">
+            <div class="p-4 mb-3 rounded bg-white border">
+                <h6 class="mb-3">Admin actions</h6>
+
+                @if($vendor->status === 'pending')
+                    <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="mb-2">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-success w-100">Approve vendor</button>
+                    </form>
+                    <form action="{{ route('admin.vendors.reject', $vendor->id) }}" method="post">
+                        @csrf
+                        <input type="text" name="reason" placeholder="Reason (optional)" class="form-control form-control-sm mb-2">
+                        <button type="submit" class="btn btn-sm btn-danger w-100">Reject vendor</button>
+                    </form>
+                @elseif($vendor->status === 'approved')
+                    @if($vendor->is_verified_badge)
+                        <form action="{{ route('admin.vendors.remove-verified-badge', $vendor->id) }}" method="post">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100">Remove verified badge</button>
+                        </form>
+                        @if($vendor->verified_badge_at)
+                            <p class="small text-muted mt-2 mb-0">
+                                Badge granted at {{ $vendor->verified_badge_at->format('Y-m-d H:i') }}.
+                            </p>
+                        @endif
+                    @else
+                        <form action="{{ route('admin.vendors.verify-badge', $vendor->id) }}" method="post">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-info w-100">Give verified badge</button>
+                        </form>
+                    @endif
+                @else
+                    <p class="small mb-0 text-muted">
+                        Badge actions are unavailable while vendor status is rejected.
+                    </p>
+                @endif
+            </div>
+
             <div class="p-4 mb-3 rounded bg-white border">
                 <h6 class="mb-3">KYC documents</h6>
                 @if($vendor->kycDocuments->isEmpty())
@@ -91,7 +144,7 @@
                             <li class="list-group-item small">
                                 <strong>{{ $doc->document_type }}</strong>
                                 @if($doc->document_number)
-                                    <span class="text-light"> • {{ $doc->document_number }}</span>
+                                    <span class="text-light"> - {{ $doc->document_number }}</span>
                                 @endif
                                 <br>
                                 Status:
@@ -154,4 +207,3 @@
     </div>
 </div>
 @endsection
-

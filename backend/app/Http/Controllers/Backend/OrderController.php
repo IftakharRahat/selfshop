@@ -22,6 +22,7 @@ use App\Models\Zone;
 use App\Models\User;
 use App\Models\Income;
 use App\Models\Vencomment;
+use App\Services\SteadfastOrderStatusService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use DB;
@@ -81,8 +82,8 @@ class OrderController extends Controller
                 $orders->id = $id;
 
                 if ($courier_id == 26) {
-                    $api_key = 'g5skyy9wfnbnzypfsi0utot16suxkqfs';
-                    $secret_key = 'czacd5n0mv3vgvugqxfb187t';
+                    $api_key = env('STEADFAST_API_KEY');
+                    $secret_key = env('STEADFAST_SECRET_KEY');
                     $ress = Http::withHeaders([
                         'Api-Key' => $api_key,
                         'Secret-Key' => $secret_key,
@@ -137,12 +138,22 @@ class OrderController extends Controller
     public function makeinvoicess($id)
     {
         $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('invoiceID', $id)->first();
+        if ($orders) {
+            $meta = app(SteadfastOrderStatusService::class)->syncOrderStatus($orders, false);
+            $orders->setAttribute('customer_status', $meta['customer_status']);
+            $orders->setAttribute('steadfast_status', $meta['steadfast_status']);
+        }
         return view('webview.invoice', ['orders' => $orders]);
     }
 
     public function vieworder($id)
     {
         $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('id', $id)->first();
+        if ($orders) {
+            $meta = app(SteadfastOrderStatusService::class)->syncOrderStatus($orders, false);
+            $orders->setAttribute('customer_status', $meta['customer_status']);
+            $orders->setAttribute('steadfast_status', $meta['steadfast_status']);
+        }
         return view('admin.content.order.view', ['orders' => $orders]);
     }
 

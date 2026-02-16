@@ -30,7 +30,9 @@ const requestProductListApi = baseApi.injectEndpoints({
 		}),
 		getSingleOrder: builder.query({
 			query: (invoiceID) => ({
-				url: `/track-order?invoiceID=${invoiceID}`,
+				url: `/track-order?invoiceID=${encodeURIComponent(
+					String(invoiceID ?? "").trim().replace(/^[^A-Za-z0-9]+/, "")
+				)}`,
 				method: "GET",
 			}),
 		}),

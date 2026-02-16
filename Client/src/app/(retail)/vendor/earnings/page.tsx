@@ -27,7 +27,7 @@ export default function VendorEarningsPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">Earnings & balance</h1>
 						<p className="text-sm text-gray-600">
@@ -77,9 +77,9 @@ export default function VendorEarningsPage() {
 					</div>
 				)}
 
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-800 mb-3">Earnings breakdown</h2>
-					<div className="flex gap-2 mb-4">
+					<div className="mb-4 flex flex-wrap gap-2">
 						<button
 							type="button"
 							onClick={() => { setStatusFilter(""); setPage(1); }}
@@ -150,7 +150,7 @@ export default function VendorEarningsPage() {
 								</table>
 							</div>
 							{pagination && pagination.last_page > 1 && (
-								<div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+								<div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
 									<p className="text-xs text-gray-500">Page {pagination.current_page} of {pagination.last_page}</p>
 									<div className="flex gap-1">
 										<button
@@ -177,3 +177,4 @@ export default function VendorEarningsPage() {
 		</WithVendorAuth>
 	);
 }
+

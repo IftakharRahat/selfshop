@@ -36,7 +36,7 @@ export default function VendorReviewsPage() {
 		<WithVendorAuth>
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h1 className="text-2xl font-bold text-gray-900 mb-1">
 						All Rating &amp; Reviews
 					</h1>
@@ -44,15 +44,15 @@ export default function VendorReviewsPage() {
 
 				{/* Table */}
 				<div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-					<div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-gray-100">
+					<div className="flex flex-col items-stretch gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 						<h2 className="text-lg font-semibold text-gray-900">
 							Product Review &amp; Ratings
 						</h2>
-						<div className="flex items-center gap-3">
+						<div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
 							<select
 								value={ratingFilter}
 								onChange={(e) => setRatingFilter(e.target.value)}
-								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+								className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-auto"
 							>
 								<option value="">Filter by Rating</option>
 								<option value="5">5 Stars</option>
@@ -66,7 +66,7 @@ export default function VendorReviewsPage() {
 								placeholder="Type Product Name & Hit E..."
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-56"
+								className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full sm:w-56"
 							/>
 						</div>
 					</div>
@@ -138,3 +138,4 @@ export default function VendorReviewsPage() {
 		</WithVendorAuth>
 	);
 }
+

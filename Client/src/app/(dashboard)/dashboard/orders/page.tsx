@@ -12,11 +12,11 @@ import { useOrderCountQuery } from "@/redux/features/orderApi";
 const statusTabs = [
 	{ label: "All", value: "all" },
 	{ label: "Pending", value: "Pending" },
-	{ label: "Confirmed", value: "Confirmed" },
+	{ label: "Accepted", value: "Confirmed" },
 	{ label: "Processing", value: "Processing" },
-	{ label: "On delivery", value: "Ontheway" },
+	{ label: "Shipped to warehouse", value: "Ontheway" },
 	{ label: "Delivered", value: "Delivered" },
-	{ label: "Cancelled", value: "Canceled" },
+	{ label: "Rejected", value: "Canceled" },
 	{ label: "Returned", value: "Return" },
 ];
 
@@ -26,9 +26,9 @@ const OrderPage = () => {
 
 	const stats = [
 		{ title: "New order", value: data?.data?.pending ?? 0, icon: order, status: "Pending" },
-		{ title: "Cancelled", value: data?.data?.canceled ?? 0, icon: cancelled, status: "Canceled" },
+		{ title: "Rejected", value: data?.data?.canceled ?? 0, icon: cancelled, status: "Canceled" },
 		{ title: "Returned", value: data?.data?.return ?? 0, icon: returnIcon, status: "Return" },
-		{ title: "On delivery", value: data?.data?.ontheway ?? 0, icon: delivery, status: "On the way" },
+		{ title: "Shipped", value: data?.data?.ontheway ?? 0, icon: delivery, status: "Ontheway" },
 		{ title: "Delivered", value: data?.data?.delivered ?? 0, icon: delivered, status: "Delivered" },
 	];
 

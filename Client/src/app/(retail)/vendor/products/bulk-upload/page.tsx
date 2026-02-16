@@ -63,7 +63,7 @@ export default function VendorBulkUploadPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">Bulk product upload</h1>
 						<p className="text-sm text-gray-600">Upload a CSV to create multiple products at once.</p>
@@ -71,7 +71,7 @@ export default function VendorBulkUploadPage() {
 					<Link href="/vendor/products" className="text-sm font-medium text-gray-600 hover:text-gray-900">Back to products</Link>
 				</div>
 
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 space-y-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-4">
 					<div>
 						<h2 className="text-sm font-semibold text-gray-900 mb-2">1. Download template</h2>
 						<p className="text-xs text-gray-600 mb-2">Use the template to fill in product names, category IDs, brand ID, prices, qty, SKU, minimum qty, etc.</p>
@@ -110,3 +110,4 @@ export default function VendorBulkUploadPage() {
 		</WithVendorAuth>
 	);
 }
+

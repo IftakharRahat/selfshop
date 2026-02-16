@@ -13,6 +13,10 @@ class CreateVencommentsTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('vencomments')) {
+            return;
+        }
+
         Schema::create('vencomments', function (Blueprint $table) {
             $table->id();
             $table->integer('order_id')->nullable();

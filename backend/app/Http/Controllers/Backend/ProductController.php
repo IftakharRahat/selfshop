@@ -13,12 +13,17 @@ use App\Models\Stock;
 use App\Models\Purchase;
 use App\Models\Brand;
 use App\Models\Varient;
+use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        protected VendorAdminNotificationService $vendorNotificationService
+    ) {}
+
     /**
      * Display a listing of the resource.
      *
@@ -370,6 +375,9 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $product = Product::where('id', $id)->first();
+        $oldVendorApprovalStatus = $product->vendor_approval_status;
+        $oldStatus = $product->status;
+        $oldProductName = $product->ProductName;
         // For vendor products, preserve vendor_id and do not overwrite shop_id
         if (!$product->vendor_id) {
             if (isset($request->shop_id)) {
@@ -530,6 +538,37 @@ class ProductController extends Controller
 
 
         $product->update();
+
+        if ($product->vendor_id) {
+            $product->loadMissing('vendor.user');
+
+            $messages = [];
+            if ($request->has('vendor_approval_status') && $oldVendorApprovalStatus !== $product->vendor_approval_status) {
+                $messages[] = 'Approval status changed to "' . $product->vendor_approval_status . '"';
+            }
+            if ($oldStatus !== $product->status) {
+                $messages[] = 'Publish status changed to "' . $product->status . '"';
+            }
+            if ($oldProductName !== $product->ProductName) {
+                $messages[] = 'Product name updated to "' . $product->ProductName . '"';
+            }
+
+            if (!empty($messages) && $product->vendor) {
+                $this->vendorNotificationService->notifyVendor(
+                    $product->vendor,
+                    'Product updated by admin',
+                    'Admin updated your product "' . $product->ProductName . '". ' . implode('. ', $messages) . '.',
+                    'info',
+                    [
+                        'event' => 'vendor_product_updated_by_admin',
+                        'product_id' => $product->id,
+                        'product_name' => $product->ProductName,
+                        'changes' => $messages,
+                    ],
+                    '/vendor/products'
+                );
+            }
+        }
 
         if ($product) {
             if (isset($request->shop_id)) {

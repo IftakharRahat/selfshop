@@ -47,7 +47,7 @@ export default function VendorHomePage() {
 	if (isError) {
 		return (
 			<WithVendorAuth>
-				<div className="rounded-xl bg-white p-6 border border-red-100 text-red-700">
+				<div className="rounded-xl bg-white p-4 sm:p-6 border border-red-100 text-red-700">
 					Failed to load dashboard. Please refresh.
 				</div>
 			</WithVendorAuth>
@@ -127,7 +127,7 @@ export default function VendorHomePage() {
 
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
 					<div className="rounded-xl bg-white p-5 border border-gray-100">
-						<h2 className="text-[28px] leading-none font-semibold text-gray-900 mb-3">Sales Stat</h2>
+						<h2 className="text-2xl leading-none font-semibold text-gray-900 mb-3 sm:text-[28px]">Sales Stat</h2>
 								{isLoading ? (
 									<div className="h-48 flex items-center justify-center text-gray-400">Loading...</div>
 								) : dashboard?.sales_chart?.length ? (
@@ -141,7 +141,9 @@ export default function VendorHomePage() {
 											>
 												<XAxis dataKey="name" tick={{ fontSize: 11 }} />
 												<YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-												<Tooltip formatter={(v: number) => [formatMoney(v), "Sales"]} />
+												<Tooltip
+													formatter={(v) => [formatMoney(Number(v ?? 0)), "Sales"]}
+												/>
 												<Bar dataKey="Sales" fill="#4f46e5" radius={[4, 4, 0, 0]} />
 											</BarChart>
 										</ResponsiveContainer>
@@ -153,7 +155,7 @@ export default function VendorHomePage() {
 								)}
 					</div>
 					<div className="rounded-xl bg-white p-5 border border-gray-100">
-						<h2 className="text-[28px] leading-none font-semibold text-gray-900 mb-4">Category wise product count</h2>
+						<h2 className="text-2xl leading-none font-semibold text-gray-900 mb-4 sm:text-[28px]">Category wise product count</h2>
 									{isLoading ? (
 										<p className="text-sm text-gray-500">Loading...</p>
 									) : dashboard?.category_wise_product_count?.length ? (
@@ -170,12 +172,13 @@ export default function VendorHomePage() {
 									)}
 					</div>
 					<div className="rounded-xl bg-white p-5 border border-gray-100">
-						<h2 className="text-[28px] leading-none font-semibold text-gray-900 mb-1">Orders</h2>
+						<h2 className="text-2xl leading-none font-semibold text-gray-900 mb-1 sm:text-[28px]">Orders</h2>
 						<p className="text-sm text-gray-500 mb-4">This Month</p>
 									<ul className="space-y-2 text-sm">
 										{[
 											{ key: "new", label: "New Order", icon: ShoppingBag, statuses: ["Pending", "New"] },
-											{ key: "cancelled", label: "Cancelled", icon: XCircle, statuses: ["Cancelled"] },
+											{ key: "accepted", label: "Accepted", icon: CheckCircle2, statuses: ["Confirmed"] },
+											{ key: "cancelled", label: "Cancelled", icon: XCircle, statuses: ["Canceled", "Cancelled"] },
 											{ key: "ondelivery", label: "On delivery", icon: Truck, statuses: ["Ontheway", "OnDelivery"] },
 											{ key: "delivered", label: "Delivered", icon: CheckCircle2, statuses: ["Delivered", "Complete"] },
 										].map(({ key, label, icon: Icon, statuses }) => {
@@ -196,7 +199,7 @@ export default function VendorHomePage() {
 									</ul>
 					</div>
 					<div className="rounded-xl bg-white p-5 border border-gray-100">
-						<h2 className="text-[28px] leading-none font-semibold text-gray-900 mb-4">Purchased Package</h2>
+						<h2 className="text-2xl leading-none font-semibold text-gray-900 mb-4 sm:text-[28px]">Purchased Package</h2>
 						<div className="space-y-2 text-sm text-gray-600">
 							<p className="flex items-center gap-2 text-gray-800 font-semibold">
 								<Award className="w-5 h-5 text-yellow-500" />
@@ -343,3 +346,4 @@ export default function VendorHomePage() {
 		</WithVendorAuth>
 	);
 }
+

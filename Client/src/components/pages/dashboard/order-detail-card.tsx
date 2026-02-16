@@ -5,15 +5,20 @@ import Link from "next/link";
 
 const statusStyles: Record<string, string> = {
 	Shipped: "bg-blue-50 text-blue-700 border-blue-200",
+	"Shipped to warehouse": "bg-blue-50 text-blue-700 border-blue-200",
+	"On the way": "bg-cyan-50 text-cyan-700 border-cyan-200",
 	Delivered: "bg-green-50 text-green-700 border-green-200",
 	Processing: "bg-amber-50 text-amber-700 border-amber-200",
 	Pending: "bg-amber-50 text-amber-700 border-amber-200",
+	Accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+	Rejected: "bg-red-50 text-red-700 border-red-200",
 	Cancelled: "bg-red-50 text-red-700 border-red-200",
+	Canceled: "bg-red-50 text-red-700 border-red-200",
 	Returned: "bg-gray-50 text-gray-700 border-gray-200",
 };
 
 function formatDate(dateStr: string | null | undefined) {
-	if (!dateStr) return "—";
+	if (!dateStr) return "-";
 	try {
 		return new Date(dateStr).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 	} catch {
@@ -32,8 +37,11 @@ export default function OrderDetailCard({
 	orderData,
 	showBackLink = false,
 	backHref = "/dashboard/orders",
-	backLabel = "← Back to orders",
+	backLabel = "<- Back to orders",
 }: OrderDetailCardProps) {
+	const customerStatus =
+		orderData.customer_status ?? orderData.display_status ?? orderData.status;
+
 	return (
 		<div className="bg-gray-50/60 border border-gray-100 rounded-xl p-4 sm:p-5">
 			{showBackLink && (
@@ -44,21 +52,19 @@ export default function OrderDetailCard({
 				</div>
 			)}
 
-			{/* Header: Invoice + Status */}
 			<div className="flex items-center justify-between mb-3">
 				<div>
 					<p className="text-sm font-semibold text-gray-900">Order: {orderData.invoiceID}</p>
 					<p className="text-xs text-gray-400 mt-0.5">{orderData.orderDate}</p>
 				</div>
-				<span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyles[orderData.status] ?? "bg-amber-50 text-amber-700 border-amber-200"}`}>
-					{orderData.status}
+				<span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusStyles[customerStatus] ?? "bg-amber-50 text-amber-700 border-amber-200"}`}>
+					{customerStatus}
 				</span>
 			</div>
 
-			{/* Tracking & shipment */}
 			{(orderData.tracking_number || orderData.shipped_at) && (
 				<div className="py-3 border-t border-gray-200">
-					<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tracking & shipment</p>
+					<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tracking and shipment</p>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
 						{orderData.tracking_number && (
 							<div>
@@ -76,7 +82,6 @@ export default function OrderDetailCard({
 				</div>
 			)}
 
-			{/* Info Grid */}
 			<div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm py-3 border-t border-gray-200">
 				<div>
 					<p className="text-xs text-gray-400">Customer</p>
@@ -88,7 +93,7 @@ export default function OrderDetailCard({
 				</div>
 				<div>
 					<p className="text-xs text-gray-400">Delivery Charge</p>
-					<p className="font-medium text-gray-900">৳ {orderData.deliveryCharge}</p>
+					<p className="font-medium text-gray-900">Tk {orderData.deliveryCharge}</p>
 				</div>
 				{orderData.customers?.customerAddress && (
 					<div className="col-span-2 sm:col-span-3">
@@ -104,7 +109,6 @@ export default function OrderDetailCard({
 				)}
 			</div>
 
-			{/* Products */}
 			<div className="pt-3 border-t border-gray-200">
 				<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Products</p>
 				{orderData.orderproducts?.map((item: any) => (
@@ -113,7 +117,7 @@ export default function OrderDetailCard({
 						className="flex flex-wrap items-center justify-between gap-y-1 text-sm py-2 border-b border-gray-100 last:border-0"
 					>
 						<div className="flex-1 min-w-0">
-							<span className="text-gray-700">{item.productName} <span className="text-gray-400">×{item.quantity}</span></span>
+							<span className="text-gray-700">{item.productName} <span className="text-gray-400">x{item.quantity}</span></span>
 							{(item.tracking_number || item.fulfillment_status) && (
 								<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
 									{item.fulfillment_status && item.fulfillment_status !== "pending" && (
@@ -127,7 +131,7 @@ export default function OrderDetailCard({
 								</div>
 							)}
 						</div>
-						<span className="font-medium text-gray-900">৳ {item.productPrice}</span>
+						<span className="font-medium text-gray-900">Tk {item.productPrice}</span>
 					</div>
 				))}
 			</div>

@@ -54,7 +54,7 @@ export default function VendorProductsPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">
 							Products
@@ -63,34 +63,34 @@ export default function VendorProductsPage() {
 							Manage your catalog. You can add, edit, and publish products here.
 						</p>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
 						<Link
 							href="/vendor/products/bulk-upload"
-							className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+							className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 sm:w-auto"
 						>
 							Bulk upload
 						</Link>
 						<Link
 							href="/vendor/products/new"
-							className="inline-flex items-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947]"
+							className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] sm:w-auto"
 						>
 							Add new product
 						</Link>
 					</div>
 				</div>
 
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
-					<div className="flex items-center justify-between mb-4 gap-3">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
+					<div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<p className="text-sm font-medium text-gray-800">
 							All products
 						</p>
-						<div className="flex items-center gap-3">
+						<div className="flex w-full items-center gap-3 sm:w-auto">
 							<input
 								type="text"
 								placeholder="Search product"
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								className="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+								className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-64"
 							/>
 						</div>
 					</div>
@@ -225,4 +225,5 @@ export default function VendorProductsPage() {
 		</WithVendorAuth>
 	);
 }
+
 

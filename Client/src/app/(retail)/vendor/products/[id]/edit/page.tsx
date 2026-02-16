@@ -16,6 +16,7 @@ import {
 	useGetVendorProductPriceTiersQuery,
 	useCreateVendorProductPriceTierMutation,
 	useDeleteVendorProductPriceTierMutation,
+	useGetVendorCategoryCommissionsQuery,
 } from "@/redux/api/vendorApi";
 import {
 	useGetAllNavbarCategoryDropdownOptionsQuery,
@@ -38,8 +39,10 @@ export default function VendorEditProductPage() {
 	// Category / brand data
 	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
 	const { data: brandData } = useGetAllBrandsQuery(undefined);
+	const { data: commissionData } = useGetVendorCategoryCommissionsQuery();
 	const categories = (catData as { data?: CatItem[] })?.data ?? [];
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
+	const commissionRows = commissionData?.data?.categories ?? [];
 
 	// ── Controlled form state ──
 	const [f, setF] = useState({
@@ -63,6 +66,10 @@ export default function VendorEditProductPage() {
 		brand_id: "",
 		allow_dropship: false as boolean,
 	});
+	const selectedCategoryCommission = f.category_id
+		? commissionRows.find((row) => row.category_id === Number(f.category_id))
+				?.commission_percent
+		: null;
 	const [initialized, setInitialized] = useState(false);
 
 	// Variants & price tiers
@@ -235,7 +242,7 @@ export default function VendorEditProductPage() {
 		<WithVendorAuth>
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">Edit product</h1>
 						<p className="text-sm text-gray-600">Update product details below.</p>
@@ -243,7 +250,7 @@ export default function VendorEditProductPage() {
 					<Link href="/vendor/products" className="text-sm font-medium text-gray-600 hover:text-gray-900">Back to products</Link>
 				</div>
 
-				<form onSubmit={handleSubmit} className="space-y-6 rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<form onSubmit={handleSubmit} className="space-y-6 rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 						{/* ── Left column ── */}
 						<div className="space-y-4 lg:col-span-2">
@@ -347,6 +354,9 @@ export default function VendorEditProductPage() {
 							{/* Product category */}
 							<div className="space-y-2">
 								<h2 className="text-sm font-semibold text-gray-900">Product category</h2>
+								<p className="text-xs text-gray-500">
+									Vendors must use existing categories from main website.
+								</p>
 								<label className="flex flex-col text-xs font-medium text-gray-700">
 									Category
 									<select
@@ -379,6 +389,36 @@ export default function VendorEditProductPage() {
 										))}
 									</select>
 								</label>
+
+								<div className="rounded-md border border-indigo-100 bg-indigo-50 p-3">
+									<p className="text-xs font-semibold text-indigo-900 mb-1">
+										Category-wise commission (admin set)
+									</p>
+									{selectedCategoryCommission !== null && selectedCategoryCommission !== undefined && (
+										<p className="text-xs text-indigo-700 mb-2">
+											Selected category commission: <span className="font-semibold">{selectedCategoryCommission}%</span>
+										</p>
+									)}
+									<div className="max-h-36 overflow-y-auto space-y-1">
+										{commissionRows.length === 0 ? (
+											<p className="text-xs text-indigo-700">No commission rules found.</p>
+										) : (
+											commissionRows.map((row) => (
+												<div
+													key={row.category_id}
+													className={`text-[11px] flex items-center justify-between rounded px-2 py-1 ${
+														Number(f.category_id) === row.category_id
+															? "bg-indigo-200 text-indigo-900"
+															: "bg-white text-gray-700"
+													}`}
+												>
+													<span>{row.category_name}</span>
+													<span className="font-semibold">{row.commission_percent}%</span>
+												</div>
+											))
+										)}
+									</div>
+								</div>
 							</div>
 
 							{/* Product images */}
@@ -440,7 +480,7 @@ export default function VendorEditProductPage() {
 					</div>
 
 					{/* Variants */}
-					<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 						<h2 className="text-sm font-semibold text-gray-900 mb-3">Variants</h2>
 						<div className="overflow-x-auto">
 							<table className="min-w-full text-sm table-fixed">
@@ -483,7 +523,7 @@ export default function VendorEditProductPage() {
 					</div>
 
 					{/* Wholesale price tiers */}
-					<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 						<h2 className="text-sm font-semibold text-gray-900 mb-3">Wholesale price tiers</h2>
 						<div className="overflow-x-auto">
 							<table className="min-w-full text-sm table-fixed">
@@ -539,3 +579,4 @@ export default function VendorEditProductPage() {
 		</WithVendorAuth>
 	);
 }
+

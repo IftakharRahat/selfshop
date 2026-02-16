@@ -95,6 +95,7 @@
                         <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Vendor Products</a>
                         <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
                         <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Vendor Category Discounts</a>
+                        <a href="{{ route('admin.vendor-category-commissions.index') }}" class="dropdown-item">Vendor Category Commissions</a>
                     </div>
                 </div>
 

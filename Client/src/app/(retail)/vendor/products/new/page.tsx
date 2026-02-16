@@ -8,6 +8,7 @@ import {
 	useCreateVendorProductMutation,
 	useCreateVendorProductVariantMutation,
 	useCreateVendorProductPriceTierMutation,
+	useGetVendorCategoryCommissionsQuery,
 } from "@/redux/api/vendorApi";
 import {
 	useGetAllNavbarCategoryDropdownOptionsQuery,
@@ -20,11 +21,17 @@ export default function VendorNewProductPage() {
 	const [createProduct] = useCreateVendorProductMutation();
 	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
 	const { data: brandData } = useGetAllBrandsQuery(undefined);
+	const { data: commissionData } = useGetVendorCategoryCommissionsQuery();
 	type CatItem = { id: number; category_name: string; subcategories?: { id: number; sub_category_name: string; category_id: number }[] };
 	const categories = (catData as { data?: CatItem[] })?.data ?? [];
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
+	const commissionRows = commissionData?.data?.categories ?? [];
 
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+	const selectedCategoryCommission = selectedCategoryId
+		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
+				?.commission_percent
+		: null;
 	const [createVariant] = useCreateVendorProductVariantMutation();
 	const [createTier] = useCreateVendorProductPriceTierMutation();
 
@@ -130,7 +137,7 @@ export default function VendorNewProductPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h1 className="text-2xl font-bold text-gray-900 mb-1">
 						Add new product
 					</h1>
@@ -142,7 +149,7 @@ export default function VendorNewProductPage() {
 
 				<form
 					onSubmit={handleSubmit}
-					className="space-y-6 rounded-xl bg-white p-6 shadow-sm border border-gray-100"
+					className="space-y-6 rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100"
 				>
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 						<div className="space-y-4 lg:col-span-2">
@@ -278,6 +285,9 @@ export default function VendorNewProductPage() {
 								<h2 className="text-sm font-semibold text-gray-900">
 									Product category
 								</h2>
+								<p className="text-xs text-gray-500">
+									Vendors must use existing categories from main website.
+								</p>
 								<label className="flex flex-col text-xs font-medium text-gray-700">
 									Category
 									<select
@@ -319,6 +329,36 @@ export default function VendorNewProductPage() {
 										))}
 									</select>
 								</label>
+
+								<div className="rounded-md border border-indigo-100 bg-indigo-50 p-3">
+									<p className="text-xs font-semibold text-indigo-900 mb-1">
+										Category-wise commission (admin set)
+									</p>
+									{selectedCategoryCommission !== null && selectedCategoryCommission !== undefined && (
+										<p className="text-xs text-indigo-700 mb-2">
+											Selected category commission: <span className="font-semibold">{selectedCategoryCommission}%</span>
+										</p>
+									)}
+									<div className="max-h-36 overflow-y-auto space-y-1">
+										{commissionRows.length === 0 ? (
+											<p className="text-xs text-indigo-700">No commission rules found.</p>
+										) : (
+											commissionRows.map((row) => (
+												<div
+													key={row.category_id}
+													className={`text-[11px] flex items-center justify-between rounded px-2 py-1 ${
+														Number(selectedCategoryId) === row.category_id
+															? "bg-indigo-200 text-indigo-900"
+															: "bg-white text-gray-700"
+													}`}
+												>
+													<span>{row.category_name}</span>
+													<span className="font-semibold">{row.commission_percent}%</span>
+												</div>
+											))
+										)}
+									</div>
+								</div>
 							</div>
 							<div className="space-y-2">
 								<h2 className="text-sm font-semibold text-gray-900">
@@ -367,7 +407,7 @@ export default function VendorNewProductPage() {
 					</div>
 
 					{/* Variants */}
-					<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 						<h2 className="text-sm font-semibold text-gray-900 mb-3">Variants</h2>
 						<p className="text-xs text-gray-600 mb-3">Optional. Add after saving or here; they will be attached when you save the product.</p>
 						<div className="overflow-x-auto">
@@ -411,7 +451,7 @@ export default function VendorNewProductPage() {
 					</div>
 
 					{/* Wholesale price tiers */}
-					<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 						<h2 className="text-sm font-semibold text-gray-900 mb-3">Wholesale price tiers</h2>
 						<p className="text-xs text-gray-600 mb-3">Optional. Tiers will be attached when you save the product.</p>
 						<div className="overflow-x-auto">
@@ -468,4 +508,5 @@ export default function VendorNewProductPage() {
 		</WithVendorAuth>
 	);
 }
+
 

@@ -13,6 +13,10 @@ class CreateVarientsTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('varients')) {
+            return;
+        }
+
         Schema::create('varients', function (Blueprint $table) {
             $table->id();
             $table->integer('product_id');

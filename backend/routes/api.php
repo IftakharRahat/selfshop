@@ -19,6 +19,8 @@ use App\Http\Controllers\VendorPayoutAccountController;
 use App\Http\Controllers\VendorPayoutRequestController;
 use App\Http\Controllers\VendorReportsController;
 use App\Http\Controllers\VendorDashboardController;
+use App\Http\Controllers\VendorNotificationController;
+use App\Http\Controllers\VendorCommissionController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -200,6 +202,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Orders (Phase 4 – Order Management)
         Route::get('/orders', [VendorOrderController::class, 'index'])->name('api.vendor.orders.index');
         Route::get('/orders/{id}', [VendorOrderController::class, 'show'])->name('api.vendor.orders.show');
+        Route::post('/orders/{id}/status', [VendorOrderController::class, 'updateStatus'])->name('api.vendor.orders.status');
+        Route::post('/orders/{id}/send-to-warehouse', [VendorOrderController::class, 'sendToWarehouse'])->name('api.vendor.orders.send-to-warehouse');
         Route::post('/orders/{id}/tracking', [VendorOrderController::class, 'addTracking'])->name('api.vendor.orders.tracking');
 
         // Shipping methods (Phase 5)
@@ -211,6 +215,9 @@ Route::middleware('auth:sanctum')->group(function () {
         // Category-wise discount
         Route::get('/category-discounts', [VendorCategoryDiscountController::class, 'index'])->name('api.vendor.category-discounts.index');
         Route::post('/category-discounts/{categoryId}', [VendorCategoryDiscountController::class, 'set'])->name('api.vendor.category-discounts.set');
+
+        // Category-wise commission (set by admin, read-only for vendor)
+        Route::get('/category-commissions', [VendorCommissionController::class, 'categoryCommissions'])->name('api.vendor.category-commissions.index');
 
         // Product reviews (vendor view)
         Route::get('/reviews', [VendorReviewController::class, 'index'])->name('api.vendor.reviews.index');
@@ -248,6 +255,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/sales', [VendorReportsController::class, 'sales'])->name('api.vendor.reports.sales');
         Route::get('/reports/top-products', [VendorReportsController::class, 'topProducts'])->name('api.vendor.reports.top-products');
         Route::get('/reports/sales-breakdown', [VendorReportsController::class, 'salesBreakdown'])->name('api.vendor.reports.sales-breakdown');
+
+        // Notifications
+        Route::get('/notifications', [VendorNotificationController::class, 'index'])->name('api.vendor.notifications.index');
+        Route::post('/notifications/{id}/read', [VendorNotificationController::class, 'markRead'])->name('api.vendor.notifications.read');
+        Route::post('/notifications/read-all', [VendorNotificationController::class, 'markAllRead'])->name('api.vendor.notifications.read-all');
 
         // Bulk order matrix (existing)
         Route::middleware('verified.wholesaler')->group(function () {

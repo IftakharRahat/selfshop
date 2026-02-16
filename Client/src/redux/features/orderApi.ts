@@ -6,8 +6,12 @@ const orderApi = baseApi.injectEndpoints({
 	endpoints: (builder) => ({
 		trackOrder: builder.query({
 			query: (orderId: string) => {
+				const normalized = String(orderId ?? "")
+					.trim()
+					.replace(/^[^A-Za-z0-9]+/, "");
+
 				return {
-					url: `/track-order?invoiceID=${orderId}`,
+					url: `/track-order?invoiceID=${encodeURIComponent(normalized)}`,
 					method: "GET",
 				};
 			},

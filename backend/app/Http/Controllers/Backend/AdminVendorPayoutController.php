@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\VendorEarning;
 use App\Models\VendorPayout;
 use App\Models\VendorPayoutRequest;
+use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AdminVendorPayoutController extends Controller
 {
+    public function __construct(
+        protected VendorAdminNotificationService $vendorNotificationService
+    ) {}
+
     /**
      * Show vendor payout requests page (Blade view with table and Approve/Reject).
      */
@@ -81,7 +86,7 @@ class AdminVendorPayoutController extends Controller
      */
     public function approve(Request $request, $id)
     {
-        $payoutRequest = VendorPayoutRequest::with('vendor')->findOrFail($id);
+        $payoutRequest = VendorPayoutRequest::with('vendor.user')->findOrFail($id);
         if ($payoutRequest->status !== 'pending') {
             return response()->json(['status' => false, 'message' => 'Request is not pending'], 422);
         }
@@ -145,6 +150,21 @@ class AdminVendorPayoutController extends Controller
             ]);
         });
 
+        if ($payoutRequest->vendor) {
+            $this->vendorNotificationService->notifyVendor(
+                $payoutRequest->vendor,
+                'Payout request approved',
+                'Admin approved your payout request of ' . number_format($amount, 2) . '.',
+                'success',
+                [
+                    'event' => 'vendor_payout_approved',
+                    'payout_request_id' => $payoutRequest->id,
+                    'amount' => $amount,
+                ],
+                '/vendor/payouts'
+            );
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Payout approved and processed',
@@ -156,7 +176,7 @@ class AdminVendorPayoutController extends Controller
      */
     public function reject(Request $request, $id)
     {
-        $payoutRequest = VendorPayoutRequest::findOrFail($id);
+        $payoutRequest = VendorPayoutRequest::with('vendor.user')->findOrFail($id);
         if ($payoutRequest->status !== 'pending') {
             return response()->json(['status' => false, 'message' => 'Request is not pending'], 422);
         }
@@ -167,6 +187,22 @@ class AdminVendorPayoutController extends Controller
             'processed_at' => now(),
             'processed_by' => Auth::id(),
         ]);
+
+        if ($payoutRequest->vendor) {
+            $this->vendorNotificationService->notifyVendor(
+                $payoutRequest->vendor,
+                'Payout request rejected',
+                'Admin rejected your payout request of ' . number_format((float) $payoutRequest->amount, 2) . '.' . ($payoutRequest->admin_notes ? ' Note: ' . $payoutRequest->admin_notes : ''),
+                'warning',
+                [
+                    'event' => 'vendor_payout_rejected',
+                    'payout_request_id' => $payoutRequest->id,
+                    'amount' => (float) $payoutRequest->amount,
+                    'admin_notes' => $payoutRequest->admin_notes,
+                ],
+                '/vendor/payouts'
+            );
+        }
 
         return response()->json([
             'status' => true,

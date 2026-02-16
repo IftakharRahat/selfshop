@@ -145,18 +145,18 @@ export default function VendorProductStockPage() {
         <WithVendorAuth>
             <div className="space-y-6">
                 {/* Back + Header */}
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
                     <Link href="/vendor/inventory" className="text-sm text-blue-600 hover:underline mb-3 inline-block">
                         ← Back to Inventory
                     </Link>
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">{product.ProductName}</h1>
                             <p className="text-sm text-gray-500 mt-0.5 font-mono">{product.ProductSku || "No SKU"}</p>
                         </div>
                         <button
                             onClick={() => setShowAdjust(true)}
-                            className="px-4 py-2 text-sm bg-[#2d2a5d] text-white rounded-lg hover:bg-[#252947] font-medium"
+                            className="w-full rounded-lg bg-[#2d2a5d] px-4 py-2 text-sm font-medium text-white hover:bg-[#252947] sm:w-auto"
                         >
                             Adjust Stock
                         </button>
@@ -217,7 +217,7 @@ export default function VendorProductStockPage() {
                 </div>
 
                 {/* Warehouse Stock & Allocation */}
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
                     <div className="flex items-center justify-between gap-4 mb-3">
                         <h2 className="text-sm font-semibold text-gray-800">Stock by Warehouse</h2>
                         {warehouses.length > 0 && (
@@ -249,7 +249,7 @@ export default function VendorProductStockPage() {
                 </div>
 
                 {/* Movement History */}
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
                     <h2 className="text-sm font-semibold text-gray-800 mb-3">Stock Movement History</h2>
                     {movements.length === 0 ? (
                         <p className="text-sm text-gray-500 py-4 text-center">No stock movements recorded yet.</p>
@@ -409,3 +409,4 @@ export default function VendorProductStockPage() {
         </WithVendorAuth>
     );
 }
+

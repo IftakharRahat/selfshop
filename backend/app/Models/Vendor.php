@@ -27,6 +27,9 @@ class Vendor extends Model
         'address_line_2',
         'pickup_location_label',
         'status',
+        'is_verified_badge',
+        'verified_badge_at',
+        'verified_badge_by',
         'approved_at',
         'rejected_at',
         'suspended_at',
@@ -34,6 +37,8 @@ class Vendor extends Model
     ];
 
     protected $casts = [
+        'is_verified_badge' => 'boolean',
+        'verified_badge_at' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'suspended_at' => 'datetime',
@@ -84,4 +89,3 @@ class Vendor extends Model
         return $this->hasMany(VendorPayout::class);
     }
 }
-

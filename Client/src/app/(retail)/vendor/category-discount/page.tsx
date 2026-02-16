@@ -79,7 +79,7 @@ export default function VendorCategoryDiscountPage() {
 		<WithVendorAuth>
 			<div className="space-y-6">
 				{/* Header */}
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h1 className="text-2xl font-bold text-gray-900 mb-1">
 						Set Category Base Product Discount
 					</h1>
@@ -87,14 +87,14 @@ export default function VendorCategoryDiscountPage() {
 
 				{/* Table */}
 				<div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-					<div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+					<div className="flex flex-col items-stretch gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
 						<h2 className="text-lg font-semibold text-gray-900">Categories</h2>
 						<input
 							type="text"
 							placeholder="Type name & Enter"
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-56"
+							className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full sm:w-56"
 						/>
 					</div>
 
@@ -213,3 +213,4 @@ export default function VendorCategoryDiscountPage() {
 		</WithVendorAuth>
 	);
 }
+

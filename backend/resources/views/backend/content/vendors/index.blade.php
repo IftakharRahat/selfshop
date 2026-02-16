@@ -28,6 +28,7 @@
                             <th>Contact</th>
                             <th>User (email)</th>
                             <th>Status</th>
+                            <th>Badge</th>
                             <th>Registered</th>
                             <th>Action</th>
                         </tr>
@@ -48,6 +49,13 @@
                                     <span class="badge bg-danger">Rejected</span>
                                 @endif
                             </td>
+                            <td>
+                                @if($vendor->is_verified_badge)
+                                    <span class="badge bg-primary">Verified</span>
+                                @else
+                                    <span class="badge bg-secondary">Not verified</span>
+                                @endif
+                            </td>
                             <td>{{ $vendor->created_at->format('Y-m-d H:i') }}</td>
                             <td>
                                 <a href="{{ route('admin.vendors.show', $vendor->id) }}" class="btn btn-sm btn-primary mb-1">
@@ -63,12 +71,24 @@
                                         <input type="text" name="reason" placeholder="Reason (optional)" class="form-control form-control-sm d-inline-block w-auto mb-1">
                                         <button type="submit" class="btn btn-sm btn-danger">Reject</button>
                                     </form>
+                                @elseif($vendor->status === 'approved')
+                                    @if($vendor->is_verified_badge)
+                                        <form action="{{ route('admin.vendors.remove-verified-badge', $vendor->id) }}" method="post" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-warning">Remove badge</button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('admin.vendors.verify-badge', $vendor->id) }}" method="post" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-info">Give verified badge</button>
+                                        </form>
+                                    @endif
                                 @endif
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center">No vendor registrations yet.</td>
+                            <td colspan="8" class="text-center">No vendor registrations yet.</td>
                         </tr>
                         @endforelse
                     </tbody>

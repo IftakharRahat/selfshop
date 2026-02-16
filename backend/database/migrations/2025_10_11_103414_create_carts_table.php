@@ -13,6 +13,10 @@ class CreateCartsTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('carts')) {
+            return;
+        }
+
         Schema::create('carts', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('product_id');

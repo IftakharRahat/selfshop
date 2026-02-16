@@ -119,7 +119,7 @@ export default function VendorShippingPage() {
     return (
         <WithVendorAuth>
             <div className="space-y-6">
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">Shipping methods</h1>
                         <p className="text-sm text-gray-600">
@@ -134,7 +134,7 @@ export default function VendorShippingPage() {
                     </button>
                 </div>
 
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
                     {isLoading ? (
                         <p className="text-sm text-gray-500 py-8 text-center">Loading...</p>
                     ) : error ? (
@@ -338,3 +338,4 @@ export default function VendorShippingPage() {
         </WithVendorAuth>
     );
 }
+

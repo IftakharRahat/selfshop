@@ -35,6 +35,8 @@ use App\Models\Tikit;
 use App\Models\User;
 use App\Models\Varient;
 use App\Models\Withdrew;
+use App\Services\SteadfastOrderStatusService;
+use App\Services\VendorAdminNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use DB;
@@ -521,7 +523,10 @@ class FrontendApiController extends Controller
 
     public function productdetails($slug)
     {
-        $product = Product::with('varients')->where('ProductSlug', $slug)->first();
+        $product = Product::with([
+            'varients',
+            'vendor:id,user_id,company_name,slug,is_verified_badge',
+        ])->where('ProductSlug', $slug)->first();
         if (!$product) {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
         }
@@ -957,16 +962,65 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    private function hydrateOrderStatus(Order $order, bool $sync = false): Order
+    {
+        /** @var SteadfastOrderStatusService $service */
+        $service = app(SteadfastOrderStatusService::class);
+
+        $meta = $sync
+            ? $service->syncOrderStatus($order, false)
+            : $service->getStatusPayload($order);
+
+        $order->setAttribute('customer_status', $meta['customer_status']);
+        $order->setAttribute('display_status', $meta['customer_status']);
+        $order->setAttribute('steadfast_status', $meta['steadfast_status']);
+        $order->setAttribute('steadfast_last_synced_at', $meta['steadfast_last_synced_at']);
+        $order->setAttribute('warehouse_sent_at', $meta['warehouse_sent_at']);
+
+        return $order;
+    }
+
+    private function normalizeInvoiceId(?string $invoiceId): ?string
+    {
+        $invoiceId = trim((string) $invoiceId);
+        if ($invoiceId === '') {
+            return null;
+        }
+
+        $normalized = preg_replace('/^[^A-Za-z0-9]+/', '', $invoiceId);
+        $normalized = trim((string) $normalized);
+
+        return $normalized !== '' ? $normalized : null;
+    }
+
     public function orders($slug)
     {
         $id = Auth::user()->id;
-        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('user_id', $id)->where('status', $slug)->paginate(30);
+        $query = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+            ->where('user_id', $id);
+
+        $slugLower = strtolower((string) $slug);
+        if (!in_array($slugLower, ['all', ''], true)) {
+            if ($slugLower === 'accepted') {
+                $query->where('status', 'Confirmed');
+            } elseif ($slugLower === 'rejected') {
+                $query->whereIn('status', ['Canceled', 'Cancelled', 'Rejected']);
+            } else {
+                $query->where('status', $slug);
+            }
+        }
+
+        $totalQuery = clone $query;
+        $orders = $query->orderByDesc('id')->paginate(30);
+        $orders->getCollection()->transform(function ($order) {
+            return $this->hydrateOrderStatus($order, false);
+        });
 
         if ($orders) {
             return response()->json([
                 'status' => true,
                 'message' => 'Order list',
-                'total' => Order::where('user_id', $id)->where('status', $slug)->get()->count(),
+                'total' => $totalQuery->count(),
                 'data' => $orders
             ], 200);
         }
@@ -989,8 +1043,11 @@ class FrontendApiController extends Controller
                 'pending' => Order::where('user_id', $id)->where('status', 'Pending')->get()->count(),
                 'canceled' => Order::where('user_id', $id)->where('status', 'Canceled')->get()->count(),
                 'confirmed' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
+                'accepted' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
+                'rejected' => Order::where('user_id', $id)->whereIn('status', ['Canceled', 'Cancelled', 'Rejected'])->get()->count(),
                 'packageing' => Order::where('user_id', $id)->where('status', 'Packageing')->get()->count(),
                 'ontheway' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
+                'shipped_to_warehouse' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
                 'delivered' => Order::where('user_id', $id)->where('status', 'Delivered')->get()->count(),
                 'return' => Order::where('user_id', $id)->where('status', 'Return')->get()->count(),
             ]
@@ -999,9 +1056,27 @@ class FrontendApiController extends Controller
 
     public function trackorder(Request $request)
     {
-        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('invoiceID', $request->invoiceID)->first();
+        $rawInvoiceId = trim((string) $request->invoiceID);
+        $invoiceId = $this->normalizeInvoiceId($request->invoiceID);
+
+        if (!$invoiceId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No order found with this invoice id',
+            ], 404);
+        }
+
+        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+            ->where(function ($q) use ($rawInvoiceId, $invoiceId) {
+                $q->where('invoiceID', $invoiceId);
+                if ($rawInvoiceId !== '' && $rawInvoiceId !== $invoiceId) {
+                    $q->orWhere('invoiceID', $rawInvoiceId);
+                }
+            })
+            ->first();
 
         if ($orders) {
+            $orders = $this->hydrateOrderStatus($orders, true);
             return response()->json([
                 'status' => true,
                 'message' => 'Order found succesfully',
@@ -1013,6 +1088,50 @@ class FrontendApiController extends Controller
             'status' => false,
             'message' => 'No order found with this invoice id',
         ], 404);
+    }
+
+    public function orderTrackingNow(Request $request)
+    {
+        $rawInvoiceId = trim((string) $request->invoiceID);
+        $invoiceId = $this->normalizeInvoiceId($request->invoiceID);
+
+        if (!$invoiceId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order Not Found',
+            ], 404);
+        }
+
+        $orders = Order::with([
+            'customers',
+            'orderproducts',
+            'couriers',
+            'cities',
+            'zones',
+            'admins'
+        ])->where('user_id', Auth::id())
+            ->where(function ($q) use ($rawInvoiceId, $invoiceId) {
+                $q->where('invoiceID', $invoiceId);
+                if ($rawInvoiceId !== '' && $rawInvoiceId !== $invoiceId) {
+                    $q->orWhere('invoiceID', $rawInvoiceId);
+                }
+            })
+            ->first();
+
+        if (!$orders) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Order Not Found',
+            ], 404);
+        }
+
+        $orders = $this->hydrateOrderStatus($orders, true);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Order Found successfully',
+            'data' => $orders
+        ], 200);
     }
 
     public function bankinfo(Request $request)
@@ -1923,6 +2042,7 @@ class FrontendApiController extends Controller
                     'courier_id' => 26,
                     'transaction_id' => $post_data['tran_id'],
                     'user_id' => Auth::id(),
+                    'status' => 'Pending',
 
                 ]);
 
@@ -1971,6 +2091,7 @@ class FrontendApiController extends Controller
             $order->subTotal = $request->subTotal;
             $order->deliveryCharge = $request->deliveryCharge;
             $order->customerNote = $request->customerNote ?? null;
+            $order->status = 'Pending';
 
             if ($request->balance_from == 'from_account') {
                 $order->paymentAmount = $request->deliveryCharge;
@@ -1998,6 +2119,7 @@ class FrontendApiController extends Controller
             $customer->save();
 
             // Save order products
+            $vendorIds = [];
             foreach ($shopproduct as $product) {
                 $orderProduct = new Orderproduct();
                 $orderProduct->order_id = $order->id;
@@ -2016,6 +2138,11 @@ class FrontendApiController extends Controller
                 }
 
                 $orderProduct->save();
+
+                $vendorId = Product::where('id', $product->product_id)->value('vendor_id');
+                if ($vendorId) {
+                    $vendorIds[(int) $vendorId] = true;
+                }
             }
 
             // Deduct account balance if needed
@@ -2040,6 +2167,26 @@ class FrontendApiController extends Controller
             $notification->admin_id = $order->admin_id;
             $notification->save();
 
+            if (!empty($vendorIds)) {
+                /** @var VendorAdminNotificationService $vendorNotification */
+                $vendorNotification = app(VendorAdminNotificationService::class);
+
+                foreach (array_keys($vendorIds) as $vendorId) {
+                    $vendorNotification->notifyVendorById(
+                        (int) $vendorId,
+                        'New order received',
+                        'Order ' . $order->invoiceID . ' is pending your action (accept or reject).',
+                        'info',
+                        [
+                            'event' => 'vendor_order_created',
+                            'order_id' => $order->id,
+                            'invoiceID' => $order->invoiceID,
+                        ],
+                        '/vendor/orders/' . $order->id
+                    );
+                }
+            }
+
             $ordersCreated[] = [
                 'order_id' => $order->id,
                 'invoiceID' => $order->invoiceID
@@ -2058,9 +2205,27 @@ class FrontendApiController extends Controller
 
     public function orderByinvoice($id)
     {
-        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('invoiceID', $id)->first();
+        $rawInvoiceId = trim((string) $id);
+        $invoiceId = $this->normalizeInvoiceId((string) $id);
+
+        if (!$invoiceId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No order found with this invoice id',
+            ], 404);
+        }
+
+        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+            ->where(function ($q) use ($rawInvoiceId, $invoiceId) {
+                $q->where('invoiceID', $invoiceId);
+                if ($rawInvoiceId !== '' && $rawInvoiceId !== $invoiceId) {
+                    $q->orWhere('invoiceID', $rawInvoiceId);
+                }
+            })
+            ->first();
 
         if ($orders) {
+            $orders = $this->hydrateOrderStatus($orders, true);
             return response()->json([
                 'status' => true,
                 'message' => 'Order found succesfully',

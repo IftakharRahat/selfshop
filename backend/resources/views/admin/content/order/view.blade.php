@@ -267,6 +267,18 @@
                                                             </td>
                                                         </tr>
                                                         <tr>
+                                                            <td class="w-50 strong-600">Internal status:</td>
+                                                            <td>{{ $orders->status ?? 'Pending' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="w-50 strong-600">Customer view status:</td>
+                                                            <td>{{ $orders->customer_status ?? $orders->status ?? 'Pending' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="w-50 strong-600">Courier live status:</td>
+                                                            <td>{{ $orders->steadfast_status ?? 'Not synced yet' }}</td>
+                                                        </tr>
+                                                        <tr>
                                                             <td class="w-50 strong-600">Total order amount:</td>
                                                             <td>৳ {{ (float)($orders->subTotal ?? 0) + (float)($orders->paymentAmount ?? 0) - (float)($orders->deliveryCharge ?? 0) }} + <span style="color: red">( Charge : {{ $orders->deliveryCharge ?? 0 }} ৳)</span> </td>
                                                         </tr>

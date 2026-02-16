@@ -96,7 +96,7 @@ export default function VendorInventoryPage() {
         <WithVendorAuth>
             <div className="space-y-6">
                 {/* Header */}
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 mb-1">
                             Inventory Management
@@ -105,17 +105,17 @@ export default function VendorInventoryPage() {
                             Track stock levels, manage inventory, and set low-stock alerts.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
                         <button
                             onClick={handleExport}
                             disabled={exporting}
-                            className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+                            className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 sm:w-auto"
                         >
                             {exporting ? "Exporting…" : "Export CSV"}
                         </button>
                         <Link
                             href="/vendor/warehouses"
-                            className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+                            className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 sm:w-auto"
                         >
                             Warehouses
                         </Link>
@@ -143,10 +143,10 @@ export default function VendorInventoryPage() {
                 )}
 
                 {/* Table */}
-                <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+                <div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
                     {/* Tabs + Search */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                        <div className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1">
                             {STATUS_TABS.map((tab) => (
                                 <button
                                     key={tab.key}
@@ -253,7 +253,7 @@ export default function VendorInventoryPage() {
 
                             {/* Pagination */}
                             {pagination && pagination.last_page > 1 && (
-                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+                                <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
                                     <p className="text-xs text-gray-500">
                                         Page {pagination.current_page} of {pagination.last_page} ({pagination.total} products)
                                     </p>
@@ -346,3 +346,4 @@ export default function VendorInventoryPage() {
         </WithVendorAuth>
     );
 }
+

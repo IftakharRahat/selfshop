@@ -51,6 +51,16 @@
   }
 }
 
+/* Hide visual scrollbars where we still want wheel/touch scrolling. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 
 /* Make navigation arrows visible & clickable */
 /* Swiper navigation arrows - rounded & visible */

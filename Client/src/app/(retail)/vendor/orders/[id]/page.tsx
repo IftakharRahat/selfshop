@@ -4,15 +4,33 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import WithVendorAuth from "../../WithVendorAuth";
-import { useGetVendorOrderQuery, useAddVendorOrderTrackingMutation } from "@/redux/api/vendorApi";
+import {
+	useAddVendorOrderTrackingMutation,
+	useGetVendorOrderQuery,
+	useSendVendorOrderToWarehouseMutation,
+	useUpdateVendorOrderStatusMutation,
+} from "@/redux/api/vendorApi";
 import { getImageUrl } from "@/lib/utils";
 import { toast } from "sonner";
+
+const badgeClass = (status: string) => {
+	const s = status.toLowerCase();
+	if (s.includes("deliver")) return "bg-green-100 text-green-800";
+	if (s.includes("reject") || s.includes("cancel") || s.includes("return")) return "bg-red-100 text-red-800";
+	if (s.includes("accept") || s.includes("confirm")) return "bg-emerald-100 text-emerald-800";
+	if (s.includes("ship") || s.includes("way") || s.includes("transit")) return "bg-blue-100 text-blue-800";
+	return "bg-amber-100 text-amber-800";
+};
 
 export default function VendorOrderDetailPage() {
 	const params = useParams();
 	const id = Number(params?.id);
 	const { data, isLoading, error } = useGetVendorOrderQuery(id, { skip: !id || isNaN(id) });
+
+	const [updateStatus, { isLoading: savingStatus }] = useUpdateVendorOrderStatusMutation();
+	const [sendToWarehouse, { isLoading: sendingWarehouse }] = useSendVendorOrderToWarehouseMutation();
 	const [addTracking, { isLoading: savingTracking }] = useAddVendorOrderTrackingMutation();
+
 	const detail = data?.data;
 
 	const [trackingModal, setTrackingModal] = useState(false);
@@ -36,8 +54,16 @@ export default function VendorOrderDetailPage() {
 	}
 
 	const { order, customer, line_items, vendor_subtotal } = detail;
+	const displayStatus = order.display_status ?? order.customer_status ?? order.status;
+	const lowerRawStatus = (order.status ?? "").toLowerCase();
 
-	const canAddTracking = order.status !== "Cancelled" && order.status !== "Returned" && order.status !== "Delivered";
+	const isRejected = lowerRawStatus.includes("cancel") || lowerRawStatus.includes("reject") || lowerRawStatus.includes("return");
+	const isDelivered = lowerRawStatus.includes("deliver");
+	const isAccepted = lowerRawStatus === "confirmed" || (displayStatus ?? "").toLowerCase() === "accepted";
+	const canAccept = lowerRawStatus === "pending" || lowerRawStatus === "processing";
+	const canReject = !isRejected && !isDelivered;
+	const canSendWarehouse = !isRejected && !isDelivered && !order.warehouse_sent_at && isAccepted;
+	const canAddTracking = !isRejected && !isDelivered;
 
 	const openTrackingModal = () => {
 		setOrderTracking(order.tracking_number ?? "");
@@ -46,6 +72,38 @@ export default function VendorOrderDetailPage() {
 		);
 		setDropshipOrder(false);
 		setTrackingModal(true);
+	};
+
+	const handleAccept = async () => {
+		try {
+			await updateStatus({ orderId: id, action: "accept" }).unwrap();
+			toast.success("Order accepted");
+		} catch (err: unknown) {
+			const e = err as { data?: { message?: string } };
+			toast.error(e?.data?.message ?? "Failed to accept order");
+		}
+	};
+
+	const handleReject = async () => {
+		const reason = window.prompt("Optional rejection reason")?.trim() || undefined;
+
+		try {
+			await updateStatus({ orderId: id, action: "cancel", cancel_reason: reason }).unwrap();
+			toast.success("Order rejected");
+		} catch (err: unknown) {
+			const e = err as { data?: { message?: string } };
+			toast.error(e?.data?.message ?? "Failed to reject order");
+		}
+	};
+
+	const handleSendWarehouse = async () => {
+		try {
+			await sendToWarehouse({ orderId: id }).unwrap();
+			toast.success("Order sent to warehouse");
+		} catch (err: unknown) {
+			const e = err as { data?: { message?: string } };
+			toast.error(e?.data?.message ?? "Failed to send order to warehouse");
+		}
 	};
 
 	const handleSubmitTracking = async () => {
@@ -61,10 +119,10 @@ export default function VendorOrderDetailPage() {
 				tracking_number: hasOrder ? orderTracking.trim() : undefined,
 				line_items: hasLine || dropshipOrder
 					? line_items.map((item) => ({
-							order_product_id: item.id,
-							tracking_number: (lineTrackings[item.id] ?? "").trim() || undefined,
-							fulfillment_type: dropshipOrder ? "dropship" : undefined,
-						}))
+						order_product_id: item.id,
+						tracking_number: (lineTrackings[item.id] ?? "").trim() || undefined,
+						fulfillment_type: dropshipOrder ? "dropship" : undefined,
+					}))
 					: undefined,
 			}).unwrap();
 			toast.success("Tracking updated");
@@ -79,27 +137,57 @@ export default function VendorOrderDetailPage() {
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100 flex items-center justify-between gap-4">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">Order {order.invoiceID}</h1>
 						<p className="text-sm text-gray-600">Your items in this order.</p>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+						{canAccept && (
+							<button
+								type="button"
+								onClick={handleAccept}
+								disabled={savingStatus}
+								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 sm:w-auto"
+							>
+								Accept
+							</button>
+						)}
+						{canReject && (
+							<button
+								type="button"
+								onClick={handleReject}
+								disabled={savingStatus}
+								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-60 sm:w-auto"
+							>
+								Reject
+							</button>
+						)}
+						{canSendWarehouse && (
+							<button
+								type="button"
+								onClick={handleSendWarehouse}
+								disabled={sendingWarehouse}
+								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
+							>
+								{sendingWarehouse ? "Sending..." : "Send to warehouse"}
+							</button>
+						)}
 						{canAddTracking && (
 							<button
 								type="button"
 								onClick={openTrackingModal}
-								className="inline-flex items-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947]"
+								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] sm:w-auto"
 							>
 								Add / update tracking
 							</button>
 						)}
-						<Link href="/vendor/orders" className="text-sm font-medium text-gray-600 hover:text-gray-900">Back to orders</Link>
+						<Link href="/vendor/orders" className="inline-flex w-full items-center justify-center text-sm font-medium text-gray-600 hover:text-gray-900 sm:w-auto">Back to orders</Link>
 					</div>
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-					<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 						<h2 className="text-sm font-semibold text-gray-900 mb-3">Order info</h2>
 						<dl className="space-y-2 text-sm">
 							<dt className="text-gray-500">Date</dt>
@@ -108,15 +196,14 @@ export default function VendorOrderDetailPage() {
 							<dd className="font-medium">{order.deliveryDate ?? "—"}</dd>
 							<dt className="text-gray-500">Status</dt>
 							<dd>
-								<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-									order.status === "Delivered" ? "bg-green-100 text-green-800" :
-									order.status === "Cancelled" || order.status === "Returned" ? "bg-red-100 text-red-800" :
-									order.status === "Shipped" ? "bg-blue-100 text-blue-800" :
-									"bg-amber-100 text-amber-800"
-								}`}>
-									{order.status}
+								<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${badgeClass(displayStatus ?? order.status)}`}>
+									{displayStatus ?? order.status}
 								</span>
 							</dd>
+							<dt className="text-gray-500">Courier live status</dt>
+							<dd className="font-medium">{order.steadfast_status ?? "—"}</dd>
+							<dt className="text-gray-500">Warehouse sent at</dt>
+							<dd className="font-medium">{order.warehouse_sent_at ? new Date(order.warehouse_sent_at).toLocaleString() : "—"}</dd>
 							<dt className="text-gray-500">Payment</dt>
 							<dd className="font-medium">{order.Payment ?? "—"}</dd>
 							{(order.tracking_number || order.shipped_at) && (
@@ -125,6 +212,16 @@ export default function VendorOrderDetailPage() {
 									<dd className="font-medium font-mono">{order.tracking_number ?? "—"}</dd>
 									<dt className="text-gray-500">Shipped at</dt>
 									<dd className="font-medium">{order.shipped_at ? new Date(order.shipped_at).toLocaleString() : "—"}</dd>
+								</>
+							)}
+							{order.trackingLink && (
+								<>
+									<dt className="text-gray-500">Tracking link</dt>
+									<dd>
+										<a className="text-blue-600 hover:underline" href={order.trackingLink} target="_blank" rel="noreferrer">
+											Open tracking page
+										</a>
+									</dd>
 								</>
 							)}
 							{order.customerNote && (
@@ -137,7 +234,7 @@ export default function VendorOrderDetailPage() {
 					</div>
 
 					{customer && (
-						<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+						<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 							<h2 className="text-sm font-semibold text-gray-900 mb-3">Shipping / Customer</h2>
 							<dl className="space-y-2 text-sm">
 								<dt className="text-gray-500">Name</dt>
@@ -151,7 +248,7 @@ export default function VendorOrderDetailPage() {
 					)}
 				</div>
 
-				<div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
 					<h2 className="text-sm font-semibold text-gray-900 mb-3">Your items</h2>
 					<div className="overflow-x-auto">
 						<table className="min-w-full text-sm">
@@ -182,8 +279,8 @@ export default function VendorOrderDetailPage() {
 										<td className="px-3 py-2 text-center">
 											<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
 												(item.fulfillment_status ?? "pending") === "shipped" ? "bg-blue-100 text-blue-800" :
-												(item.fulfillment_status ?? "pending") === "delivered" ? "bg-green-100 text-green-800" :
-												"bg-gray-100 text-gray-700"
+													(item.fulfillment_status ?? "pending") === "delivered" ? "bg-green-100 text-green-800" :
+														"bg-gray-100 text-gray-700"
 											}`}>
 												{(item.fulfillment_status ?? "pending").replace(/^\w/, (c) => c.toUpperCase())}
 											</span>
@@ -226,14 +323,14 @@ export default function VendorOrderDetailPage() {
 								<p className="text-sm font-medium text-gray-700 mb-2">Per-item tracking (optional)</p>
 								<div className="space-y-2">
 									{line_items.map((item) => (
-										<div key={item.id} className="flex items-center gap-2">
+										<div key={item.id} className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
 											<span className="text-sm text-gray-600 truncate flex-1 min-w-0">{item.productName}</span>
 											<input
 												type="text"
 												value={lineTrackings[item.id] ?? ""}
 												onChange={(e) => setLineTrackings((prev) => ({ ...prev, [item.id]: e.target.value }))}
 												placeholder="Tracking"
-												className="w-40 border border-gray-300 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+												className="w-full rounded border border-gray-300 px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:w-40"
 											/>
 										</div>
 									))}
@@ -263,7 +360,7 @@ export default function VendorOrderDetailPage() {
 								onClick={handleSubmitTracking}
 								className="px-4 py-2 text-sm bg-[#2d2a5d] text-white rounded-lg hover:bg-[#252947] disabled:opacity-50"
 							>
-								{savingTracking ? "Saving…" : "Save tracking"}
+								{savingTracking ? "Saving..." : "Save tracking"}
 							</button>
 						</div>
 					</div>
