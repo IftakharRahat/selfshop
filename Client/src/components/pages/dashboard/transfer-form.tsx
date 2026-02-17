@@ -10,6 +10,7 @@ import {
 	useCreateBalanceTransferMutation,
 	useGetAllBalanceTransfersQuery,
 } from "@/redux/features/balanceTransferlistsApi";
+import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 // ✅ Zod Schema
@@ -33,6 +34,13 @@ const transferSchema = z.object({
 // ✅ Infer Type
 type TransferFormValues = z.infer<typeof transferSchema>;
 
+const formatMoney = (value: number) => {
+	if (!Number.isFinite(value)) return "0";
+	return new Intl.NumberFormat("en-BD", {
+		maximumFractionDigits: 2,
+	}).format(value);
+};
+
 export function TransferForm() {
 	const {
 		register,
@@ -51,6 +59,19 @@ export function TransferForm() {
 	const [createBalanceTransfer] = useCreateBalanceTransferMutation();
 	const { data: balanceTransfersData, isLoading } =
 		useGetAllBalanceTransfersQuery(undefined);
+	const { data: dashboardData, isLoading: dashboardLoading } =
+		useGetAllDashboardDataQuery(undefined);
+
+	const balanceTransfers = balanceTransfersData?.data || [];
+	const walletBalance = Number(
+		dashboardData?.data?.balance ?? dashboardData?.data?.blance ?? 0,
+	);
+	const lastTransfer = [...balanceTransfers].sort(
+		(a: any, b: any) =>
+			new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+	)[0];
+	const lastTransferAmount = Number(lastTransfer?.withdrew_amount ?? 0);
+	const isBalanceLoading = isLoading || dashboardLoading;
 
 	const onSubmit = async (data: TransferFormValues) => {
 		try {
@@ -79,13 +100,18 @@ export function TransferForm() {
 				<div className="border-0 shadow-none bg-gray-100 p-4 rounded-md">
 					<div className="flex items-start justify-between">
 						<div>
-							<p className="text-sm text-gray-600">Your total balance</p>
-							<p className="text-2xl font-semibold text-[#E5005F] mb-4">
-								৳ pending for api
-							</p>
-							<p className="text-sm text-green-600">
-								Your last withdraw: ৳ pending for api
-							</p>
+								<p className="text-sm text-gray-600">Your total balance</p>
+								<p className="text-2xl font-semibold text-[#E5005F] mb-4">
+									{isBalanceLoading
+										? "Loading..."
+										: "Tk " + formatMoney(walletBalance)}
+								</p>
+								<p className="text-sm text-green-600">
+									Your last transfer:{" "}
+									{isBalanceLoading
+										? "Loading..."
+										: "Tk " + formatMoney(lastTransferAmount)}
+								</p>
 						</div>
 						<img src={money.src} alt="Money" className="w-6 h-6" />
 					</div>

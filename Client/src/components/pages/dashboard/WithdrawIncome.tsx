@@ -13,6 +13,7 @@ import {
 	useGetAllWithdrawMethodsQuery,
 	useGetWithdrawListQuery,
 } from "@/redux/features/withdrawApi";
+import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 // ✅ Zod Schema
@@ -36,6 +37,13 @@ const transferSchema = z.object({
 // ✅ Infer Type from Schema
 type TransferFormValues = z.infer<typeof transferSchema>;
 
+const formatMoney = (value: number) => {
+	if (!Number.isFinite(value)) return "0";
+	return new Intl.NumberFormat("en-BD", {
+		maximumFractionDigits: 2,
+	}).format(value);
+};
+
 export function WithdrawIncome() {
 	const [selectedMethod, setSelectedMethod] = useState<string>("");
 
@@ -43,6 +51,8 @@ export function WithdrawIncome() {
 		useGetAllWithdrawMethodsQuery(undefined);
 	const { data: withdrawListData, isLoading: listLoading } =
 		useGetWithdrawListQuery(undefined);
+	const { data: dashboardData, isLoading: dashboardLoading } =
+		useGetAllDashboardDataQuery(undefined);
 	const [createWithdrawRequest, { isLoading: creatingRequest }] =
 		useCreateWithdrawRequestMutation();
 
@@ -95,6 +105,14 @@ export function WithdrawIncome() {
 
 	const withdrawMethods = withdrawMethodsData?.data || [];
 	const withdrawList = withdrawListData?.data || [];
+	const walletBalance = Number(
+		dashboardData?.data?.balance ?? dashboardData?.data?.blance ?? 0,
+	);
+	const lastWithdrawAmount =
+		withdrawList.length > 0
+			? Number(withdrawList[0]?.withdrew_amount ?? 0)
+			: Number(dashboardData?.data?.withdraw ?? 0);
+	const isBalanceLoading = dashboardLoading || listLoading;
 
 	// Set default selected method after API loads
 	useEffect(() => {
@@ -113,10 +131,15 @@ export function WithdrawIncome() {
 						<div>
 							<p className="text-sm text-gray-600">Your total balance</p>
 							<p className="text-2xl font-semibold text-[#E5005F] mb-4">
-								৳ pending for api
+								{isBalanceLoading
+									? "Loading..."
+									: "Tk " + formatMoney(walletBalance)}
 							</p>
 							<p className="text-sm text-green-600">
-								Your last withdraw: ৳ pending for api
+								Your last withdraw:{" "}
+								{isBalanceLoading
+									? "Loading..."
+									: "Tk " + formatMoney(lastWithdrawAmount)}
 							</p>
 						</div>
 						<img src={money.src} alt="Money" className="w-6 h-6" />
