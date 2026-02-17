@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 
 const VENDOR_HOSTS = [
 	"vendor.selfshop.com",
+	"vendor.selfshop.com.bd",
 	"supplier.selfshop.com.bd",
 	"vendor.localhost",
 ];
 const VENDOR_PREFIX = "/vendor";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
 	const host = request.headers.get("host") ?? "";
 	const isVendorSubdomain = VENDOR_HOSTS.some((h) => host.startsWith(h));
 
