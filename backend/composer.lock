@@ -9942,7 +9942,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.3|^8.0"
+        "php": "^8.2"
     },
     "platform-dev": [],
     "plugin-api-version": "2.6.0"
