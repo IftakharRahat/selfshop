@@ -32,6 +32,11 @@ use App\Http\Controllers\VendorCommissionController;
 |
 */
 
+// Lightweight API health endpoint for external checks.
+Route::get('/up', function () {
+    return response()->json(['status' => true, 'message' => 'api up'], 200);
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');

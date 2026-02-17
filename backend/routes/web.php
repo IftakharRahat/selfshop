@@ -26,6 +26,11 @@ use App\Http\Controllers\SslCommerzPaymentController;
 |
 */
 
+// Lightweight healthcheck endpoint for container probes.
+Route::get('/up', function () {
+    return response()->json(['status' => 'ok'], 200);
+});
+
 // web view
 Route::get('support', [WebviewController::class, 'support']);
 Route::get('faq', [WebviewController::class, 'faq']);
