@@ -20,5 +20,8 @@ export const authOptions: NextAuthOptions = {
 		}),
 	],
 
-	secret: process.env.NEXT_PUBLIC_NEXT_AUTH_SECRET,
+	secret:
+		process.env.NEXTAUTH_SECRET ??
+		process.env.AUTH_SECRET ??
+		process.env.NEXT_PUBLIC_NEXT_AUTH_SECRET,
 };
