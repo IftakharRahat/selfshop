@@ -1,7 +1,11 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-const VENDOR_HOSTS = ["vendor.selfshop.com", "vendor.localhost"];
+const VENDOR_HOSTS = [
+	"vendor.selfshop.com",
+	"supplier.selfshop.com.bd",
+	"vendor.localhost",
+];
 const VENDOR_PREFIX = "/vendor";
 
 export function middleware(request: NextRequest) {
