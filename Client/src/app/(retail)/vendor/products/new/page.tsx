@@ -30,24 +30,35 @@ export default function VendorNewProductPage() {
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 	const selectedCategoryCommission = selectedCategoryId
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
-				?.commission_percent
+			?.commission_percent
 		: null;
 	const [createVariant] = useCreateVendorProductVariantMutation();
 	const [createTier] = useCreateVendorProductPriceTierMutation();
 
-	// Pending variants & tiers (added after product is created)
-	type PendingVariant = { title: string; qty: string; price: string };
-	type PendingTier = { min_qty: string; unit_price: string; tier_label: string };
-	const [pendingVariants, setPendingVariants] = useState<PendingVariant[]>([]);
-	const [pendingTiers, setPendingTiers] = useState<PendingTier[]>([]);
-	const [newVariant, setNewVariant] = useState<PendingVariant>({ title: "", qty: "0", price: "0" });
-	const [newTier, setNewTier] = useState<PendingTier>({ min_qty: "0", unit_price: "", tier_label: "Tier 1" });
+	// Unified Bulk Pricing Variant-Wise
+	type BulkPricingRow = {
+		variant_title: string;
+		min_qty: string;
+		max_qty: string;
+		price: string;
+		delivery_charge: string;
+	};
+	const [bulkPricing, setBulkPricing] = useState<BulkPricingRow[]>([]);
+	const [newBulkRow, setNewBulkRow] = useState<BulkPricingRow>({
+		variant_title: "",
+		min_qty: "1",
+		max_qty: "",
+		price: "",
+		delivery_charge: "",
+	});
 
 	const subcategories = useMemo(() => {
 		if (!selectedCategoryId) return [];
 		const cat = categories.find((c) => c.id === Number(selectedCategoryId));
 		return cat?.subcategories ?? [];
 	}, [categories, selectedCategoryId]);
+
+	const [allowDropship, setAllowDropship] = useState(false);
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -62,13 +73,13 @@ export default function VendorNewProductPage() {
 		const details = (form.querySelector('[name="description"]') as HTMLTextAreaElement).value;
 		if (brief) formData.append("ProductBreaf", brief);
 		if (details) formData.append("ProductDetails", details);
-		const basePrice = (form.querySelector('[name="base_price"]') as HTMLInputElement).value;
+		const basePrice = (form.querySelector('[name="base_price"]') as HTMLInputElement)?.value;
 		const regularPrice = (form.querySelector('[name="regular_price"]') as HTMLInputElement)?.value ?? basePrice;
 		formData.append("ProductResellerPrice", basePrice || "0");
 		formData.append("ProductRegularPrice", regularPrice || "0");
-		formData.append("qty", (form.querySelector('[name="qty"]') as HTMLInputElement).value || "0");
-		formData.append("low_stock", (form.querySelector('[name="low_stock"]') as HTMLInputElement).value || "0");
-		const sku = (form.querySelector('[name="sku"]') as HTMLInputElement).value;
+		formData.append("qty", (form.querySelector('[name="qty"]') as HTMLInputElement)?.value || "0");
+		formData.append("low_stock", (form.querySelector('[name="low_stock"]') as HTMLInputElement)?.value || "0");
+		const sku = (form.querySelector('[name="sku"]') as HTMLInputElement)?.value;
 		if (sku) formData.append("ProductSku", sku);
 		const stockVis = (form.querySelector('[name="stock_visibility"]:checked') as HTMLInputElement)?.value ?? "quantity";
 		formData.append("show_stock", stockVis === "quantity" ? "On" : "Off");
@@ -95,39 +106,66 @@ export default function VendorNewProductPage() {
 			const res = await createProduct(formData).unwrap();
 			const productId = res?.data?.product?.id;
 			if (productId != null) {
-				for (const v of pendingVariants) {
-					if (!v.title.trim()) continue;
+				// 1. Collect unique variant titles and their max qty/price if needed
+				const uniqueVariants = new Map<string, { title: string; qty: number; price: number }>();
+				bulkPricing.forEach(row => {
+					const title = row.variant_title.trim();
+					if (title) {
+						const currentMax = uniqueVariants.get(title)?.qty ?? 0;
+						const rowMax = parseInt(row.max_qty, 10) || 0;
+						const rowPrice = parseFloat(row.price) || 0;
+						if (rowMax > currentMax || !uniqueVariants.has(title)) {
+							uniqueVariants.set(title, { title, qty: rowMax, price: rowPrice });
+						}
+					}
+				});
+
+				// 2. Create Variants
+				for (const v of uniqueVariants.values()) {
 					try {
 						await createVariant({
 							id: productId,
-							title: v.title.trim(),
-							qty: parseInt(v.qty, 10) || 0,
-							price: parseFloat(v.price) || 0,
+							title: v.title,
+							qty: v.qty,
+							price: v.price,
 						}).unwrap();
 					} catch {
 						toast.error(`Failed to add variant: ${v.title}`);
 					}
 				}
-				for (const t of pendingTiers) {
-					if (t.unit_price === "") continue;
+
+				// 3. Create Price Tiers
+				for (const row of bulkPricing) {
+					if (!row.price) continue;
 					try {
 						await createTier({
 							id: productId,
-							min_qty: parseInt(t.min_qty, 10) || 0,
-							unit_price: parseFloat(t.unit_price) || 0,
-							tier_label: t.tier_label || "Tier",
+							min_qty: parseInt(row.min_qty, 10) || 0,
+							max_qty: parseInt(row.max_qty, 10) || null,
+							unit_price: parseFloat(row.price) || 0,
+							delivery_charge: row.delivery_charge ? parseFloat(row.delivery_charge) : null,
+							tier_label: row.variant_title || "Bulk",
+							variant_title: row.variant_title || null,
 						}).unwrap();
 					} catch {
-						toast.error("Failed to add price tier");
+						toast.error("Failed to add bulk pricing tier");
 					}
 				}
 			}
 			toast.success("Product created.");
 			router.push("/vendor/products");
-		} catch (err: unknown) {
-			const msg = err && typeof err === "object" && "data" in err && typeof (err as { data?: { message?: string } }).data?.message === "string"
-				? (err as { data: { message: string } }).data.message
-				: "Failed to create product.";
+		} catch (err: any) {
+			console.error("Product creation error:", err);
+			let msg = "Failed to create product.";
+			if (err?.data?.errors) {
+				const errors = err.data.errors;
+				const firstError = Object.values(errors)[0];
+				if (Array.isArray(firstError) && firstError.length > 0) {
+					msg = firstError[0];
+				}
+			} else if (err?.data?.message) {
+				msg = err.data.message;
+			}
 			toast.error(msg);
 		} finally {
 			setSaving(false);
@@ -185,77 +223,79 @@ export default function VendorNewProductPage() {
 								</div>
 							</div>
 
-							<div className="space-y-3">
-								<h2 className="text-sm font-semibold text-gray-900">
-									Product price &amp; stock
-								</h2>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Base price (reseller)
-										<input
-											type="number"
-											min={0}
-											step="0.01"
-											name="base_price"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-										/>
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Regular price
-										<input
-											type="number"
-											min={0}
-											step="0.01"
-											name="regular_price"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-										/>
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Quantity
-										<input
-											type="number"
-											min={0}
-											name="qty"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-										/>
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Low stock warning at
-										<input
-											type="number"
-											min={0}
-											name="low_stock"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-										/>
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										SKU
-										<input
-											name="sku"
-											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-										/>
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Discount
-										<input type="number" min={0} step="0.01" name="discount" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-									</label>
+							{allowDropship && (
+								<div className="space-y-3">
+									<h2 className="text-sm font-semibold text-gray-900">
+										Product price &amp; stock
+									</h2>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Base price (reseller)
+											<input
+												type="number"
+												min={0}
+												step="0.01"
+												name="base_price"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+											/>
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Regular price
+											<input
+												type="number"
+												min={0}
+												step="0.01"
+												name="regular_price"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+											/>
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Quantity
+											<input
+												type="number"
+												min={0}
+												name="qty"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+											/>
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Low stock warning at
+											<input
+												type="number"
+												min={0}
+												name="low_stock"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+											/>
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											SKU
+											<input
+												name="sku"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+											/>
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Discount
+											<input type="number" min={0} step="0.01" name="discount" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+										</label>
+									</div>
+									<p className="text-xs text-gray-600 font-medium mt-1">Stock visibility</p>
+									<div className="flex flex-wrap gap-4 text-sm text-gray-700">
+										<label className="inline-flex items-center gap-2">
+											<input type="radio" name="stock_visibility" value="quantity" defaultChecked className="rounded-full border-gray-300" />
+											Show stock quantity
+										</label>
+										<label className="inline-flex items-center gap-2">
+											<input type="radio" name="stock_visibility" value="text" className="rounded-full border-gray-300" />
+											Show stock text only
+										</label>
+										<label className="inline-flex items-center gap-2">
+											<input type="radio" name="stock_visibility" value="hide" className="rounded-full border-gray-300" />
+											Hide stock
+										</label>
+									</div>
 								</div>
-								<p className="text-xs text-gray-600 font-medium mt-1">Stock visibility</p>
-								<div className="flex flex-wrap gap-4 text-sm text-gray-700">
-									<label className="inline-flex items-center gap-2">
-										<input type="radio" name="stock_visibility" value="quantity" defaultChecked className="rounded-full border-gray-300" />
-										Show stock quantity
-									</label>
-									<label className="inline-flex items-center gap-2">
-										<input type="radio" name="stock_visibility" value="text" className="rounded-full border-gray-300" />
-										Show stock text only
-									</label>
-									<label className="inline-flex items-center gap-2">
-										<input type="radio" name="stock_visibility" value="hide" className="rounded-full border-gray-300" />
-										Hide stock
-									</label>
-								</div>
-							</div>
+							)}
 
 							<div className="space-y-3">
 								<h2 className="text-sm font-semibold text-gray-900">
@@ -346,11 +386,10 @@ export default function VendorNewProductPage() {
 											commissionRows.map((row) => (
 												<div
 													key={row.category_id}
-													className={`text-[11px] flex items-center justify-between rounded px-2 py-1 ${
-														Number(selectedCategoryId) === row.category_id
-															? "bg-indigo-200 text-indigo-900"
-															: "bg-white text-gray-700"
-													}`}
+													className={`text-[11px] flex items-center justify-between rounded px-2 py-1 ${Number(selectedCategoryId) === row.category_id
+														? "bg-indigo-200 text-indigo-900"
+														: "bg-white text-gray-700"
+														}`}
 												>
 													<span>{row.category_name}</span>
 													<span className="font-semibold">{row.commission_percent}%</span>
@@ -391,102 +430,127 @@ export default function VendorNewProductPage() {
 									Visibility &amp; options
 								</h2>
 								<label className="inline-flex items-center gap-2 text-xs text-gray-700">
-									<input type="checkbox" name="allow_dropship" className="rounded border-gray-300" />
+									<input
+										type="checkbox"
+										name="allow_dropship"
+										className="rounded border-gray-300"
+										checked={allowDropship}
+										onChange={(e) => setAllowDropship(e.target.checked)}
+									/>
 									Allow dropship
 								</label>
 								<label className="inline-flex items-center gap-2 text-xs text-gray-700 ml-4">
 									<input type="checkbox" className="rounded border-gray-300" />
 									Published
 								</label>
-								<label className="inline-flex items-center gap-2 text-xs text-gray-700 ml-4">
-									<input type="checkbox" className="rounded border-gray-300" />
-									Featured
-								</label>
 							</div>
 						</div>
 					</div>
 
-					{/* Variants */}
-					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
-						<h2 className="text-sm font-semibold text-gray-900 mb-3">Variants</h2>
-						<p className="text-xs text-gray-600 mb-3">Optional. Add after saving or here; they will be attached when you save the product.</p>
+					{/* Bulk Pricing Variant-Wise */}
+					<div className="rounded-xl bg-indigo-50/30 p-4 sm:p-6 shadow-sm border border-indigo-100">
+						<h2 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+							📦 Bulk Pricing Variant-Wise
+						</h2>
+						<p className="text-xs text-indigo-700 mb-4">
+							Define quantity-based pricing. Variant name is optional. If left blank, pricing applies to the base product.
+						</p>
 						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm table-fixed">
+							<table className="min-w-full text-sm">
 								<thead>
 									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 w-[40%]">Title</th>
-										<th className="py-2 pr-3 w-[15%]">Qty</th>
-										<th className="py-2 pr-3 w-[20%]">Price</th>
-										<th className="py-2 w-[25%]"></th>
+										<th className="py-2 pr-3 font-semibold w-[25%] text-indigo-900">Variant (Optional)</th>
+										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Min Qty</th>
+										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Max Qty</th>
+										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Price</th>
+										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Deliv. Charge</th>
+										<th className="py-2 w-[10%]"></th>
 									</tr>
 								</thead>
-								<tbody>
-									{pendingVariants.map((v, i) => (
-										<tr key={i} className="border-t border-gray-100">
-											<td className="py-2 pr-3">{v.title}</td>
-											<td className="py-2 pr-3">{v.qty}</td>
-											<td className="py-2 pr-3">{v.price}</td>
-											<td className="py-2">
-												<button type="button" onClick={() => setPendingVariants((prev) => prev.filter((_, j) => j !== i))} className="text-xs text-red-600 hover:underline">Remove</button>
+								<tbody className="divide-y divide-gray-100">
+									{bulkPricing.map((row, i) => (
+										<tr key={i} className="hover:bg-white/50 transition-colors">
+											<td className="py-3 pr-3 text-gray-700 italic">{row.variant_title || "Base Product"}</td>
+											<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.min_qty}</td>
+											<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.max_qty || "∞"}</td>
+											<td className="py-3 pr-2 font-bold text-gray-900">৳{row.price}</td>
+											<td className="py-3 pr-2 text-gray-600">{row.delivery_charge ? `৳${row.delivery_charge}` : "Default"}</td>
+											<td className="py-3 text-right">
+												<button
+													type="button"
+													onClick={() => setBulkPricing(prev => prev.filter((_, j) => j !== i))}
+													className="text-xs text-red-600 hover:text-red-800 font-medium underline"
+												>
+													Remove
+												</button>
 											</td>
 										</tr>
 									))}
-									<tr className="border-t border-gray-200 bg-gray-50/50">
-										<td className="py-2 pr-3 align-middle">
-											<input placeholder="e.g. Red / S" value={newVariant.title} onChange={(e) => setNewVariant((p) => ({ ...p, title: e.target.value }))} className="mt-1 w-full max-w-[200px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+									<tr className="bg-white/70">
+										<td className="py-3 pr-3">
+											<input
+												placeholder="e.g. Red / S"
+												value={newBulkRow.variant_title}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newVariant.qty} onChange={(e) => setNewVariant((p) => ({ ...p, qty: e.target.value }))} className="mt-1 w-full max-w-[80px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={1}
+												value={newBulkRow.min_qty}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, min_qty: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newVariant.price} onChange={(e) => setNewVariant((p) => ({ ...p, price: e.target.value }))} className="mt-1 w-full max-w-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={1}
+												placeholder="Max"
+												value={newBulkRow.max_qty}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, max_qty: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 align-middle">
-											<button type="button" onClick={() => { if (newVariant.title.trim()) { setPendingVariants((prev) => [...prev, { ...newVariant }]); setNewVariant({ title: "", qty: "0", price: "0" }); } }} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-xs">Add variant</button>
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={0}
+												placeholder="Price"
+												value={newBulkRow.price}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, price: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-
-					{/* Wholesale price tiers */}
-					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
-						<h2 className="text-sm font-semibold text-gray-900 mb-3">Wholesale price tiers</h2>
-						<p className="text-xs text-gray-600 mb-3">Optional. Tiers will be attached when you save the product.</p>
-						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm table-fixed">
-								<thead>
-									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 w-[20%]">Min qty</th>
-										<th className="py-2 pr-3 w-[25%]">Unit price</th>
-										<th className="py-2 pr-3 w-[30%]">Label</th>
-										<th className="py-2 w-[25%]"></th>
-									</tr>
-								</thead>
-								<tbody>
-									{pendingTiers.map((t, i) => (
-										<tr key={i} className="border-t border-gray-100">
-											<td className="py-2 pr-3">{t.min_qty}</td>
-											<td className="py-2 pr-3">{t.unit_price}</td>
-											<td className="py-2 pr-3">{t.tier_label}</td>
-											<td className="py-2">
-												<button type="button" onClick={() => setPendingTiers((prev) => prev.filter((_, j) => j !== i))} className="text-xs text-red-600 hover:underline">Remove</button>
-											</td>
-										</tr>
-									))}
-									<tr className="border-t border-gray-200 bg-gray-50/50">
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newTier.min_qty} onChange={(e) => setNewTier((p) => ({ ...p, min_qty: e.target.value }))} className="mt-1 w-full max-w-[100px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={0}
+												placeholder="Optional"
+												value={newBulkRow.delivery_charge}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, delivery_charge: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} step="0.01" placeholder="0.00" value={newTier.unit_price} onChange={(e) => setNewTier((p) => ({ ...p, unit_price: e.target.value }))} className="mt-1 w-full max-w-[120px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input placeholder="e.g. Tier 1" value={newTier.tier_label} onChange={(e) => setNewTier((p) => ({ ...p, tier_label: e.target.value }))} className="mt-1 w-full max-w-[140px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-										</td>
-										<td className="py-2 align-middle">
-											<button type="button" onClick={() => { if (newTier.unit_price !== "") { setPendingTiers((prev) => [...prev, { ...newTier }]); setNewTier({ min_qty: "0", unit_price: "", tier_label: "Tier 1" }); } }} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-xs">Add tier</button>
+										<td className="py-3">
+											<button
+												type="button"
+												onClick={() => {
+													if (newBulkRow.price) {
+														setBulkPricing(prev => [...prev, { ...newBulkRow }]);
+														setNewBulkRow({
+															variant_title: "",
+															min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty) + 1).toString(),
+															max_qty: "",
+															price: "",
+															delivery_charge: ""
+														});
+													} else {
+														toast.error("Price is required");
+													}
+												}}
+												className="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+											>
+												+ Add
+											</button>
 										</td>
 									</tr>
 								</tbody>

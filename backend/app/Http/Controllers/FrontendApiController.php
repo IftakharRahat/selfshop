@@ -525,6 +525,7 @@ class FrontendApiController extends Controller
     {
         $product = Product::with([
             'varients',
+            'priceTiers',
             'vendor:id,user_id,company_name,slug,is_verified_badge',
         ])->where('ProductSlug', $slug)->first();
         if (!$product) {
