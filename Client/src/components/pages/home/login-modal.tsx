@@ -222,6 +222,14 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 								</Form.Item>
 
 								<Form.Item
+									name="refer_by"
+									label="Referral code (optional)"
+									rules={[{ required: false }]}
+								>
+									<Input size="large" placeholder="Enter referral code..." />
+								</Form.Item>
+
+								<Form.Item
 									name="c_password"
 									label="Confirm Password"
 									rules={[

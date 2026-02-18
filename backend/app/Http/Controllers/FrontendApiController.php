@@ -556,6 +556,9 @@ class FrontendApiController extends Controller
             'email' => ['string', 'max:255'],
         ]);
 
+        // Accept both refer_by (expected) and refer_code (legacy frontend key).
+        $referralCode = strtoupper(trim((string) ($request->refer_by ?? $request->refer_code ?? '')));
+
         if (strlen($request->email) == '11') {
             $olduser = User::where('email', $request->email)->first();
             if ($olduser) {
@@ -571,8 +574,8 @@ class FrontendApiController extends Controller
         }
 
 
-        if (isset($request->refer_by)) {
-            $validity = User::where('my_referral_code', $request->refer_by)->first();
+        if ($referralCode !== '') {
+            $validity = User::where('my_referral_code', $referralCode)->first();
         } else {
             $validity = User::first();
         }
@@ -592,8 +595,8 @@ class FrontendApiController extends Controller
                 $code = substr($string, 0, 3);
 
                 $user->my_referral_code = strtoupper($code) . $this->uniqueID();
-                if (isset($request->refer_by)) {
-                    $user->refer_by = $request->refer_by;
+                if ($referralCode !== '') {
+                    $user->refer_by = $referralCode;
                 } else {
                     $user->refer_by = $validity->my_referral_code;;
                 }
@@ -604,8 +607,8 @@ class FrontendApiController extends Controller
                 $success = $user->save();
 
                 if ($success) {
-                    if (isset($request->refer_by)) {
-                        $createreferral = User::where('my_referral_code', $request->refer_by)->first();
+                    if ($referralCode !== '') {
+                        $createreferral = User::where('my_referral_code', $referralCode)->first();
                         if (isset($createreferral)) {
                             $createreferral->my_referral = $createreferral->my_referral + 1;
                             $createreferral->update();

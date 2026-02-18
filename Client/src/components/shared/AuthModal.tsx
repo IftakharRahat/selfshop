@@ -225,13 +225,13 @@ export default function AuthModal({
 									</Form.Item>
 
 									<Form.Item
-										name="refer_code"
-										label="Refer code (optional) *"
+										name="refer_by"
+										label="Referral code (optional)"
 										rules={[{ required: false }]}
 									>
 										<Input
 											size="large"
-											placeholder="Enter your refer code..."
+											placeholder="Enter referral code..."
 										/>
 									</Form.Item>
 
