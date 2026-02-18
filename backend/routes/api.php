@@ -193,7 +193,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/products/{id}', [VendorProductController::class, 'update'])->name('api.vendor.products.update');
         Route::post('/products/{id}', [VendorProductController::class, 'update'])->name('api.vendor.products.update.post'); // POST for file uploads (PHP does not populate $_FILES for PUT)
         Route::put('/products/{id}/status', [VendorProductController::class, 'updateStatus'])->name('api.vendor.products.status');
-        Route::put('/products/{id}/featured', [VendorProductController::class, 'updateFeatured'])->name('api.vendor.products.featured');
+        Route::put('/products/{id}/stock-status', [VendorProductController::class, 'updateStockStatus'])->name('api.vendor.products.stock-status');
         Route::get('/products/{id}/variants', [VendorProductController::class, 'variants'])->name('api.vendor.products.variants');
         Route::post('/products/{id}/variants', [VendorProductController::class, 'storeVariant'])->name('api.vendor.products.variants.store');
         Route::put('/products/{id}/variants/{variantId}', [VendorProductController::class, 'updateVariant'])->name('api.vendor.products.variants.update');

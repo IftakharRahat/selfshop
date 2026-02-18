@@ -68,7 +68,7 @@ export default function VendorEditProductPage() {
 	});
 	const selectedCategoryCommission = f.category_id
 		? commissionRows.find((row) => row.category_id === Number(f.category_id))
-				?.commission_percent
+			?.commission_percent
 		: null;
 	const [initialized, setInitialized] = useState(false);
 
@@ -81,8 +81,14 @@ export default function VendorEditProductPage() {
 	const [deleteTier] = useDeleteVendorProductPriceTierMutation();
 	const variants = variantsData?.data?.variants ?? [];
 	const priceTiers = tiersData?.data?.price_tiers ?? [];
-	const [newVariant, setNewVariant] = useState({ title: "", qty: "0", price: "0" });
-	const [newTier, setNewTier] = useState({ min_qty: "0", unit_price: "", tier_label: "Tier 1" });
+	// Unified Bulk Pricing Variant-Wise
+	const [newBulkRow, setNewBulkRow] = useState({
+		variant_title: "",
+		min_qty: "1",
+		max_qty: "",
+		price: "",
+		delivery_charge: "",
+	});
 
 	// Populate state once product arrives
 	useEffect(() => {
@@ -133,18 +139,48 @@ export default function VendorEditProductPage() {
 			toast.error("Failed to delete");
 		}
 	};
-	const handleAddVariant = async () => {
+	const handleAddBulkRow = async () => {
+		if (!newBulkRow.price) {
+			toast.error("Price is required");
+			return;
+		}
+
 		try {
-			await createVariant({
+			// 1. If title exists, ensure variant exists in 'varients' table (if new title)
+			if (newBulkRow.variant_title.trim()) {
+				const title = newBulkRow.variant_title.trim();
+				const exists = variants.some((v: any) => v.title === title);
+				if (!exists) {
+					await createVariant({
+						id,
+						title,
+						qty: parseInt(newBulkRow.max_qty, 10) || 0,
+						price: parseFloat(newBulkRow.price) || 0,
+					}).unwrap();
+				}
+			}
+
+			// 2. Add to price tiers
+			await createTier({
 				id,
-				title: newVariant.title.trim(),
-				qty: parseInt(newVariant.qty, 10) || 0,
-				price: parseFloat(newVariant.price) || 0,
+				min_qty: parseInt(newBulkRow.min_qty, 10) || 0,
+				max_qty: parseInt(newBulkRow.max_qty, 10) || null,
+				unit_price: parseFloat(newBulkRow.price) || 0,
+				delivery_charge: newBulkRow.delivery_charge ? parseFloat(newBulkRow.delivery_charge) : null,
+				tier_label: newBulkRow.variant_title || "Bulk",
+				variant_title: newBulkRow.variant_title || null,
 			}).unwrap();
-			toast.success("Variant added");
-			setNewVariant({ title: "", qty: "0", price: "0" });
+
+			toast.success("Bulk pricing added");
+			setNewBulkRow({
+				variant_title: "",
+				min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty, 10) + 1).toString(),
+				max_qty: "",
+				price: "",
+				delivery_charge: ""
+			});
 		} catch {
-			toast.error("Failed to add variant");
+			toast.error("Failed to add bulk pricing");
 		}
 	};
 	const handleRemoveTier = async (tierId: number) => {
@@ -153,20 +189,6 @@ export default function VendorEditProductPage() {
 			toast.success("Tier removed");
 		} catch {
 			toast.error("Failed to delete");
-		}
-	};
-	const handleAddTier = async () => {
-		try {
-			await createTier({
-				id,
-				min_qty: parseInt(newTier.min_qty, 10) || 0,
-				unit_price: parseFloat(newTier.unit_price) || 0,
-				tier_label: newTier.tier_label || "Tier",
-			}).unwrap();
-			toast.success("Tier added");
-			setNewTier({ min_qty: "0", unit_price: "", tier_label: "Tier 1" });
-		} catch {
-			toast.error("Failed to add tier");
 		}
 	};
 
@@ -264,76 +286,78 @@ export default function VendorEditProductPage() {
 							</div>
 
 							{/* Price & stock */}
-							<div className="space-y-3">
-								<h2 className="text-sm font-semibold text-gray-900">Product price &amp; stock</h2>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Base price (reseller)
-										<input type="number" min={0} step="0.01" value={f.base_price} onChange={set("base_price")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Regular price
-										<input type="number" min={0} step="0.01" value={f.regular_price} onChange={set("regular_price")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Quantity
-										<input type="number" min={0} value={f.qty} onChange={set("qty")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Low stock warning at
-										<input type="number" min={0} value={f.low_stock} onChange={set("low_stock")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										SKU
-										<input value={f.sku} onChange={set("sku")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Discount
-										<input type="number" min={0} step="0.01" value={f.discount} onChange={set("discount")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Unit (e.g. Pc)
-										<input value={f.unit} onChange={set("unit")} placeholder="Pc" className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Weight (kg)
-										<input type="number" min={0} step="0.01" value={f.product_weight} onChange={set("product_weight")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Minimum purchase qty
-										<input type="number" min={1} value={f.minimum_qty} onChange={set("minimum_qty")} className={inputCls} />
-									</label>
-									<label className="flex flex-col text-sm font-medium text-gray-700">
-										Tags (comma separated)
-										<input value={f.tags} onChange={set("tags")} placeholder="tag1, tag2" className={inputCls} />
-									</label>
-								</div>
-
-								<p className="text-xs text-gray-600 font-medium">Stock visibility</p>
-								<div className="flex flex-wrap gap-4 text-sm">
-									{(["quantity", "text", "hide"] as const).map((v) => (
-										<label key={v} className="inline-flex items-center gap-2">
-											<input
-												type="radio"
-												name="stock_visibility"
-												value={v}
-												checked={f.stock_visibility === v}
-												onChange={set("stock_visibility")}
-												className="rounded-full border-gray-300"
-											/>
-											{v === "quantity" ? "Show quantity" : v === "text" ? "Show text only" : "Hide"}
+							{f.allow_dropship && (
+								<div className="space-y-3">
+									<h2 className="text-sm font-semibold text-gray-900">Product price &amp; stock</h2>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Base price (reseller)
+											<input type="number" min={0} step="0.01" value={f.base_price} onChange={set("base_price")} className={inputCls} />
 										</label>
-									))}
-								</div>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Regular price
+											<input type="number" min={0} step="0.01" value={f.regular_price} onChange={set("regular_price")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Quantity
+											<input type="number" min={0} value={f.qty} onChange={set("qty")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Low stock warning at
+											<input type="number" min={0} value={f.low_stock} onChange={set("low_stock")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											SKU
+											<input value={f.sku} onChange={set("sku")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Discount
+											<input type="number" min={0} step="0.01" value={f.discount} onChange={set("discount")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Unit (e.g. Pc)
+											<input value={f.unit} onChange={set("unit")} placeholder="Pc" className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Weight (kg)
+											<input type="number" min={0} step="0.01" value={f.product_weight} onChange={set("product_weight")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Minimum purchase qty
+											<input type="number" min={1} value={f.minimum_qty} onChange={set("minimum_qty")} className={inputCls} />
+										</label>
+										<label className="flex flex-col text-sm font-medium text-gray-700">
+											Tags (comma separated)
+											<input value={f.tags} onChange={set("tags")} placeholder="tag1, tag2" className={inputCls} />
+										</label>
+									</div>
 
-								<label className="flex flex-col text-sm font-medium text-gray-700">
-									Status
-									<select value={f.status} onChange={set("status")} className={inputCls}>
-										<option value="Active">Active</option>
-										<option value="Inactive">Inactive</option>
-									</select>
-								</label>
-							</div>
+									<p className="text-xs text-gray-600 font-medium">Stock visibility</p>
+									<div className="flex flex-wrap gap-4 text-sm">
+										{(["quantity", "text", "hide"] as const).map((v) => (
+											<label key={v} className="inline-flex items-center gap-2">
+												<input
+													type="radio"
+													name="stock_visibility"
+													value={v}
+													checked={f.stock_visibility === v}
+													onChange={set("stock_visibility")}
+													className="rounded-full border-gray-300"
+												/>
+												{v === "quantity" ? "Show quantity" : v === "text" ? "Show text only" : "Hide"}
+											</label>
+										))}
+									</div>
+
+									<label className="flex flex-col text-sm font-medium text-gray-700">
+										Status
+										<select value={f.status} onChange={set("status")} className={inputCls}>
+											<option value="Active">Active</option>
+											<option value="Inactive">Inactive</option>
+										</select>
+									</label>
+								</div>
+							)}
 
 							{/* Description */}
 							<div className="space-y-3">
@@ -406,11 +430,10 @@ export default function VendorEditProductPage() {
 											commissionRows.map((row) => (
 												<div
 													key={row.category_id}
-													className={`text-[11px] flex items-center justify-between rounded px-2 py-1 ${
-														Number(f.category_id) === row.category_id
-															? "bg-indigo-200 text-indigo-900"
-															: "bg-white text-gray-700"
-													}`}
+													className={`text-[11px] flex items-center justify-between rounded px-2 py-1 ${Number(f.category_id) === row.category_id
+														? "bg-indigo-200 text-indigo-900"
+														: "bg-white text-gray-700"
+														}`}
 												>
 													<span>{row.category_name}</span>
 													<span className="font-semibold">{row.commission_percent}%</span>
@@ -479,85 +502,98 @@ export default function VendorEditProductPage() {
 						</div>
 					</div>
 
-					{/* Variants */}
-					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
-						<h2 className="text-sm font-semibold text-gray-900 mb-3">Variants</h2>
+					{/* Bulk Pricing Variant-Wise */}
+					<div className="rounded-xl bg-indigo-50/30 p-4 sm:p-6 shadow-sm border border-indigo-100">
+						<h2 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+							📦 Bulk Pricing Variant-Wise
+						</h2>
+						<p className="text-xs text-indigo-700 mb-4">
+							Quantity-based pricing. Variant is optional. Deleting a row removes that specific pricing rule.
+						</p>
 						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm table-fixed">
+							<table className="min-w-full text-sm">
 								<thead>
 									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 w-[40%]">Title</th>
-										<th className="py-2 pr-3 w-[15%]">Qty</th>
-										<th className="py-2 pr-3 w-[20%]">Price</th>
-										<th className="py-2 w-[25%]"></th>
+										<th className="py-2 pr-3 font-semibold w-[25%] text-indigo-900">Variant (Optional)</th>
+										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Min Qty</th>
+										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Max Qty</th>
+										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Price</th>
+										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Deliv. Charge</th>
+										<th className="py-2 w-[10%]"></th>
 									</tr>
 								</thead>
-								<tbody>
-									{variants.map((v) => (
-										<tr key={v.id} className="border-t border-gray-100">
-											<td className="py-2 pr-3">{v.title}</td>
-											<td className="py-2 pr-3">{v.qty}</td>
-											<td className="py-2 pr-3">{v.price}</td>
-											<td className="py-2">
-												<button type="button" onClick={() => handleRemoveVariant(v.id)} className="text-xs text-red-600 hover:underline">Remove</button>
+								<tbody className="divide-y divide-gray-100">
+									{priceTiers.map((t: any) => (
+										<tr key={t.id} className="hover:bg-white/50 transition-colors">
+											<td className="py-3 pr-3 text-gray-700 italic">{t.variant_title || "Base Product"}</td>
+											<td className="py-3 pr-2 text-center font-medium text-gray-900">{t.min_qty}</td>
+											<td className="py-3 pr-2 text-center font-medium text-gray-900">{t.max_qty || "∞"}</td>
+											<td className="py-3 pr-2 font-bold text-gray-900">৳{t.unit_price}</td>
+											<td className="py-3 pr-2 text-gray-600">{t.delivery_charge ? `৳${t.delivery_charge}` : "Default"}</td>
+											<td className="py-3 text-right">
+												<button
+													type="button"
+													onClick={() => handleRemoveTier(t.id)}
+													className="text-xs text-red-600 hover:text-red-800 font-medium underline"
+												>
+													Remove
+												</button>
 											</td>
 										</tr>
 									))}
-									<tr className="border-t border-gray-200 bg-gray-50/50">
-										<td className="py-2 pr-3 align-middle">
-											<input placeholder="e.g. Red / S" value={newVariant.title} onChange={(e) => setNewVariant((p) => ({ ...p, title: e.target.value }))} className={`${inputCls} w-full max-w-[200px]`} />
+									<tr className="bg-white/70">
+										<td className="py-3 pr-3">
+											<input
+												placeholder="e.g. Red / S"
+												value={newBulkRow.variant_title}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newVariant.qty} onChange={(e) => setNewVariant((p) => ({ ...p, qty: e.target.value }))} className={`${inputCls} w-full max-w-[80px]`} />
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={1}
+												value={newBulkRow.min_qty}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, min_qty: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newVariant.price} onChange={(e) => setNewVariant((p) => ({ ...p, price: e.target.value }))} className={`${inputCls} w-full max-w-[100px]`} />
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={1}
+												placeholder="Max"
+												value={newBulkRow.max_qty}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, max_qty: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 align-middle">
-											<button type="button" disabled={addingVariant || !newVariant.title.trim()} onClick={handleAddVariant} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-xs disabled:opacity-50">Add variant</button>
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={0}
+												placeholder="Price"
+												value={newBulkRow.price}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, price: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
-
-					{/* Wholesale price tiers */}
-					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
-						<h2 className="text-sm font-semibold text-gray-900 mb-3">Wholesale price tiers</h2>
-						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm table-fixed">
-								<thead>
-									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 w-[20%]">Min qty</th>
-										<th className="py-2 pr-3 w-[25%]">Unit price</th>
-										<th className="py-2 pr-3 w-[30%]">Label</th>
-										<th className="py-2 w-[25%]"></th>
-									</tr>
-								</thead>
-								<tbody>
-									{priceTiers.map((t) => (
-										<tr key={t.id} className="border-t border-gray-100">
-											<td className="py-2 pr-3">{t.min_qty}</td>
-											<td className="py-2 pr-3">{t.unit_price}</td>
-											<td className="py-2 pr-3">{t.tier_label}</td>
-											<td className="py-2">
-												<button type="button" onClick={() => handleRemoveTier(t.id)} className="text-xs text-red-600 hover:underline">Remove</button>
-											</td>
-										</tr>
-									))}
-									<tr className="border-t border-gray-200 bg-gray-50/50">
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} placeholder="0" value={newTier.min_qty} onChange={(e) => setNewTier((p) => ({ ...p, min_qty: e.target.value }))} className={`${inputCls} w-full max-w-[100px]`} />
+										<td className="py-3 pr-2">
+											<input
+												type="number" min={0}
+												placeholder="Optional"
+												value={newBulkRow.delivery_charge}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, delivery_charge: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+											/>
 										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input type="number" min={0} step="0.01" placeholder="0.00" value={newTier.unit_price} onChange={(e) => setNewTier((p) => ({ ...p, unit_price: e.target.value }))} className={`${inputCls} w-full max-w-[120px]`} />
-										</td>
-										<td className="py-2 pr-3 align-middle">
-											<input placeholder="e.g. Tier 1" value={newTier.tier_label} onChange={(e) => setNewTier((p) => ({ ...p, tier_label: e.target.value }))} className={`${inputCls} w-full max-w-[140px]`} />
-										</td>
-										<td className="py-2 align-middle">
-											<button type="button" disabled={addingTier || newTier.unit_price === ""} onClick={handleAddTier} className="rounded-md bg-gray-800 text-white px-3 py-1.5 text-xs disabled:opacity-50">Add tier</button>
+										<td className="py-3">
+											<button
+												type="button"
+												disabled={addingTier}
+												onClick={handleAddBulkRow}
+												className="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
+											>
+												+ Add
+											</button>
 										</td>
 									</tr>
 								</tbody>
@@ -574,9 +610,9 @@ export default function VendorEditProductPage() {
 							{saving ? "Saving..." : "Save changes"}
 						</button>
 					</div>
-				</form>
-			</div>
-		</WithVendorAuth>
+				</form >
+			</div >
+		</WithVendorAuth >
 	);
 }
 
