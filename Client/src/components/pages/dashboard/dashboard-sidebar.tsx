@@ -83,6 +83,14 @@ export default function DashboardSidebar({
 	const { data } = useGetMeQuery(undefined);
 
 	const profile = data?.data?.profile;
+	const walletBalance =
+		Number(
+			profile?.account_balance ??
+				data?.data?.walletbalance ??
+				data?.data?.balance ??
+				data?.data?.blance ??
+				0,
+		) || 0;
 	const pathname = usePathname();
 	const dispatch = useAppDispatch();
 
@@ -140,7 +148,7 @@ export default function DashboardSidebar({
 					<div className="flex items-center gap-1 bg-white/15 px-2.5 py-1 rounded-full">
 						<Wallet className="w-3.5 h-3.5 text-white/80" />
 						<span className="text-[12px] font-semibold text-white">
-							{(profile?.income || 0).toLocaleString()}TK
+							{walletBalance.toLocaleString()}TK
 						</span>
 					</div>
 				</div>

@@ -18,6 +18,43 @@ use Session;
 
 class SslCommerzPaymentController extends Controller
 {
+    private function frontendBaseUrl(): string
+    {
+        $base = env('FRONTEND_URL')
+            ?: config('app.frontend_url')
+            ?: env('CLIENT_URL')
+            ?: env('APP_FRONTEND_URL')
+            ?: 'http://localhost:3000';
+
+        return rtrim($base, '/');
+    }
+
+    private function frontendUrl(string $path = '/', array $query = []): string
+    {
+        $url = $this->frontendBaseUrl() . '/' . ltrim($path, '/');
+        $query = array_filter($query, function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+
+        return $url;
+    }
+
+    private function resolveNextExpiryDate(?string $currentExpireDate = null): string
+    {
+        $today = date('Y-m-d');
+        $baseDate = $today;
+
+        if (!empty($currentExpireDate) && $currentExpireDate >= $today) {
+            $baseDate = $currentExpireDate;
+        }
+
+        return date('Y-m-d', strtotime($baseDate . ' +1 year'));
+    }
+
     public function index(Request $request)
     {
         try {
@@ -335,7 +372,9 @@ public function packagePaymentSuccess(Request $request)
         
         if (!$tran_id) {
             Log::error('No transaction ID in package success callback');
-            return redirect('/our-packages')->withErrors(['error' => 'Invalid transaction ID']);
+            return redirect()->away($this->frontendUrl('/pricing', [
+                'payment' => 'error',
+            ]));
         }
         
         // Find invoice
@@ -348,7 +387,9 @@ public function packagePaymentSuccess(Request $request)
         if (!$invoice) {
             Log::error('Invoice not found');
             DB::rollBack();
-            return redirect('/login')->withErrors(['error' => 'Invoice not found.']);
+            return redirect()->away($this->frontendUrl('/pricing', [
+                'payment' => 'error',
+            ]));
         }
         
         // Validate payment
@@ -362,7 +403,9 @@ public function packagePaymentSuccess(Request $request)
             
             DB::rollBack();
             Session::forget('sslcommerz_package_payment');
-            return redirect('/our-packages')->withErrors(['error' => 'Payment validation failed.']);
+            return redirect()->away($this->frontendUrl('/pricing', [
+                'payment' => 'failed',
+            ]));
         }
         
         Log::info('Payment validated successfully');
@@ -377,7 +420,10 @@ public function packagePaymentSuccess(Request $request)
             }
             
             DB::rollBack();
-            return redirect('/user/dashboard')->with(['warning' => 'Invoice already paid.']);
+            return redirect()->away($this->frontendUrl('/dashboard', [
+                'payment' => 'already_paid',
+                'invoiceID' => $invoice->invoiceID ?? null,
+            ]));
         }
         
         // Get user
@@ -385,12 +431,14 @@ public function packagePaymentSuccess(Request $request)
         if (!$user) {
             Log::error('User not found for invoice');
             DB::rollBack();
-            return redirect('/login')->withErrors(['error' => 'User account not found.']);
+            return redirect()->away($this->frontendUrl('/pricing', [
+                'payment' => 'error',
+            ]));
         }
-        
-        // Calculate dates
+
+        // Subscription validity is 1 year, extending from current expiry if still active.
         $today = date('Y-m-d');
-        $expireDate = date('Y-m-d', strtotime('+1 year'));
+        $expireDate = $this->resolveNextExpiryDate($user->expire_date);
         
         // ========== UPDATE INVOICE ==========
         $invoice->paymentDate = $today;
@@ -468,11 +516,11 @@ public function packagePaymentSuccess(Request $request)
         Session::forget('sslcommerz_package_payment');
         
         // Redirect with success
-        return redirect('/user/dashboard')->with([
-            'success' => 'Payment successful! Your account is active until ' . date('d M, Y', strtotime($expireDate)),
-            'invoice_id' => $invoice->invoiceID,
-            'expire_date' => $expireDate
-        ]);
+        return redirect()->away($this->frontendUrl('/dashboard', [
+            'payment' => 'success',
+            'invoiceID' => $invoice->invoiceID ?? null,
+            'expire_date' => $expireDate,
+        ]));
         
     } catch (\Exception $e) {
         DB::rollBack();
@@ -491,9 +539,10 @@ public function packagePaymentSuccess(Request $request)
                     
                     // Also try to update user
                     if (isset($user) && $user) {
+                        $expireDate = $this->resolveNextExpiryDate($user->expire_date);
                         DB::table('users')->where('id', $user->id)->update([
                             'status' => 'Active',
-                            'expire_date' => date('Y-m-d', strtotime('+1 year')),
+                            'expire_date' => $expireDate,
                             'active_date' => date('Y-m-d')
                         ]);
                     }
@@ -502,14 +551,14 @@ public function packagePaymentSuccess(Request $request)
                 }
             }
             
-            return redirect('/login')->with([
-                'success' => 'Payment completed successfully! Please login.'
-            ]);
+            return redirect()->away($this->frontendUrl('/dashboard', [
+                'payment' => 'success',
+            ]));
         }
         
-        return redirect('/login')->withErrors([
-            'error' => 'Payment error: ' . $e->getMessage()
-        ]);
+        return redirect()->away($this->frontendUrl('/pricing', [
+            'payment' => 'error',
+        ]));
     }
 }
 
@@ -535,9 +584,9 @@ public function packagePaymentFail(Request $request)
     
     Session::forget('sslcommerz_package_payment');
     
-    return redirect('/our-packages')->withErrors([
-        'error' => 'Package payment failed. Please try again.'
-    ]);
+    return redirect()->away($this->frontendUrl('/pricing', [
+        'payment' => 'failed',
+    ]));
 }
 
 /**
@@ -561,7 +610,9 @@ public function packagePaymentCancel(Request $request)
     
     Session::forget('sslcommerz_package_payment');
     
-    return redirect('/our-packages')->with('warning', 'Package payment was canceled.');
+    return redirect()->away($this->frontendUrl('/pricing', [
+        'payment' => 'canceled',
+    ]));
 }
 
 /**
@@ -584,15 +635,18 @@ public function packagePaymentIPN(Request $request)
                 $invoice->paymentDate = date('Y-m-d');
                 $invoice->paid_amount = $request->input('amount', 0);
                 $invoice->payment_type = 'SSLCommerz';
+                $user = \App\Models\User::find($invoice->user_id);
+                $expireDate = $this->resolveNextExpiryDate($user ? $user->expire_date : null);
+                $invoice->expire_date = $expireDate;
                 $invoice->save();
                 
                 // Activate user
-                $user = \App\Models\User::find($invoice->user_id);
                 if ($user) {
                     $user->status = 'Active';
                     $user->membership_status = 'Paid';
                     $user->active_date = date('Y-m-d');
-                    $user->p_system = 'Getway';
+                    $user->expire_date = $expireDate;
+                    $user->p_system = 'Gateway';
                     $user->save();
                     
                     // Give referral bonus
@@ -1299,6 +1353,12 @@ public function success(Request $request)
     public function fail(Request $request)
     {
         $tran_id = $request->input('tran_id');
+
+        // Package payments are handled in dedicated package callbacks.
+        if ($tran_id && strpos($tran_id, 'PKG_') === 0) {
+            Log::info('Detected package payment fail callback');
+            return $this->packagePaymentFail($request);
+        }
         
         if ($tran_id) {
             # Update order status to Failed
@@ -1322,6 +1382,12 @@ public function success(Request $request)
     public function cancel(Request $request)
     {
         $tran_id = $request->input('tran_id');
+
+        // Package payments are handled in dedicated package callbacks.
+        if ($tran_id && strpos($tran_id, 'PKG_') === 0) {
+            Log::info('Detected package payment cancel callback');
+            return $this->packagePaymentCancel($request);
+        }
         
         if ($tran_id) {
             # Update order status to Canceled
@@ -1341,10 +1407,14 @@ public function success(Request $request)
     
     public function ipn(Request $request)
     {
+        $tran_id = $request->input('tran_id');
+        if ($tran_id && strpos($tran_id, 'PKG_') === 0) {
+            Log::info('Detected package payment IPN callback');
+            return $this->packagePaymentIPN($request);
+        }
+
         # Instant Payment Notification handler
-        if ($request->input('tran_id')) {
-            $tran_id = $request->input('tran_id');
-            
+        if ($tran_id) {
             $order_details = DB::table('orders')
                 ->where('transaction_id', $tran_id)
                 ->select('transaction_id', 'status', 'amount', 'currency')

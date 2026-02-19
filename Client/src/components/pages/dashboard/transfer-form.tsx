@@ -73,6 +73,15 @@ export function TransferForm() {
 	const lastTransferAmount = Number(lastTransfer?.withdrew_amount ?? 0);
 	const isBalanceLoading = isLoading || dashboardLoading;
 
+	const getDirection = (transfer: any) =>
+		transfer?.transfer_direction === "Received" ? "Received" : "Sent";
+
+	const getCounterpartyLabel = (transfer: any) =>
+		transfer?.counterparty_label || (getDirection(transfer) === "Received" ? "From" : "To");
+
+	const getCounterparty = (transfer: any) =>
+		transfer?.counterparty || transfer?.to_account_number || "-";
+
 	const onSubmit = async (data: TransferFormValues) => {
 		try {
 			const formData = new FormData();
@@ -209,22 +218,34 @@ export function TransferForm() {
 								>
 									<div className="flex items-center justify-between mb-1">
 										<p className="text-xs text-gray-500">#{transfer.id}</p>
-										<span
-											className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${transfer.status === "Paid"
-													? "bg-green-50 text-green-700 border border-green-200"
-													: transfer.status === "Pending"
-														? "bg-amber-50 text-amber-700 border border-amber-200"
-														: "bg-red-50 text-red-700 border border-red-200"
-												}`}
-										>
-											{transfer.status}
-										</span>
+										<div className="flex items-center gap-1.5">
+											<span
+												className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getDirection(transfer) === "Received"
+														? "bg-blue-50 text-blue-700 border border-blue-200"
+														: "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200"
+													}`}
+											>
+												{getDirection(transfer)}
+											</span>
+											<span
+												className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${transfer.status === "Paid"
+														? "bg-green-50 text-green-700 border border-green-200"
+														: transfer.status === "Pending"
+															? "bg-amber-50 text-amber-700 border border-amber-200"
+															: "bg-red-50 text-red-700 border border-red-200"
+													}`}
+											>
+												{transfer.status}
+											</span>
+										</div>
 									</div>
 
 									<p className="text-lg font-bold text-gray-900 mb-1.5">৳ {transfer.withdrew_amount}</p>
 
 									<div className="flex items-center justify-between text-xs text-gray-400">
-										<span className="truncate mr-2">To: {transfer.to_account_number}</span>
+										<span className="truncate mr-2">
+											{getCounterpartyLabel(transfer)}: {getCounterparty(transfer)}
+										</span>
 										<span className="flex-shrink-0">{new Date(transfer.created_at).toLocaleDateString()}</span>
 									</div>
 								</div>
@@ -250,10 +271,13 @@ export function TransferForm() {
 										Date
 									</th>
 									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
-										To Account
+										Counterparty
 									</th>
 									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Amount
+									</th>
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+										Direction
 									</th>
 									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Status
@@ -275,10 +299,20 @@ export function TransferForm() {
 												{new Date(transfer.created_at).toLocaleDateString()}
 											</td>
 											<td className="p-4 text-sm text-gray-700">
-												{transfer.to_account_number}
+												{getCounterpartyLabel(transfer)}: {getCounterparty(transfer)}
 											</td>
 											<td className="p-4 text-sm font-bold text-gray-900">
 												৳ {transfer.withdrew_amount}
+											</td>
+											<td className="p-4">
+												<span
+													className={`px-2.5 py-1 rounded-full text-xs font-medium ${getDirection(transfer) === "Received"
+															? "bg-blue-50 text-blue-700 border border-blue-200"
+															: "bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200"
+														}`}
+												>
+													{getDirection(transfer)}
+												</span>
 											</td>
 											<td className="p-4">
 												<span
@@ -296,7 +330,7 @@ export function TransferForm() {
 									))
 								) : (
 									<tr>
-										<td colSpan={5} className="py-12 text-center text-gray-400 text-sm">
+										<td colSpan={6} className="py-12 text-center text-gray-400 text-sm">
 											No transfer history found.
 										</td>
 									</tr>

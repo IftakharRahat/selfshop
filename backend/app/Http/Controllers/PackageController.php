@@ -27,7 +27,20 @@ class PackageController extends Controller
 
     public function store(Request $request)
     {
-        $package = Package::create($request->all());
+        $validated = $request->validate([
+            'package_name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'discount_price' => ['nullable', 'numeric', 'min:0'],
+            'validity' => ['nullable', 'numeric', 'min:1'],
+        ]);
+
+        $package = Package::create([
+            'package_name' => $validated['package_name'],
+            'price' => $validated['price'],
+            'discount_price' => $validated['discount_price'] ?? null,
+            'validity' => $validated['validity'] ?? null,
+            'status' => 'Active',
+        ]);
         return response()->json($package, 200);
     }
 
@@ -40,14 +53,21 @@ class PackageController extends Controller
 
     public function update(Request $request, $id)
     {
+        $validated = $request->validate([
+            'package_name' => ['required', 'string', 'max:255'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'discount_price' => ['nullable', 'numeric', 'min:0'],
+            'validity' => ['nullable', 'numeric', 'min:1'],
+        ]);
+
         $package = Package::findOrfail($id);
-        $package->package_name = $request->package_name;
-        $package->price = $request->price;
-        $package->validity = $request->validity;
-        if(isset($request->discount_price)){
-            $package->discount_price = $request->discount_price;
-        }else{
-            $package->discount_price =null;
+        $package->package_name = $validated['package_name'];
+        $package->price = $validated['price'];
+        $package->validity = $validated['validity'] ?? null;
+        if (isset($validated['discount_price'])) {
+            $package->discount_price = $validated['discount_price'];
+        } else {
+            $package->discount_price = null;
         }
         $package->save();
         return response()->json($package, 200);

@@ -15,12 +15,11 @@ import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import logo from "@/assets/icons/NavLogo.png";
 import {
-	useGetMeQuery,
 	useLoginMutation,
 	useRegisterMutation,
 } from "@/redux/features/auth/authApi";
 import { setUser } from "@/redux/features/auth/authSlice";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { useAppDispatch } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 interface AuthModalProps {
@@ -35,8 +34,6 @@ export default function AuthModal({
 	setIsPricingModalOpen,
 }: AuthModalProps) {
 	const dispatch = useAppDispatch();
-	const token = useAppSelector((state) => state.auth.access_token);
-	const { data: user } = useGetMeQuery(token, { skip: !token });
 	const [isLogin, setIsLogin] = useState(true);
 	const [activeTab, setActiveTab] = useState("reseller");
 
@@ -51,15 +48,40 @@ export default function AuthModal({
 			return login(values);
 		});
 		if (response?.data?.status) {
+			const accessToken = response?.data?.token;
 			await dispatch(
 				setUser({
-					access_token: response?.data?.token,
+					access_token: accessToken,
 				}),
 			);
 			form.resetFields();
 			onClose();
-			if (user?.data?.profile?.membership_status == "Unpaid") {
-				setIsPricingModalOpen(true);
+
+			try {
+				if (!accessToken) return;
+				const apiBase = process.env.NEXT_PUBLIC_BASE_URL;
+				if (!apiBase) return;
+
+				const profileResponse = await fetch(`${apiBase}/user-profile`, {
+					method: "GET",
+					headers: {
+						accept: "application/json",
+						authorization: `Bearer ${accessToken}`,
+					},
+				});
+
+				if (!profileResponse.ok) return;
+
+				const profileData = await profileResponse.json();
+				const membershipStatus = String(
+					profileData?.data?.profile?.membership_status ?? "",
+				).toLowerCase();
+
+				if (membershipStatus !== "paid") {
+					setIsPricingModalOpen(true);
+				}
+			} catch {
+				// No-op: login succeeded, pricing modal is best effort.
 			}
 		}
 	};
@@ -77,6 +99,7 @@ export default function AuthModal({
 			);
 			form.resetFields();
 			onClose();
+			setIsPricingModalOpen(true);
 		}
 	};
 
@@ -247,7 +270,7 @@ export default function AuthModal({
 					<p className="text-center mt-5">
 						{isLogin ? (
 							<>
-								If you don’t have any account?{" "}
+								If you don't have any account?{" "}
 								<span
 									className="text-[#E5005F] cursor-pointer"
 									onClick={() => setIsLogin(false)}

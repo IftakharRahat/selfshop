@@ -6,6 +6,7 @@ use App\Models\Productrequest;
 use Illuminate\Http\Request;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use DB;
 
 class ProductrequestController extends Controller
@@ -78,6 +79,15 @@ class ProductrequestController extends Controller
         $id=Auth::user()->id;
         $product->from_id=$id;
         $product->p_name=$request->p_name;
+        if (Schema::hasColumn('productrequests', 'p_quantity')) {
+            $product->p_quantity = $request->p_quantity;
+        }
+        if (Schema::hasColumn('productrequests', 'p_description')) {
+            $product->p_description = $request->p_description;
+        }
+        if (Schema::hasColumn('productrequests', 'message')) {
+            $product->message = $request->p_description ?? $request->message;
+        }
         $product->save();
         return redirect()->back()->with('success','Product request give successfully');
     }
@@ -127,7 +137,15 @@ class ProductrequestController extends Controller
         }
         $product->p_name=$request->p_name;
         $product->status=$request->status;
-        $product->message=$request->message;
+        if (Schema::hasColumn('productrequests', 'p_quantity') && $request->filled('p_quantity')) {
+            $product->p_quantity = $request->p_quantity;
+        }
+        if (Schema::hasColumn('productrequests', 'p_description') && $request->filled('p_description')) {
+            $product->p_description = $request->p_description;
+        }
+        if (Schema::hasColumn('productrequests', 'message')) {
+            $product->message = $request->message ?? $request->p_description;
+        }
         $product->save();
         return response()->json($product, 200);
 

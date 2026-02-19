@@ -255,9 +255,13 @@ class BkashPaymentController extends Controller
 
                 $user->status = 'Active';
                 $user->membership_status = 'Paid';
+                $user->active_date = date('Y-m-d');
+                $expireDate = $this->resolveNextExpiryDate($user->expire_date);
+                $user->expire_date = $expireDate;
                 $user->update();
                 $invoice->paymentDate = date('Y-m-d');
                 $invoice->paid_amount = $request->payment_info['amount'];
+                $invoice->expire_date = $expireDate;
 
                 $message = new Message();
                 $message->user_id = $referuser->id;
@@ -301,5 +305,17 @@ class BkashPaymentController extends Controller
             'reason' => $request->reason,
         ];
         return BkashRefund::refund($post_fields);
+    }
+
+    private function resolveNextExpiryDate($currentExpireDate = null)
+    {
+        $today = date('Y-m-d');
+        $baseDate = $today;
+
+        if (!empty($currentExpireDate) && $currentExpireDate >= $today) {
+            $baseDate = $currentExpireDate;
+        }
+
+        return date('Y-m-d', strtotime($baseDate . ' +1 year'));
     }
 }

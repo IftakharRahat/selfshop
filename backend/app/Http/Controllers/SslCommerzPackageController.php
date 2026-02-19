@@ -15,6 +15,18 @@ use App\Models\Package;
 
 class SslCommerzPackageController extends Controller
 {
+private function resolveNextExpiryDate($currentExpireDate = null)
+{
+    $today = date('Y-m-d');
+    $baseDate = $today;
+
+    if (!empty($currentExpireDate) && $currentExpireDate >= $today) {
+        $baseDate = $currentExpireDate;
+    }
+
+    return date('Y-m-d', strtotime($baseDate . ' +1 year'));
+}
+
   // Add these methods to your SslCommerzPaymentController class
 
 /**
@@ -209,8 +221,12 @@ public function packagePaymentSuccess(Request $request)
                     $user->status = 'Active';
                     $user->membership_status = 'Paid';
                     $user->active_date = date('Y-m-d');
+                    $expireDate = $this->resolveNextExpiryDate($user->expire_date);
+                    $user->expire_date = $expireDate;
                     $user->p_system = 'Getway';
                     $user->save();
+                } else {
+                    $expireDate = $invoice->expire_date ?: ($user->expire_date ?? null);
                 }
                 
                 // Update invoice
@@ -218,6 +234,7 @@ public function packagePaymentSuccess(Request $request)
                 $invoice->paid_amount = $sessionData['amount'];
                 $invoice->payment_type = 'SSLCommerz';
                 $invoice->status = 'Paid';
+                $invoice->expire_date = $expireDate ?: $invoice->expire_date;
                 $invoice->save();
                 
                 Log::info('Package payment processed successfully:', [
@@ -317,14 +334,17 @@ public function packagePaymentIPN(Request $request)
                 $invoice->paymentDate = date('Y-m-d');
                 $invoice->paid_amount = $request->input('amount', 0);
                 $invoice->payment_type = 'SSLCommerz';
+                $user = \App\Models\User::find($invoice->user_id);
+                $expireDate = $this->resolveNextExpiryDate($user ? $user->expire_date : null);
+                $invoice->expire_date = $expireDate;
                 $invoice->save();
                 
                 // Activate user
-                $user = \App\Models\User::find($invoice->user_id);
                 if ($user) {
                     $user->status = 'Active';
                     $user->membership_status = 'Paid';
                     $user->active_date = date('Y-m-d');
+                    $user->expire_date = $expireDate;
                     $user->p_system = 'Getway';
                     $user->save();
                     

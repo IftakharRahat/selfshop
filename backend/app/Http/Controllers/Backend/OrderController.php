@@ -30,10 +30,63 @@ use DataTables;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Session;
 
 class OrderController extends Controller
 {
+    private function findOrderIncomeRecord(Order $order): ?Income
+    {
+        $query = Income::query()->where('from', 'Order');
+
+        $query->where(function ($q) use ($order) {
+            if (Schema::hasColumn('incomes', 'order_id')) {
+                $q->where('order_id', $order->id);
+            }
+
+            if (Schema::hasColumn('incomes', 'invoice_code')) {
+                $q->orWhere('invoice_code', (string) $order->invoiceID);
+            }
+
+            // Legacy fallback where invoice_id may store order primary key.
+            $q->orWhere('invoice_id', (int) $order->id);
+        });
+
+        return $query->latest('id')->first();
+    }
+
+    private function markOrderIncomeCanceled(Order $order): void
+    {
+        $income = $this->findOrderIncomeRecord($order);
+        if (!$income) {
+            return;
+        }
+
+        $income->message = 'Opps ! We deduct ' . $order->profit . ' TK for cancel Order : ' . $order->invoiceID;
+        $income->status = 'Canceled';
+        $income->save();
+    }
+
+    private function recordOrderIncomePaid(Order $order): void
+    {
+        $income = $this->findOrderIncomeRecord($order) ?? new Income();
+        $income->from = 'Order';
+        $income->invoice_id = (int) $order->id;
+        $income->message = 'Congratulations ! you get ' . $order->profit . ' TK from Order : ' . $order->invoiceID;
+        $income->amount = $order->profit;
+        $income->user_id = $order->user_id;
+        $income->status = 'Paid';
+
+        if (Schema::hasColumn('incomes', 'order_id')) {
+            $income->order_id = $order->id;
+        }
+
+        if (Schema::hasColumn('incomes', 'invoice_code')) {
+            $income->invoice_code = (string) $order->invoiceID;
+        }
+
+        $income->save();
+    }
 
     public function fraudcheck(Request $request)
     {
@@ -1246,11 +1299,7 @@ class OrderController extends Controller
                 $user->sell_profit = $user->sell_profit - $order->profit;
                 $user->account_balance = $user->account_balance - $order->profit;
                 $user->update();
-                $com = Income::where('invoice_id', $order->invoiceID)->first();
-                if ($com) {
-                    $com->status = 'Canceled';
-                    $com->update();
-                }
+                $this->markOrderIncomeCanceled($order);
             }
         } else {
             if ($order->status != 'Delivered' && $request['status'] == 'Delivered') {
@@ -1268,14 +1317,7 @@ class OrderController extends Controller
                 $user->sell_profit = $user->sell_profit + $order->profit;
                 $user->account_balance = $user->account_balance + $order->profit;
                 $user->update();
-                $com = new Income();
-                $com->from = 'Order';
-                $com->invoice_id = $order->invoiceID;
-                $com->message = 'Congratulations ! you get ' . $order->profit . ' TK from Order : ' . $order->invoiceID;
-                $com->amount = $order->profit;
-                $com->user_id = $order->user_id;
-                $com->status = 'Paid';
-                $com->save();
+                $this->recordOrderIncomePaid($order);
                 $order->deliveryDate = date('Y-m-d');
 
                 $opds = Orderproduct::where('order_id', $order->id)->get();
@@ -2056,12 +2098,7 @@ class OrderController extends Controller
                         $user->sell_profit = $user->sell_profit - $order->profit;
                         $user->account_balance = $user->account_balance - $order->profit;
                         $user->update();
-                        $com = Income::where('order_id', $order->id)->first();
-                        if ($com) {
-                            $com->message = 'Opps ! We deduct ' . $order->profit . ' TK for cancel Order : ' . $order->invoiceID;
-                            $com->status = 'Canceled';
-                            $com->update();
-                        }
+                        $this->markOrderIncomeCanceled($order);
                     }
                 } else {
                     if ($order->status != 'Delivered' && $request['status'] == 'Delivered') {
@@ -2079,14 +2116,7 @@ class OrderController extends Controller
                         $user->sell_profit = $user->sell_profit + $order->profit;
                         $user->account_balance = $user->account_balance + $order->profit;
                         $user->update();
-                        $com = new Income();
-                        $com->from = 'Order';
-                        $com->invoice_id = $order->invoiceID;
-                        $com->message = 'Congratulations ! you get ' . $order->profit . ' TK from Order : ' . $order->invoiceID;
-                        $com->amount = $order->profit;
-                        $com->user_id = $order->user_id;
-                        $com->status = 'Paid';
-                        $com->save();
+                        $this->recordOrderIncomePaid($order);
                         $order->deliveryDate = date('Y-m-d');
 
                         $opds = Orderproduct::where('order_id', $order->id)->get();

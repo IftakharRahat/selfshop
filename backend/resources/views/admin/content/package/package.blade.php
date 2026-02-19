@@ -42,20 +42,20 @@
                             <div class="form-group pb-3">
                                 <label for="websiteTitle" class="control-label">Price</label>
                                 <div class="webtitle">
-                                    <input type="text" class="form-control" name="price" id="price"
+                                    <input type="number" min="0" step="0.01" class="form-control" name="price" id="price"
                                         required>
                                 </div>
                             </div>
                             <div class="form-group pb-3">
                                 <label for="websiteTitle" class="control-label">Discount Price</label>
                                 <div class="webtitle">
-                                    <input type="text" class="form-control" name="discount_price" id="discount_price">
+                                    <input type="number" min="0" step="0.01" class="form-control" name="discount_price" id="discount_price">
                                 </div>
                             </div>
                             <div class="form-group pb-3">
                                 <label for="websiteTitle" class="control-label">Validity</label>
                                 <div class="webtitle">
-                                    <input type="text" class="form-control" name="validity" id="validity">
+                                    <input type="number" min="1" step="1" class="form-control" name="validity" id="validity">
                                 </div>
                             </div>
                             <div class="form-group" style="text-align: right">
@@ -140,7 +140,7 @@
                             <div class="form-group pb-3">
                                 <label for="websiteTitle" class="control-label">Price</label>
                                 <div class="webtitle">
-                                    <input type="text" class="form-control" name="price" id="editprice"
+                                    <input type="number" min="0" step="0.01" class="form-control" name="price" id="editprice"
                                         required>
                                 </div>
                             </div>
@@ -148,14 +148,14 @@
                             <div class="form-group pb-3">
                                 <label for="websiteTitle" class="control-label">Discount Price</label>
                                 <div class="webtitle">
-                                    <input type="text" class="form-control" name="discount_price" id="editdiscount_price">
+                                    <input type="number" min="0" step="0.01" class="form-control" name="discount_price" id="editdiscount_price">
                                 </div>
                             </div>
 
                             <div class="form-group pb-3">
                                 <label for="websiteTitle" class="control-label">Validity</label>
                                 <div class="webtitle">
-                                    <input type="text" class="form-control" name="validity" id="editvalidity">
+                                    <input type="number" min="1" step="1" class="form-control" name="validity" id="editvalidity">
                                 </div>
                             </div>
 
@@ -238,7 +238,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    uploadUrl: '{{ route('packages.store') }}',
+                    url: '{{ route('packages.store') }}',
                     processData: false,
                     contentType: false,
                     data: new FormData(this),

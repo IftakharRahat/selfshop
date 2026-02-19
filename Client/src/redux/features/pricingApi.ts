@@ -2,9 +2,66 @@
 
 import { baseApi } from "../api/baseApi";
 
+export interface PackagePlan {
+	id: number;
+	package_name: string;
+	price: number;
+	discount_price?: number;
+	validity?: number | string;
+	status?: string;
+}
+
+export interface PackageInvoice {
+	id: number;
+	invoiceID: string;
+	package_id?: number;
+	amount?: number;
+	payable_amount?: number;
+	status?: string;
+}
+
+export interface PricingPayload {
+	invoice: PackageInvoice | null;
+	packages: PackagePlan[];
+}
+
+export interface PricingResponse {
+	status: boolean;
+	message: string;
+	data: PricingPayload;
+}
+
+interface CreatePurchasePayload {
+	package_id: number;
+	amount?: number;
+}
+
+interface CreatePurchaseResponse {
+	status: boolean;
+	message: string;
+	data: {
+		invoice: PackageInvoice;
+		package?: PackagePlan;
+	};
+}
+
+interface InitiatePackagePaymentPayload {
+	invoice_id: number;
+}
+
+interface InitiatePackagePaymentResponse {
+	status: boolean;
+	message: string;
+	data: {
+		gateway_url: string;
+		tran_id: string;
+		invoice: PackageInvoice;
+	};
+}
+
 const pricingApi = baseApi.injectEndpoints({
 	endpoints: (builder) => ({
-		getPricing: builder.query({
+		getPricing: builder.query<PricingResponse, void>({
 			query: () => {
 				return {
 					url: `/our-packages`,
@@ -31,10 +88,26 @@ const pricingApi = baseApi.injectEndpoints({
 		//   providesTags: ["courseApi"],
 		// }),
 
-		createPurchase: builder.mutation({
+		createPurchase: builder.mutation<CreatePurchaseResponse, CreatePurchasePayload>(
+			{
+				query: (data) => {
+					return {
+						url: "/purchese-package",
+						method: "POST",
+						body: data,
+					};
+				},
+				invalidatesTags: ["pricingApi"],
+			},
+		),
+
+		initiatePackagePayment: builder.mutation<
+			InitiatePackagePaymentResponse,
+			InitiatePackagePaymentPayload
+		>({
 			query: (data) => {
 				return {
-					url: "/purchese-package",
+					url: "/package-payment/initiate",
 					method: "POST",
 					body: data,
 				};
@@ -64,4 +137,8 @@ const pricingApi = baseApi.injectEndpoints({
 	}),
 });
 
-export const { useGetPricingQuery, useCreatePurchaseMutation } = pricingApi;
+export const {
+	useGetPricingQuery,
+	useCreatePurchaseMutation,
+	useInitiatePackagePaymentMutation,
+} = pricingApi;

@@ -93,7 +93,7 @@ const OrderIncomePage = () => {
 							>
 								<div className="flex items-center justify-between mb-1">
 									<p className="text-xs text-gray-500">
-										{item.invoice_id}
+										{item.order_invoice || item.invoice_code || item.invoice_id}
 									</p>
 									<span
 										className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${item.status === "Canceled"
@@ -153,7 +153,7 @@ const OrderIncomePage = () => {
 										className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
 									>
 										<td className="p-4 text-sm font-medium text-gray-900">
-											{item.invoice_id}
+											{item.order_invoice || item.invoice_code || item.invoice_id}
 										</td>
 										<td className="p-4 text-sm text-gray-700">
 											৳ {item.product_price}

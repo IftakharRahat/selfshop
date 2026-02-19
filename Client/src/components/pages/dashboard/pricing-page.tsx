@@ -1,184 +1,232 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CheckCircle2, Headset, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import {
+	type PackageInvoice,
+	type PackagePlan,
 	useCreatePurchaseMutation,
 	useGetPricingQuery,
 } from "@/redux/features/pricingApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
-export function PricingPage() {
-	const { data: pricingData } = useGetPricingQuery(undefined);
+type PricingFeature = {
+	label: string;
+	enabled: boolean;
+};
+
+type PricingPageProps = {
+	onInvoiceCreated?: (invoice: PackageInvoice) => void;
+};
+
+const FEATURE_MATRIX: Record<"basic" | "standard", PricingFeature[]> = {
+	basic: [
+		{ label: "Dashboard access", enabled: true },
+		{ label: "Order management", enabled: true },
+		{ label: "Referral income", enabled: true },
+		{ label: "Ad top-up removal", enabled: false },
+		{ label: "Order bonus", enabled: false },
+		{ label: "Monthly order report", enabled: false },
+		{ label: "Free video course", enabled: true },
+		{ label: "Fast checker", enabled: false },
+		{ label: "Team member management", enabled: false },
+		{ label: "Product request", enabled: false },
+		{ label: "Ticketing system", enabled: true },
+		{ label: "Order analytics", enabled: false },
+	],
+	standard: [
+		{ label: "Dashboard access", enabled: true },
+		{ label: "Order management", enabled: true },
+		{ label: "Referral income", enabled: true },
+		{ label: "Ad top-up removal", enabled: true },
+		{ label: "Order bonus", enabled: true },
+		{ label: "Monthly order report", enabled: true },
+		{ label: "Free video course", enabled: true },
+		{ label: "Fast checker", enabled: true },
+		{ label: "Team member management", enabled: true },
+		{ label: "Product request", enabled: true },
+		{ label: "Ticketing system", enabled: true },
+		{ label: "Order analytics", enabled: true },
+	],
+};
+
+const normalizePrice = (value: unknown): number => {
+	if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+	if (typeof value === "string") {
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : 0;
+	}
+	return 0;
+};
+
+const resolvePlanType = (plan: PackagePlan): "basic" | "standard" => {
+	const name = String(plan?.package_name ?? "").toLowerCase();
+	return name.includes("standard") || name.includes("premium")
+		? "standard"
+		: "basic";
+};
+
+const buildInvoiceUrl = (invoice: PackageInvoice): string => {
+	const query = new URLSearchParams();
+	if (invoice?.id) query.set("invoice_id", String(invoice.id));
+	if (invoice?.invoiceID) query.set("invoiceID", String(invoice.invoiceID));
+	if (invoice?.package_id) query.set("package_id", String(invoice.package_id));
+	return `/invoice?${query.toString()}`;
+};
+
+export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
+	const router = useRouter();
+	const { data: pricingData, isLoading } = useGetPricingQuery();
 	const [createPurchase] = useCreatePurchaseMutation();
-	// console.log(pricingData?.data?.packages);
+	const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
-	const [selectedPlan, setSelectedPlan] = useState("basic");
+	const packagePlans = pricingData?.data?.packages ?? [];
 
-	const basicFeatures = [
-		"অসংখ্যা প্রোডাক্ট",
-		"অর্ডার ম্যানেজমেন্ট সিস্টেম",
-		"২৪/৭ কাস্টমার সাপোর্ট",
-		"অটো অর্ডার আপডেট",
-		"পেমেন্ট গেটওয়ে",
-		"মার্কেট অ্যানালিটিক্স",
-		"৭২ ঘন্টার ডেলিভারি",
-		"ফ্রি ট্রেনিং",
-		"ম্যানুয়াল লিড জেনারেট",
-		"রিটার্ন পলিসি",
-		"সিস্টেম এক্সেসিবিলিটি",
-	];
+	const selectedPlan = useMemo(() => {
+		if (!packagePlans.length) return null;
+		if (!selectedPlanId) return packagePlans[0];
+		return packagePlans.find((plan) => plan.id === selectedPlanId) ?? packagePlans[0];
+	}, [packagePlans, selectedPlanId]);
 
-	const standardFeatures = [
-		"সব বেসিক ফিচার + আরও এক্সক্লুসিভ",
-		"অগ্রাধিকার সাপোর্ট",
-		"কাস্টম ব্র্যান্ডিং সিস্টেম",
-		"এডভান্স রিপোর্ট",
-		"৪৮ ঘন্টা ডেলিভারি",
-		"কাস্টম প্রোডাক্ট সিস্টেম",
-		"৭২ ঘন্টার ডেলিভারি",
-		"ফ্রি ট্রেনিং",
-		"অটোমেটিক লিড জেনারেট",
-		"রিটার্ন পলিসি",
-		"সিস্টেম এক্সেসিবিলিটি",
-	];
-
-	const handlePurchase = (packageId: number, amount: number) => async () => {
-		try {
-			await handleAsyncWithToast(
-				async () => createPurchase({ package_id: packageId, amount }),
-				true,
-			);
-		} catch (error) {
-			console.error("Error creating purchase:", error);
-		}
+	const handleSelectPlan = (planId: number) => {
+		setSelectedPlanId(planId);
 	};
 
+	const handlePurchase = async () => {
+		if (!selectedPlan) return;
+
+		const discount = normalizePrice(selectedPlan.discount_price);
+		const regular = normalizePrice(selectedPlan.price);
+		const amount = discount > 0 ? discount : regular;
+
+		const result = await handleAsyncWithToast(
+			async () =>
+				createPurchase({
+					package_id: selectedPlan.id,
+					amount,
+				}),
+			true,
+			"Creating invoice...",
+			"Invoice created successfully",
+		);
+
+		const invoice = result?.data?.data?.invoice;
+		if (!invoice?.invoiceID) return;
+
+		if (onInvoiceCreated) {
+			onInvoiceCreated(invoice);
+			return;
+		}
+
+		router.push(buildInvoiceUrl(invoice));
+	};
+
+	if (isLoading) {
+		return (
+			<div className="w-full max-w-3xl mx-auto rounded-2xl border border-pink-100 bg-white p-8 text-center text-gray-500">
+				Loading packages...
+			</div>
+		);
+	}
+
+	if (!packagePlans.length || !selectedPlan) {
+		return (
+			<div className="w-full max-w-3xl mx-auto rounded-2xl border border-pink-100 bg-white p-8 text-center text-gray-500">
+				No package is available right now. Please contact support.
+			</div>
+		);
+	}
+
+	const currentPlanType = resolvePlanType(selectedPlan);
+	const features = FEATURE_MATRIX[currentPlanType];
+	const regularPrice = normalizePrice(selectedPlan.price);
+	const discountPrice = normalizePrice(selectedPlan.discount_price);
+	const payablePrice = discountPrice > 0 ? discountPrice : regularPrice;
+
 	return (
-		<div className="w-full max-w-4xl mx-auto bg-white ">
-			{/* Logo and Header */}
-			<div className="text-center mb-8">
-				<h2 className="text-2xl font-semibold text-gray-800 mb-2">Pricing</h2>
-				<p className="text-gray-600 mb-6">
-					Thank you for completing your registration. Please select your
-					<br />
-					preferred reseller package and make payment
-				</p>
+		<div className="w-full max-w-3xl mx-auto">
+			<p className="text-center text-sm sm:text-base text-gray-600 mb-5">
+				Thanks for completing registration. Select your reseller package and continue payment.
+			</p>
+
+			<div className="rounded-2xl border border-emerald-300 bg-emerald-500/95 px-3 py-3 flex items-center justify-between gap-2 mb-5">
+				{packagePlans.slice(0, 2).map((plan) => {
+					const isSelected = plan.id === selectedPlan.id;
+					return (
+						<button
+							key={plan.id}
+							type="button"
+							onClick={() => handleSelectPlan(plan.id)}
+							className={`min-w-[140px] rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+								isSelected
+									? "bg-white text-gray-900 shadow"
+									: "bg-transparent text-emerald-50 hover:bg-emerald-600"
+							}`}
+						>
+							{plan.package_name}
+						</button>
+					);
+				})}
 			</div>
 
-			{/* Plan Selection Tabs */}
-			<Tabs
-				value={selectedPlan}
-				onValueChange={setSelectedPlan}
-				className="w-full"
-			>
-				<TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8 border border-pink-600 pb-8">
-					<TabsTrigger
-						value="basic"
-						className="data-[state=active]:bg-pink-200 data-[state=active]:text-pink-800"
-					>
-						Basic
-					</TabsTrigger>
-					<TabsTrigger
-						value="standard"
-						className="data-[state=active]:bg-pink-200 data-[state=active]:text-pink-800"
-					>
-						Standard
-					</TabsTrigger>
-				</TabsList>
-
-				{/* Pricing Cards */}
-				<div className="grid md:grid-cols-2 gap-6">
-					{/* Basic Plan */}
-					<div
-						onClick={() => setSelectedPlan("basic")}
-						className={`relative ${selectedPlan === "basic" ? "ring-2 ring-pink-500 bg-pink-50" : "bg-white"}`}
-					>
-						<div className="p-6">
-							<div className="text-center mb-6">
-								<h3 className="text-xl font-semibold mb-2">
-									{pricingData?.data?.packages[0]?.package_name}
-								</h3>
-								<div className="flex  justify-center gap-4">
-									<div className="text-3xl font-bold text-pink-600 mb-1">
-										৳{pricingData?.data?.packages[0]?.discount_price}
-									</div>
-									<div className="text-xl font-bold text-pink-600 mb-1 line-through">
-										৳{pricingData?.data?.packages[0]?.price}
-									</div>
-								</div>
-								<p className="  text-gray-600">
-									{pricingData?.data?.packages[0]?.validity} মাস
-								</p>
-							</div>
-
-							<div className="space-y-3 mb-6">
-								{basicFeatures.map((feature, index) => (
-									<div key={index} className="flex items-center gap-3">
-										<Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-										<span className="text-sm text-gray-700">{feature}</span>
-									</div>
-								))}
-							</div>
-
-							<button
-								className="w-full bg-pink-600 hover:bg-pink-700 text-white py-2 rounded"
-								onClick={handlePurchase(
-									pricingData?.data?.packages[0]?.id,
-									pricingData?.data?.packages[0]?.discount_price,
-								)}
-							>
-								Purchase now
-							</button>
+			<div className="rounded-2xl border border-pink-200 bg-white shadow-sm overflow-hidden">
+				<div className="border-b border-pink-100 px-4 sm:px-6 py-4">
+					<div className="text-center">
+						<div className="flex items-center justify-center gap-2 mb-1">
+							{discountPrice > 0 ? (
+								<span className="text-lg text-red-500 line-through">
+									Tk {regularPrice.toLocaleString()}
+								</span>
+							) : null}
+							<span className="text-3xl sm:text-4xl font-bold text-gray-900">
+								Tk {payablePrice.toLocaleString()}
+							</span>
+							<span className="text-base text-gray-600">
+								/ {selectedPlan.validity ?? 12} month{Number(selectedPlan.validity ?? 12) > 1 ? "s" : ""}
+							</span>
 						</div>
-					</div>
-
-					{/* Standard Plan */}
-					<div
-						onClick={() => setSelectedPlan("standard")}
-						className={`relative ${selectedPlan === "standard" ? "ring-2 ring-pink-500 bg-pink-50" : "bg-white"}`}
-					>
-						<div className="p-6">
-							<div className="text-center mb-6">
-								<h3 className="text-xl font-semibold mb-2">
-									{pricingData?.data?.packages[1]?.package_name}
-								</h3>
-								<div className="flex  justify-center gap-4">
-									<div className="text-3xl font-bold text-pink-600 mb-1">
-										৳{pricingData?.data?.packages[1]?.discount_price}
-									</div>
-									<div className="text-xl font-bold text-pink-600 mb-1 line-through">
-										৳{pricingData?.data?.packages[1]?.price}
-									</div>
-								</div>
-								<p className=" text-gray-600">
-									{pricingData?.data?.packages[1]?.validity} মাস
-								</p>
-							</div>
-
-							<div className="space-y-3 mb-6">
-								{standardFeatures.map((feature, index) => (
-									<div key={index} className="flex items-center gap-3">
-										<Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-										<span className="text-sm text-gray-700">{feature}</span>
-									</div>
-								))}
-							</div>
-
-							<button
-								className="w-full bg-pink-600 hover:bg-pink-700 text-white mb-2 py-2 rounded"
-								onClick={handlePurchase(
-									pricingData?.data?.packages[1]?.id,
-									pricingData?.data?.packages[1]?.discount_price,
-								)}
-							>
-								Purchase now
-							</button>
-						</div>
+						<p className="text-xs sm:text-sm text-gray-500">
+							Package: <span className="font-semibold text-gray-700">{selectedPlan.package_name}</span>
+						</p>
 					</div>
 				</div>
-			</Tabs>
+
+				<div className="px-4 sm:px-6 py-5 space-y-2">
+					{features.map((feature) => (
+						<div key={feature.label} className="flex items-start gap-2.5">
+							{feature.enabled ? (
+								<CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-500 flex-shrink-0" />
+							) : (
+								<XCircle className="mt-0.5 h-5 w-5 text-red-500 flex-shrink-0" />
+							)}
+							<span className="text-sm text-gray-700">{feature.label}</span>
+						</div>
+					))}
+				</div>
+
+				<div className="px-4 sm:px-6 pb-6">
+					<button
+						type="button"
+						onClick={handlePurchase}
+						className="w-full rounded-xl bg-[#E85A3A] py-3 text-white font-semibold hover:bg-[#da4d2d] transition-colors"
+					>
+						Proceed To Payment
+					</button>
+				</div>
+			</div>
+
+			<div className="mt-6 overflow-hidden rounded-2xl border border-emerald-300">
+				<div className="grid grid-cols-3">
+					<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
+						Need help with package payment? Contact our team now.
+					</div>
+					<div className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2">
+						<Headset className="h-5 w-5" />
+						<span>Support</span>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }

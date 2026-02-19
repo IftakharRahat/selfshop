@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('our-packages', [FrontendApiController::class, 'packages']);
     Route::post('purchese-package', [FrontendApiController::class, 'purchesepackage']);
+    Route::post('package-payment/initiate', [FrontendApiController::class, 'initiatePackagePayment']);
     Route::get('/invbkash/create-payment', [App\Http\Controllers\BkashTokenizePaymentController::class, 'invcreatePayment'])->name('invbkash-create-payment');
 
     Route::get('dashboard-data', [FrontendApiController::class, 'dashboarddata']);

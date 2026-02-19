@@ -291,6 +291,14 @@ export default function ProductRequestForm() {
 												<span>#{item.id}</span>
 												<span>{new Date(item.created_at).toLocaleDateString()}</span>
 											</div>
+											<div className="mt-1.5 text-xs text-gray-600">
+												<span className="font-medium">Qty:</span> {item.p_quantity || "-"}
+											</div>
+											{item.p_description && (
+												<p className="mt-1 text-xs text-gray-500 max-h-10 overflow-hidden">
+													{item.p_description}
+												</p>
+											)}
 										</div>
 									</div>
 								</div>
@@ -316,6 +324,12 @@ export default function ProductRequestForm() {
 										Product Name
 									</th>
 									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+										Quantity
+									</th>
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
+										Description
+									</th>
+									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
 										Image
 									</th>
 									<th className="p-4 text-xs font-semibold text-gray-500 text-left uppercase tracking-wide">
@@ -337,6 +351,12 @@ export default function ProductRequestForm() {
 											<td className="p-4 text-sm font-medium text-gray-900">#{item.id}</td>
 											<td className="p-4 text-sm text-gray-900">
 												{item.p_name}
+											</td>
+											<td className="p-4 text-sm text-gray-700">
+												{item.p_quantity || "-"}
+											</td>
+											<td className="p-4 text-sm text-gray-700 max-w-[260px] truncate" title={item.p_description || ""}>
+												{item.p_description || "-"}
 											</td>
 											<td className="p-4">
 												<img
@@ -364,7 +384,7 @@ export default function ProductRequestForm() {
 									))
 								) : (
 									<tr>
-										<td colSpan={5} className="py-12 text-center text-gray-400 text-sm">
+										<td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
 											No requested products found.
 										</td>
 									</tr>

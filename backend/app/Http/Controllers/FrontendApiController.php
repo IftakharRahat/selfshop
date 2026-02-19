@@ -44,6 +44,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Str;
@@ -53,7 +54,9 @@ class FrontendApiController extends Controller
 
     public function packages()
     {
-        $invoice = Resellerinvoice::where('user_id', Auth::user()->id)->first();
+        $invoice = Resellerinvoice::where('user_id', Auth::id())
+            ->latest('id')
+            ->first();
         $packages = Package::where('status', 'Active')->get();
         return response()->json([
             'status' => true,
@@ -67,25 +70,198 @@ class FrontendApiController extends Controller
 
     public function purchesepackage(Request $request)
     {
-        $invoice = new Resellerinvoice();
-        $invoice->invoiceID = $this->uniqueinvoiceID();
-        $invoice->user_id = Auth::user()->id;
-        $invoice->package_id = $request->package_id;
-        $invoice->resellerid = Auth::user()->my_referral_code;
-        $invoice->amount = $request->amount;
-        $invoice->payable_amount = $request->amount;
-        $invoice->invoiceDate = date('Y-m-d');
+        $validated = $request->validate([
+            'package_id' => ['required', 'integer', 'exists:packages,id'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $user = Auth::user();
+        $package = Package::find($validated['package_id']);
+
+        if (!$package) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Package not found',
+            ], 404);
+        }
+
+        $discountPrice = (float) ($package->discount_price ?? 0);
+        $basePrice = (float) ($package->price ?? 0);
+        $resolvedAmount = $discountPrice > 0
+            ? $discountPrice
+            : ($basePrice > 0 ? $basePrice : (float) ($validated['amount'] ?? 0));
+
+        if ($resolvedAmount <= 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid package amount',
+            ], 422);
+        }
+
+        // Reuse latest unpaid-like invoice when available; otherwise create new.
+        $invoice = Resellerinvoice::where('user_id', $user->id)
+            ->whereIn('status', ['Unpaid', 'Pending', 'Failed', 'Canceled'])
+            ->latest('id')
+            ->first();
+
+        if (!$invoice) {
+            $invoice = new Resellerinvoice();
+            $invoice->invoiceID = $this->uniqueinvoiceID();
+            $invoice->user_id = $user->id;
+            $invoice->invoiceDate = date('Y-m-d');
+        }
+
+        $invoice->package_id = $package->id;
+        $invoice->resellerid = $user->my_referral_code;
+        $invoice->amount = $resolvedAmount;
+        $invoice->payable_amount = $resolvedAmount;
+        $invoice->status = 'Unpaid';
         $invoice->save();
-        $user = User::where('id', Auth::user()->id)->first();
+
         $user->isInvoice = 'yes';
-        $user->update();
+        $user->save();
+
         return response()->json([
             'status' => true,
-            'message' => 'Purchese Package',
+            'message' => 'Package selected successfully',
             'data' => [
                 'invoice' => $invoice,
+                'package' => $package,
             ],
         ], 200);
+    }
+
+    public function initiatePackagePayment(Request $request)
+    {
+        $validated = $request->validate([
+            'invoice_id' => ['required', 'integer', 'exists:resellerinvoices,id'],
+        ]);
+
+        try {
+            $user = Auth::user();
+            $invoice = Resellerinvoice::where('id', $validated['invoice_id'])
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$invoice) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invoice not found for this account',
+                ], 404);
+            }
+
+            if (strcasecmp((string) $invoice->status, 'Paid') === 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This invoice is already paid',
+                ], 422);
+            }
+
+            $package = Package::find($invoice->package_id);
+            if (!$package) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Package information not found for invoice',
+                ], 404);
+            }
+
+            $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
+            if ($amount <= 0) {
+                $amount = (float) (($package->discount_price ?? 0) ?: ($package->price ?? 0));
+            }
+
+            if ($amount <= 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid payable amount for this invoice',
+                ], 422);
+            }
+
+            $tranId = 'PKG_' . time() . '_' . strtoupper(substr(md5(uniqid((string) $user->id, true)), 0, 8));
+
+            $postData = [];
+            $postData['total_amount'] = $amount;
+            $postData['currency'] = 'BDT';
+            $postData['tran_id'] = $tranId;
+            $postData['cus_name'] = $user->name ?? 'Customer';
+            $postData['cus_email'] = $user->email ?? 'customer@selfshop.com';
+            $postData['cus_add1'] = $user->address ?? 'N/A';
+            $postData['cus_add2'] = '';
+            $postData['cus_city'] = '';
+            $postData['cus_state'] = '';
+            $postData['cus_postcode'] = '';
+            $postData['cus_country'] = 'Bangladesh';
+            $postData['cus_phone'] = $user->phone ?? 'N/A';
+            $postData['cus_fax'] = '';
+            $postData['ship_name'] = $user->name ?? 'Customer';
+            $postData['ship_add1'] = $user->address ?? 'N/A';
+            $postData['ship_add2'] = '';
+            $postData['ship_city'] = '';
+            $postData['ship_state'] = '';
+            $postData['ship_postcode'] = '';
+            $postData['ship_phone'] = $user->phone ?? 'N/A';
+            $postData['ship_country'] = 'Bangladesh';
+            $postData['shipping_method'] = 'NO';
+            $postData['product_name'] = ($package->package_name ?? 'Package') . ' - Selfshop';
+            $postData['product_category'] = 'Digital';
+            $postData['product_profile'] = 'non-physical-goods';
+            $postData['value_a'] = $user->id;
+            $postData['value_b'] = $invoice->id;
+            $postData['value_c'] = $package->id;
+            $postData['value_d'] = json_encode([
+                'invoice_id' => $invoice->id,
+                'invoice_code' => $invoice->invoiceID,
+                'package_name' => $package->package_name,
+                'amount' => $amount,
+            ]);
+
+            $invoice->payment_id = $tranId;
+            $invoice->status = 'Pending';
+            $invoice->save();
+
+            $ssl = new SslCommerzNotification();
+            $paymentResponseRaw = $ssl->makePayment($postData, 'checkout');
+
+            $paymentResponse = is_string($paymentResponseRaw)
+                ? json_decode($paymentResponseRaw, true)
+                : (is_array($paymentResponseRaw) ? $paymentResponseRaw : null);
+
+            $gatewayUrl = $paymentResponse['data'] ?? null;
+            $gatewayStatus = strtolower((string) ($paymentResponse['status'] ?? ''));
+
+            if (!$gatewayUrl || !in_array($gatewayStatus, ['success', 'successful'], true)) {
+                \Log::error('Package gateway URL not returned', [
+                    'invoice_id' => $invoice->id,
+                    'response' => $paymentResponseRaw,
+                ]);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Failed to initialize payment gateway',
+                ], 502);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Payment initialized',
+                'data' => [
+                    'gateway_url' => $gatewayUrl,
+                    'tran_id' => $tranId,
+                    'invoice' => $invoice,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            \Log::error('Package payment init API failed', [
+                'user_id' => Auth::id(),
+                'invoice_id' => $validated['invoice_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Unable to initialize payment right now',
+            ], 500);
+        }
     }
 
     public function uniqueinvoiceID()
@@ -859,6 +1035,18 @@ class FrontendApiController extends Controller
         $id = Auth::user()->id;
         $userprofile = User::findOrfail($id);
 
+        // Enforce renewal after expiry: auto-mark expired active users as unpaid/inactive.
+        if (
+            $userprofile->status === 'Active' &&
+            !empty($userprofile->expire_date) &&
+            $userprofile->expire_date < date('Y-m-d')
+        ) {
+            $userprofile->status = 'Inactive';
+            $userprofile->membership_status = 'Unpaid';
+            $userprofile->save();
+            $userprofile->refresh();
+        }
+
         if ($userprofile) {
             $bank = Bank::where('user_id', $id)->first();
             $amount = Order::where('user_id', $id)->whereIn('status', ['Delivered', 'Paid'])->get()->sum('subTotal') + Order::where('user_id', $id)->whereIn('status', ['Delivered', 'Paid'])->get()->sum('paymentAmount');
@@ -1333,7 +1521,16 @@ class FrontendApiController extends Controller
     public function productlist()
     {
         $id = Auth::user()->id;
-        $lists = Productrequest::where('from_id', $id)->latest()->get();
+        $lists = Productrequest::where('from_id', $id)
+            ->latest()
+            ->get()
+            ->map(function ($item) {
+                // Backward compatibility for old rows where description lived in "message".
+                if (empty($item->p_description) && !empty($item->message)) {
+                    $item->p_description = $item->message;
+                }
+                return $item;
+            });
         return response()->json([
             'status' => true,
             'message' => 'Requested Product Lists',
@@ -1344,6 +1541,21 @@ class FrontendApiController extends Controller
 
     public function productrequest(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'p_name' => ['required', 'string', 'max:255'],
+            'p_quantity' => ['nullable', 'string', 'max:50'],
+            'p_description' => ['nullable', 'string', 'max:2000'],
+            'attachment' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         $product = new Productrequest();
         $productImg = $request->file('attachment');
         $time = microtime('.') * 10000;
@@ -1357,6 +1569,15 @@ class FrontendApiController extends Controller
         $id = Auth::user()->id;
         $product->from_id = $id;
         $product->p_name = $request->p_name;
+        if (Schema::hasColumn('productrequests', 'p_quantity')) {
+            $product->p_quantity = $request->p_quantity;
+        }
+        if (Schema::hasColumn('productrequests', 'p_description')) {
+            $product->p_description = $request->p_description;
+        }
+        if (Schema::hasColumn('productrequests', 'message')) {
+            $product->message = $request->p_description ?? $request->message;
+        }
         $product->save();
         return response()->json([
             'status' => true,
@@ -1388,57 +1609,217 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    private function findTransferReceiver(string $identifier, bool $lockForUpdate = false): ?User
+    {
+        $identifier = trim($identifier);
+        if ($identifier === '') {
+            return null;
+        }
+
+        $variants = [];
+        $addVariant = function (string $value) use (&$variants) {
+            $value = trim($value);
+            if ($value !== '' && !in_array($value, $variants, true)) {
+                $variants[] = $value;
+            }
+        };
+
+        $addVariant($identifier);
+        $addVariant(strtoupper($identifier));
+
+        if (preg_match('/^\d{11}$/', $identifier)) {
+            $addVariant('88' . $identifier);
+        }
+
+        if (preg_match('/^88\d{11}$/', $identifier)) {
+            $addVariant(substr($identifier, 2));
+        }
+
+        foreach ($variants as $candidate) {
+            $query = User::query();
+            if ($lockForUpdate) {
+                $query->lockForUpdate();
+            }
+
+            $receiver = $query
+                ->where('status', 'Active')
+                ->where(function ($q) use ($candidate) {
+                    $q->where('email', $candidate)
+                        ->orWhere('phone', $candidate)
+                        ->orWhere('my_referral_code', $candidate);
+                })
+                ->first();
+
+            if ($receiver) {
+                return $receiver;
+            }
+        }
+
+        return null;
+    }
+
     public function withdrawrequest(Request $request)
     {
-        $id = Auth::user()->id;
-        $user = User::where('id', $id)->where('status', 'Active')->first();
+        $validator = Validator::make($request->all(), [
+            'withdrew_amount' => ['required', 'numeric', 'min:0.01'],
+            'paymenttype_id' => ['required', 'integer'],
+            'to_account_number' => ['required', 'string', 'max:255'],
+            'to_additional_info' => ['nullable', 'string', 'max:1000'],
+        ]);
 
-        if (isset($user)) {
-            if ($user->account_balance >= intval($request->withdrew_amount)) {
-                $paymenttypes = Paymenttype::where('id', $request->paymenttype_id)->first();
-                $withdrew = new Withdrew();
-                $withdrew->user_id = $id;
-                $withdrew->paymenttype_id = $request->paymenttype_id;
-                $withdrew->paymenttype_name = $paymenttypes->paymentTypeName;
-                $withdrew->to_account_number = $request->to_account_number;
-                $withdrew->withdrew_amount = $request->withdrew_amount;
-                $success = $withdrew->save();
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-                $user->account_balance = $user->account_balance - $request->withdrew_amount;
-                $user->pending_cashout_balance = $user->pending_cashout_balance + $request->withdrew_amount;
-                $user->update();
+        $id = Auth::id();
+        $amount = (float) $request->withdrew_amount;
 
+        try {
+            DB::beginTransaction();
 
-                $comment = new Comment();
-                $comment->comment = 'You have sent a payment request via ' . $paymenttypes->paymentTypeName . ' Invoice ID: #IN00' . $withdrew->id;
-                $comment->user_id = $id;
-                $comment->status = 1;
-                $comment->type = 'Withdraw';
-                $comment->save();
-
+            $user = User::where('id', $id)->where('status', 'Active')->lockForUpdate()->first();
+            if (!$user) {
+                DB::rollBack();
                 return response()->json([
-                    'status' => true,
-                    'message' => 'Withdraw request send successfully',
-                ], 200);
-            } else {
+                    'status' => false,
+                    'message' => 'User is not active',
+                ], 403);
+            }
+
+            if ((float) $user->account_balance < $amount) {
+                DB::rollBack();
                 return response()->json([
                     'status' => false,
                     'message' => 'Not enough balance',
-                ], 404);
+                ], 422);
             }
-        } else {
+
+            $paymenttypes = Paymenttype::where('id', (int) $request->paymenttype_id)
+                ->where('status', 'Active')
+                ->first();
+
+            if (!$paymenttypes) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Invalid payment method',
+                ], 422);
+            }
+
+            $withdrew = new Withdrew();
+            $withdrew->user_id = $id;
+            $withdrew->type = 'Withdrew';
+            $withdrew->paymenttype_id = $paymenttypes->id;
+            $withdrew->paymenttype_name = $paymenttypes->paymentTypeName;
+            $withdrew->to_account_number = $request->to_account_number;
+            $withdrew->to_additional_info = $request->to_additional_info;
+            $withdrew->withdrew_amount = $amount;
+            $withdrew->status = 'Pending';
+            $withdrew->save();
+
+            $user->account_balance = (float) $user->account_balance - $amount;
+            $user->pending_cashout_balance = (float) $user->pending_cashout_balance + $amount;
+            $user->save();
+
+            $comment = new Comment();
+            $comment->comment = 'You have sent a payment request via ' . $paymenttypes->paymentTypeName . ' Invoice ID: #IN00' . $withdrew->id;
+            $comment->user_id = $id;
+            $comment->status = 1;
+            $comment->type = 'Withdraw';
+            $comment->save();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Withdraw request sent successfully',
+                'data' => [
+                    'invoice_id' => $withdrew->id,
+                    'status' => $withdrew->status,
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Not enough balance',
-            ], 404);
+                'message' => 'Failed to submit withdraw request',
+            ], 500);
         }
     }
 
 
     public function transferlists()
     {
-        $id = Auth::user()->id;
-        $transferlists = Withdrew::where('type', 'Transfer')->where('user_id', $id)->get();
+        $user = Auth::user();
+        $id = $user->id;
+
+        $identifiers = [];
+        $pushIdentifier = function (?string $value) use (&$identifiers) {
+            $value = trim((string) $value);
+            if ($value !== '' && !in_array($value, $identifiers, true)) {
+                $identifiers[] = $value;
+            }
+        };
+
+        $pushIdentifier($user->email ?? null);
+        $pushIdentifier($user->phone ?? null);
+        $pushIdentifier($user->my_referral_code ?? null);
+
+        if (!empty($user->phone) && preg_match('/^\d{11}$/', (string) $user->phone)) {
+            $pushIdentifier('88' . $user->phone);
+        }
+        if (!empty($user->phone) && preg_match('/^88\d{11}$/', (string) $user->phone)) {
+            $pushIdentifier(substr((string) $user->phone, 2));
+        }
+
+        $sentTransfers = Withdrew::where('type', 'Transfer')
+            ->where('user_id', $id)
+            ->latest()
+            ->get()
+            ->map(function ($item) {
+                $item->transfer_direction = 'Sent';
+                $item->counterparty_label = 'To';
+                $item->counterparty = $item->to_account_number;
+                return $item;
+            });
+
+        $receivedTransfers = collect();
+        if (!empty($identifiers)) {
+            $receivedTransfers = Withdrew::where('type', 'Transfer')
+                ->where('user_id', '!=', $id)
+                ->where(function ($query) use ($identifiers) {
+                    foreach ($identifiers as $identifier) {
+                        $query->orWhere('to_account_number', $identifier);
+                    }
+                })
+                ->latest()
+                ->get()
+                ->map(function ($item) {
+                    $sender = User::select('id', 'name', 'email', 'phone', 'my_referral_code')
+                        ->find($item->user_id);
+
+                    $counterparty = 'Unknown sender';
+                    if ($sender) {
+                        $counterparty = $sender->name
+                            ?: ($sender->email ?: ($sender->my_referral_code ?: ($sender->phone ?: 'Unknown sender')));
+                    }
+
+                    $item->transfer_direction = 'Received';
+                    $item->counterparty_label = 'From';
+                    $item->counterparty = $counterparty;
+                    return $item;
+                });
+        }
+
+        $transferlists = $sentTransfers
+            ->merge($receivedTransfers)
+            ->sortByDesc('created_at')
+            ->values();
+
         return response()->json([
             'status' => true,
             'message' => 'Transfer lists',
@@ -1448,62 +1829,106 @@ class FrontendApiController extends Controller
 
     public function transfernow(Request $request)
     {
-        $id = Auth::user()->id;
-        $user = User::where('id', $id)->first();
+        $validator = Validator::make($request->all(), [
+            'withdrew_amount' => ['required', 'numeric', 'min:0.01'],
+            'to_account_number' => ['required', 'string', 'max:255'],
+            'to_additional_info' => ['nullable', 'string', 'max:1000'],
+        ]);
 
-        if ($user->account_balance >= intval($request->withdrew_amount)) {
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $id = Auth::id();
+        $amount = (float) $request->withdrew_amount;
+        $targetAccount = trim((string) $request->to_account_number);
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::where('id', $id)->where('status', 'Active')->lockForUpdate()->first();
+            if (!$user) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User is not active',
+                ], 403);
+            }
+
+            if ((float) $user->account_balance < $amount) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Not enough balance',
+                ], 422);
+            }
+
+            $traccount = $this->findTransferReceiver($targetAccount, true);
+            if (!$traccount) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Receiver account not found',
+                ], 404);
+            }
+
+            if ((int) $traccount->id === (int) $user->id) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You cannot transfer to your own account',
+                ], 422);
+            }
+
             $withdrew = new Withdrew();
             $withdrew->user_id = $id;
             $withdrew->type = 'Transfer';
-            $withdrew->to_account_number = $request->to_account_number;
-            $withdrew->withdrew_amount = $request->withdrew_amount;
+            $withdrew->to_account_number = $targetAccount;
+            $withdrew->to_additional_info = $request->to_additional_info;
+            $withdrew->withdrew_amount = $amount;
             $withdrew->status = 'Paid';
-            $success = $withdrew->save();
-            if ($success) {
-                if (strlen($request->to_account_number) == '11') {
-                    $traccount = User::where('email', $request->to_account_number)->first();
-                    if ($traccount) {
-                        $traccount = User::where('email', $request->to_account_number)->first();
-                    } else {
-                        $ema = '88' . $request->to_account_number;
-                        $traccount = User::where('email', $ema)->first();
-                    }
-                } else {
-                    $traccount = User::where('email', $request->to_account_number)->first();
-                }
+            $withdrew->save();
 
-                if (isset($traccount)) {
-                    $traccount->account_balance = $traccount->account_balance + $request->withdrew_amount;
-                    $traccount->update();
+            $traccount->account_balance = (float) $traccount->account_balance + $amount;
+            $traccount->save();
 
-                    $commentss = new Comment();
-                    $commentss->comment = 'Received ' . $request->withdrew_amount . 'TK From User: ' . $user->name . ' (' . $user->email . ') Invoice ID: #IN00' . $withdrew->id;
-                    $commentss->user_id = $traccount->id;
-                    $commentss->status = 1;
-                    $commentss->type = 'Transfer';
-                    $commentss->save();
-                }
+            $user->account_balance = (float) $user->account_balance - $amount;
+            $user->save();
 
-                $user->account_balance = $user->account_balance - $request->withdrew_amount;
-                $user->update();
-            }
+            $receiverComment = new Comment();
+            $receiverComment->comment = 'Received ' . $amount . 'TK From User: ' . $user->name . ' (' . $user->email . ') Invoice ID: #IN00' . $withdrew->id;
+            $receiverComment->user_id = $traccount->id;
+            $receiverComment->status = 1;
+            $receiverComment->type = 'Transfer';
+            $receiverComment->save();
 
-            $comment = new Comment();
-            $comment->comment = 'You sent ' . $request->withdrew_amount . 'TK Invoice ID: #IN00' . $withdrew->id;
-            $comment->user_id = $id;
-            $comment->status = 1;
-            $comment->type = 'Transfer';
-            $comment->save();
+            $senderComment = new Comment();
+            $senderComment->comment = 'You sent ' . $amount . 'TK Invoice ID: #IN00' . $withdrew->id;
+            $senderComment->user_id = $id;
+            $senderComment->status = 1;
+            $senderComment->type = 'Transfer';
+            $senderComment->save();
+
+            DB::commit();
 
             return response()->json([
                 'status' => true,
-                'message' => 'Tranfer request send successfully',
+                'message' => 'Transfer completed successfully',
+                'data' => [
+                    'invoice_id' => $withdrew->id,
+                    'receiver' => $traccount->name,
+                ],
             ], 200);
-        } else {
+        } catch (\Throwable $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => false,
-                'message' => 'Not enough balance',
-            ], 404);
+                'message' => 'Failed to complete transfer',
+            ], 500);
         }
     }
 
@@ -1515,8 +1940,22 @@ class FrontendApiController extends Controller
             ->latest()
             ->get()
             ->map(function ($income) {
-                // Find order by invoice_id
-                $order = Order::where('invoiceID', $income->invoice_id)->first();
+                $order = null;
+                $canUseOrderId = Schema::hasColumn('incomes', 'order_id');
+                $canUseInvoiceCode = Schema::hasColumn('incomes', 'invoice_code');
+
+                if ($canUseOrderId && !empty($income->order_id)) {
+                    $order = Order::find((int) $income->order_id);
+                }
+
+                if (!$order && $canUseInvoiceCode && !empty($income->invoice_code)) {
+                    $order = Order::where('invoiceID', $income->invoice_code)->first();
+                }
+
+                // Legacy fallback where invoice_id stores order primary key.
+                if (!$order && !empty($income->invoice_id) && is_numeric($income->invoice_id)) {
+                    $order = Order::find((int) $income->invoice_id);
+                }
 
                 if ($order) {
                     // Sum product prices from OrderProducts table
@@ -1524,8 +1963,12 @@ class FrontendApiController extends Controller
 
                     // Add new field to array
                     $income->product_price = $totalProductPrice;
+                    $income->order_invoice = $order->invoiceID;
                 } else {
                     $income->product_price = 0;
+                    $income->order_invoice = $canUseInvoiceCode && !empty($income->invoice_code)
+                        ? $income->invoice_code
+                        : $income->invoice_id;
                 }
 
                 return $income;

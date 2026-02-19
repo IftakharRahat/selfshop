@@ -88,10 +88,13 @@ class BkashTokenizePaymentController extends Controller
                             $user->status = 'Active';
                             $user->membership_status = 'Paid';
                             $user->active_date = date('Y-m-d');
+                            $expireDate = $this->resolveNextExpiryDate($user->expire_date);
+                            $user->expire_date = $expireDate;
                             $user->p_system = 'Getway';
                             $user->update();
                             $invoice->paymentDate = date('Y-m-d');
                             $invoice->paid_amount = $response['amount'];
+                            $invoice->expire_date = $expireDate;
 
                             $message = new Message();
                             $message->user_id = $referuser->id;
@@ -281,5 +284,17 @@ class BkashTokenizePaymentController extends Controller
         //response
         return BkashPaymentTokenize::searchTransaction($trxID);
         //return BkashPaymentTokenize::searchTransaction($trxID,1); //last parameter is your account number for multi account its like, 1,2,3,4,cont..
+    }
+
+    private function resolveNextExpiryDate($currentExpireDate = null)
+    {
+        $today = date('Y-m-d');
+        $baseDate = $today;
+
+        if (!empty($currentExpireDate) && $currentExpireDate >= $today) {
+            $baseDate = $currentExpireDate;
+        }
+
+        return date('Y-m-d', strtotime($baseDate . ' +1 year'));
     }
 }

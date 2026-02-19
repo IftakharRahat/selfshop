@@ -16,11 +16,26 @@ class ResellerActivation
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
-    { 
-        if(Auth::guard('web')->user()->status==='Active'){
-            return $next($request);
-        }else{
-            return redirect('/our-packages');
+    {
+        $user = Auth::guard('web')->user();
+        if (!$user) {
+            return redirect('/login');
         }
+
+        if (
+            $user->status === 'Active' &&
+            (empty($user->expire_date) || $user->expire_date >= date('Y-m-d'))
+        ) {
+            return $next($request);
+        }
+
+        // Expired memberships must renew package.
+        if (!empty($user->expire_date) && $user->expire_date < date('Y-m-d')) {
+            $user->status = 'Inactive';
+            $user->membership_status = 'Unpaid';
+            $user->save();
+        }
+
+        return redirect('/our-packages');
     }
 }

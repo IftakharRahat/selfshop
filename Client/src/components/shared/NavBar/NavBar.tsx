@@ -32,6 +32,7 @@ import {
 } from "@/redux/features/auth/authApi";
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useGetAllCartItemsQuery } from "@/redux/features/cartApi";
+import { type PackageInvoice } from "@/redux/features/pricingApi";
 import {
 	useGetAllMenusQuery,
 	useGetAllNavbarCategoryDropdownOptionsQuery,
@@ -54,7 +55,6 @@ export default function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
-	const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
 
 	const router = useRouter();
@@ -126,6 +126,18 @@ export default function Navbar() {
 	const [isLogin, setIsLogin] = useState(true);
 	const [isRegistration, setIsRegistration] = useState(false);
 	const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
+
+	const handlePackageInvoiceCreated = (invoice: PackageInvoice) => {
+		setIsPricingModalOpen(false);
+		if (!invoice?.invoiceID) return;
+
+		const query = new URLSearchParams();
+		if (invoice?.id) query.set("invoice_id", String(invoice.id));
+		if (invoice?.invoiceID) query.set("invoiceID", String(invoice.invoiceID));
+		if (invoice?.package_id) query.set("package_id", String(invoice.package_id));
+
+		router.push(`/invoice?${query.toString()}`);
+	};
 
 	return (
 		<>
@@ -412,7 +424,7 @@ export default function Navbar() {
 							<img src={logo.src} alt="SelfShop Logo" className="w-60" />
 						</div>
 
-						<PricingPage />
+						<PricingPage onInvoiceCreated={handlePackageInvoiceCreated} />
 					</div>
 				</Modal>
 			</ConfigProvider>
