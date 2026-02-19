@@ -34,6 +34,7 @@ use App\Models\Subcategory;
 use App\Models\Tikit;
 use App\Models\User;
 use App\Models\Varient;
+use App\Models\Vendor;
 use App\Models\Withdrew;
 use App\Services\SteadfastOrderStatusService;
 use App\Services\VendorAdminNotificationService;
@@ -2696,5 +2697,75 @@ class FrontendApiController extends Controller
         }
 
         return 'SS00' . $orderID;
+    }
+
+    /**
+     * Return approved vendors ordered by product count ("popular suppliers").
+     */
+    public function popularVendors()
+    {
+        $vendors = Vendor::where('status', 'approved')
+            ->withCount('products')
+            ->orderByDesc('products_count')
+            ->limit(12)
+            ->get([
+                'id',
+                'user_id',
+                'company_name',
+                'slug',
+                'logo_path',
+                'banner_path',
+                'business_type',
+                'city',
+                'is_verified_badge',
+            ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Popular vendors',
+            'data'   => $vendors,
+        ]);
+    }
+
+    /**
+     * Return a single approved vendor's profile + their paginated products.
+     */
+    public function supplierDetails(string $slug)
+    {
+        $vendor = Vendor::where('slug', $slug)
+            ->where('status', 'approved')
+            ->withCount('products')
+            ->first();
+
+        if (!$vendor) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Supplier not found',
+            ], 404);
+        }
+
+        $products = Product::visibleOnStorefront()
+            ->where('vendor_id', $vendor->id)
+            ->select(
+                'id',
+                'ProductName',
+                'ProductSlug',
+                'ViewProductImage',
+                'ProductRegularPrice',
+                'ProductSalePrice',
+                'Discount',
+                'status'
+            )
+            ->latest()
+            ->paginate(12);
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Supplier details',
+            'data'    => [
+                'vendor'   => $vendor,
+                'products' => $products,
+            ],
+        ]);
     }
 }

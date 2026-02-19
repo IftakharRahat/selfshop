@@ -136,6 +136,20 @@ const homeApi = baseApi.injectEndpoints({
 			}),
 			providesTags: ["categories"],
 		}),
+		getPopularSuppliers: builder.query({
+			query: () => ({
+				url: `/popular-vendors`,
+				method: "GET",
+			}),
+			providesTags: ["categories"],
+		}),
+		getSupplierDetails: builder.query({
+			query: (slug: string) => ({
+				url: `/supplier/${slug}`,
+				method: "GET",
+			}),
+			providesTags: ["categories"],
+		}),
 
 		createExample: builder.mutation({
 			query: (data) => {
@@ -183,4 +197,6 @@ export const {
 	useGetAllFeaturedProductsQuery,
 	useGetCategoryProductsQuery,
 	useGetSubcategoryProductsQuery,
+	useGetPopularSuppliersQuery,
+	useGetSupplierDetailsQuery,
 } = homeApi;
