@@ -8,11 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasColumn('products', 'vendor_approval_status')) {
-            Schema::table('products', function (Blueprint $table) {
-                $table->string('vendor_approval_status', 20)->nullable()->after('vendor_id')->index();
-            });
+        if (!Schema::hasTable('products') || Schema::hasColumn('products', 'vendor_approval_status')) {
+            return;
         }
+
+        $afterColumn = Schema::hasColumn('products', 'vendor_id')
+            ? 'vendor_id'
+            : (Schema::hasColumn('products', 'id') ? 'id' : null);
+
+        Schema::table('products', function (Blueprint $table) use ($afterColumn) {
+            $column = $table->string('vendor_approval_status', 20)->nullable();
+            if ($afterColumn) {
+                $column->after($afterColumn);
+            }
+            $column->index();
+        });
     }
 
     public function down(): void
