@@ -68,6 +68,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/shops', [FrontendApiController::class, 'shopPage'])->name('api.shop');
     Route::get('/products/shops/{slug}', [FrontendApiController::class, 'shopProduct'])->name('api.shopProducts');
 
+    // Popular suppliers (vendors) – storefront homepage
+    Route::get('/popular-vendors', [FrontendApiController::class, 'popularVendors'])->name('api.popular-vendors');
+    Route::get('/supplier/{slug}', [FrontendApiController::class, 'supplierDetails'])->name('api.supplier-details');
+
     // Cart Operations
     Route::post('/guest-add-to-cart', [FrontendApiController::class, 'guestAddToCart'])->name('api.guest-add-to-cart.store');
     Route::post('/guest-update-cart', [FrontendApiController::class, 'guestUpdateCart'])->name('api.guest-update-cart');

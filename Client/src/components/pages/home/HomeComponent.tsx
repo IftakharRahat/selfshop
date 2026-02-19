@@ -9,6 +9,7 @@ import CategoriesSection from "./CategoriesSection";
 import FeaturesSection from "./features-section";
 import MostPopularBrands from "./most-popular-brands";
 import NewProducts from "./new-products";
+import PopularSuppliers from "./popular-suppliers";
 import ProductShowSection from "./product-show-section";
 import PromotionalSection from "./promotional-section";
 
@@ -26,6 +27,7 @@ const HomeComponent = () => {
 	return (
 		<div className="space-y-2 sm:space-y-4 lg:space-y-6">
 			<CategoriesSection />
+			<PopularSuppliers />
 			<FeaturesSection />
 			<PromotionalSection />
 			<ProductShowSection

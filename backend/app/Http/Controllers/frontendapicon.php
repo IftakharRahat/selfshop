@@ -27,6 +27,7 @@ use App\Models\Subcategory;
 use App\Models\Usecoupon;
 use App\Models\User;
 use App\Models\Varient;
+use App\Models\Vendor;
 use App\Models\Weight;
 use App\Models\Wishlist;
 use Illuminate\Http\Request;
@@ -2120,5 +2121,33 @@ class frontendapicon extends Controller
             'message' => 'Notification Found',
             'data' => $notifications
         ], 200);
+    }
+
+    /**
+     * Return approved vendors ordered by product count ("popular suppliers").
+     */
+    public function popularVendors()
+    {
+        $vendors = Vendor::where('status', 'approved')
+            ->withCount('products')
+            ->orderByDesc('products_count')
+            ->limit(12)
+            ->get([
+                'id',
+                'user_id',
+                'company_name',
+                'slug',
+                'logo_path',
+                'banner_path',
+                'business_type',
+                'city',
+                'is_verified_badge',
+            ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Popular vendors',
+            'data'   => $vendors,
+        ]);
     }
 }
