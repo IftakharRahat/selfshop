@@ -4,6 +4,7 @@
 import { ChevronRight, Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { toast } from "sonner";
 import { TbCurrencyTaka } from "react-icons/tb";
 import type { Swiper as SwiperType } from "swiper";
 import { FreeMode, Navigation, Pagination, Thumbs } from "swiper/modules";
@@ -58,9 +59,9 @@ export default function ProductDetailPage({ product }: any) {
 		varients: product.varients || [],
 		vendor: product.vendor
 			? {
-					companyName: product.vendor.company_name || "",
-					isVerifiedBadge: Boolean(product.vendor.is_verified_badge),
-				}
+				companyName: product.vendor.company_name || "",
+				isVerifiedBadge: Boolean(product.vendor.is_verified_badge),
+			}
 			: null,
 	};
 	const sellingPriceSchema = z
@@ -348,36 +349,51 @@ export default function ProductDetailPage({ product }: any) {
 							variant={selectedVarient}
 						/>
 
-						{productData.varients && productData.varients.length > 0 && (
-							<div className="bg-[#E5005F0F] p-4 space-y-4">
-								<div className="space-y-3">
-									<h3 className="font-medium text-gray-900">Bulk Options</h3>
-									<div className="flex flex-wrap gap-3">
-										{productData.varients.map((variant: any, i: number) => (
-											<button
-												key={i}
-												onClick={() => setSelectedVarient(variant)}
-												className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors bg-white ${
-													selectedVarient?.id === variant.id
-														? "border-pink-500 text-pink-600 bg-pink-50"
-														: "border-gray-300 text-gray-700 hover:border-gray-400"
-												}`}
-											>
-												{variant.title || `${variant.qty} pcs`}
-												<p className="flex items-center gap-1">
-													<TbCurrencyTaka size={15} />
-													{parseFloat(variant.price).toFixed(2)}
-												</p>
-											</button>
-										))}
-									</div>
-
-									<button
-										onClick={handleOrderNow}
-										className="bg-black rounded text-white py-2 px-3 cursor-pointer"
-									>
-										Order Now
-									</button>
+						{/* Bulk Pricing Tiers */}
+						{product.price_tiers && product.price_tiers.length > 0 && (
+							<div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100 mt-4">
+								<h3 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+									📊 Bulk Pricing Options
+								</h3>
+								<div className="overflow-x-auto">
+									<table className="min-w-full text-xs">
+										<thead>
+											<tr className="text-left text-indigo-900/60 border-b border-indigo-100">
+												<th className="pb-2 font-semibold">Option / Variant</th>
+												<th className="pb-2 font-semibold text-center">Qty</th>
+												<th className="pb-2 font-semibold">Price</th>
+												<th className="pb-2"></th>
+											</tr>
+										</thead>
+										<tbody className="divide-y divide-indigo-50">
+											{product.price_tiers.map((tier: any) => (
+												<tr key={tier.id} className="group">
+													<td className="py-3 pr-2 font-medium text-gray-700">
+														{tier.variant_title || "Base Product"}
+													</td>
+													<td className="py-3 px-2 text-center text-gray-600">
+														{tier.min_qty}{tier.max_qty ? ` - ${tier.max_qty}` : "+"}
+													</td>
+													<td className="py-3 px-2 font-bold text-indigo-700">
+														৳{parseFloat(tier.unit_price).toFixed(2)}
+													</td>
+													<td className="py-3 text-right">
+														<button
+															onClick={() => {
+																setSellingPrice(tier.unit_price);
+																setQuantity(tier.min_qty);
+																if (tier.variant_title) setSelectedSize(tier.variant_title);
+																toast.success(`Selected tier: ${tier.variant_title || "Base"}`);
+															}}
+															className="bg-indigo-600 text-white px-3 py-1.5 rounded-md text-[10px] font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+														>
+															Select
+														</button>
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
 								</div>
 							</div>
 						)}
@@ -392,11 +408,10 @@ export default function ProductDetailPage({ product }: any) {
 										<button
 											key={c.id}
 											onClick={() => setSelectedColor(c)}
-											className={`flex flex-col items-center p-1 rounded-md transition min-w-12 ${
-												selectedColor.id === c.id
-													? "ring-2 ring-pink-500"
-													: "hover:ring-1 hover:ring-gray-200"
-											}`}
+											className={`flex flex-col items-center p-1 rounded-md transition min-w-12 ${selectedColor.id === c.id
+												? "ring-2 ring-pink-500"
+												: "hover:ring-1 hover:ring-gray-200"
+												}`}
 										>
 											<div
 												className="w-5 h-5 rounded-full border"
@@ -414,11 +429,10 @@ export default function ProductDetailPage({ product }: any) {
 										<button
 											key={size}
 											onClick={() => setSelectedSize(size)}
-											className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors bg-white ${
-												selectedSize === size
-													? "border-pink-500 text-pink-600 bg-pink-50"
-													: "border-gray-300 text-gray-700 hover:border-gray-400"
-											}`}
+											className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors bg-white ${selectedSize === size
+												? "border-pink-500 text-pink-600 bg-pink-50"
+												: "border-gray-300 text-gray-700 hover:border-gray-400"
+												}`}
 										>
 											{size}
 										</button>

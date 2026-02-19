@@ -441,14 +441,14 @@ export const vendorApi = baseApi.injectEndpoints({
 				{ type: "vendorProducts", id: "LIST" },
 			],
 		}),
-		updateVendorProductFeatured: build.mutation<
+		updateVendorProductStockStatus: build.mutation<
 			{ status: boolean; message?: string; data?: { product: VendorProduct } },
-			{ id: number; featured: 0 | 1 }
+			{ id: number; in_stock: 0 | 1 }
 		>({
-			query: ({ id, featured }) => ({
-				url: `/vendor/products/${id}/featured`,
+			query: ({ id, in_stock }) => ({
+				url: `/vendor/products/${id}/stock-status`,
 				method: "PUT",
-				body: { featured },
+				body: { in_stock },
 			}),
 			invalidatesTags: (_result, _err, { id }) => [
 				{ type: "vendorProducts", id },
@@ -520,7 +520,7 @@ export const vendorApi = baseApi.injectEndpoints({
 		}),
 		createVendorProductPriceTier: build.mutation<
 			{ status: boolean; data?: { price_tier: unknown } },
-			{ id: number; min_qty: number; unit_price: number; tier_label?: string }
+			{ id: number; min_qty: number; max_qty?: number | null; unit_price: number; delivery_charge?: number | null; tier_label?: string; variant_title?: string | null }
 		>({
 			query: ({ id, ...body }) => ({
 				url: `/vendor/products/${id}/price-tiers`,
@@ -1078,7 +1078,7 @@ export const {
 	useUpdateVendorProductMutation,
 	useDeleteVendorProductMutation,
 	useUpdateVendorProductStatusMutation,
-	useUpdateVendorProductFeaturedMutation,
+	useUpdateVendorProductStockStatusMutation,
 	useGetVendorProductVariantsQuery,
 	useCreateVendorProductVariantMutation,
 	useUpdateVendorProductVariantMutation,

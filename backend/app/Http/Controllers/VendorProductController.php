@@ -63,7 +63,7 @@ class VendorProductController extends Controller
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'required|exists:subcategories,id',
             'brand_id' => 'required|exists:brands,id',
-            'ProductImage' => 'nullable|image|max:2048',
+            'ProductImage' => 'nullable|image|max:5120',
             'ProductBreaf' => 'nullable|string',
             'ProductDetails' => 'nullable|string',
             'ProductResellerPrice' => 'nullable|numeric|min:0',
@@ -79,7 +79,7 @@ class VendorProductController extends Controller
             'MetaKey' => 'nullable|string|max:500',
             'Discount' => 'nullable|numeric|min:0',
             'PostImage' => 'nullable|array',
-            'PostImage.*' => 'image|max:2048',
+            'PostImage.*' => 'image|max:5120',
             'allow_dropship' => 'nullable|boolean',
         ]);
 
@@ -209,7 +209,7 @@ class VendorProductController extends Controller
             'show_stock' => 'nullable|in:On,Off',
             'show_stock_text' => 'nullable|in:On,Off',
             'status' => 'nullable|in:Active,Inactive',
-            'ProductImage' => 'nullable|image|max:2048',
+            'ProductImage' => 'nullable|image|max:5120',
             'product_weight' => 'nullable|numeric|min:0',
             'minimum_qty' => 'nullable|integer|min:1',
             'unit' => 'nullable|string|max:50',
@@ -219,7 +219,7 @@ class VendorProductController extends Controller
             'subcategory_id' => 'sometimes|exists:subcategories,id',
             'brand_id' => 'sometimes|exists:brands,id',
             'PostImage' => 'nullable|array',
-            'PostImage.*' => 'image|max:2048',
+            'PostImage.*' => 'image|max:5120',
             'allow_dropship' => 'nullable|boolean',
         ]);
 
@@ -300,18 +300,18 @@ class VendorProductController extends Controller
         return response()->json(['status' => true, 'message' => 'Status updated', 'data' => ['product' => $product]]);
     }
 
-    /** PUT /api/vendor/products/{id}/featured - toggle Featured (0 or 1) */
-    public function updateFeatured(Request $request, $id)
+    /** PUT /api/vendor/products/{id}/stock-status - toggle In Stock/Out of Stock (0 or 1) */
+    public function updateStockStatus(Request $request, $id)
     {
         $vendor = $this->getVendor();
         if (!$vendor) {
             return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
         }
-        $request->validate(['featured' => 'required|in:0,1']);
+        $request->validate(['in_stock' => 'required|in:0,1']);
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
-        $product->frature = (int) $request->featured;
+        $product->frature = (int) $request->in_stock;
         $product->save();
-        return response()->json(['status' => true, 'message' => 'Featured updated', 'data' => ['product' => $product]]);
+        return response()->json(['status' => true, 'message' => 'Stock status updated', 'data' => ['product' => $product]]);
     }
 
     /** DELETE /api/vendor/products/{id} */
@@ -584,8 +584,11 @@ class VendorProductController extends Controller
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
         $validator = Validator::make($request->all(), [
             'min_qty' => 'required|integer|min:0',
+            'max_qty' => 'nullable|integer|min:0',
             'unit_price' => 'required|numeric|min:0',
+            'delivery_charge' => 'nullable|numeric|min:0',
             'tier_label' => 'nullable|string|max:50',
+            'variant_title' => 'nullable|string|max:255',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
@@ -593,8 +596,11 @@ class VendorProductController extends Controller
         $tier = new ProductPriceTier();
         $tier->product_id = $product->id;
         $tier->min_qty = (int) $request->min_qty;
+        $tier->max_qty = $request->filled('max_qty') ? (int) $request->max_qty : null;
         $tier->unit_price = $request->unit_price;
+        $tier->delivery_charge = $request->filled('delivery_charge') ? $request->delivery_charge : null;
         $tier->tier_label = $request->input('tier_label', 'Tier');
+        $tier->variant_title = $request->input('variant_title');
         $tier->save();
         return response()->json(['status' => true, 'message' => 'Price tier added', 'data' => ['price_tier' => $tier]], 201);
     }
@@ -610,15 +616,21 @@ class VendorProductController extends Controller
         $tier = ProductPriceTier::where('product_id', $product->id)->findOrFail($tierId);
         $validator = Validator::make($request->all(), [
             'min_qty' => 'sometimes|integer|min:0',
+            'max_qty' => 'nullable|integer|min:0',
             'unit_price' => 'sometimes|numeric|min:0',
+            'delivery_charge' => 'nullable|numeric|min:0',
             'tier_label' => 'sometimes|string|max:50',
+            'variant_title' => 'nullable|string|max:255',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
         if ($request->has('min_qty')) $tier->min_qty = (int) $request->min_qty;
+        if ($request->has('max_qty')) $tier->max_qty = $request->filled('max_qty') ? (int) $request->max_qty : null;
         if ($request->has('unit_price')) $tier->unit_price = $request->unit_price;
+        if ($request->has('delivery_charge')) $tier->delivery_charge = $request->filled('delivery_charge') ? $request->delivery_charge : null;
         if ($request->has('tier_label')) $tier->tier_label = $request->tier_label;
+        if ($request->has('variant_title')) $tier->variant_title = $request->variant_title;
         $tier->save();
         return response()->json(['status' => true, 'message' => 'Price tier updated', 'data' => ['price_tier' => $tier]]);
     }
