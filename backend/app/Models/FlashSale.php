@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class FlashSale extends Model
 {
-    protected $fillable = ['title', 'start_time', 'end_time', 'status'];
+    protected $fillable = ['title', 'start_time', 'end_time', 'status', 'banner_image', 'registration_deadline', 'vendor_registration'];
 
     protected $casts = [
         'start_time' => 'datetime',
         'end_time' => 'datetime',
+        'registration_deadline' => 'datetime',
+        'vendor_registration' => 'boolean',
     ];
 
     public function products()

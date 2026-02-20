@@ -83,6 +83,7 @@ export const baseApi = createApi({
 		"vendorNotifications",
 		"vendorCategoryCommissions",
 		"shippingAddresses",
+		"vendorCampaigns",
 	],
 	endpoints: () => ({}),
 });

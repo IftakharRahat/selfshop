@@ -159,9 +159,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::resource('flashsales', FlashSaleController::class, ['names' => 'admin.flashsales']);
     Route::get('flashsale/get/data', [FlashSaleController::class, 'flashsaledata'])->name('admin.flashsale.data');
     Route::put('flashsale/status', [FlashSaleController::class, 'statusupdate']);
+    Route::put('flashsale/vendor-registration', [FlashSaleController::class, 'vendorRegistrationUpdate']);
     Route::post('flashsale/add-product', [FlashSaleController::class, 'addProduct'])->name('admin.flashsale.addproduct');
     Route::delete('flashsale/remove-product/{id}', [FlashSaleController::class, 'removeProduct'])->name('admin.flashsale.removeproduct');
     Route::get('flashsale/products/{id}', [FlashSaleController::class, 'getProducts'])->name('admin.flashsale.products');
+    Route::get('flashsale/vendor-submissions/{id}', [FlashSaleController::class, 'getVendorSubmissions'])->name('admin.flashsale.vendor-submissions');
     Route::get('flashsale/search-products', [FlashSaleController::class, 'searchProducts'])->name('admin.flashsale.searchproducts');
     // {id} wildcard MUST come after all literal flashsale/* routes
     Route::post('flashsale/{id}', [FlashSaleController::class, 'update']);
@@ -360,6 +362,7 @@ Route::get('user/view-incomehistory/{id}/orders', [ResellerinvoiceController::cl
     Route::get('admin_order/previous_orders', [OrderController::class, 'previous_orders']);
 
     Route::get('order/admin_order/status', [OrderController::class, 'updateorderstatus']);
+    Route::post('admin_order/notify-vendor-ship', [OrderController::class, 'notifyVendorToShip'])->name('admin.order.notify-vendor-ship');
     Route::get('admin_order/product/topsell/{id}', [OrderController::class, 'topsellpeoduct']);
     Route::get('admin_order/product/recentsell/{id}', [OrderController::class, 'recentsellpeoduct']);
 

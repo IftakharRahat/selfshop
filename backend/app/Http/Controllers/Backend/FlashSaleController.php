@@ -26,7 +26,17 @@ class FlashSaleController extends Controller
         $flashSale->title = $request->title;
         $flashSale->start_time = $request->start_time;
         $flashSale->end_time = $request->end_time;
+        $flashSale->registration_deadline = $request->registration_deadline;
+        $flashSale->vendor_registration = $request->has('vendor_registration') ? (bool) $request->vendor_registration : true;
         $flashSale->status = 'Active';
+
+        if ($request->hasFile('banner_image')) {
+            $file = $request->file('banner_image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/campaigns'), $filename);
+            $flashSale->banner_image = 'uploads/campaigns/' . $filename;
+        }
+
         $flashSale->save();
 
         return response()->json($flashSale, 200);
@@ -39,12 +49,27 @@ class FlashSaleController extends Controller
             ->addColumn('product_count', function ($sale) {
                 return $sale->products_count;
             })
+            ->addColumn('banner_preview', function ($sale) {
+                if ($sale->banner_image) {
+                    return '<img src="' . asset($sale->banner_image) . '" style="width:60px;height:35px;object-fit:cover;border-radius:4px;">';
+                }
+                return '<span class="text-muted">—</span>';
+            })
+            ->addColumn('reg_deadline', function ($sale) {
+                return $sale->registration_deadline ? $sale->registration_deadline->format('d M Y, h:i A') : '—';
+            })
+            ->addColumn('vendor_reg', function ($sale) {
+                if ($sale->vendor_registration) {
+                    return '<button type="button" class="btn btn-success btn-sm vendorRegBtn" data-id="' . $sale->id . '" data-val="0">Open</button>';
+                }
+                return '<button type="button" class="btn btn-secondary btn-sm vendorRegBtn" data-id="' . $sale->id . '" data-val="1">Closed</button>';
+            })
             ->addColumn('action', function ($sale) {
                 return '<a href="#" type="button" id="editFlashSaleBtn" data-id="' . $sale->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editFlashSaleModal"><i class="bi bi-pencil-square"></i></a>
                 <a href="#" type="button" id="manageProductsBtn" data-id="' . $sale->id . '" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#manageProductsModal"><i class="bi bi-box-seam"></i></a>
                 <a href="#" type="button" id="deleteFlashSaleBtn" data-id="' . $sale->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'banner_preview', 'vendor_reg'])
             ->make(true);
     }
 
@@ -63,6 +88,22 @@ class FlashSaleController extends Controller
         $flashSale->title = $request->title;
         $flashSale->start_time = $request->start_time;
         $flashSale->end_time = $request->end_time;
+        $flashSale->registration_deadline = $request->registration_deadline;
+        if ($request->has('vendor_registration')) {
+            $flashSale->vendor_registration = (bool) $request->vendor_registration;
+        }
+
+        if ($request->hasFile('banner_image')) {
+            // Delete old banner if exists
+            if ($flashSale->banner_image && file_exists(public_path($flashSale->banner_image))) {
+                unlink(public_path($flashSale->banner_image));
+            }
+            $file = $request->file('banner_image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/campaigns'), $filename);
+            $flashSale->banner_image = 'uploads/campaigns/' . $filename;
+        }
+
         $flashSale->update();
         return response()->json($flashSale, 200);
     }
@@ -78,6 +119,14 @@ class FlashSaleController extends Controller
     {
         $flashSale = FlashSale::where('id', $request->flash_sale_id)->first();
         $flashSale->status = $request->status;
+        $flashSale->update();
+        return response()->json($flashSale, 200);
+    }
+
+    public function vendorRegistrationUpdate(Request $request)
+    {
+        $flashSale = FlashSale::where('id', $request->flash_sale_id)->first();
+        $flashSale->vendor_registration = (bool) $request->vendor_registration;
         $flashSale->update();
         return response()->json($flashSale, 200);
     }
@@ -114,6 +163,15 @@ class FlashSaleController extends Controller
     {
         $products = FlashSaleProduct::where('flash_sale_id', $id)
             ->with('product')
+            ->get();
+        return response()->json($products, 200);
+    }
+
+    public function getVendorSubmissions($id)
+    {
+        $products = FlashSaleProduct::where('flash_sale_id', $id)
+            ->whereNotNull('vendor_id')
+            ->with(['product:id,ProductName,ViewProductImage,ProductSalePrice', 'vendor:id,company_name'])
             ->get();
         return response()->json($products, 200);
     }

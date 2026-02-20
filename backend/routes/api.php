@@ -21,6 +21,7 @@ use App\Http\Controllers\VendorReportsController;
 use App\Http\Controllers\VendorDashboardController;
 use App\Http\Controllers\VendorNotificationController;
 use App\Http\Controllers\VendorCommissionController;
+use App\Http\Controllers\VendorCampaignController;
 use App\Http\Controllers\ShippingAddressController;
 /*
 |--------------------------------------------------------------------------
@@ -278,6 +279,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/notifications', [VendorNotificationController::class, 'index'])->name('api.vendor.notifications.index');
         Route::post('/notifications/{id}/read', [VendorNotificationController::class, 'markRead'])->name('api.vendor.notifications.read');
         Route::post('/notifications/read-all', [VendorNotificationController::class, 'markAllRead'])->name('api.vendor.notifications.read-all');
+
+        // Campaigns
+        Route::get('/campaigns', [VendorCampaignController::class, 'index'])->name('api.vendor.campaigns.index');
+        Route::get('/campaigns/{id}', [VendorCampaignController::class, 'show'])->name('api.vendor.campaigns.show');
+        Route::post('/campaigns/{id}/products', [VendorCampaignController::class, 'submitProduct'])->name('api.vendor.campaigns.submit-product');
+        Route::delete('/campaigns/{id}/products/{fspId}', [VendorCampaignController::class, 'removeProduct'])->name('api.vendor.campaigns.remove-product');
 
         // Bulk order matrix (existing)
         Route::middleware('verified.wholesaler')->group(function () {

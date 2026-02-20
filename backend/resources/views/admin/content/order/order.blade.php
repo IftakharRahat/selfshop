@@ -2807,4 +2807,32 @@
             text-decoration: none;
         }
     </style>
+
+    {{-- Notify Vendor to Ship handler --}}
+    <script>
+        $(document).on('click', '.btn-notify-vendor', function(e) {
+            e.preventDefault();
+            var orderId = $(this).data('id');
+            if (!confirm('Notify vendor(s) to ship products for order #SS00' + orderId + '?')) return;
+            $.ajax({
+                type: 'POST',
+                url: '{{ route("admin.order.notify-vendor-ship") }}',
+                data: {
+                    order_ids: [orderId],
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(res) {
+                    if (res.status === 'success') {
+                        toastr.success(res.message);
+                        if (typeof orderinfo !== 'undefined') orderinfo.ajax.reload(null, false);
+                    } else {
+                        toastr.error(res.message || 'Failed to notify vendor');
+                    }
+                },
+                error: function() {
+                    toastr.error('An error occurred while notifying vendor.');
+                }
+            });
+        });
+    </script>
 @endsection

@@ -17,6 +17,7 @@ import {
 	User,
 	Wallet,
 	X,
+	Zap,
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -44,6 +45,12 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
 		items: [
 			{ label: "All orders", href: "/vendor/orders", icon: ShoppingBag },
 			{ label: "Shipping methods", href: "/vendor/shipping", icon: Truck },
+		],
+	},
+	{
+		title: "Campaigns",
+		items: [
+			{ label: "Campaign Events", href: "/vendor/campaigns", icon: Zap },
 		],
 	},
 	{
@@ -121,10 +128,9 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 		.sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
 	const navItemClass = (active: boolean) =>
-		`group flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors ${
-			active
-				? "bg-[#2d2a5d] text-white shadow-sm"
-				: "text-gray-700 hover:bg-indigo-50 hover:text-[#2d2a5d]"
+		`group flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors ${active
+			? "bg-[#2d2a5d] text-white shadow-sm"
+			: "text-gray-700 hover:bg-indigo-50 hover:text-[#2d2a5d]"
 		}`;
 
 	const renderNavigation = (onItemClick?: () => void) => (
@@ -146,11 +152,10 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 										className={navItemClass(active)}
 									>
 										<Icon
-											className={`h-4 w-4 shrink-0 ${
-												active
+											className={`h-4 w-4 shrink-0 ${active
 													? "text-white"
 													: "text-gray-500 group-hover:text-[#2d2a5d]"
-											}`}
+												}`}
 										/>
 										<span className="truncate">{item.label}</span>
 									</Link>
@@ -186,14 +191,12 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 						type="button"
 						aria-label="Close menu"
 						onClick={() => setMobileNavOpen(false)}
-						className={`fixed inset-0 z-30 bg-black/40 transition-opacity md:hidden ${
-							mobileNavOpen ? "opacity-100" : "pointer-events-none opacity-0"
-						}`}
+						className={`fixed inset-0 z-30 bg-black/40 transition-opacity md:hidden ${mobileNavOpen ? "opacity-100" : "pointer-events-none opacity-0"
+							}`}
 					/>
 					<aside
-						className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[86vw] bg-white border-r border-gray-200 md:hidden transform transition-transform ${
-							mobileNavOpen ? "translate-x-0" : "-translate-x-full"
-						}`}
+						className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[86vw] bg-white border-r border-gray-200 md:hidden transform transition-transform ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+							}`}
 					>
 						<div className="h-14 flex items-center justify-between px-4 border-b border-gray-200">
 							<Link

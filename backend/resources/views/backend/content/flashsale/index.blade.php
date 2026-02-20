@@ -100,10 +100,13 @@
                         <thead class="thead-light">
                             <tr>
                                 <th>SL</th>
+                                <th>Banner</th>
                                 <th>Title</th>
                                 <th>Start Time</th>
                                 <th>End Time</th>
+                                <th>Reg. Deadline</th>
                                 <th>Products</th>
+                                <th>Vendor Reg.</th>
                                 <th>Status</th>
                                 <th>Action</th>
                             </tr>
@@ -123,11 +126,15 @@
                         <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form name="form" id="AddFlashSale">
+                        <form name="form" id="AddFlashSale" enctype="multipart/form-data">
                             @csrf
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" name="title" id="create_title" placeholder="Title" required>
                                 <label>Title</label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size:13px;font-weight:600;">Banner Image</label>
+                                <input type="file" class="form-control" name="banner_image" id="create_banner_image" accept="image/*">
                             </div>
                             <div class="form-floating mb-3">
                                 <input type="datetime-local" class="form-control" name="start_time" id="create_start_time" required>
@@ -136,6 +143,14 @@
                             <div class="form-floating mb-3">
                                 <input type="datetime-local" class="form-control" name="end_time" id="create_end_time" required>
                                 <label>End Time</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="datetime-local" class="form-control" name="registration_deadline" id="create_registration_deadline">
+                                <label>Registration Deadline</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="vendor_registration" id="create_vendor_registration" value="1" checked>
+                                <label class="form-check-label" for="create_vendor_registration">Open for Vendor Registration</label>
                             </div>
                             <div class="form-group mt-2" style="text-align: right">
                                 <button type="button" data-bs-dismiss="modal" class="btn btn-dark btn-block" style="float: left">Close</button>
@@ -156,12 +171,17 @@
                         <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form name="form" id="EditFlashSale">
+                        <form name="form" id="EditFlashSale" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="flash_sale_id" id="edit_flash_sale_id">
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" name="title" id="edit_title" placeholder="Title" required>
                                 <label>Title</label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size:13px;font-weight:600;">Banner Image</label>
+                                <div id="edit_banner_preview" style="margin-bottom:6px;"></div>
+                                <input type="file" class="form-control" name="banner_image" id="edit_banner_image" accept="image/*">
                             </div>
                             <div class="form-floating mb-3">
                                 <input type="datetime-local" class="form-control" name="start_time" id="edit_start_time" required>
@@ -170,6 +190,14 @@
                             <div class="form-floating mb-3">
                                 <input type="datetime-local" class="form-control" name="end_time" id="edit_end_time" required>
                                 <label>End Time</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="datetime-local" class="form-control" name="registration_deadline" id="edit_registration_deadline">
+                                <label>Registration Deadline</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" name="vendor_registration" id="edit_vendor_registration" value="1">
+                                <label class="form-check-label" for="edit_vendor_registration">Open for Vendor Registration</label>
                             </div>
                             <div class="form-group mt-2" style="text-align: right">
                                 <button type="button" data-bs-dismiss="modal" class="btn btn-dark btn-block" style="float: left">Close</button>
@@ -217,6 +245,13 @@
                         </label>
                         <div id="currentProducts"></div>
 
+                        {{-- Vendor Submissions --}}
+                        <hr style="border-color: #dee2e6; margin: 16px 0;">
+                        <label class="form-label" style="font-size: 13px; font-weight: 600;">
+                            Vendor Submissions <span id="vendorSubmissionCount" style="color: #7c3aed;"></span>
+                        </label>
+                        <div id="vendorSubmissions"></div>
+
                         {{-- Inline Discount Overlay --}}
                         <div class="fs-discount-overlay" id="discountOverlay">
                             <div class="fs-discount-box">
@@ -255,10 +290,13 @@
             ajax: '{!! route("admin.flashsale.data") !!}',
             columns: [
                 { data: 'id' },
+                { data: 'banner_preview', name: 'banner_preview', orderable: false, searchable: false },
                 { data: 'title' },
                 { data: 'start_time' },
                 { data: 'end_time' },
+                { data: 'reg_deadline', name: 'reg_deadline', orderable: false, searchable: false },
                 { data: 'product_count' },
+                { data: 'vendor_reg', name: 'vendor_reg', orderable: false, searchable: false },
                 {
                     data: null,
                     render: function(data) {
@@ -309,6 +347,14 @@
                     $('#edit_title').val(data.title);
                     if (data.start_time) $('#edit_start_time').val(data.start_time.replace(' ', 'T').substring(0, 16));
                     if (data.end_time) $('#edit_end_time').val(data.end_time.replace(' ', 'T').substring(0, 16));
+                    if (data.registration_deadline) $('#edit_registration_deadline').val(data.registration_deadline.replace(' ', 'T').substring(0, 16));
+                    else $('#edit_registration_deadline').val('');
+                    $('#edit_vendor_registration').prop('checked', !!data.vendor_registration);
+                    if (data.banner_image) {
+                        $('#edit_banner_preview').html('<img src="/' + data.banner_image + '" style="width:120px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;">');
+                    } else {
+                        $('#edit_banner_preview').html('');
+                    }
                 },
                 error: function(error) { console.log('error', error); }
             });
@@ -363,6 +409,18 @@
                 type: 'PUT', url: 'flashsale/status',
                 data: { flash_sale_id: id, status: status, '_token': token },
                 success: function() { swal({ title: "Status updated!", icon: "success" }); flashsaleinfo.ajax.reload(); },
+                error: function() { console.log('error'); }
+            });
+        });
+
+        // Vendor Registration Toggle
+        $(document).on('click', '.vendorRegBtn', function() {
+            let id = $(this).data('id');
+            let val = $(this).data('val');
+            $.ajax({
+                type: 'PUT', url: 'flashsale/vendor-registration',
+                data: { flash_sale_id: id, vendor_registration: val, '_token': token },
+                success: function() { swal({ title: "Vendor registration updated!", icon: "success" }); flashsaleinfo.ajax.reload(); },
                 error: function() { console.log('error'); }
             });
         });
@@ -476,12 +534,12 @@
             });
         });
 
-        // Manage Products button
         $(document).on('click', '#manageProductsBtn', function() {
             var id = $(this).data('id');
             $('#manage_flash_sale_id').val(id);
             $('#fsSearchInput').val('');
             loadFlashSaleProducts(id);
+            loadVendorSubmissions(id);
         });
 
         function loadFlashSaleProducts(flashSaleId) {
@@ -526,6 +584,39 @@
                 }
             });
         });
+
+        // Load Vendor Submissions
+        function loadVendorSubmissions(flashSaleId) {
+            $.ajax({
+                type: 'GET', url: 'flashsale/vendor-submissions/' + flashSaleId,
+                success: function(products) {
+                    var html = '';
+                    $('#vendorSubmissionCount').text('(' + products.length + ')');
+                    if (products.length === 0) {
+                        html = '<div class="fs-empty"><i class="bi bi-people" style="font-size:24px;display:block;margin-bottom:6px;"></i>No vendor submissions yet</div>';
+                    }
+                    products.forEach(function(fsp) {
+                        var p = fsp.product;
+                        var v = fsp.vendor;
+                        if (!p) return;
+                        var img = p.ViewProductImage ? '../' + p.ViewProductImage : '';
+                        var vendorName = v ? v.company_name : 'Unknown';
+                        html += '<div class="fs-prod-item" style="border-left: 3px solid #7c3aed;">';
+                        html += '<img src="' + img + '" alt="" onerror="this.style.display=\'none\'">';
+                        html += '<div class="info"><div class="name">' + (p.ProductName || 'N/A') + '</div>';
+                        html += '<span style="background:#7c3aed;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-right:4px;">' + vendorName + '</span>';
+                        if (fsp.discount_percentage) html += '<span class="badge-disc">' + fsp.discount_percentage + '% OFF</span>';
+                        if (fsp.campaign_price) html += '<span style="background:#059669;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;margin-left:4px;">৳' + fsp.campaign_price + '</span>';
+                        if (fsp.seller_sku) html += '<div style="font-size:11px;color:#64748b;margin-top:2px;">SKU: ' + fsp.seller_sku + '</div>';
+                        html += '</div>';
+                        html += '<button class="btn btn-danger btn-sm removeProductBtn" data-id="' + fsp.id + '"><i class="bi bi-trash"></i></button>';
+                        html += '</div>';
+                    });
+                    $('#vendorSubmissions').html(html);
+                },
+                error: function(error) { console.log('error', error); }
+            });
+        }
     });
 </script>
 

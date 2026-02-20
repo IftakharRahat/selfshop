@@ -700,7 +700,7 @@ class OrderController extends Controller
                 $orders =  Order::with(
                     [
                         'orderproducts' => function ($query) {
-                            $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                            $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                         },
                         'admins' => function ($query) {
                             $query->select('id', 'name');
@@ -733,7 +733,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -764,7 +764,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -797,7 +797,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -829,7 +829,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -860,7 +860,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -896,7 +896,7 @@ class OrderController extends Controller
                 $orders =  Order::with(
                     [
                         'orderproducts' => function ($query) {
-                            $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                            $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                         },
                         'admins' => function ($query) {
                             $query->select('id', 'name');
@@ -923,7 +923,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -954,7 +954,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -988,7 +988,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -1019,7 +1019,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -1051,7 +1051,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id');
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -1140,6 +1140,7 @@ class OrderController extends Controller
             ->editColumn('products', function ($orders) {
                 $orderProducts = '';
                 foreach ($orders->orderproducts as $product) {
+                    // Product name + qty line
                     if (isset($product->color) && isset($product->size)) {
                         $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Colour: ' . $product->color . ' , Size: ' . $product->size . '</span>';
                     } elseif (isset($product->size)) {
@@ -1149,6 +1150,31 @@ class OrderController extends Controller
                     } else {
                         $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName;
                     }
+
+                    // Vendor badge
+                    $vendorName = $product->product && $product->product->vendor ? $product->product->vendor->company_name : null;
+                    if ($vendorName) {
+                        $orderProducts .= ' <span style="background:#7c3aed;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">' . $vendorName . '</span>';
+                    }
+
+                    // Fulfillment status badge
+                    $fs = $product->fulfillment_status ?? 'pending';
+                    if ($vendorName) {
+                        $badgeColors = [
+                            'pending' => 'background:#6b7280;color:#fff;',
+                            'awaiting_shipment' => 'background:#f59e0b;color:#fff;',
+                            'shipped' => 'background:#10b981;color:#fff;',
+                        ];
+                        $style = $badgeColors[$fs] ?? $badgeColors['pending'];
+                        $label = str_replace('_', ' ', ucfirst($fs));
+                        $orderProducts .= ' <span style="' . $style . 'padding:1px 6px;border-radius:4px;font-size:10px;">' . $label . '</span>';
+
+                        if ($product->tracking_number) {
+                            $orderProducts .= '<br><span style="color:#059669;font-size:11px;">📦 ' . $product->tracking_number . '</span>';
+                        }
+                    }
+
+                    $orderProducts .= '<br>';
                 }
                 return rtrim($orderProducts, '<br>');
             })
@@ -1206,19 +1232,37 @@ class OrderController extends Controller
             ->addColumn('action', function ($orders) {
     $viewUrl = url('admin_order/view/' . $orders->id);
 
+    // Check if order has vendor products
+    $hasVendorProducts = $orders->orderproducts->contains(function ($op) {
+        return $op->product && $op->product->vendor_id;
+    });
+
+    $notifyBtn = '';
+    if ($hasVendorProducts) {
+        $notifyBtn = "
+        <a href='javascript:void(0);'
+           data-id='{$orders->id}'
+           class='action-icon btn-notify-vendor'
+           title='Notify Vendor to Ship'
+           style='color:#7c3aed;'>
+            <i class='fas fa-truck' style='font-size: 20px; padding-right: 15px;'></i>
+        </a>";
+    }
+
     return "
         <a href='{$viewUrl}' class='action-icon' title='View Order'>
             <i class='fas fa-eye' style='font-size: 24px; padding-right: 20px;'></i>
         </a>
-        <a href='javascript:void(0);' 
-           data-id='{$orders->id}' 
-           class='action-icon btn-editorder' 
+        {$notifyBtn}
+        <a href='javascript:void(0);'
+           data-id='{$orders->id}'
+           class='action-icon btn-editorder'
            title='Edit Order'>
             <i class='fas fa-edit' style='font-size: 24px; padding-right: 20px; padding-bottom: 10px; padding-top: 5px;'></i>
         </a>
-        <a href='javascript:void(0);' 
-           data-id='{$orders->id}' 
-           class='action-icon btn-delete' 
+        <a href='javascript:void(0);'
+           data-id='{$orders->id}'
+           class='action-icon btn-delete'
            title='Delete Order'>
             <i class='fas fa-trash-alt' style='font-size: 24px; padding-right: 20px;'></i>
         </a>
@@ -1372,6 +1416,48 @@ class OrderController extends Controller
         $comment->save();
 
         return json_encode($response);
+    }
+
+    /**
+     * Notify vendor(s) to ship products for the given order(s).
+     * Sets fulfillment_status to 'awaiting_shipment' on vendor order products.
+     */
+    public function notifyVendorToShip(Request $request)
+    {
+        $orderIds = $request->input('order_ids', []);
+        if (empty($orderIds)) {
+            return response()->json(['status' => 'failed', 'message' => 'No orders selected'], 400);
+        }
+
+        $updated = 0;
+        foreach ($orderIds as $orderId) {
+            $order = Order::with('orderproducts.product')->find($orderId);
+            if (!$order) continue;
+
+            foreach ($order->orderproducts as $op) {
+                if ($op->product && $op->product->vendor_id) {
+                    $fs = $op->fulfillment_status ?? 'pending';
+                    if ($fs === 'pending') {
+                        $op->fulfillment_status = 'awaiting_shipment';
+                        $op->save();
+                        $updated++;
+                    }
+                }
+            }
+
+            // Add comment
+            $comment = new Comment();
+            $comment->order_id = $orderId;
+            $comment->comment = Auth::guard('admin')->user()->name . ' notified vendor(s) to ship products for order #SS00' . $orderId;
+            $comment->admin_id = Auth::guard('admin')->user()->id;
+            $comment->status = 1;
+            $comment->save();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $updated . ' vendor product(s) notified to ship across ' . count($orderIds) . ' order(s)',
+        ]);
     }
 
     public function statusList($status, $id)
