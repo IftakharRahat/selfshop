@@ -1,0 +1,4 @@
+# Fix: pnpm LICENSE collides with composer LICENSE during Nix env build.
+# Since package.json is only for Laravel Mix (dev asset compilation),
+# we tell Nixpacks to treat this purely as a PHP project.
+providers = ["php"]
