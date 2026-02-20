@@ -1,4 +1,8 @@
-# Fix: pnpm LICENSE collides with composer LICENSE during Nix env build.
-# Since package.json is only for Laravel Mix (dev asset compilation),
-# we tell Nixpacks to treat this purely as a PHP project.
+# Fix: Prevent Nixpacks from installing Node.js/pnpm alongside Composer.
+# The package.json is only for Laravel Mix (dev asset compilation)
+# and causes a LICENSE file collision between pnpm and composer.
 providers = ["php"]
+
+[phases.setup]
+nixPkgs = ["php82", "nginx", "php82Packages.composer"]
+nixpkgsArchive = "e24b4c09e963677b1beea49d411cd315a024ad3a"
