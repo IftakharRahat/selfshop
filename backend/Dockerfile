@@ -118,6 +118,9 @@ set -e
 echo "Running database migrations..."
 php artisan migrate --force
 
+echo "Seeding flash sale data..."
+php artisan db:seed --class=FlashSaleSeeder --force || true
+
 echo "Caching configuration..."
 php artisan config:cache || true
 php artisan route:cache || true

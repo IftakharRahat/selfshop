@@ -11,6 +11,12 @@ class FlashSaleSeeder extends Seeder
 {
     public function run()
     {
+        // Skip if flash sale data already exists
+        if (FlashSale::count() > 0) {
+            $this->command?->info('Flash sale data already exists, skipping.');
+            return;
+        }
+
         // Create a flash sale running for 7 days from now
         $flashSale = FlashSale::create([
             'title' => 'Weekend Mega Sale',
