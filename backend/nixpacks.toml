@@ -4,7 +4,7 @@
 providers = ["php"]
 
 [phases.setup]
-nixPkgs = ["php82", "nginx", "php82Packages.composer"]
+nixPkgs = ["php82", "nginx", "php82Packages.composer", "perl"]
 nixpkgsArchive = "e24b4c09e963677b1beea49d411cd315a024ad3a"
 
 [phases.install]
@@ -12,6 +12,3 @@ cmds = ["composer install --ignore-platform-reqs"]
 
 [phases.build]
 cmds = ["php artisan optimize:clear || true"]
-
-[start]
-cmd = "php-fpm -y /assets/php-fpm.conf & nginx -c /assets/nginx.template -g 'daemon off;'"
