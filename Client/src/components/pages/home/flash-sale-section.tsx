@@ -3,8 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, FreeMode } from "swiper/modules";
 import { useGetFlashSaleQuery } from "@/redux/features/home/homeApi";
 import { getImageUrl } from "@/lib/utils";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/free-mode";
 
 interface TimeLeft {
     days: number;
@@ -46,7 +51,6 @@ export default function FlashSaleSection() {
     const { data, isLoading } = useGetFlashSaleQuery(undefined);
     const flashSale = data?.data;
     const timeLeft = useCountdown(flashSale?.end_time ?? null);
-    const [scrollPos, setScrollPos] = useState(0);
 
     const isExpired =
         timeLeft.days === 0 &&
@@ -60,10 +64,6 @@ export default function FlashSaleSection() {
 
     const products = flashSale.products || [];
     if (products.length === 0) return null;
-
-    const scrollLeft = () => setScrollPos((p) => Math.max(0, p - 1));
-    const scrollRight = () =>
-        setScrollPos((p) => Math.min(products.length - 1, p + 1));
 
     return (
         <div className="w-full py-3 sm:py-6 lg:py-8">
@@ -128,108 +128,112 @@ export default function FlashSaleSection() {
                     </div>
 
                     {/* Product Carousel */}
-                    <div className="relative px-2 sm:px-4 lg:px-6 pb-4 sm:pb-6">
-                        {/* Navigation Arrows */}
-                        {products.length > 4 && (
-                            <>
-                                <button
-                                    onClick={scrollLeft}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all cursor-pointer"
-                                    style={{ color: "#E5005F" }}
-                                    disabled={scrollPos === 0}
-                                >
-                                    ‹
-                                </button>
-                                <button
-                                    onClick={scrollRight}
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all cursor-pointer"
-                                    style={{ color: "#E5005F" }}
-                                    disabled={scrollPos >= products.length - 4}
-                                >
-                                    ›
-                                </button>
-                            </>
-                        )}
+                    <div className="px-2 sm:px-4 lg:px-6 pb-4 sm:pb-6">
+                        {/* ---------- MOBILE SWIPER ---------- */}
+                        <div className="block md:hidden">
+                            <Swiper
+                                slidesPerView={2.3}
+                                spaceBetween={8}
+                                freeMode={true}
+                                modules={[FreeMode]}
+                            >
+                                {products.map((product: any) => (
+                                    <SwiperSlide key={product.id} className="!h-auto">
+                                        <FlashProductCard product={product} />
+                                    </SwiperSlide>
+                                ))}
+                            </Swiper>
+                        </div>
 
-                        {/* Products Grid */}
-                        <div className="overflow-hidden">
-                            <div
-                                className="flex gap-3 sm:gap-4 transition-transform duration-300"
-                                style={{
-                                    transform: `translateX(-${scrollPos * 25}%)`,
+                        {/* ---------- DESKTOP SWIPER ---------- */}
+                        <div className="hidden md:block">
+                            <Swiper
+                                modules={[Navigation]}
+                                navigation
+                                spaceBetween={14}
+                                slidesPerView={5}
+                                className="!overflow-x-clip !overflow-y-visible"
+                                breakpoints={{
+                                    768: { slidesPerView: 3, spaceBetween: 10 },
+                                    1024: { slidesPerView: 4, spaceBetween: 14 },
+                                    1280: { slidesPerView: 5, spaceBetween: 14 },
                                 }}
                             >
                                 {products.map((product: any) => (
-                                    <Link
-                                        href={`/product/${product.ProductSlug}`}
-                                        key={product.id}
-                                        className="flex-shrink-0 w-[45%] sm:w-[30%] lg:w-[23%] group"
-                                    >
-                                        <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1 relative">
-                                            {/* Discount Badge */}
-                                            {product.discount_percentage > 0 && (
-                                                <div
-                                                    className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-white text-xs font-bold"
-                                                    style={{ background: "#E5005F" }}
-                                                >
-                                                    -{Math.round(product.discount_percentage)}%
-                                                </div>
-                                            )}
-
-                                            {/* Product Image */}
-                                            <div className="aspect-square relative bg-gray-50 overflow-hidden">
-                                                <Image
-                                                    src={getImageUrl(product.ViewProductImage)}
-                                                    alt={product.ProductName || "Product"}
-                                                    fill
-                                                    className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
-                                                    sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 23vw"
-                                                />
-                                            </div>
-
-                                            {/* Product Info */}
-                                            <div className="p-2.5 sm:p-3">
-                                                <p className="text-xs sm:text-sm text-gray-700 font-medium line-clamp-2 mb-1.5 min-h-[2.5em]">
-                                                    {product.ProductName}
-                                                </p>
-
-                                                {/* Price Section */}
-                                                <div
-                                                    className="rounded-lg px-2.5 py-1.5 flex items-center justify-between"
-                                                    style={{ background: "#f2f4ff" }}
-                                                >
-                                                    <div className="flex flex-col">
-                                                        <span
-                                                            className="text-sm sm:text-base font-bold"
-                                                            style={{ color: "#3257d9" }}
-                                                        >
-                                                            ৳{product.FlashPrice}
-                                                        </span>
-                                                        {product.FlashPrice < product.SalePrice && (
-                                                            <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                                                                ৳{product.SalePrice}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    {product.discount_percentage > 0 && (
-                                                        <span
-                                                            className="text-[10px] sm:text-xs text-white px-1.5 py-0.5 rounded font-bold"
-                                                            style={{ background: "#E5005F" }}
-                                                        >
-                                                            SAVE{" "}
-                                                            {Math.round(product.discount_percentage)}%
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Link>
+                                    <SwiperSlide key={product.id} className="!h-auto">
+                                        <FlashProductCard product={product} />
+                                    </SwiperSlide>
                                 ))}
-                            </div>
+                            </Swiper>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    );
+}
+
+function FlashProductCard({ product }: { product: any }) {
+    const [imgError, setImgError] = useState(false);
+    const hasDiscount =
+        product.discount_percentage > 0 &&
+        product.FlashPrice < product.SalePrice;
+
+    return (
+        <Link
+            href={`/product/${product.ProductSlug}`}
+            className="block h-full"
+        >
+            <div className="bg-white rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-200 h-full flex flex-col group">
+                {/* Discount Badge */}
+                {hasDiscount && (
+                    <div className="absolute top-2 left-2 z-10 bg-[#E5005F] text-white text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md">
+                        -{Math.round(product.discount_percentage)}%
+                    </div>
+                )}
+
+                {/* Product Image — matches ProductCard pattern */}
+                <div className="relative overflow-hidden aspect-square">
+                    <Image
+                        src={
+                            imgError || !product.ViewProductImage
+                                ? "/placeholder.svg"
+                                : getImageUrl(product.ViewProductImage)
+                        }
+                        alt={product.ProductName || "Product"}
+                        width={600}
+                        height={400}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={() => setImgError(true)}
+                    />
+                </div>
+
+                {/* Product Info */}
+                <div className="p-2.5 sm:p-3 flex flex-col gap-1.5 flex-1">
+                    <p className="text-xs sm:text-sm text-gray-800 font-medium line-clamp-2 leading-snug min-h-[2.5em]">
+                        {product.ProductName}
+                    </p>
+
+                    {/* Price Section */}
+                    <div className="mt-auto flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-sm sm:text-base font-bold text-gray-900">
+                                ৳{product.FlashPrice}
+                            </span>
+                            {hasDiscount && (
+                                <span className="text-[10px] sm:text-xs text-gray-400 line-through">
+                                    ৳{product.SalePrice}
+                                </span>
+                            )}
+                        </div>
+                        {hasDiscount && (
+                            <span className="text-[10px] sm:text-xs text-white bg-[#E5005F] px-1.5 py-0.5 rounded font-bold">
+                                SAVE {Math.round(product.discount_percentage)}%
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </Link>
     );
 }

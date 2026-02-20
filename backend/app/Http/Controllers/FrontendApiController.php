@@ -2809,8 +2809,8 @@ class FrontendApiController extends Controller
             $product = $fsp->product;
             if (!$product) return null;
 
-            $regularPrice = floatval($product->RegularPrice ?? 0);
-            $salePrice = floatval($product->SalePrice ?? $regularPrice);
+            $regularPrice = floatval($product->ProductRegularPrice ?? 0);
+            $salePrice = floatval($product->ProductSalePrice ?? $regularPrice);
             $discount = floatval($fsp->discount_percentage);
             $flashPrice = $discount > 0
                 ? round($salePrice * (1 - $discount / 100), 2)
