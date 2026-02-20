@@ -12,3 +12,6 @@ cmds = ["composer install --ignore-platform-reqs"]
 
 [phases.build]
 cmds = ["php artisan optimize:clear || true"]
+
+[start]
+cmd = "php-fpm -y /assets/php-fpm.conf & nginx -c /assets/nginx.template -g 'daemon off;'"
