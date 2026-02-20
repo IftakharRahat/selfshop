@@ -1,8 +1,14 @@
 # Fix: Prevent Nixpacks from installing Node.js/pnpm alongside Composer.
 # The package.json is only for Laravel Mix (dev asset compilation)
-# and causes a LICENSE file collision between pnpm and composer.
+# and causes build failures since pnpm is not installed.
 providers = ["php"]
 
 [phases.setup]
 nixPkgs = ["php82", "nginx", "php82Packages.composer"]
 nixpkgsArchive = "e24b4c09e963677b1beea49d411cd315a024ad3a"
+
+[phases.install]
+cmds = ["composer install --ignore-platform-reqs"]
+
+[phases.build]
+cmds = ["php artisan optimize:clear || true"]
