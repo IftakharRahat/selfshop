@@ -1,14 +1,14 @@
-# Fix: Prevent Nixpacks from installing Node.js/pnpm alongside Composer.
-# The package.json is only for Laravel Mix (dev asset compilation)
-# and causes build failures since pnpm is not installed.
+# Force PHP-only provider (prevents node/pnpm from package.json detection)
 providers = ["php"]
 
-[phases.setup]
-nixPkgs = ["php82", "nginx", "php82Packages.composer", "perl"]
-nixpkgsArchive = "e24b4c09e963677b1beea49d411cd315a024ad3a"
-
+# Only run composer install — skip pnpm
 [phases.install]
 cmds = ["composer install --ignore-platform-reqs"]
 
+# Only run Laravel optimize — skip pnpm build
 [phases.build]
 cmds = ["php artisan optimize:clear || true"]
+
+# Explicitly use PHP-FPM + Nginx start (not node)
+[start]
+cmd = "([ -e /app/storage ] && chmod -R ugo+w /app/storage); perl /assets/transform-config.pl /assets/nginx.template /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
