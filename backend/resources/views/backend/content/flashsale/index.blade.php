@@ -424,32 +424,53 @@
             searchTimer = setTimeout(function() { loadAllProducts(q); }, 300);
         });
 
-        // Click product -> prompt for discount and add
+        // Click product -> show discount overlay
         $(document).on('click', '.fs-product-opt', function() {
-            var pid = $(this).data('pid');
-            var pname = $(this).data('pname');
+            pendingProductId = $(this).data('pid');
+            pendingProductName = $(this).data('pname');
             $('#fsDropdownPanel').removeClass('show');
             $('#fsDropdownTrigger').removeClass('open');
 
-            var discount = prompt('Enter discount % for "' + pname + '":', '10');
-            if (discount === null) return; // cancelled
-            discount = parseFloat(discount) || 0;
+            // Show the inline discount overlay
+            $('#discountProductName').text(pendingProductName);
+            $('#discountInput').val(10);
+            $('#discountOverlay').addClass('show');
+        });
+
+        // Cancel discount overlay
+        $('#discountCancel').click(function() {
+            $('#discountOverlay').removeClass('show');
+            pendingProductId = null;
+            pendingProductName = '';
+        });
+
+        // Confirm discount and add product
+        $('#discountConfirm').click(function() {
+            var discount = parseFloat($('#discountInput').val()) || 0;
             if (discount < 0 || discount > 99) {
                 swal({ icon: 'error', title: 'Discount must be between 0 and 99%' });
                 return;
             }
 
             var flashSaleId = $('#manage_flash_sale_id').val();
+            var $btn = $(this);
+            $btn.prop('disabled', true).text('Adding...');
+
             $.ajax({
                 type: 'POST',
                 url: '{{ route("admin.flashsale.addproduct") }}',
-                data: { '_token': token, flash_sale_id: flashSaleId, product_id: pid, discount_percentage: discount },
+                data: { '_token': token, flash_sale_id: flashSaleId, product_id: pendingProductId, discount_percentage: discount },
                 success: function() {
+                    $('#discountOverlay').removeClass('show');
+                    $btn.prop('disabled', false).text('Add Product');
                     swal({ title: "Product added!", icon: "success" });
                     loadFlashSaleProducts(flashSaleId);
                     flashsaleinfo.ajax.reload();
+                    pendingProductId = null;
+                    pendingProductName = '';
                 },
                 error: function(err) {
+                    $btn.prop('disabled', false).text('Add Product');
                     if (err.responseJSON && err.responseJSON.error) swal({ icon: 'error', title: err.responseJSON.error });
                 }
             });

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode } from "swiper/modules";
+import { MapPin, BadgeCheck } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 import { useGetPopularSuppliersQuery } from "@/redux/features/home/homeApi";
 import "swiper/css";
@@ -22,7 +23,7 @@ interface SupplierItem {
     products_count: number;
 }
 
-/** Logo with fallback initials — matches MostPopularBrands sizing */
+/** Logo with fallback initials */
 function SupplierLogo({
     logo,
     name,
@@ -40,7 +41,7 @@ function SupplierLogo({
             .slice(0, 2)
             .toUpperCase();
         return (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-400 to-teal-600 rounded-full text-white font-bold text-base sm:text-lg select-none">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-400 to-rose-600 rounded-full text-white font-bold text-sm sm:text-base select-none">
                 {initials}
             </div>
         );
@@ -61,27 +62,34 @@ function SupplierLogo({
 function SupplierCard({ supplier }: { supplier: SupplierItem }) {
     return (
         <Link href={`/supplier/${supplier.slug}`}>
-            <div className="w-full aspect-square bg-white border border-gray-100 rounded-xl flex flex-col items-center justify-center p-3 sm:p-4 cursor-pointer hover:shadow-md transition-shadow gap-1.5 sm:gap-2">
+            <div className="bg-white border border-gray-100 rounded-xl p-4 sm:p-5 cursor-pointer hover:shadow-md hover:border-pink-100 transition-all flex flex-col items-center text-center gap-2.5 h-full">
                 {/* Circular logo */}
-                <div className="relative w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full overflow-hidden shrink-0">
+                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 ring-2 ring-gray-100">
                     <SupplierLogo logo={supplier.logo_path} name={supplier.company_name} />
                     {supplier.is_verified_badge && (
-                        <span className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white rounded-full w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center text-[8px] sm:text-[10px] shadow">
-                            ✓
+                        <span className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center shadow">
+                            <BadgeCheck className="w-3 h-3" />
                         </span>
                     )}
                 </div>
 
                 {/* Name */}
-                <p className="text-[10px] sm:text-xs font-medium text-gray-800 text-center truncate w-full">
+                <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate w-full leading-tight">
                     {supplier.company_name}
                 </p>
 
-                {/* Product count */}
-                <p className="text-[9px] sm:text-[10px] text-gray-400">
-                    {supplier.products_count}{" "}
-                    {supplier.products_count === 1 ? "Product" : "Products"}
-                </p>
+                {/* City */}
+                {supplier.city && (
+                    <div className="flex items-center gap-1 text-gray-400">
+                        <MapPin className="w-3 h-3" />
+                        <span className="text-[10px] sm:text-xs">{supplier.city}</span>
+                    </div>
+                )}
+
+                {/* Product count badge */}
+                <span className="text-[10px] sm:text-xs text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full font-medium">
+                    {supplier.products_count} {supplier.products_count === 1 ? "Product" : "Products"}
+                </span>
             </div>
         </Link>
     );
@@ -95,7 +103,7 @@ const PopularSuppliers = () => {
 
     return (
         <div className="container mx-auto py-3 sm:py-6 lg:py-10 px-3 sm:px-6 lg:px-8">
-            {/* Section title — matches MostPopularBrands */}
+            {/* Section title — matches other home sections */}
             <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-semibold text-[#322F35] mb-3 sm:mb-5 text-center">
                 Popular Suppliers
             </h2>
@@ -103,8 +111,8 @@ const PopularSuppliers = () => {
             {/* ---------- MOBILE SWIPER ---------- */}
             <div className="block md:hidden">
                 <Swiper
-                    slidesPerView={3.5}
-                    spaceBetween={8}
+                    slidesPerView={2.5}
+                    spaceBetween={10}
                     freeMode={true}
                     modules={[FreeMode]}
                 >
@@ -117,7 +125,7 @@ const PopularSuppliers = () => {
             </div>
 
             {/* ---------- DESKTOP GRID ---------- */}
-            <div className="hidden md:grid md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+            <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {suppliers.map((s) => (
                     <SupplierCard key={s.id} supplier={s} />
                 ))}

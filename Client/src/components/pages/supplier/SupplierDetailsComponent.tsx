@@ -11,7 +11,9 @@ import {
 	Store,
 	ChevronRight,
 	Search,
+	UserPlus,
 } from "lucide-react";
+import { Tooltip } from "antd";
 import { getImageUrl } from "@/lib/utils";
 import { useGetSupplierDetailsQuery } from "@/redux/features/home/homeApi";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
@@ -132,7 +134,7 @@ export default function SupplierDetailsComponent({
 				</div>
 
 				{/* Shop Info Row */}
-				<div className="relative flex flex-col sm:flex-row items-start sm:items-end gap-3 sm:gap-4 pb-4 border-b border-gray-100">
+				<div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 pt-2 pb-4 border-b border-gray-100">
 					{/* Circular Logo — overlapping the banner */}
 					<div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-[3px] border-white shadow-md shrink-0 -mt-10 sm:-mt-12 ml-4 sm:ml-6 bg-white z-10">
 						{vendor.logo_path && !logoError ? (
@@ -184,6 +186,16 @@ export default function SupplierDetailsComponent({
 							)}
 						</div>
 					</div>
+
+					{/* Follow Button — right side */}
+					<div className="shrink-0 sm:ml-auto">
+						<Tooltip title="Coming soon" placement="top">
+							<button className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#E5005F] border border-[#E5005F] rounded-full hover:bg-pink-50 transition-colors cursor-pointer">
+								<UserPlus className="w-4 h-4" />
+								Follow
+							</button>
+						</Tooltip>
+					</div>
 				</div>
 			</div>
 
@@ -197,8 +209,8 @@ export default function SupplierDetailsComponent({
 								<button
 									onClick={() => setSelectedCategory(undefined)}
 									className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${!selectedCategory
-											? "bg-[#E5005F] text-white border-[#E5005F]"
-											: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
+										? "bg-[#E5005F] text-white border-[#E5005F]"
+										: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
 										}`}
 								>
 									All
@@ -208,8 +220,8 @@ export default function SupplierDetailsComponent({
 										key={cat.id}
 										onClick={() => setSelectedCategory(cat.id)}
 										className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${selectedCategory === cat.id
-												? "bg-[#E5005F] text-white border-[#E5005F]"
-												: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
+											? "bg-[#E5005F] text-white border-[#E5005F]"
+											: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
 											}`}
 									>
 										{cat.category_name}
@@ -227,8 +239,8 @@ export default function SupplierDetailsComponent({
 								key={tab.key}
 								onClick={() => setActiveTab(tab.key)}
 								className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === tab.key
-										? "bg-white text-[#E5005F] border-[#E5005F]"
-										: "bg-white text-gray-500 border-transparent hover:text-gray-700"
+									? "bg-white text-[#E5005F] border-[#E5005F]"
+									: "bg-white text-gray-500 border-transparent hover:text-gray-700"
 									}`}
 							>
 								{tab.label}

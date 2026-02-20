@@ -150,14 +150,14 @@ export default function Navbar() {
 						<p>Explore Mega offer winter for getting hottest drops.</p>
 					</div>
 					<div className="flex items-center gap-6">
-						<div className="flex items-center">
+						<Link href="/dashboard/track-orders" className="flex items-center hover:opacity-80 transition-opacity">
 							<img
 								src={TrackYourOrder.src}
 								alt="Track Your Order"
 								className="w-6 h-6 mr-2"
 							/>
 							<p>Track your order</p>
-						</div>
+						</Link>
 						<div className="flex items-center">
 							<img
 								src={BecomeADropshiiper.src}
@@ -201,18 +201,15 @@ export default function Navbar() {
 						{/* Right side - User and Cart */}
 						<div className="flex items-center space-x-6">
 							{token && user?.data?.profile?.name ? (
-								<Dropdown
-									overlay={userMenu}
-									placement="bottomRight"
-									trigger={["click"]}
+								<Link
+									href="/dashboard/settings"
+									className="hidden sm:flex items-center space-x-2 text-gray-700 hover:text-pink-600 transition-colors"
 								>
-									<div className="hidden sm:flex items-center space-x-2 text-gray-700 cursor-pointer">
-										<User className="h-5 w-5" />
-										<span className="hidden sm:block">
-											Hello, {user?.data?.profile?.name}
-										</span>
-									</div>
-								</Dropdown>
+									<User className="h-5 w-5" />
+									<span className="hidden sm:block">
+										Hello, {user?.data?.profile?.name}
+									</span>
+								</Link>
 							) : (
 								<div
 									onClick={() => setIsLoginModalOpen(true)}
@@ -242,15 +239,12 @@ export default function Navbar() {
 									<div className="sm:hidden">
 										{/* mobile */}
 										{token && user?.data?.profile?.name ? (
-											<Dropdown
-												overlay={userMenu}
-												placement="bottomRight"
-												trigger={["click"]}
+											<Link
+												href="/dashboard/settings"
+												className="flex items-center space-x-2 text-gray-700 hover:text-pink-600 transition-colors"
 											>
-												<div className="flex items-center space-x-2 text-gray-700 cursor-pointer">
-													<User className="h-5 w-5" />
-												</div>
-											</Dropdown>
+												<User className="h-5 w-5" />
+											</Link>
 										) : (
 											<div
 												onClick={() => setIsLoginModalOpen(true)}

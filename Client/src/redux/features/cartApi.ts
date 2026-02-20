@@ -44,21 +44,21 @@ const courseApi = baseApi.injectEndpoints({
 		}),
 
 		updateCartItem: builder.mutation({
-			query: (data) => {
+			query: ({ cartId, qty }: { cartId: number; qty: number }) => {
 				return {
 					url: `/user-update-cart`,
 					method: "POST",
-					body: data?.formData,
+					body: { cart_id: cartId, qty },
 				};
 			},
 			invalidatesTags: ["cartApi"],
 		}),
 		deleteCartItem: builder.mutation({
-			query: (productId) => {
+			query: (cartId: number) => {
 				return {
 					url: `/user-destroy-cart`,
 					method: "POST",
-					body: { product_id: productId },
+					body: { cart_id: cartId },
 				};
 			},
 			invalidatesTags: ["cartApi"],

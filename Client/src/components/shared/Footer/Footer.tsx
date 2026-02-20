@@ -247,6 +247,15 @@ export default function Footer() {
               </div> */}
 						</div>
 					</div>
+
+					{/* Payment Banner */}
+					<div className="mt-10 border-t border-gray-600 pt-8">
+						<img
+							src="/ssl-banner.webp"
+							alt="Payment methods - SSLCommerz verified"
+							className="w-full object-contain"
+						/>
+					</div>
 				</div>
 			</footer>
 		</>

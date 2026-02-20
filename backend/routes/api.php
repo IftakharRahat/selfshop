@@ -21,6 +21,7 @@ use App\Http\Controllers\VendorReportsController;
 use App\Http\Controllers\VendorDashboardController;
 use App\Http\Controllers\VendorNotificationController;
 use App\Http\Controllers\VendorCommissionController;
+use App\Http\Controllers\ShippingAddressController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -176,6 +177,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/get-wishlist', [FrontendApiController::class, 'getWishlist'])->name('api.get.wishlist');
     Route::post('/remove-wishlist', [FrontendApiController::class, 'removeWishlist'])->name('api.destroy.wishlist');
     Route::post('/clear-wishlist', [FrontendApiController::class, 'clearWishlist'])->name('api.clear.wishlist');
+
+    // Shipping Addresses
+    Route::get('/shipping-addresses', [ShippingAddressController::class, 'index'])->name('api.shipping-addresses.index');
+    Route::post('/shipping-addresses', [ShippingAddressController::class, 'store'])->name('api.shipping-addresses.store');
+    Route::put('/shipping-addresses/{id}', [ShippingAddressController::class, 'update'])->name('api.shipping-addresses.update');
+    Route::delete('/shipping-addresses/{id}', [ShippingAddressController::class, 'destroy'])->name('api.shipping-addresses.destroy');
 
     // Vendor (Wholesale / Supplier) – vendor portal APIs
     Route::prefix('vendor')->group(function () {

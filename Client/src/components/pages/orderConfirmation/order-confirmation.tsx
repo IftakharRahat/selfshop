@@ -2,10 +2,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Minus, Plus, Trash2, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 import { TbCurrencyTaka } from "react-icons/tb";
@@ -19,6 +20,12 @@ import {
 	useUpdateCartItemMutation,
 } from "@/redux/features/cartApi";
 import { useGetPricingQuery } from "@/redux/features/pricingApi";
+import {
+	useGetShippingAddressesQuery,
+	useCreateShippingAddressMutation,
+	useDeleteShippingAddressMutation,
+} from "@/redux/features/shippingAddressApi";
+import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 // ✅ Zod Schema for Validation
@@ -34,14 +41,23 @@ const customerSchema = z.object({
 	note: z.string().optional(),
 });
 
+
 export default function OrderConfirmation() {
 	const router = useRouter();
-	const { data: cartItems } = useGetAllCartItemsQuery(undefined);
+	const { data: cartItems, isLoading } = useGetAllCartItemsQuery(undefined);
+
+	// Redirect to home if cart is empty
+	useEffect(() => {
+		if (!isLoading && (!cartItems?.data || cartItems.data.length === 0)) {
+			router.replace("/");
+		}
+	}, [cartItems, isLoading, router]);
 	const [updateCartItem] = useUpdateCartItemMutation();
 	const [deleteCartItem] = useDeleteCartItemMutation();
 	const [createOrder] = useCreateOrderMutation();
 	const [selected, setSelected] = useState("cod");
 	const [selectedLocation, setSelectedLocation] = useState("inside");
+	const [agreedToTerms, setAgreedToTerms] = useState(false);
 	const { data: pricingData } = useGetPricingQuery(undefined);
 	console.log("invoice id:", pricingData?.data?.invoice?.invoiceID);
 	const [customerData, setCustomerData] = useState({
@@ -52,6 +68,52 @@ export default function OrderConfirmation() {
 	});
 
 	const [errors, setErrors] = useState<Record<string, string>>({});
+
+	// Saved addresses from API
+	const token = useAppSelector((state) => state.auth.access_token);
+	const { data: savedAddressesData } = useGetShippingAddressesQuery(undefined, { skip: !token });
+	const savedAddresses = savedAddressesData?.data || [];
+	const [createShippingAddress] = useCreateShippingAddressMutation();
+	const [deleteShippingAddress] = useDeleteShippingAddressMutation();
+	const [showSaveInput, setShowSaveInput] = useState(false);
+	const [saveLabel, setSaveLabel] = useState("");
+
+	const handleSaveAddress = async () => {
+		if (!customerData.name || !customerData.address || !customerData.phone) return;
+		const label = saveLabel.trim() || `${customerData.name} - ${customerData.phone}`;
+		await handleAsyncWithToast(
+			async () => createShippingAddress({
+				label,
+				name: customerData.name,
+				address: customerData.address,
+				phone: customerData.phone,
+			}),
+			true,
+			"Saving address...",
+			"Address saved!",
+		);
+		setShowSaveInput(false);
+		setSaveLabel("");
+	};
+
+	const handleDeleteSavedAddress = async (id: number) => {
+		await handleAsyncWithToast(
+			async () => deleteShippingAddress(id),
+			true,
+			"Removing...",
+			"Address removed",
+		);
+	};
+
+	const handleSelectSavedAddress = (addr: { name: string; address: string; phone: string }) => {
+		setCustomerData((prev) => ({
+			...prev,
+			name: addr.name,
+			address: addr.address,
+			phone: addr.phone,
+		}));
+		setErrors({});
+	};
 
 	const handleInputChange = (field: string, value: string) => {
 		setCustomerData((prev) => ({ ...prev, [field]: value }));
@@ -117,17 +179,13 @@ export default function OrderConfirmation() {
 		}
 	};
 
-	const handleUpdateCartItem = async (productId: string, newQty: number) => {
-		const formData = new FormData();
-		formData.append("product_id", productId);
-		formData.append("qty", newQty.toString());
-
-		await handleAsyncWithToast(async () => updateCartItem({ formData }));
+	const handleUpdateCartItem = async (cartId: number, newQty: number) => {
+		await handleAsyncWithToast(async () => updateCartItem({ cartId, qty: newQty }));
 	};
 
-	const handleDeleteCartItem = async (productId: string) => {
+	const handleDeleteCartItem = async (cartId: number) => {
 		await handleAsyncWithToast(
-			async () => deleteCartItem(productId),
+			async () => deleteCartItem(cartId),
 			true,
 			"Removing item...",
 			"Item removed from cart",
@@ -143,9 +201,42 @@ export default function OrderConfirmation() {
 						<h1 className="text-2xl font-bold text-gray-900 mb-2">
 							Let&apos;s get to the confirm order
 						</h1>
-						<p className="text-gray-600 mb-8">
+						<p className="text-gray-600 mb-6">
 							Enter customer details to confirm the order.
 						</p>
+
+						{/* Saved Addresses */}
+						{savedAddresses.length > 0 && (
+							<div className="mb-6">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Saved Addresses
+								</label>
+								<div className="space-y-2">
+									{savedAddresses.map((addr) => (
+										<div
+											key={addr.id}
+											className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50/30 transition-colors cursor-pointer group"
+											onClick={() => handleSelectSavedAddress(addr)}
+										>
+											<BookmarkCheck className="w-4 h-4 text-pink-500 flex-shrink-0" />
+											<div className="flex-1 min-w-0">
+												<p className="text-sm font-medium text-gray-900 truncate">{addr.label || `${addr.name} - ${addr.phone}`}</p>
+												<p className="text-xs text-gray-500 truncate">{addr.address} • {addr.phone}</p>
+											</div>
+											<button
+												onClick={(e) => {
+													e.stopPropagation();
+													handleDeleteSavedAddress(addr.id);
+												}}
+												className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all"
+											>
+												<X className="w-3.5 h-3.5" />
+											</button>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
 
 						<div className="space-y-6">
 							{["name", "address", "phone"].map((field) => (
@@ -182,6 +273,57 @@ export default function OrderConfirmation() {
 									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
 								/>
 							</div>
+
+							{/* Save Address Button */}
+							{customerData.name && customerData.address && customerData.phone && (() => {
+								const isAlreadySaved = savedAddresses.some(
+									(a) => a.name === customerData.name && a.address === customerData.address && a.phone === customerData.phone
+								);
+								if (isAlreadySaved) {
+									return (
+										<div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg">
+											<BookmarkCheck className="w-4 h-4 text-green-600" />
+											<span className="text-sm font-medium text-green-700">Address saved</span>
+										</div>
+									);
+								}
+								return (
+									<div>
+										{showSaveInput ? (
+											<div className="flex gap-2">
+												<input
+													type="text"
+													placeholder="Address label (e.g. Home, Office)"
+													value={saveLabel}
+													onChange={(e) => setSaveLabel(e.target.value)}
+													className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+													onKeyDown={(e) => e.key === "Enter" && handleSaveAddress()}
+												/>
+												<button
+													onClick={handleSaveAddress}
+													className="px-4 py-2 bg-pink-600 text-white text-sm font-medium rounded-lg hover:bg-pink-700 transition-colors"
+												>
+													Save
+												</button>
+												<button
+													onClick={() => { setShowSaveInput(false); setSaveLabel(""); }}
+													className="px-3 py-2 text-gray-500 text-sm rounded-lg hover:bg-gray-100 transition-colors"
+												>
+													Cancel
+												</button>
+											</div>
+										) : (
+											<button
+												onClick={() => setShowSaveInput(true)}
+												className="flex items-center gap-2 text-sm font-medium text-pink-600 border border-pink-200 bg-pink-50 hover:bg-pink-100 px-4 py-2.5 rounded-lg transition-colors w-full cursor-pointer"
+											>
+												<Bookmark className="w-4 h-4" />
+												Save this address for future orders
+											</button>
+										)}
+									</div>
+								);
+							})()}
 						</div>
 
 						{/* <div className="flex items-center justify-between w-full gap-3 mt-5">
@@ -242,8 +384,8 @@ export default function OrderConfirmation() {
 							{/* Cash on Delivery */}
 							<label
 								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "cod"
-										? "border-pink-500 text-pink-500"
-										: "border-gray-300 text-gray-700"
+									? "border-pink-500 text-pink-500"
+									: "border-gray-300 text-gray-700"
 									}`}
 							>
 								<input
@@ -260,8 +402,8 @@ export default function OrderConfirmation() {
 							{/* Account Payment */}
 							<label
 								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "account"
-										? "border-pink-500 text-pink-500"
-										: "border-gray-300 text-gray-700"
+									? "border-pink-500 text-pink-500"
+									: "border-gray-300 text-gray-700"
 									}`}
 							>
 								<input
@@ -278,8 +420,8 @@ export default function OrderConfirmation() {
 							{/* SSL Commerce */}
 							<label
 								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "ssl"
-										? "border-pink-500 text-pink-500"
-										: "border-gray-300 text-gray-700"
+									? "border-pink-500 text-pink-500"
+									: "border-gray-300 text-gray-700"
 									}`}
 							>
 								<input
@@ -294,123 +436,112 @@ export default function OrderConfirmation() {
 							</label>
 						</div>
 
-					<button
-						onClick={handleOrderConfirm}
-						className="w-full mt-8 bg-pink-600 hover:bg-pink-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
-					>
-						Confirm order
-					</button>
-				</div>
+						{/* Terms & Conditions Checkbox */}
+						<label className="flex items-start gap-3 mt-6 cursor-pointer select-none">
+							<input
+								type="checkbox"
+								checked={agreedToTerms}
+								onChange={(e) => setAgreedToTerms(e.target.checked)}
+								className="mt-1 w-4 h-4 accent-pink-500 flex-shrink-0"
+							/>
+							<span className="text-sm text-gray-600">
+								I have read and agree to the{" "}
+								<Link href="/terms-and-conditions" className="text-pink-600 underline hover:text-pink-700">Terms &amp; Conditions</Link>,{" "}
+								<Link href="/privacy-policy" className="text-pink-600 underline hover:text-pink-700">Privacy Policy</Link>, and{" "}
+								<Link href="/return-policy" className="text-pink-600 underline hover:text-pink-700">Return &amp; Refund Policy</Link>.
+							</span>
+						</label>
 
-				{/* Right Side - Order Summary */}
-				<div className="bg-white rounded-lg p-6 shadow-sm order-1 lg:order-2">
-					{/* Customer Order Section */}
-					<div className="mb-8">
-						<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
-							Customer order
-						</h2>
-						<div className="space-y-4">
-							{cartItems?.data?.length ? (
-								cartItems?.data.map((item: any) => (
-									<div
-										key={item.id}
-										className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg"
-									>
-										<div className="w-20 h-20 sm:w-16 sm:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
-											<Image
-												src={getImageUrl(item.image)}
-												alt={item?.name || "Order item"}
-												width={64}
-												height={64}
-												className="w-full h-full object-cover"
-											/>
-										</div>
-
-										<div className="flex-1 text-center sm:text-left">
-											<h3 className="font-medium text-gray-900">
-												{item.name}
-											</h3>
-											<p className="text-sm text-gray-500">{item.code}</p>
-											<p className="font-semibold text-gray-900 flex items-center">
-												<TbCurrencyTaka size={20} />
-												{item.price}
-											</p>
-										</div>
-
-										<div className="flex justify-center sm:justify-end items-center gap-3">
-											<button
-												onClick={() =>
-													handleUpdateCartItem(item.product_id, item.qty - 1)
-												}
-												disabled={item.qty <= 1}
-												className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
-											>
-												<Minus className="w-4 h-4" />
-											</button>
-											<span className="w-8 text-center font-medium">
-												{item.qty}
-											</span>
-											<button
-												onClick={() =>
-													handleUpdateCartItem(item.product_id, item.qty + 1)
-												}
-												className="w-8 h-8 rounded-full border border-pink-500 text-pink-500 flex items-center justify-center hover:bg-pink-50"
-											>
-												<Plus className="w-4 h-4" />
-											</button>
-											<button
-												onClick={() => handleDeleteCartItem(item.product_id)}
-												className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-red-50 hover:border-red-300 hover:text-red-500 ml-2"
-											>
-												<Trash2 className="w-4 h-4" />
-											</button>
-										</div>
-									</div>
-								))
-							) : (
-								<p className="text-gray-500">No items in cart.</p>
-							)}
-						</div>
+						<button
+							onClick={handleOrderConfirm}
+							disabled={!agreedToTerms}
+							className={`w-full mt-4 font-semibold py-4 px-6 rounded-lg transition-colors ${agreedToTerms
+								? "bg-pink-600 hover:bg-pink-700 text-white"
+								: "bg-gray-300 text-gray-500 cursor-not-allowed"
+								}`}
+						>
+							Confirm order
+						</button>
 					</div>
 
-					{/* Product Summary Section */}
-					<div>
-						<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
-							Product Summary
-						</h2>
-						<div className="space-y-4">
-							<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-								<span>Total Price</span>
-								<span className="flex items-center">
-									{" "}
-									<TbCurrencyTaka size={20} />
-									{cartItems?.data
-										.reduce(
-											(total: number, item: any) =>
-												total + parseFloat(item.price) * item.qty,
-											0,
-										)
-										.toFixed(2)}
-								</span>
+					{/* Right Side - Order Summary */}
+					<div className="bg-white rounded-lg p-6 shadow-sm order-1 lg:order-2">
+						{/* Customer Order Section */}
+						<div className="mb-8">
+							<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+								Customer order
+							</h2>
+							<div className="space-y-4">
+								{cartItems?.data?.length ? (
+									cartItems?.data.map((item: any) => (
+										<div
+											key={item.id}
+											className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 border border-gray-200 rounded-lg"
+										>
+											<div className="w-20 h-20 sm:w-16 sm:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 mx-auto sm:mx-0">
+												<Image
+													src={getImageUrl(item.image)}
+													alt={item?.name || "Order item"}
+													width={64}
+													height={64}
+													className="w-full h-full object-cover"
+												/>
+											</div>
+
+											<div className="flex-1 text-center sm:text-left">
+												<h3 className="font-medium text-gray-900">
+													{item.name}
+												</h3>
+												<p className="text-sm text-gray-500">{item.code}</p>
+												<p className="font-semibold text-gray-900 flex items-center">
+													<TbCurrencyTaka size={20} />
+													{item.price}
+												</p>
+											</div>
+
+											<div className="flex justify-center sm:justify-end items-center gap-3">
+												<button
+													onClick={() =>
+														handleUpdateCartItem(item.id, item.qty - 1)
+													}
+													disabled={item.qty <= 1}
+													className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50"
+												>
+													<Minus className="w-4 h-4" />
+												</button>
+												<span className="w-8 text-center font-medium">
+													{item.qty}
+												</span>
+												<button
+													onClick={() =>
+														handleUpdateCartItem(item.id, item.qty + 1)
+													}
+													className="w-8 h-8 rounded-full border border-pink-500 text-pink-500 flex items-center justify-center hover:bg-pink-50"
+												>
+													<Plus className="w-4 h-4" />
+												</button>
+												<button
+													onClick={() => handleDeleteCartItem(item.id)}
+													className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-red-50 hover:border-red-300 hover:text-red-500 ml-2"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
+											</div>
+										</div>
+									))
+								) : (
+									<p className="text-gray-500">No items in cart.</p>
+								)}
 							</div>
-							<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-								<span>Total Price (Discount)</span>
-								<span className="flex items-center">
-									{" "}
-									<TbCurrencyTaka size={20} />
-									{discount}
-								</span>
-							</div>
-							<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-								<span>Tax & Fee</span>
-								<span className="flex items-center">
-									{" "}
-									<TbCurrencyTaka size={20} />
-									{taxAndFee}
-								</span>
-							</div>
-							<div className="border-t pt-4">
-								<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
+						</div>
+
+						{/* Product Summary Section */}
+						<div>
+							<h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-6">
+								Product Summary
+							</h2>
+							<div className="space-y-4">
+								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
 									<span>Total Price</span>
 									<span className="flex items-center">
 										{" "}
@@ -424,12 +555,43 @@ export default function OrderConfirmation() {
 											.toFixed(2)}
 									</span>
 								</div>
+								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+									<span>Total Price (Discount)</span>
+									<span className="flex items-center">
+										{" "}
+										<TbCurrencyTaka size={20} />
+										{discount}
+									</span>
+								</div>
+								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+									<span>Tax & Fee</span>
+									<span className="flex items-center">
+										{" "}
+										<TbCurrencyTaka size={20} />
+										{taxAndFee}
+									</span>
+								</div>
+								<div className="border-t pt-4">
+									<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
+										<span>Total Price</span>
+										<span className="flex items-center">
+											{" "}
+											<TbCurrencyTaka size={20} />
+											{cartItems?.data
+												.reduce(
+													(total: number, item: any) =>
+														total + parseFloat(item.price) * item.qty,
+													0,
+												)
+												.toFixed(2)}
+										</span>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
 		</div >
 	);
 }
