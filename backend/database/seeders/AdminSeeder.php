@@ -29,5 +29,19 @@ class AdminSeeder extends Seeder
                 $user->assignRole('admin');
             }
         }
+
+        $checkShorno = Admin::where('email', 'fb.shorno@gmail.com')->first();
+        if (is_null($checkShorno)) {
+            $shorno = new Admin();
+            $shorno->name = 'Shorno';
+            $shorno->phone = '01841151827';
+            $shorno->email = 'fb.shorno@gmail.com';
+            $shorno->status = 'Active';
+            $shorno->password = Hash::make('shorno@admin1');
+            $shorno->save();
+            if (Role::where('name', 'admin')->where('guard_name', 'admin')->exists()) {
+                $shorno->assignRole('admin');
+            }
+        }
     }
 }
