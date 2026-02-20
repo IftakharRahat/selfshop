@@ -110,4 +110,22 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
 
 EXPOSE 3000
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/app.conf"]
+# Startup script: run migrations + optimize, then start services
+RUN cat > /app/start.sh <<'EOF'
+#!/bin/bash
+set -e
+
+echo "Running database migrations..."
+php artisan migrate --force
+
+echo "Caching configuration..."
+php artisan config:cache || true
+php artisan route:cache || true
+php artisan view:cache || true
+
+echo "Starting services..."
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/app.conf
+EOF
+RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
