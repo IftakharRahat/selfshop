@@ -2730,8 +2730,9 @@ class FrontendApiController extends Controller
 
     /**
      * Return a single approved vendor's profile + their paginated products.
+     * Supports ?category={id} query param for category filtering.
      */
-    public function supplierDetails(string $slug)
+    public function supplierDetails(Request $request, string $slug)
     {
         $vendor = Vendor::where('slug', $slug)
             ->where('status', 'approved')
@@ -2745,7 +2746,20 @@ class FrontendApiController extends Controller
             ], 404);
         }
 
-        $products = Product::visibleOnStorefront()
+        // Distinct categories that this vendor's products belong to
+        $categoryIds = Product::visibleOnStorefront()
+            ->where('vendor_id', $vendor->id)
+            ->whereNotNull('category_id')
+            ->distinct()
+            ->pluck('category_id');
+
+        $categories = Category::whereIn('id', $categoryIds)
+            ->select('id', 'category_name', 'slug')
+            ->orderBy('category_name')
+            ->get();
+
+        // Products query — optionally filtered by category
+        $productsQuery = Product::visibleOnStorefront()
             ->where('vendor_id', $vendor->id)
             ->select(
                 'id',
@@ -2755,17 +2769,23 @@ class FrontendApiController extends Controller
                 'ProductRegularPrice',
                 'ProductSalePrice',
                 'Discount',
+                'category_id',
                 'status'
-            )
-            ->latest()
-            ->paginate(12);
+            );
+
+        if ($request->filled('category')) {
+            $productsQuery->where('category_id', $request->input('category'));
+        }
+
+        $products = $productsQuery->latest()->paginate(12);
 
         return response()->json([
             'status'  => true,
             'message' => 'Supplier details',
             'data'    => [
-                'vendor'   => $vendor,
-                'products' => $products,
+                'vendor'     => $vendor,
+                'categories' => $categories,
+                'products'   => $products,
             ],
         ]);
     }

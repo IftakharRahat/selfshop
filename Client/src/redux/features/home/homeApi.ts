@@ -153,9 +153,10 @@ const homeApi = baseApi.injectEndpoints({
 			providesTags: ["categories"],
 		}),
 		getSupplierDetails: builder.query({
-			query: (slug: string) => ({
+			query: ({ slug, category }: { slug: string; category?: number }) => ({
 				url: `/supplier/${slug}`,
 				method: "GET",
+				params: category ? { category } : undefined,
 			}),
 			providesTags: ["categories"],
 		}),
