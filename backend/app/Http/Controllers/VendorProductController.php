@@ -42,7 +42,7 @@ class VendorProductController extends Controller
             $query->where('ProductName', 'like', '%' . $request->search . '%');
         }
 
-        $products = $query->get(['id', 'ProductName', 'ProductSlug', 'ProductSku', 'qty', 'ProductResellerPrice', 'ProductRegularPrice', 'status', 'frature', 'ViewProductImage', 'vendor_approval_status', 'created_at']);
+        $products = $query->get(['id', 'ProductName', 'ProductSlug', 'ProductSku', 'qty', 'ProductResellerPrice', 'ProductRegularPrice', 'status', 'frature', 'ViewProductImage', 'vendor_approval_status', 'selling_type', 'created_at']);
 
         return response()->json([
             'status' => true,
@@ -81,6 +81,7 @@ class VendorProductController extends Controller
             'PostImage' => 'nullable|array',
             'PostImage.*' => 'image|max:5120',
             'allow_dropship' => 'nullable|boolean',
+            'selling_type' => 'nullable|in:wholesale,dropshipping,both',
         ]);
 
         if ($validator->fails()) {
@@ -137,6 +138,9 @@ class VendorProductController extends Controller
         $product->status = 'Inactive';
         if (Schema::hasColumn('products', 'allow_dropship')) {
             $product->allow_dropship = (bool) $request->input('allow_dropship', false);
+        }
+        if (Schema::hasColumn('products', 'selling_type')) {
+            $product->selling_type = $request->input('selling_type', 'both');
         }
 
         if ($request->hasFile('ProductImage')) {
@@ -221,6 +225,7 @@ class VendorProductController extends Controller
             'PostImage' => 'nullable|array',
             'PostImage.*' => 'image|max:5120',
             'allow_dropship' => 'nullable|boolean',
+            'selling_type' => 'nullable|in:wholesale,dropshipping,both',
         ]);
 
         if ($validator->fails()) {
@@ -266,6 +271,9 @@ class VendorProductController extends Controller
         }
         if (Schema::hasColumn('products', 'allow_dropship') && array_key_exists('allow_dropship', $data)) {
             $product->allow_dropship = (bool) $data['allow_dropship'];
+        }
+        if (Schema::hasColumn('products', 'selling_type') && array_key_exists('selling_type', $data)) {
+            $product->selling_type = $data['selling_type'];
         }
 
         if ($request->hasFile('ProductImage')) {

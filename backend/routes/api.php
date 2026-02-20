@@ -46,6 +46,7 @@ Route::middleware('guest')->group(function () {
     // need to change live server db
     Route::get('/slider-bottom-banners', [FrontendApiController::class, 'bottombanners'])->name('api.user.bottombanners');
     Route::get('/brands', [FrontendApiController::class, 'brands'])->name('api.user.brands');
+    Route::get('/flash-sale', [FrontendApiController::class, 'flashSale'])->name('api.user.flashsale');
     Route::get('/collection/{slug}', [FrontendApiController::class, 'collection'])->name('api.user.collection');
     Route::get('/new-arrivels', [FrontendApiController::class, 'newarrivels'])->name('api.user.newarrivels');
     Route::get('/new-products', [FrontendApiController::class, 'newproducts'])->name('api.user.newarrivels');

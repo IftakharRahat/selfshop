@@ -45,6 +45,7 @@
                             <th>Vendor</th>
                             <th>Category</th>
                             <th>SKU</th>
+                            <th>Type</th>
                             <th>Approval</th>
                             <th>Added</th>
                             <th>Action</th>
@@ -75,6 +76,15 @@
                             <td>{{ $p->categories->category_name ?? '-' }}</td>
                             <td>{{ $p->ProductSku }}</td>
                             <td>
+                                @if(($p->selling_type ?? 'both') === 'wholesale')
+                                    <span class="badge bg-success">Wholesale</span>
+                                @elseif(($p->selling_type ?? 'both') === 'dropshipping')
+                                    <span class="badge bg-info">Dropshipping</span>
+                                @else
+                                    <span class="badge bg-warning text-dark">Both</span>
+                                @endif
+                            </td>
+                            <td>
                                 @if($p->vendor_approval_status === 'pending')
                                     <span class="badge bg-warning">Pending</span>
                                 @elseif($p->vendor_approval_status === 'approved')
@@ -102,7 +112,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center">No vendor products yet.</td>
+                            <td colspan="10" class="text-center">No vendor products yet.</td>
                         </tr>
                         @endforelse
                     </tbody>

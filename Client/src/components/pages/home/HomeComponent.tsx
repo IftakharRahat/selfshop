@@ -6,7 +6,7 @@ import {
 } from "@/redux/features/home/homeApi";
 import BigSellingSection from "./big-selling-section";
 import CategoriesSection from "./CategoriesSection";
-import FeaturesSection from "./features-section";
+import FlashSaleSection from "./flash-sale-section";
 import MostPopularBrands from "./most-popular-brands";
 import NewProducts from "./new-products";
 import PopularSuppliers from "./popular-suppliers";
@@ -28,7 +28,7 @@ const HomeComponent = () => {
 		<div className="space-y-2 sm:space-y-4 lg:space-y-6">
 			<CategoriesSection />
 			<PopularSuppliers />
-			<FeaturesSection />
+			<FlashSaleSection />
 			<PromotionalSection />
 			<ProductShowSection
 				title="NEW ARRIVALS"

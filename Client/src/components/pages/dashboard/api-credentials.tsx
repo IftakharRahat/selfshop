@@ -1,10 +1,11 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { getApiBaseUrl } from "@/lib/utils";
+import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 import {
-	useGenerateDeveloperApiQuery,
+	useGenerateDeveloperApiMutation,
 	useGetDeveloperApiQuery,
 } from "@/redux/features/developersApi/developersApi";
 
@@ -16,20 +17,13 @@ export default function ApiCredentials() {
 		data,
 		isLoading: isLoadingCredentials,
 		isError,
-		refetch: refetchCredentials,
 	} = useGetDeveloperApiQuery(undefined);
 
-	// Manual trigger for generation
-	const {
-		data: generatedData,
-		isLoading: isGenerating,
-		refetch: triggerGenerate,
-	} = useGenerateDeveloperApiQuery(undefined, {
-		skip: true,
-	});
+	// Mutation for generating credentials
+	const [generateApi, { isLoading: isGenerating }] =
+		useGenerateDeveloperApiMutation();
 
-	// Decide which data to show (generated or fetched)
-	const apiData = generatedData?.data || data?.data;
+	const apiData = data?.data;
 
 	const credentials = {
 		userUuid: apiData?.user_id?.toString() || "",
@@ -37,6 +31,16 @@ export default function ApiCredentials() {
 		apiKey: apiData?.api_key || "",
 		apiSecret: apiData?.api_secret || "",
 		status: apiData?.status || "Inactive",
+	};
+
+	const handleGenerate = async () => {
+		await handleAsyncWithToast(
+			async () => generateApi(undefined),
+			true,
+			"Generating API credentials...",
+			"API credentials generated successfully!",
+			"Failed to generate credentials."
+		);
 	};
 
 	const copyToClipboard = async (text: string, field: string) => {
@@ -84,7 +88,12 @@ export default function ApiCredentials() {
 	if (isLoadingCredentials) {
 		return (
 			<div className="m-3 sm:m-4 lg:m-6 bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 lg:p-8 mb-24">
-				<p className="text-sm text-gray-500">Loading credentials...</p>
+				<div className="animate-pulse space-y-4">
+					<div className="h-6 bg-gray-200 rounded w-1/3" />
+					<div className="h-10 bg-gray-200 rounded" />
+					<div className="h-10 bg-gray-200 rounded" />
+					<div className="h-10 bg-gray-200 rounded" />
+				</div>
 			</div>
 		);
 	}
@@ -146,10 +155,17 @@ export default function ApiCredentials() {
 					</p>
 					<button
 						disabled={isGenerating}
-						onClick={() => triggerGenerate().then(() => refetchCredentials())}
-						className="bg-[#E5005F] hover:bg-pink-600 !text-white px-6 py-3 text-sm font-medium rounded-md cursor-pointer transition-colors disabled:opacity-50"
+						onClick={handleGenerate}
+						className="bg-[#E5005F] hover:bg-pink-600 !text-white px-6 py-3 text-sm font-medium rounded-md cursor-pointer transition-colors disabled:opacity-50 inline-flex items-center gap-2"
 					>
-						{isGenerating ? "Generating..." : "Generate API Credentials"}
+						{isGenerating ? (
+							<>
+								<Loader2 className="w-4 h-4 animate-spin" />
+								Generating...
+							</>
+						) : (
+							"Generate API Credentials"
+						)}
 					</button>
 				</div>
 			)}

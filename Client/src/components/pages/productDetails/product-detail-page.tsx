@@ -17,7 +17,7 @@ import "swiper/css/free-mode";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/thumbs";
-import Link from "next/link";
+
 import { MdOutlineFileDownload } from "react-icons/md";
 import Swal from "sweetalert2";
 import { z } from "zod";
@@ -72,23 +72,53 @@ export default function ProductDetailPage({ product }: any) {
 		);
 
 	// ---- UI States ----
-	const [selectedSize, setSelectedSize] = useState(productData.sizes[0] || "");
+	const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
 	const [selectedVarient, setSelectedVarient] = useState<any>(
 		product?.varients?.[0] ?? null,
 	);
-	const [quantity, setQuantity] = useState(1);
+	const [quantities, setQuantities] = useState<Record<string, number>>({});
 	const [sellingPrice, setSellingPrice] = useState("");
 	const [priceError, setPriceError] = useState<string | null>(null);
 
+	const toggleSize = (size: string) => {
+		setSelectedSizes((prev) => {
+			if (prev.includes(size)) {
+				// Remove size and its quantity
+				setQuantities((q) => {
+					const next = { ...q };
+					delete next[size];
+					return next;
+				});
+				return prev.filter((s) => s !== size);
+			} else {
+				// Add size with default qty 1
+				setQuantities((q) => ({ ...q, [size]: 1 }));
+				return [...prev, size];
+			}
+		});
+	};
+
+	const handleQtyChange = (size: string, type: "increase" | "decrease") => {
+		setQuantities((prev) => ({
+			...prev,
+			[size]: type === "increase" ? (prev[size] || 0) + 1 : Math.max(1, (prev[size] || 1) - 1),
+		}));
+	};
+
+	const totalQuantity = Object.values(quantities).reduce((a, b) => a + b, 0);
+
 	const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
-	const handleQuantityChange = (type: "increase" | "decrease") => {
-		if (type === "increase") {
-			setQuantity((prev) => prev + 1);
-		} else if (type === "decrease" && quantity > 1) {
-			setQuantity((prev) => prev - 1);
-		}
-	};
+	// Determine selling type
+	const sellingType: 'wholesale' | 'dropshipping' | 'both' = product.selling_type || 'both';
+	const hasTiers = product.price_tiers && product.price_tiers.length > 0;
+	const showWholesale = (sellingType === 'wholesale' || sellingType === 'both') && hasTiers;
+	const showDropshipping = sellingType === 'dropshipping' || sellingType === 'both';
+	const [activeTierId, setActiveTierId] = useState<number | null>(
+		hasTiers ? product.price_tiers[0]?.id ?? null : null
+	);
+
+
 
 	const validateSellingPrice = () => {
 		try {
@@ -113,23 +143,26 @@ export default function ProductDetailPage({ product }: any) {
 		const validPrice = validateSellingPrice();
 		if (!validPrice) return;
 
-		const formData = new FormData();
-		formData.append("product_id", product.id);
-		formData.append("price", validPrice.toString());
-		formData.append("qty", quantity.toString());
-		formData.append("size", selectedSize);
+		if (selectedSizes.length === 0) {
+			toast.error("Please select at least one size.");
+			return;
+		}
 
-		console.log("Added to cart:", {
-			// product: productData.name,
-			product_id: product.id,
-			price: validPrice,
-			qty: quantity,
-			size: selectedSize,
-		});
+		for (const size of selectedSizes) {
+			const qty = quantities[size] || 1;
+			const formData = new FormData();
+			formData.append("product_id", product.id);
+			formData.append("price", validPrice.toString());
+			formData.append("qty", qty.toString());
+			formData.append("size", size);
+			if (selectedColors.length > 0) {
+				formData.append("color", selectedColors.map(c => c.name).join(","));
+			}
 
-		await handleAsyncWithToast(async () => {
-			return addToCart(formData);
-		});
+			await handleAsyncWithToast(async () => {
+				return addToCart(formData);
+			});
+		}
 	};
 
 	const handleBuyNow = async () => {
@@ -144,17 +177,29 @@ export default function ProductDetailPage({ product }: any) {
 		const validPrice = validateSellingPrice();
 		if (!validPrice) return;
 
-		const formData = new FormData();
-		formData.append("product_id", product.id);
-		formData.append("price", validPrice.toString());
-		formData.append("qty", quantity.toString());
-		formData.append("size", selectedSize);
+		if (selectedSizes.length === 0) {
+			toast.error("Please select at least one size.");
+			return;
+		}
 
-		const result = await handleAsyncWithToast(async () => {
-			return addToCart(formData);
-		}, false);
+		let lastResult: any;
+		for (const size of selectedSizes) {
+			const qty = quantities[size] || 1;
+			const formData = new FormData();
+			formData.append("product_id", product.id);
+			formData.append("price", validPrice.toString());
+			formData.append("qty", qty.toString());
+			formData.append("size", size);
+			if (selectedColors.length > 0) {
+				formData.append("color", selectedColors.map(c => c.name).join(","));
+			}
 
-		if (result.data?.status) {
+			lastResult = await handleAsyncWithToast(async () => {
+				return addToCart(formData);
+			}, false);
+		}
+
+		if (lastResult?.data?.status) {
 			window.location.href = "/order-confirmation";
 		}
 	};
@@ -178,9 +223,15 @@ export default function ProductDetailPage({ product }: any) {
 		{ id: 4, name: "Black", color: "black" },
 	];
 
-	const [selectedColor, setSelectedColor] = useState<ColorOption>(
-		derivedColors[0],
-	);
+	const [selectedColors, setSelectedColors] = useState<ColorOption[]>([]);
+
+	const toggleColor = (c: ColorOption) => {
+		setSelectedColors((prev) =>
+			prev.find((sc) => sc.id === c.id)
+				? prev.filter((sc) => sc.id !== c.id)
+				: [...prev, c],
+		);
+	};
 
 	const handleDownloadImage = (imgPath: string) => {
 		const imageUrl = getImageUrl(imgPath);
@@ -306,6 +357,25 @@ export default function ProductDetailPage({ product }: any) {
 							</div>
 						)}
 
+						{/* Selling Type Badge */}
+						<div className="flex items-center gap-2">
+							{sellingType === 'wholesale' && (
+								<span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+									🏭 Wholesale
+								</span>
+							)}
+							{sellingType === 'dropshipping' && (
+								<span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+									🚀 Dropshipping
+								</span>
+							)}
+							{sellingType === 'both' && (
+								<span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+									🔄 Wholesale + Dropshipping
+								</span>
+							)}
+						</div>
+
 						<div className="space-y-3 text-sm">
 							<div className="flex items-center">
 								<span className="font-medium text-gray-900">Category :</span>
@@ -334,13 +404,7 @@ export default function ProductDetailPage({ product }: any) {
 							</div>
 						</div>
 
-						{/* Bulk Order (Vendor / Matrix) */}
-						<Link
-							href={`/vendor/product/${product.ProductSlug || product.id}`}
-							className="inline-flex items-center justify-center w-full sm:w-auto bg-[#E5005F] text-white font-medium py-3 px-5 rounded-lg hover:bg-pink-700 transition-colors mb-4"
-						>
-							Bulk Order (mixed sizes · tier discount)
-						</Link>
+
 
 						{/* Bulk (Variants) */}
 						<OrderNowModal
@@ -349,161 +413,231 @@ export default function ProductDetailPage({ product }: any) {
 							variant={selectedVarient}
 						/>
 
-						{/* Bulk Pricing Tiers */}
-						{product.price_tiers && product.price_tiers.length > 0 && (
-							<div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100 mt-4">
-								<h3 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
-									📊 Bulk Pricing Options
+						{/* ── Wholesale: MoveOn-Style Tier Price Badges ── */}
+						{showWholesale && (
+							<div className="mt-4">
+								<h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+									📊 Wholesale Price Tiers
 								</h3>
-								<div className="overflow-x-auto">
-									<table className="min-w-full text-xs">
-										<thead>
-											<tr className="text-left text-indigo-900/60 border-b border-indigo-100">
-												<th className="pb-2 font-semibold">Option / Variant</th>
-												<th className="pb-2 font-semibold text-center">Qty</th>
-												<th className="pb-2 font-semibold">Price</th>
-												<th className="pb-2"></th>
-											</tr>
-										</thead>
-										<tbody className="divide-y divide-indigo-50">
-											{product.price_tiers.map((tier: any) => (
-												<tr key={tier.id} className="group">
-													<td className="py-3 pr-2 font-medium text-gray-700">
-														{tier.variant_title || "Base Product"}
-													</td>
-													<td className="py-3 px-2 text-center text-gray-600">
-														{tier.min_qty}{tier.max_qty ? ` - ${tier.max_qty}` : "+"}
-													</td>
-													<td className="py-3 px-2 font-bold text-indigo-700">
-														৳{parseFloat(tier.unit_price).toFixed(2)}
-													</td>
-													<td className="py-3 text-right">
-														<button
-															onClick={() => {
-																setSellingPrice(tier.unit_price);
-																setQuantity(tier.min_qty);
-																if (tier.variant_title) setSelectedSize(tier.variant_title);
-																toast.success(`Selected tier: ${tier.variant_title || "Base"}`);
-															}}
-															className="bg-indigo-600 text-white px-3 py-1.5 rounded-md text-[10px] font-bold hover:bg-indigo-700 transition-colors shadow-sm"
-														>
-															Select
-														</button>
-													</td>
-												</tr>
-											))}
-										</tbody>
-									</table>
+								<div className="flex flex-wrap gap-2">
+									{product.price_tiers.map((tier: any) => {
+										const isActive = activeTierId === tier.id;
+										const qtyLabel = tier.max_qty
+											? `${tier.min_qty} - ${tier.max_qty} Pcs`
+											: `≥${tier.min_qty} Pcs`;
+										return (
+											<button
+												key={tier.id}
+												onClick={() => {
+													setActiveTierId(tier.id);
+													setSellingPrice(tier.unit_price);
+																								if (tier.variant_title && !selectedSizes.includes(tier.variant_title)) {
+													toggleSize(tier.variant_title);
+												}
+													toast.success(`Selected: ${qtyLabel}`);
+												}}
+												className={`relative flex flex-col items-center px-4 py-3 rounded-xl border-2 transition-all cursor-pointer min-w-[120px] ${isActive
+													? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-100'
+													: 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+													}`}
+											>
+												{isActive && (
+													<span className="absolute -top-2 -right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+														<svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+															<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+														</svg>
+													</span>
+												)}
+												<span className={`text-lg font-bold ${isActive ? 'text-emerald-700' : 'text-gray-900'
+													}`}>
+													৳{parseFloat(tier.unit_price).toFixed(2)}
+												</span>
+												<span className={`text-[11px] font-medium mt-0.5 ${isActive ? 'text-emerald-600' : 'text-gray-500'
+													}`}>
+													{qtyLabel}
+												</span>
+												{tier.delivery_charge && (
+													<span className="text-[10px] text-gray-400 mt-0.5">
+														Deliv: ৳{parseFloat(tier.delivery_charge).toFixed(0)}
+													</span>
+												)}
+											</button>
+										);
+									})}
 								</div>
 							</div>
 						)}
 
 						{/* Size Selection */}
-						<div className="bg-[#F4F4F4] p-4 space-y-4">
-							{/* Color Select */}
+						<div className="bg-[#F4F4F4] p-4 space-y-4 rounded-lg">
+							{/* Color Multi-Select */}
 							<div className="mb-3">
-								<h3 className="font-medium mb-2 text-sm">Color</h3>
+								<h3 className="font-medium mb-2 text-sm text-gray-900">Color <span className="text-xs text-gray-500">(select multiple)</span></h3>
 								<div className="flex gap-3 overflow-x-auto p-1">
-									{derivedColors.map((c) => (
-										<button
-											key={c.id}
-											onClick={() => setSelectedColor(c)}
-											className={`flex flex-col items-center p-1 rounded-md transition min-w-12 ${selectedColor.id === c.id
-												? "ring-2 ring-pink-500"
-												: "hover:ring-1 hover:ring-gray-200"
-												}`}
-										>
-											<div
-												className="w-5 h-5 rounded-full border"
-												style={{ backgroundColor: c.color }}
-											></div>
-											<span className="text-[10px] mt-1">{c.name}</span>
-										</button>
-									))}
+									{derivedColors.map((c) => {
+										const isSelected = selectedColors.some((sc) => sc.id === c.id);
+										return (
+											<button
+												key={c.id}
+												onClick={() => toggleColor(c)}
+												className={`relative flex flex-col items-center p-1.5 rounded-md transition min-w-12 ${isSelected
+													? "ring-2 ring-pink-500 bg-pink-50"
+													: "hover:ring-1 hover:ring-gray-300"
+													}`}
+											>
+												{isSelected && (
+													<span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
+														<svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+															<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+														</svg>
+													</span>
+												)}
+												<div
+													className="w-6 h-6 rounded-full border-2"
+													style={{ backgroundColor: c.color, borderColor: isSelected ? '#ec4899' : '#d1d5db' }}
+												></div>
+												<span className={`text-[10px] mt-1 ${isSelected ? 'font-semibold text-pink-600' : ''}`}>{c.name}</span>
+											</button>
+										);
+									})}
 								</div>
 							</div>
+
+							{/* Size Multi-Select */}
 							<div className="space-y-3">
-								<h3 className="font-medium text-gray-900">Size</h3>
-								<div className="flex space-x-3 flex-wrap gap-2">
-									{productData.sizes.map((size: any) => (
-										<button
-											key={size}
-											onClick={() => setSelectedSize(size)}
-											className={`px-4 py-2 border rounded-lg text-sm font-medium transition-colors bg-white ${selectedSize === size
-												? "border-pink-500 text-pink-600 bg-pink-50"
-												: "border-gray-300 text-gray-700 hover:border-gray-400"
-												}`}
-										>
-											{size}
-										</button>
-									))}
+								<h3 className="font-medium text-gray-900">Size <span className="text-xs text-gray-500">(select multiple)</span></h3>
+								<div className="flex flex-wrap gap-2">
+									{productData.sizes.map((size: any) => {
+										const isSelected = selectedSizes.includes(size);
+										return (
+											<button
+												key={size}
+												onClick={() => toggleSize(size)}
+												className={`relative px-4 py-2 border rounded-lg text-sm font-medium transition-all ${isSelected
+													? "border-pink-500 text-pink-600 bg-pink-50 shadow-sm"
+													: "border-gray-300 text-gray-700 hover:border-gray-400 bg-white"
+													}`}
+											>
+												{isSelected && (
+													<span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
+														<svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+															<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+														</svg>
+													</span>
+												)}
+												{size}
+											</button>
+										);
+									})}
 								</div>
 							</div>
 
-							{/* Quantity Selection */}
-							<div className="space-y-3">
-								<h3 className="font-medium text-gray-900">Quantity</h3>
-								<div className="flex items-center space-x-3">
-									<button
-										onClick={() => handleQuantityChange("decrease")}
-										className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
-										disabled={quantity <= 1}
-									>
-										<Minus className="w-4 h-4" />
-									</button>
-									<span className="w-10 h-10 rounded-lg flex items-center justify-center bg-white">
-										{quantity}
-									</span>
-									<button
-										onClick={() => handleQuantityChange("increase")}
-										className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-pink-50 transition-colors bg-white"
-									>
-										<Plus className="w-4 h-4" />
-									</button>
+							{/* Per-Size Quantity Table */}
+							{selectedSizes.length > 0 && (
+								<div className="space-y-3">
+									<h3 className="font-medium text-gray-900">Quantity per Size</h3>
+									<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+										<div className="grid grid-cols-3 gap-4 px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
+											<div>Size</div>
+											<div>Price</div>
+											<div className="text-right">Quantity</div>
+										</div>
+										{selectedSizes.map((size) => (
+											<div key={size} className="grid grid-cols-3 gap-4 px-4 py-3 border-t border-gray-100 items-center">
+												<div className="font-medium text-gray-900 text-sm">{size}</div>
+												<div className="text-gray-700 flex items-center text-sm">
+													<TbCurrencyTaka size={16} />
+													{productData.currentPrice.toFixed(2)}
+												</div>
+												<div className="flex items-center justify-end gap-1">
+													<button
+														onClick={() => handleQtyChange(size, "decrease")}
+														className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
+													>
+														<Minus className="w-3 h-3" />
+													</button>
+													<span className="w-10 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 text-sm font-medium">
+														{quantities[size] || 0}
+													</span>
+													<button
+														onClick={() => handleQtyChange(size, "increase")}
+														className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-pink-50 transition-colors bg-white"
+													>
+														<Plus className="w-3 h-3" />
+													</button>
+												</div>
+											</div>
+										))}
+										{/* Total Row */}
+										<div className="grid grid-cols-3 gap-4 px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
+											<div className="text-gray-900">Total</div>
+											<div className="text-pink-600 flex items-center">
+												<TbCurrencyTaka size={16} />
+												{(productData.currentPrice * totalQuantity).toFixed(2)}
+											</div>
+											<div className="text-right text-gray-700">{totalQuantity} pcs</div>
+										</div>
+									</div>
 								</div>
-							</div>
-						</div>
-
-						<div className="text-3xl font-bold text-gray-900 flex items-center">
-							<TbCurrencyTaka size={35} />
-							{productData.currentPrice.toFixed(2)}
-						</div>
-
-						<div className="space-y-3">
-							<h3 className="font-medium text-gray-900">Your selling price</h3>
-							<input
-								type="number"
-								placeholder="Enter your selling price"
-								value={sellingPrice}
-								onChange={(e) => setSellingPrice(e.target.value)}
-								className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-							/>
-							{priceError && (
-								<p className="text-red-500 text-sm mt-1">{priceError}</p>
-							)}{" "}
-							{priceError == null && (
-								<p
-									className={cn(
-										"text-green-600 text-sm mt-1",
-										Number(
-											(
-												(Number(sellingPrice) - productData.currentPrice) *
-												quantity
-											).toFixed(2),
-										) > 0
-											? ""
-											: "hidden",
-									)}
-								>
-									Your total earn{" "}
-									{(
-										(Number(sellingPrice) - productData.currentPrice) *
-										quantity
-									).toFixed(2)}{" "}
-									TK
-								</p>
 							)}
 						</div>
+
+						{/* Unit Price + Total Price */}
+						<div className="space-y-1">
+							<div className="text-3xl font-bold text-gray-900 flex items-center">
+								<TbCurrencyTaka size={35} />
+								{productData.currentPrice.toFixed(2)}
+								<span className="text-sm font-normal text-gray-500 ml-1">/pc</span>
+							</div>
+							{totalQuantity > 0 && (
+								<div className="flex items-center gap-2 text-sm">
+									<span className="text-gray-500">Total ({totalQuantity} pcs):</span>
+									<span className="font-bold text-lg text-pink-600 flex items-center">
+										<TbCurrencyTaka size={20} />
+										{(productData.currentPrice * totalQuantity).toFixed(2)}
+									</span>
+								</div>
+							)}
+						</div>
+
+						{/* Dropshipping: Selling Price + Earnings */}
+						{showDropshipping && (
+							<div className="space-y-3">
+								<h3 className="font-medium text-gray-900">Your selling price</h3>
+								<input
+									type="number"
+									placeholder="Enter your selling price"
+									value={sellingPrice}
+									onChange={(e) => setSellingPrice(e.target.value)}
+									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+								/>
+								{priceError && (
+									<p className="text-red-500 text-sm mt-1">{priceError}</p>
+								)}{" "}
+								{priceError == null && (
+									<p
+										className={cn(
+											"text-green-600 text-sm mt-1",
+											Number(
+												(
+													(Number(sellingPrice) - productData.currentPrice) *
+													(totalQuantity || 1)
+												).toFixed(2),
+											) > 0
+												? ""
+												: "hidden",
+										)}
+									>
+										Your total earn{" "}
+										{(
+											(Number(sellingPrice) - productData.currentPrice) *
+											(totalQuantity || 1)
+										).toFixed(2)}{" "}
+										TK
+									</p>
+								)}
+							</div>
+						)}
 
 						<div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 ">
 							<button

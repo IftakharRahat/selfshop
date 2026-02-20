@@ -35,6 +35,7 @@
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ route('admin.sliders.index') }}" class="dropdown-item">Banners</a>
                     <a href="{{ route('admin.addbanners.index') }}" class="dropdown-item">Front Banners</a>
+                    <a href="{{ route('admin.flashsales.index') }}" class="dropdown-item">Flash Sale</a>
                 </div>
             </div>
             <div class="nav-item dropdown">

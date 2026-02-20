@@ -12,6 +12,7 @@ use App\Models\Subcategory;
 use App\Models\Stock;
 use App\Models\Purchase;
 use App\Models\Brand;
+use App\Models\ProductPriceTier;
 use App\Models\Varient;
 use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
@@ -261,6 +262,7 @@ class ProductController extends Controller
             $product->reseller_status = 'Off';
         }
         $product->reseller_bonus = $request->reseller_bonus;
+        $product->selling_type = $request->input('selling_type', 'both');
 
         $result = $product->save();
 
@@ -277,6 +279,22 @@ class ProductController extends Controller
             $purchase->supplier_id = 1;
             $purchase->quantity = $request->qty;
             $purchase->save();
+
+            // Save price tiers
+            if ($request->has('tiers')) {
+                foreach ($request->tiers as $tier) {
+                    if (!empty($tier['min_qty']) && !empty($tier['unit_price'])) {
+                        ProductPriceTier::create([
+                            'product_id' => $product->id,
+                            'variant_title' => $tier['variant_title'] ?? null,
+                            'min_qty' => $tier['min_qty'],
+                            'max_qty' => $tier['max_qty'] ?? null,
+                            'unit_price' => $tier['unit_price'],
+                            'delivery_charge' => $tier['delivery_charge'] ?? 0,
+                        ]);
+                    }
+                }
+            }
         }
         if (isset($request->shop_id)) {
             return redirect('admin/shop/products')->with('success', 'Product update successfully');
@@ -342,7 +360,7 @@ class ProductController extends Controller
     public function edit($id)
     {
         $shop = 'No';
-        $product = Product::with(['subcategories', 'minicategories'])->where('id', $id)->first();
+        $product = Product::with(['subcategories', 'minicategories', 'priceTiers'])->where('id', $id)->first();
 
         $sizes = Attrvalue::where('attribute_id', 2)->where('status', 'Active')->get();
         $colors = Attrvalue::where('attribute_id', 3)->where('status', 'Active')->get();
@@ -355,7 +373,7 @@ class ProductController extends Controller
     public function editproduct($id)
     {
         $shop = 'Yes';
-        $product = Product::with(['subcategories', 'minicategories'])->where('id', $id)->first();
+        $product = Product::with(['subcategories', 'minicategories', 'priceTiers'])->where('id', $id)->first();
 
         $sizes = Attrvalue::where('attribute_id', 2)->where('status', 'Active')->get();
         $colors = Attrvalue::where('attribute_id', 3)->where('status', 'Active')->get();
@@ -535,9 +553,26 @@ class ProductController extends Controller
             $product->reseller_status = 'Off';
         }
         $product->reseller_bonus = $request->reseller_bonus;
-
+        $product->selling_type = $request->input('selling_type', $product->selling_type ?? 'both');
 
         $product->update();
+
+        // Replace price tiers
+        if ($request->has('tiers')) {
+            ProductPriceTier::where('product_id', $product->id)->delete();
+            foreach ($request->tiers as $tier) {
+                if (!empty($tier['min_qty']) && !empty($tier['unit_price'])) {
+                    ProductPriceTier::create([
+                        'product_id' => $product->id,
+                        'variant_title' => $tier['variant_title'] ?? null,
+                        'min_qty' => $tier['min_qty'],
+                        'max_qty' => $tier['max_qty'] ?? null,
+                        'unit_price' => $tier['unit_price'],
+                        'delivery_charge' => $tier['delivery_charge'] ?? 0,
+                    ]);
+                }
+            }
+        }
 
         if ($product->vendor_id) {
             $product->loadMissing('vendor.user');

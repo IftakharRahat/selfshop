@@ -1,0 +1,1375 @@
+Starting Laravel development server: http://127.0.0.1:8000
+[Mon Feb 16 00:09:14 2026] PHP 8.2.12 Development Server (http://127.0.0.1:8000) started
+[Mon Feb 16 00:11:06 2026] 127.0.0.1:60372 Accepted
+[Mon Feb 16 00:11:56 2026] 127.0.0.1:60372 Closing
+[Mon Feb 16 00:11:56 2026] 127.0.0.1:65136 Accepted
+[Mon Feb 16 00:12:00 2026] 127.0.0.1:65136 Closing
+[Mon Feb 16 00:15:27 2026] 127.0.0.1:61598 Accepted
+[Mon Feb 16 00:15:30 2026] 127.0.0.1:61598 Closing
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:63076 Accepted
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:60650 Accepted
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:56140 Accepted
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:62543 Accepted
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:52068 Accepted
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:50995 Accepted
+[Mon Feb 16 00:16:22 2026] 127.0.0.1:63076 Closing
+[Mon Feb 16 00:16:23 2026] 127.0.0.1:60650 Closing
+[Mon Feb 16 00:16:24 2026] 127.0.0.1:56140 Closing
+[Mon Feb 16 00:16:24 2026] 127.0.0.1:62543 Closing
+[Mon Feb 16 00:16:25 2026] 127.0.0.1:52068 Closing
+[Mon Feb 16 00:16:25 2026] 127.0.0.1:50995 Closing
+[Mon Feb 16 00:16:25 2026] 127.0.0.1:56917 Accepted
+[Mon Feb 16 00:16:25 2026] 127.0.0.1:65075 Accepted
+[Mon Feb 16 00:16:26 2026] 127.0.0.1:56917 Closing
+[Mon Feb 16 00:16:26 2026] 127.0.0.1:64591 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:65075 Closing
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:62515 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:64591 Closing
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:54338 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:62515 [200]: GET /images/category/1765949131_848306.webp
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:64346 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:54338 [200]: GET /images/category/1765949519_654885.webp
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:50500 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:64346 [200]: GET /images/category/1765949267_784160.webp
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:59668 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:50500 [200]: GET /images/category/1765949303_268960.webp
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:62515 Closing
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:49658 Accepted
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:59668 [200]: GET /images/category/1765949158_609529.webp
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:54338 Closing
+[Mon Feb 16 00:16:27 2026] 127.0.0.1:54893 Accepted
+[Mon Feb 16 00:16:28 2026] 127.0.0.1:49658 Closing
+[Mon Feb 16 00:16:28 2026] 127.0.0.1:64346 Closing
+[Mon Feb 16 00:16:28 2026] 127.0.0.1:55996 Accepted
+[Mon Feb 16 00:16:29 2026] 127.0.0.1:54893 Closing
+[Mon Feb 16 00:16:29 2026] 127.0.0.1:50500 Closing
+[Mon Feb 16 00:16:29 2026] 127.0.0.1:51737 Accepted
+[Mon Feb 16 00:16:29 2026] 127.0.0.1:55996 Closing
+[Mon Feb 16 00:16:29 2026] 127.0.0.1:59668 Closing
+[Mon Feb 16 00:16:29 2026] 127.0.0.1:55218 Accepted
+[Mon Feb 16 00:16:30 2026] 127.0.0.1:51737 Closing
+[Mon Feb 16 00:16:30 2026] 127.0.0.1:60248 Accepted
+[Mon Feb 16 00:16:30 2026] 127.0.0.1:55218 Closing
+[Mon Feb 16 00:16:30 2026] 127.0.0.1:57564 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:60248 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:53569 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:57564 [200]: GET /images/category/1765949641_198210.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:52300 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:53569 [200]: GET /images/category/1765949401_688759.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:64944 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:52300 [200]: GET /images/category/1765368062_275400.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:57026 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:64944 [200]: GET /images/category/1765698139_699536.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:57564 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:63565 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:57026 [200]: GET /images/category/1765368037_934165.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:53569 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:63565 [200]: GET /images/slider/1717396007_3.png
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:52300 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:64944 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:57026 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:63565 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:52958 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:52958 [200]: GET /images/category/1765949075_327954.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:52958 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:50184 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:50184 [200]: GET /images/category/1765949023_587507.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:61791 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:61791 [200]: GET /images/category/1765949625_235715.webp
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:50184 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:61791 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56363 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:65456 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:64410 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56363 [200]: GET /images/product/image/17653683007556882932
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:65456 [200]: GET /images/product/image/17653688698034967133
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:64410 [200]: GET /images/product/image/17656985847883140124
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56363 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:65456 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:64410 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:59148 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:59148 [200]: GET /images/product/image/17656986862896774695
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:59148 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56480 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:59322 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56480 [200]: GET /images/slider/1717396022_1.png
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:59322 [200]: GET /images/product/image/17653742368912686746
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:59322 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56480 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56050 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:53782 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:62835 Accepted
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56050 [200]: GET /images/product/image/17653742930104303593
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:53782 [200]: GET /images/product/image/17653710440640913115
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:62835 [200]: GET /images/product/image/17653712493562756289
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:56050 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:53782 Closing
+[Mon Feb 16 00:16:31 2026] 127.0.0.1:62835 Closing
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:54159 Accepted
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:54159 [200]: GET /images/slider/1717396037_6.png
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:54159 Closing
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:57885 Accepted
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:52764 Accepted
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:57885 [200]: GET /images/product/image/17653689505702556311
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:52764 [200]: GET /images/product/image/17653690339506772792
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:57885 Closing
+[Mon Feb 16 00:16:32 2026] 127.0.0.1:52764 Closing
+[Mon Feb 16 00:17:11 2026] 127.0.0.1:50064 Accepted
+[Mon Feb 16 00:17:12 2026] 127.0.0.1:50064 Closing
+[Mon Feb 16 00:17:12 2026] 127.0.0.1:64743 Accepted
+[Mon Feb 16 00:18:01 2026] 127.0.0.1:64743 Closing
+[Mon Feb 16 00:19:24 2026] 127.0.0.1:50794 Accepted
+[Mon Feb 16 00:19:25 2026] 127.0.0.1:50794 Closing
+[Mon Feb 16 00:19:25 2026] 127.0.0.1:59348 Accepted
+[Mon Feb 16 00:19:26 2026] 127.0.0.1:59348 Closing
+[Mon Feb 16 00:19:34 2026] 127.0.0.1:58849 Accepted
+[Mon Feb 16 00:19:34 2026] 127.0.0.1:58849 Closing
+[Mon Feb 16 00:19:34 2026] 127.0.0.1:56925 Accepted
+[Mon Feb 16 00:19:36 2026] 127.0.0.1:56925 Closing
+[Mon Feb 16 00:19:37 2026] 127.0.0.1:58743 Accepted
+[Mon Feb 16 00:19:37 2026] 127.0.0.1:58724 Accepted
+[Mon Feb 16 00:19:37 2026] 127.0.0.1:58743 Closing
+[Mon Feb 16 00:19:37 2026] 127.0.0.1:55590 Accepted
+[Mon Feb 16 00:19:37 2026] 127.0.0.1:58724 [200]: GET /storage/products/vendor/w3WDKXPjXEvkUPKDnbzkQoQpSr0csN190RLFq1q2.png
+[Mon Feb 16 00:19:37 2026] 127.0.0.1:58724 Closing
+[Mon Feb 16 00:20:37 2026] 127.0.0.1:55590 Closed without sending a request; it was probably just an unused speculative preconnection
+[Mon Feb 16 00:20:37 2026] 127.0.0.1:55590 Closing
+[Mon Feb 16 00:20:37 2026] 127.0.0.1:49200 Accepted
+[Mon Feb 16 00:20:38 2026] 127.0.0.1:49200 Closing
+[Mon Feb 16 00:20:38 2026] 127.0.0.1:51045 Accepted
+[Mon Feb 16 00:20:39 2026] 127.0.0.1:51045 Closing
+[Mon Feb 16 00:20:43 2026] 127.0.0.1:56251 Accepted
+[Mon Feb 16 00:20:45 2026] 127.0.0.1:56251 Closing
+[Mon Feb 16 00:20:45 2026] 127.0.0.1:63452 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:63452 Closing
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:57509 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:64855 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:60341 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:57509 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:49976 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:64855 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:60341 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:49976 [200]: GET /backend/css/style.css
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:57509 Closing
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:64855 Closing
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:60341 Closing
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:49976 Closing
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:58074 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:52690 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:58074 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:65141 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:52690 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:58002 Accepted
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:65141 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 00:20:50 2026] 127.0.0.1:52063 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:58002 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:58074 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:64386 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:52063 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:52690 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:56284 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:64386 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:65141 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:51685 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:56284 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:51685 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:58002 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:52063 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:59162 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:64386 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:51208 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:59162 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:57998 Accepted
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:51208 [200]: GET /backend/js/main.js
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:51685 Closing
+[Mon Feb 16 00:20:51 2026] 127.0.0.1:58811 Accepted
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:57998 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:56284 Closing
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:58811 [200]: GET /backend/js/sample.js
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:59162 Closing
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:51208 Closing
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:58811 Closing
+[Mon Feb 16 00:20:52 2026] 127.0.0.1:57998 Closing
+[Mon Feb 16 00:21:24 2026] 127.0.0.1:59000 Accepted
+[Mon Feb 16 00:21:24 2026] 127.0.0.1:53304 Accepted
+[Mon Feb 16 00:21:24 2026] 127.0.0.1:52174 Accepted
+[Mon Feb 16 00:21:24 2026] 127.0.0.1:49513 Accepted
+[Mon Feb 16 00:21:24 2026] 127.0.0.1:52784 Accepted
+[Mon Feb 16 00:21:24 2026] 127.0.0.1:63580 Accepted
+[Mon Feb 16 00:21:25 2026] 127.0.0.1:59000 Closing
+[Mon Feb 16 00:21:25 2026] 127.0.0.1:53304 Closing
+[Mon Feb 16 00:21:25 2026] 127.0.0.1:52174 Closing
+[Mon Feb 16 00:21:26 2026] 127.0.0.1:49513 Closing
+[Mon Feb 16 00:21:27 2026] 127.0.0.1:52784 Closing
+[Mon Feb 16 00:21:27 2026] 127.0.0.1:63580 Closing
+[Mon Feb 16 00:21:27 2026] 127.0.0.1:63871 Accepted
+[Mon Feb 16 00:21:27 2026] 127.0.0.1:57727 Accepted
+[Mon Feb 16 00:21:28 2026] 127.0.0.1:63871 Closing
+[Mon Feb 16 00:21:28 2026] 127.0.0.1:53319 Accepted
+[Mon Feb 16 00:21:28 2026] 127.0.0.1:57727 Closing
+[Mon Feb 16 00:21:28 2026] 127.0.0.1:55559 Accepted
+[Mon Feb 16 00:21:29 2026] 127.0.0.1:53319 Closing
+[Mon Feb 16 00:21:29 2026] 127.0.0.1:50400 Accepted
+[Mon Feb 16 00:21:29 2026] 127.0.0.1:55559 Closing
+[Mon Feb 16 00:21:29 2026] 127.0.0.1:52920 Accepted
+[Mon Feb 16 00:21:30 2026] 127.0.0.1:50400 Closing
+[Mon Feb 16 00:21:30 2026] 127.0.0.1:65250 Accepted
+[Mon Feb 16 00:21:30 2026] 127.0.0.1:52920 Closing
+[Mon Feb 16 00:21:30 2026] 127.0.0.1:54122 Accepted
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:65250 Closing
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:50539 Accepted
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:54122 Closing
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:64872 Accepted
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:50539 Closing
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:63415 Accepted
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:64872 Closing
+[Mon Feb 16 00:21:31 2026] 127.0.0.1:61008 Accepted
+[Mon Feb 16 00:21:32 2026] 127.0.0.1:63415 Closing
+[Mon Feb 16 00:21:32 2026] 127.0.0.1:57402 Accepted
+[Mon Feb 16 00:21:33 2026] 127.0.0.1:61008 Closing
+[Mon Feb 16 00:21:33 2026] 127.0.0.1:49874 Accepted
+[Mon Feb 16 00:21:33 2026] 127.0.0.1:57402 Closing
+[Mon Feb 16 00:21:33 2026] 127.0.0.1:60684 Accepted
+[Mon Feb 16 00:21:34 2026] 127.0.0.1:49874 Closing
+[Mon Feb 16 00:21:34 2026] 127.0.0.1:65140 Accepted
+[Mon Feb 16 00:21:34 2026] 127.0.0.1:60684 Closing
+[Mon Feb 16 00:21:34 2026] 127.0.0.1:60491 Accepted
+[Mon Feb 16 00:21:35 2026] 127.0.0.1:65140 Closing
+[Mon Feb 16 00:21:35 2026] 127.0.0.1:50820 Accepted
+[Mon Feb 16 00:21:35 2026] 127.0.0.1:60491 Closing
+[Mon Feb 16 00:21:35 2026] 127.0.0.1:56087 Accepted
+[Mon Feb 16 00:21:36 2026] 127.0.0.1:50820 Closing
+[Mon Feb 16 00:21:36 2026] 127.0.0.1:57358 Accepted
+[Mon Feb 16 00:21:36 2026] 127.0.0.1:56087 Closing
+[Mon Feb 16 00:21:36 2026] 127.0.0.1:59468 Accepted
+[Mon Feb 16 00:21:36 2026] 127.0.0.1:57358 Closing
+[Mon Feb 16 00:21:36 2026] 127.0.0.1:62157 Accepted
+[Mon Feb 16 00:21:37 2026] 127.0.0.1:59468 Closing
+[Mon Feb 16 00:21:37 2026] 127.0.0.1:64586 Accepted
+[Mon Feb 16 00:21:37 2026] 127.0.0.1:62157 Closing
+[Mon Feb 16 00:21:37 2026] 127.0.0.1:61688 Accepted
+[Mon Feb 16 00:21:37 2026] 127.0.0.1:64586 Closing
+[Mon Feb 16 00:21:37 2026] 127.0.0.1:57446 Accepted
+[Mon Feb 16 00:21:38 2026] 127.0.0.1:61688 Closing
+[Mon Feb 16 00:21:38 2026] 127.0.0.1:60101 Accepted
+[Mon Feb 16 00:21:38 2026] 127.0.0.1:57446 Closing
+[Mon Feb 16 00:21:39 2026] 127.0.0.1:60101 Closing
+[Mon Feb 16 00:21:48 2026] 127.0.0.1:51788 Accepted
+[Mon Feb 16 00:21:51 2026] 127.0.0.1:51788 Closing
+[Mon Feb 16 00:21:51 2026] 127.0.0.1:55981 Accepted
+[Mon Feb 16 00:21:51 2026] 127.0.0.1:57458 Accepted
+[Mon Feb 16 00:21:52 2026] 127.0.0.1:55981 Closing
+[Mon Feb 16 00:21:52 2026] 127.0.0.1:64361 Accepted
+[Mon Feb 16 00:21:53 2026] 127.0.0.1:57458 Closing
+[Mon Feb 16 00:21:55 2026] 127.0.0.1:64361 Closing
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:61596 Accepted
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:61596 [200]: GET /images/slider/1717396007_3.png
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:61596 Closing
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:53321 Accepted
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:57096 Accepted
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:53321 [200]: GET /images/category/1765949303_268960.webp
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:57096 [200]: GET /images/category/1765368037_934165.webp
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:53321 Closing
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:57096 Closing
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:60828 Accepted
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:49153 Accepted
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:60828 [200]: GET /images/category/1765949158_609529.webp
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:50489 Accepted
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:49153 [200]: GET /images/category/1765949131_848306.webp
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:50489 [200]: GET /images/category/1765949267_784160.webp
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:60828 Closing
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:49153 Closing
+[Mon Feb 16 00:24:45 2026] 127.0.0.1:50489 Closing
+[Mon Feb 16 00:24:46 2026] 127.0.0.1:63288 Accepted
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:63288 Closing
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:61507 Accepted
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:59850 Accepted
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:61507 [200]: GET /images/category/1765698139_699536.webp
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:55309 Accepted
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:59850 [200]: GET /images/category/1765368062_275400.webp
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:59993 Accepted
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:55309 [200]: GET /images/category/1765949519_654885.webp
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:62058 Accepted
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:59993 [200]: GET /images/category/1765949641_198210.webp
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:61507 Closing
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:62058 [200]: GET /images/category/1765949401_688759.webp
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:59850 Closing
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:55309 Closing
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:59993 Closing
+[Mon Feb 16 00:24:47 2026] 127.0.0.1:62058 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:62819 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:60652 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:58832 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49294 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:51075 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:55356 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:62819 [200]: GET /images/category/1765949023_587507.webp
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:60652 [200]: GET /images/product/image/17653683007556882932
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:58832 [200]: GET /images/category/1765949075_327954.webp
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49294 [200]: GET /images/category/1765949625_235715.webp
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:51075 [200]: GET /images/product/image/17653688698034967133
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:55356 [200]: GET /images/product/image/17656985847883140124
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:62819 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:60652 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:58832 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49294 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:51075 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:55356 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:60491 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:51361 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:54208 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:56006 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49634 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:52919 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:60491 [200]: GET /images/product/image/17653742368912686746
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:51361 [200]: GET /images/product/image/17653710440640913115
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:54208 [200]: GET /images/product/image/17653712493562756289
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:56006 [200]: GET /images/product/image/17656986862896774695
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49634 [200]: GET /images/product/image/17653742930104303593
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:52919 [200]: GET /images/slider/1717396022_1.png
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:60491 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:51361 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:54208 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:56006 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49634 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:52919 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:58721 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:58721 [200]: GET /images/slider/1717396037_6.png
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:58721 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:64028 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:50284 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:64028 [200]: GET /images/product/image/17653693808822220948
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49211 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:50284 [200]: GET /images/product/image/17653692105660588528
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:57168 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49211 [200]: GET /images/product/image/17653690339506772792
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:52005 Accepted
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:57168 [200]: GET /images/product/image/17653689505702556311
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:64028 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:52005 [200]: GET /images/product/image/17653694472980433647
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:50284 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:49211 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:57168 Closing
+[Mon Feb 16 00:24:48 2026] 127.0.0.1:52005 Closing
+[Mon Feb 16 00:24:49 2026] 127.0.0.1:53485 Accepted
+[Mon Feb 16 00:24:49 2026] 127.0.0.1:53485 [200]: GET /images/product/image/17653698923992319971
+[Mon Feb 16 00:24:49 2026] 127.0.0.1:53485 Closing
+[Mon Feb 16 00:24:49 2026] 127.0.0.1:59334 Accepted
+[Mon Feb 16 00:24:50 2026] 127.0.0.1:59334 Closing
+[Mon Feb 16 00:24:50 2026] 127.0.0.1:62230 Accepted
+[Mon Feb 16 00:24:50 2026] 127.0.0.1:64422 Accepted
+[Mon Feb 16 00:24:50 2026] 127.0.0.1:62230 [200]: GET /images/brand/1720505343_walton2982.jpg
+[Mon Feb 16 00:24:50 2026] 127.0.0.1:54954 Accepted
+[Mon Feb 16 00:24:51 2026] 127.0.0.1:64422 Closing
+[Mon Feb 16 00:24:51 2026] 127.0.0.1:65044 Accepted
+[Mon Feb 16 00:24:52 2026] 127.0.0.1:54954 Closing
+[Mon Feb 16 00:24:52 2026] 127.0.0.1:52324 Accepted
+[Mon Feb 16 00:24:54 2026] 127.0.0.1:65044 Closing
+[Mon Feb 16 00:24:54 2026] 127.0.0.1:62230 Closing
+[Mon Feb 16 00:24:54 2026] 127.0.0.1:56178 Accepted
+[Mon Feb 16 00:24:55 2026] 127.0.0.1:52324 Closing
+[Mon Feb 16 00:24:55 2026] 127.0.0.1:56746 Accepted
+[Mon Feb 16 00:24:56 2026] 127.0.0.1:56178 Closing
+[Mon Feb 16 00:24:56 2026] 127.0.0.1:51612 Accepted
+[Mon Feb 16 00:24:58 2026] 127.0.0.1:56746 Closing
+[Mon Feb 16 00:24:58 2026] 127.0.0.1:56796 Accepted
+[Mon Feb 16 00:24:59 2026] 127.0.0.1:51612 Closing
+[Mon Feb 16 00:24:59 2026] 127.0.0.1:65281 Accepted
+[Mon Feb 16 00:25:00 2026] 127.0.0.1:56796 Closing
+[Mon Feb 16 00:25:00 2026] 127.0.0.1:65281 [200]: GET /images/slider/1717396052_2.png
+[Mon Feb 16 00:25:00 2026] 127.0.0.1:65281 Closing
+[Mon Feb 16 00:25:03 2026] 127.0.0.1:61217 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61217 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61901 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61901 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:56784 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:54029 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:56784 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:57989 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:54029 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61901 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:57989 [200]: GET /backend/css/style.css
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:56784 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:54029 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:57989 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61482 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:59154 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61482 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:59154 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61482 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:59154 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61153 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61153 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:65526 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61153 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:65526 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:65526 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:63858 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:63858 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:63858 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:57442 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:57442 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:64342 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:64342 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:57442 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61112 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61112 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:61112 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:62771 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:62771 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:64342 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:62771 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:60019 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:60019 [200]: GET /backend/js/main.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:60019 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:60613 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:60613 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:62115 Accepted
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:62115 [200]: GET /backend/js/sample.js
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:62115 Closing
+[Mon Feb 16 00:25:05 2026] 127.0.0.1:60613 Closing
+[Mon Feb 16 00:25:22 2026] 127.0.0.1:53083 Accepted
+[Mon Feb 16 00:25:22 2026] 127.0.0.1:65111 Accepted
+[Mon Feb 16 00:25:22 2026] 127.0.0.1:52182 Accepted
+[Mon Feb 16 00:25:23 2026] 127.0.0.1:53083 Closing
+[Mon Feb 16 00:25:23 2026] 127.0.0.1:58717 Accepted
+[Mon Feb 16 00:25:23 2026] 127.0.0.1:65111 Closing
+[Mon Feb 16 00:25:24 2026] 127.0.0.1:52182 Closing
+[Mon Feb 16 00:25:24 2026] 127.0.0.1:52298 Accepted
+[Mon Feb 16 00:25:25 2026] 127.0.0.1:58717 Closing
+[Mon Feb 16 00:25:25 2026] 127.0.0.1:49634 Accepted
+[Mon Feb 16 00:25:25 2026] 127.0.0.1:52298 Closing
+[Mon Feb 16 00:25:26 2026] 127.0.0.1:49634 Closing
+[Mon Feb 16 00:25:30 2026] 127.0.0.1:57197 Accepted
+[Mon Feb 16 00:25:31 2026] 127.0.0.1:57197 Closing
+[Mon Feb 16 00:25:31 2026] 127.0.0.1:56719 Accepted
+[Mon Feb 16 00:25:32 2026] 127.0.0.1:56719 Closing
+[Mon Feb 16 00:25:55 2026] 127.0.0.1:59719 Accepted
+[Mon Feb 16 00:25:56 2026] 127.0.0.1:59719 Closing
+[Mon Feb 16 00:25:57 2026] 127.0.0.1:58756 Accepted
+[Mon Feb 16 00:25:57 2026] 127.0.0.1:52910 Accepted
+[Mon Feb 16 00:25:57 2026] 127.0.0.1:58756 Closing
+[Mon Feb 16 00:25:57 2026] 127.0.0.1:53849 Accepted
+[Mon Feb 16 00:25:57 2026] 127.0.0.1:52910 Closing
+[Mon Feb 16 00:25:57 2026] 127.0.0.1:59641 Accepted
+[Mon Feb 16 00:25:58 2026] 127.0.0.1:53849 Closing
+[Mon Feb 16 00:25:58 2026] 127.0.0.1:49487 Accepted
+[Mon Feb 16 00:25:58 2026] 127.0.0.1:59641 Closing
+[Mon Feb 16 00:25:58 2026] 127.0.0.1:58852 Accepted
+[Mon Feb 16 00:25:59 2026] 127.0.0.1:49487 Closing
+[Mon Feb 16 00:25:59 2026] 127.0.0.1:56470 Accepted
+[Mon Feb 16 00:25:59 2026] 127.0.0.1:58852 Closing
+[Mon Feb 16 00:25:59 2026] 127.0.0.1:53139 Accepted
+[Mon Feb 16 00:26:00 2026] 127.0.0.1:56470 Closing
+[Mon Feb 16 00:26:00 2026] 127.0.0.1:55027 Accepted
+[Mon Feb 16 00:26:00 2026] 127.0.0.1:53139 Closing
+[Mon Feb 16 00:26:00 2026] 127.0.0.1:53143 Accepted
+[Mon Feb 16 00:26:01 2026] 127.0.0.1:55027 Closing
+[Mon Feb 16 00:26:01 2026] 127.0.0.1:53143 Closing
+[Mon Feb 16 00:36:18 2026] 127.0.0.1:57250 Accepted
+[Mon Feb 16 00:36:19 2026] 127.0.0.1:57250 [200]: GET /images/slider/1717396066_4.png
+[Mon Feb 16 00:36:19 2026] 127.0.0.1:57250 Closing
+[Mon Feb 16 00:36:19 2026] 127.0.0.1:62465 Accepted
+[Mon Feb 16 00:36:23 2026] 127.0.0.1:62465 [200]: GET /images/slider/1717396082_5.png
+[Mon Feb 16 00:36:23 2026] 127.0.0.1:62465 Closing
+[Mon Feb 16 00:42:44 2026] 127.0.0.1:53465 Accepted
+[Mon Feb 16 00:42:44 2026] 127.0.0.1:53466 Accepted
+[Mon Feb 16 00:42:45 2026] 127.0.0.1:53466 Closing
+[Mon Feb 16 00:42:46 2026] 127.0.0.1:53465 Closing
+[Mon Feb 16 00:42:46 2026] 127.0.0.1:61783 Accepted
+[Mon Feb 16 00:42:47 2026] 127.0.0.1:61783 Closing
+[Mon Feb 16 00:43:37 2026] 127.0.0.1:59054 Accepted
+[Mon Feb 16 00:43:37 2026] 127.0.0.1:59054 Closing
+[Mon Feb 16 00:43:38 2026] 127.0.0.1:53216 Accepted
+[Mon Feb 16 00:43:39 2026] 127.0.0.1:53216 Closing
+[Mon Feb 16 00:43:39 2026] 127.0.0.1:59746 Accepted
+[Mon Feb 16 00:43:39 2026] 127.0.0.1:55560 Accepted
+[Mon Feb 16 00:43:39 2026] 127.0.0.1:59746 Closing
+[Mon Feb 16 00:43:39 2026] 127.0.0.1:51991 Accepted
+[Mon Feb 16 00:43:40 2026] 127.0.0.1:55560 Closing
+[Mon Feb 16 00:43:40 2026] 127.0.0.1:57417 Accepted
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:51991 Closing
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:57414 Accepted
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:57417 Closing
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:63553 Accepted
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:57414 [200]: GET /images/product/image/17702718206608563580
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:64589 Accepted
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:63553 Closing
+[Mon Feb 16 00:43:41 2026] 127.0.0.1:57704 Accepted
+[Mon Feb 16 00:43:42 2026] 127.0.0.1:64589 Closing
+[Mon Feb 16 00:43:42 2026] 127.0.0.1:63375 Accepted
+[Mon Feb 16 00:43:42 2026] 127.0.0.1:57704 Closing
+[Mon Feb 16 00:43:42 2026] 127.0.0.1:57414 Closing
+[Mon Feb 16 00:43:42 2026] 127.0.0.1:63657 Accepted
+[Mon Feb 16 00:43:43 2026] 127.0.0.1:63375 Closing
+[Mon Feb 16 00:43:43 2026] 127.0.0.1:53666 Accepted
+[Mon Feb 16 00:43:43 2026] 127.0.0.1:63657 Closing
+[Mon Feb 16 00:43:43 2026] 127.0.0.1:58846 Accepted
+[Mon Feb 16 00:43:44 2026] 127.0.0.1:53666 Closing
+[Mon Feb 16 00:43:44 2026] 127.0.0.1:53164 Accepted
+[Mon Feb 16 00:43:44 2026] 127.0.0.1:58846 Closing
+[Mon Feb 16 00:43:44 2026] 127.0.0.1:49223 Accepted
+[Mon Feb 16 00:43:45 2026] 127.0.0.1:53164 Closing
+[Mon Feb 16 00:43:45 2026] 127.0.0.1:49223 Closing
+[Mon Feb 16 00:43:58 2026] 127.0.0.1:54119 Accepted
+[Mon Feb 16 00:43:59 2026] 127.0.0.1:54119 Closing
+[Mon Feb 16 00:43:59 2026] 127.0.0.1:50043 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:50043 Closing
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:54126 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:57777 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:54126 [200]: GET /images/product/image/17653704261849199055
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:59771 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:57777 [200]: GET /images/product/image/17653705278701693375
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:63732 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:59771 [200]: GET /images/product/image/17653714901651250864
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:57117 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:63732 [200]: GET /images/product/image/17653715267802101903
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:54126 Closing
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:57117 [200]: GET /images/product/image/17653716581282949170
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:57777 Closing
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:59771 Closing
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:63732 Closing
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:57117 Closing
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:53155 Accepted
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:53155 [200]: GET /images/product/image/17653717028434840627
+[Mon Feb 16 00:44:00 2026] 127.0.0.1:53155 Closing
+[Mon Feb 16 00:44:11 2026] 127.0.0.1:56456 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:56456 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:54985 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:54985 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60425 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60425 [200]: GET /images/product/image/17653717571686468821
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60495 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:51216 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60495 [200]: GET /images/product/image/17653718208046858748
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:55953 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:51216 [200]: GET /images/product/image/17653718678185882164
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60425 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:55401 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:55953 [200]: GET /images/product/image/17653723293693127016
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:55401 [200]: GET /images/product/image/17653723822287724871
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60495 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:51216 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:55953 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:55401 Closing
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60965 Accepted
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:60965 [200]: GET /images/product/image/17653724151603487651
+[Mon Feb 16 00:44:12 2026] 127.0.0.1:64310 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:64310 [200]: GET /images/product/image/17653725378504258907
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:50742 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:60965 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:50742 [200]: GET /images/product/image/17653725968688711605
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:58144 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:64310 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:64667 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:58144 [200]: GET /images/product/image/17653726361174273060
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:52002 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:64667 [200]: GET /images/product/image/17653726731033508095
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:50742 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:52002 [200]: GET /images/product/image/17653727708967168740
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:58144 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:64667 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:52002 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:59534 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:59534 [200]: GET /images/product/image/17653728076923309218
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:59534 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:60590 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:60590 [200]: GET /images/product/image/17653729648983534687
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:60590 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:57038 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:57038 [200]: GET /images/product/image/17653729992229493474
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:57038 Closing
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:53326 Accepted
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:53326 [200]: GET /images/product/image/17653730349202126849
+[Mon Feb 16 00:44:13 2026] 127.0.0.1:53326 Closing
+[Mon Feb 16 00:47:48 2026] 127.0.0.1:65190 Accepted
+[Mon Feb 16 00:47:48 2026] 127.0.0.1:65190 Closing
+[Mon Feb 16 00:47:48 2026] 127.0.0.1:56585 Accepted
+[Mon Feb 16 00:47:49 2026] 127.0.0.1:56585 Closing
+[Mon Feb 16 00:50:08 2026] 127.0.0.1:58767 Accepted
+[Mon Feb 16 00:50:08 2026] 127.0.0.1:56411 Accepted
+[Mon Feb 16 00:50:08 2026] 127.0.0.1:58767 Closing
+[Mon Feb 16 00:50:08 2026] 127.0.0.1:50147 Accepted
+[Mon Feb 16 00:50:08 2026] 127.0.0.1:56411 Closing
+[Mon Feb 16 00:50:09 2026] 127.0.0.1:50147 Closing
+[Mon Feb 16 00:50:09 2026] 127.0.0.1:61045 Accepted
+[Mon Feb 16 00:50:10 2026] 127.0.0.1:61045 Closing
+[Mon Feb 16 00:50:14 2026] 127.0.0.1:55443 Accepted
+[Mon Feb 16 00:50:14 2026] 127.0.0.1:55443 Closing
+[Mon Feb 16 00:50:14 2026] 127.0.0.1:62349 Accepted
+[Mon Feb 16 00:50:15 2026] 127.0.0.1:62349 Closing
+[Mon Feb 16 00:50:19 2026] 127.0.0.1:58966 Accepted
+[Mon Feb 16 00:50:20 2026] 127.0.0.1:58966 Closing
+[Mon Feb 16 00:50:20 2026] 127.0.0.1:60267 Accepted
+[Mon Feb 16 00:50:20 2026] 127.0.0.1:60267 Closing
+[Mon Feb 16 00:50:24 2026] 127.0.0.1:59182 Accepted
+[Mon Feb 16 00:50:25 2026] 127.0.0.1:59182 Closing
+[Mon Feb 16 00:50:25 2026] 127.0.0.1:63584 Accepted
+[Mon Feb 16 00:50:25 2026] 127.0.0.1:63584 Closing
+[Mon Feb 16 00:51:38 2026] 127.0.0.1:60208 Accepted
+[Mon Feb 16 00:51:39 2026] 127.0.0.1:60208 Closing
+[Mon Feb 16 00:51:39 2026] 127.0.0.1:57466 Accepted
+[Mon Feb 16 00:51:39 2026] 127.0.0.1:52513 Accepted
+[Mon Feb 16 00:51:39 2026] 127.0.0.1:57466 Closing
+[Mon Feb 16 00:51:39 2026] 127.0.0.1:62279 Accepted
+[Mon Feb 16 00:51:40 2026] 127.0.0.1:52513 Closing
+[Mon Feb 16 00:51:40 2026] 127.0.0.1:57571 Accepted
+[Mon Feb 16 00:51:40 2026] 127.0.0.1:62279 Closing
+[Mon Feb 16 00:51:40 2026] 127.0.0.1:61939 Accepted
+[Mon Feb 16 00:51:40 2026] 127.0.0.1:57571 Closing
+[Mon Feb 16 00:51:40 2026] 127.0.0.1:52093 Accepted
+[Mon Feb 16 00:51:41 2026] 127.0.0.1:61939 Closing
+[Mon Feb 16 00:51:41 2026] 127.0.0.1:56007 Accepted
+[Mon Feb 16 00:51:41 2026] 127.0.0.1:52093 Closing
+[Mon Feb 16 00:51:41 2026] 127.0.0.1:61476 Accepted
+[Mon Feb 16 00:51:42 2026] 127.0.0.1:56007 Closing
+[Mon Feb 16 00:51:42 2026] 127.0.0.1:64820 Accepted
+[Mon Feb 16 00:51:42 2026] 127.0.0.1:61476 Closing
+[Mon Feb 16 00:51:42 2026] 127.0.0.1:64820 Closing
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:53904 Accepted
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:62523 Accepted
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:59394 Accepted
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:57313 Accepted
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:59866 Accepted
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:54892 Accepted
+[Mon Feb 16 00:55:22 2026] 127.0.0.1:53904 Closing
+[Mon Feb 16 00:55:23 2026] 127.0.0.1:62523 Closing
+[Mon Feb 16 00:55:23 2026] 127.0.0.1:59394 Closing
+[Mon Feb 16 00:55:23 2026] 127.0.0.1:57313 Closing
+[Mon Feb 16 00:55:24 2026] 127.0.0.1:59866 Closing
+[Mon Feb 16 00:55:24 2026] 127.0.0.1:54892 Closing
+[Mon Feb 16 00:55:24 2026] 127.0.0.1:61912 Accepted
+[Mon Feb 16 00:55:24 2026] 127.0.0.1:63336 Accepted
+[Mon Feb 16 00:55:24 2026] 127.0.0.1:61912 Closing
+[Mon Feb 16 00:55:24 2026] 127.0.0.1:65403 Accepted
+[Mon Feb 16 00:55:25 2026] 127.0.0.1:63336 Closing
+[Mon Feb 16 00:55:25 2026] 127.0.0.1:50601 Accepted
+[Mon Feb 16 00:55:25 2026] 127.0.0.1:65403 Closing
+[Mon Feb 16 00:55:25 2026] 127.0.0.1:60069 Accepted
+[Mon Feb 16 00:55:25 2026] 127.0.0.1:50601 Closing
+[Mon Feb 16 00:55:25 2026] 127.0.0.1:57387 Accepted
+[Mon Feb 16 00:55:26 2026] 127.0.0.1:60069 Closing
+[Mon Feb 16 00:55:26 2026] 127.0.0.1:52623 Accepted
+[Mon Feb 16 00:55:26 2026] 127.0.0.1:57387 Closing
+[Mon Feb 16 00:55:26 2026] 127.0.0.1:63665 Accepted
+[Mon Feb 16 00:55:27 2026] 127.0.0.1:52623 Closing
+[Mon Feb 16 00:55:27 2026] 127.0.0.1:63703 Accepted
+[Mon Feb 16 00:55:27 2026] 127.0.0.1:63665 Closing
+[Mon Feb 16 00:55:27 2026] 127.0.0.1:62280 Accepted
+[Mon Feb 16 00:55:28 2026] 127.0.0.1:63703 Closing
+[Mon Feb 16 00:55:28 2026] 127.0.0.1:53617 Accepted
+[Mon Feb 16 00:55:28 2026] 127.0.0.1:62280 Closing
+[Mon Feb 16 00:55:28 2026] 127.0.0.1:64503 Accepted
+[Mon Feb 16 00:55:29 2026] 127.0.0.1:53617 Closing
+[Mon Feb 16 00:55:29 2026] 127.0.0.1:53331 Accepted
+[Mon Feb 16 00:55:30 2026] 127.0.0.1:64503 Closing
+[Mon Feb 16 00:55:30 2026] 127.0.0.1:55707 Accepted
+[Mon Feb 16 00:55:30 2026] 127.0.0.1:53331 Closing
+[Mon Feb 16 00:55:30 2026] 127.0.0.1:49550 Accepted
+[Mon Feb 16 00:55:31 2026] 127.0.0.1:55707 Closing
+[Mon Feb 16 00:55:31 2026] 127.0.0.1:49872 Accepted
+[Mon Feb 16 00:55:31 2026] 127.0.0.1:49550 Closing
+[Mon Feb 16 00:55:31 2026] 127.0.0.1:57082 Accepted
+[Mon Feb 16 00:55:32 2026] 127.0.0.1:49872 Closing
+[Mon Feb 16 00:55:32 2026] 127.0.0.1:61461 Accepted
+[Mon Feb 16 00:55:32 2026] 127.0.0.1:57082 Closing
+[Mon Feb 16 00:55:32 2026] 127.0.0.1:51528 Accepted
+[Mon Feb 16 00:55:32 2026] 127.0.0.1:61461 Closing
+[Mon Feb 16 00:55:32 2026] 127.0.0.1:64491 Accepted
+[Mon Feb 16 00:55:33 2026] 127.0.0.1:51528 Closing
+[Mon Feb 16 00:55:33 2026] 127.0.0.1:54737 Accepted
+[Mon Feb 16 00:55:33 2026] 127.0.0.1:64491 Closing
+[Mon Feb 16 00:55:33 2026] 127.0.0.1:52771 Accepted
+[Mon Feb 16 00:55:34 2026] 127.0.0.1:54737 Closing
+[Mon Feb 16 00:55:34 2026] 127.0.0.1:52771 Closing
+[Mon Feb 16 00:55:45 2026] 127.0.0.1:57430 Accepted
+[Mon Feb 16 00:55:45 2026] 127.0.0.1:57430 Closing
+[Mon Feb 16 00:55:45 2026] 127.0.0.1:54807 Accepted
+[Mon Feb 16 00:55:46 2026] 127.0.0.1:54807 Closing
+[Mon Feb 16 00:55:49 2026] 127.0.0.1:55293 Accepted
+[Mon Feb 16 00:55:50 2026] 127.0.0.1:55293 Closing
+[Mon Feb 16 00:55:50 2026] 127.0.0.1:50421 Accepted
+[Mon Feb 16 00:55:50 2026] 127.0.0.1:50421 Closing
+[Mon Feb 16 00:57:08 2026] 127.0.0.1:61204 Accepted
+[Mon Feb 16 00:57:08 2026] 127.0.0.1:49350 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:61204 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49350 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49900 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:55989 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49900 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49910 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:55989 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49350 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:64502 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49910 [200]: GET /backend/css/style.css
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49823 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:64502 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49900 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49823 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:55989 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49910 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:64502 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:49823 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:54472 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:54472 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:60528 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:54472 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:60528 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:60528 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:53974 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:53974 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:53974 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:64711 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:64711 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:65532 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:65532 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:64711 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:63299 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:63299 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:63299 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:65532 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:61329 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:61329 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:63050 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:61329 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:63050 [200]: GET /backend/js/main.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:63050 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:54585 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:54585 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:62225 Accepted
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:62225 [200]: GET /backend/js/sample.js
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:62225 Closing
+[Mon Feb 16 00:57:09 2026] 127.0.0.1:54585 Closing
+[Mon Feb 16 00:57:14 2026] 127.0.0.1:53258 Accepted
+[Mon Feb 16 00:57:14 2026] 127.0.0.1:53258 Closing
+[Mon Feb 16 00:57:14 2026] 127.0.0.1:64488 Accepted
+[Mon Feb 16 00:57:14 2026] 127.0.0.1:50108 Accepted
+[Mon Feb 16 00:57:15 2026] 127.0.0.1:64488 Closing
+[Mon Feb 16 00:57:15 2026] 127.0.0.1:61429 Accepted
+[Mon Feb 16 00:57:15 2026] 127.0.0.1:50108 Closing
+[Mon Feb 16 00:57:15 2026] 127.0.0.1:55662 Accepted
+[Mon Feb 16 00:57:16 2026] 127.0.0.1:61429 Closing
+[Mon Feb 16 00:57:16 2026] 127.0.0.1:56673 Accepted
+[Mon Feb 16 00:57:16 2026] 127.0.0.1:55662 Closing
+[Mon Feb 16 00:57:16 2026] 127.0.0.1:59569 Accepted
+[Mon Feb 16 00:57:17 2026] 127.0.0.1:56673 Closing
+[Mon Feb 16 00:57:17 2026] 127.0.0.1:53831 Accepted
+[Mon Feb 16 00:57:17 2026] 127.0.0.1:59569 Closing
+[Mon Feb 16 00:57:17 2026] 127.0.0.1:55033 Accepted
+[Mon Feb 16 00:57:18 2026] 127.0.0.1:53831 Closing
+[Mon Feb 16 00:57:18 2026] 127.0.0.1:64462 Accepted
+[Mon Feb 16 00:57:18 2026] 127.0.0.1:55033 Closing
+[Mon Feb 16 00:57:18 2026] 127.0.0.1:50114 Accepted
+[Mon Feb 16 00:57:19 2026] 127.0.0.1:64462 Closing
+[Mon Feb 16 00:57:19 2026] 127.0.0.1:57032 Accepted
+[Mon Feb 16 00:57:19 2026] 127.0.0.1:50114 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:57032 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:63243 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:63243 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:50345 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:50040 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:50345 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:61872 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:50040 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:63243 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:64440 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:61872 [200]: GET /backend/css/style.css
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:63530 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:64440 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:50345 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:63530 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:50040 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:61872 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:64440 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:63530 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:58732 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:58732 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:54617 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:51680 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:54617 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:52372 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:51680 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:61328 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:52372 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:58732 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:60644 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:61328 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:54617 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:60644 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:51680 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:52372 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:62528 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:60644 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:62528 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:62528 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:53941 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:53941 [200]: GET /backend/js/main.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:61328 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:53941 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:58455 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:53609 Accepted
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:58455 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:53609 [200]: GET /backend/js/sample.js
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:53609 Closing
+[Mon Feb 16 00:57:20 2026] 127.0.0.1:58455 Closing
+[Mon Feb 16 00:58:14 2026] 127.0.0.1:52560 Accepted
+[Mon Feb 16 00:58:14 2026] 127.0.0.1:53713 Accepted
+[Mon Feb 16 00:58:14 2026] 127.0.0.1:53817 Accepted
+[Mon Feb 16 00:58:14 2026] 127.0.0.1:52560 Closing
+[Mon Feb 16 00:59:07 2026] 127.0.0.1:53713 Closing
+[Mon Feb 16 00:59:07 2026] 127.0.0.1:53817 Closing
+[Mon Feb 16 01:02:13 2026] 127.0.0.1:51312 Accepted
+[Mon Feb 16 01:02:13 2026] 127.0.0.1:64439 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51312 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64439 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:49343 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:49616 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:49343 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64787 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:49616 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64439 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:52429 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64787 [200]: GET /backend/css/style.css
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64775 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:52429 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:49343 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64775 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:49616 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64787 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:52429 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:64775 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:60959 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:60959 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:60959 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51990 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:60180 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:52462 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:59239 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51990 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:53299 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:60180 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:52462 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:59239 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:53705 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:53299 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:53705 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51990 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:60180 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:52462 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:53299 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:59239 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:53705 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51445 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51445 [200]: GET /backend/js/main.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:51445 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:55537 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:56650 Accepted
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:55537 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:56650 [200]: GET /backend/js/sample.js
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:56650 Closing
+[Mon Feb 16 01:02:14 2026] 127.0.0.1:55537 Closing
+[Mon Feb 16 01:13:06 2026] 127.0.0.1:50425 Accepted
+[Mon Feb 16 01:13:07 2026] 127.0.0.1:50425 Closing
+[Mon Feb 16 01:13:07 2026] 127.0.0.1:49193 Accepted
+[Mon Feb 16 01:13:07 2026] 127.0.0.1:49193 Closing
+[Mon Feb 16 01:13:08 2026] 127.0.0.1:62322 Accepted
+[Mon Feb 16 01:13:08 2026] 127.0.0.1:50103 Accepted
+[Mon Feb 16 01:13:08 2026] 127.0.0.1:62322 Closing
+[Mon Feb 16 01:13:08 2026] 127.0.0.1:50136 Accepted
+[Mon Feb 16 01:13:08 2026] 127.0.0.1:50103 [200]: GET /storage/products/vendor/w3WDKXPjXEvkUPKDnbzkQoQpSr0csN190RLFq1q2.png
+[Mon Feb 16 01:13:08 2026] 127.0.0.1:50103 Closing
+[Mon Feb 16 01:13:28 2026] 127.0.0.1:51910 Accepted
+[Mon Feb 16 01:13:28 2026] 127.0.0.1:49250 Accepted
+[Mon Feb 16 01:13:28 2026] 127.0.0.1:51910 Closing
+[Mon Feb 16 01:13:28 2026] 127.0.0.1:53030 Accepted
+[Mon Feb 16 01:13:29 2026] 127.0.0.1:49250 Closing
+[Mon Feb 16 01:13:29 2026] 127.0.0.1:53030 Closing
+[Mon Feb 16 01:13:29 2026] 127.0.0.1:57386 Accepted
+[Mon Feb 16 01:13:30 2026] 127.0.0.1:57386 Closing
+[Mon Feb 16 01:13:45 2026] 127.0.0.1:51131 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:51131 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:65311 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:65311 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:54517 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:55760 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:54517 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:60671 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:55760 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:65311 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:60671 [200]: GET /backend/css/style.css
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:56973 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:54517 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:55207 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:56973 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:55207 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:55760 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:60671 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:56973 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:55207 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64717 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64717 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:57517 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:62659 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:57298 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:59394 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:57517 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64178 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:62659 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:57298 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:59394 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64178 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:57517 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64717 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:62659 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:57298 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64178 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:59394 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64862 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64862 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:65478 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:65478 [200]: GET /backend/js/main.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:50051 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:64862 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:58498 Accepted
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:65478 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:50051 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:58498 [200]: GET /backend/js/sample.js
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:58498 Closing
+[Mon Feb 16 01:13:47 2026] 127.0.0.1:50051 Closing
+[Mon Feb 16 01:14:36 2026] 127.0.0.1:50136 Closed without sending a request; it was probably just an unused speculative preconnection
+[Mon Feb 16 01:14:36 2026] 127.0.0.1:50136 Closing
+[Mon Feb 16 01:15:12 2026] 127.0.0.1:60905 Accepted
+[Mon Feb 16 01:15:13 2026] 127.0.0.1:60905 Closing
+[Mon Feb 16 01:15:13 2026] 127.0.0.1:51081 Accepted
+[Mon Feb 16 01:16:27 2026] 127.0.0.1:51081 Closed without sending a request; it was probably just an unused speculative preconnection
+[Mon Feb 16 01:16:27 2026] 127.0.0.1:51081 Closing
+[Mon Feb 16 01:16:27 2026] 127.0.0.1:52353 Accepted
+[Mon Feb 16 01:16:27 2026] 127.0.0.1:52353 Closing
+[Mon Feb 16 01:16:27 2026] 127.0.0.1:64943 Accepted
+[Mon Feb 16 01:16:27 2026] 127.0.0.1:53240 Accepted
+[Mon Feb 16 01:16:28 2026] 127.0.0.1:64943 Closing
+[Mon Feb 16 01:16:28 2026] 127.0.0.1:53304 Accepted
+[Mon Feb 16 01:16:28 2026] 127.0.0.1:53240 Closing
+[Mon Feb 16 01:16:28 2026] 127.0.0.1:64566 Accepted
+[Mon Feb 16 01:16:29 2026] 127.0.0.1:53304 Closing
+[Mon Feb 16 01:16:29 2026] 127.0.0.1:62432 Accepted
+[Mon Feb 16 01:16:29 2026] 127.0.0.1:64566 Closing
+[Mon Feb 16 01:16:30 2026] 127.0.0.1:62432 Closing
+[Mon Feb 16 01:17:13 2026] 127.0.0.1:58774 Accepted
+[Mon Feb 16 01:17:13 2026] 127.0.0.1:58774 Closing
+[Mon Feb 16 01:17:13 2026] 127.0.0.1:61125 Accepted
+[Mon Feb 16 01:17:13 2026] 127.0.0.1:61125 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 01:17:13 2026] 127.0.0.1:49847 Accepted
+[Mon Feb 16 01:17:13 2026] 127.0.0.1:63806 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49847 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59440 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:63806 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:61125 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59440 [200]: GET /backend/css/style.css
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49847 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:63806 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59440 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:52819 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:54243 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:52819 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:54243 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:52819 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:54243 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:62411 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59242 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:62411 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59242 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:53850 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:65173 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:65086 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:62411 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59242 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:53364 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:53850 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:65173 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:65086 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:53364 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49540 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49540 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:53850 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:65173 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:53364 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49859 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:65086 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49540 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49859 [200]: GET /backend/js/main.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:49859 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:61972 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:50603 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:61972 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:50603 [200]: GET /backend/js/sample.js
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:50603 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:61972 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59655 Accepted
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:59655 Closing
+[Mon Feb 16 01:17:14 2026] 127.0.0.1:61338 Accepted
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:61338 Closing
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:55805 Accepted
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:58328 Accepted
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:55805 Closing
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:54533 Accepted
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:58328 Closing
+[Mon Feb 16 01:17:15 2026] 127.0.0.1:51035 Accepted
+[Mon Feb 16 01:17:16 2026] 127.0.0.1:54533 Closing
+[Mon Feb 16 01:17:16 2026] 127.0.0.1:54824 Accepted
+[Mon Feb 16 01:17:16 2026] 127.0.0.1:51035 Closing
+[Mon Feb 16 01:17:16 2026] 127.0.0.1:57401 Accepted
+[Mon Feb 16 01:17:17 2026] 127.0.0.1:54824 Closing
+[Mon Feb 16 01:17:17 2026] 127.0.0.1:53123 Accepted
+[Mon Feb 16 01:17:17 2026] 127.0.0.1:57401 Closing
+[Mon Feb 16 01:17:17 2026] 127.0.0.1:63990 Accepted
+[Mon Feb 16 01:17:18 2026] 127.0.0.1:53123 Closing
+[Mon Feb 16 01:17:18 2026] 127.0.0.1:62824 Accepted
+[Mon Feb 16 01:17:18 2026] 127.0.0.1:63990 Closing
+[Mon Feb 16 01:17:19 2026] 127.0.0.1:62824 Closing
+[Mon Feb 16 01:17:19 2026] 127.0.0.1:58620 Accepted
+[Mon Feb 16 01:17:19 2026] 127.0.0.1:58620 Closing
+[Mon Feb 16 01:17:19 2026] 127.0.0.1:53771 Accepted
+[Mon Feb 16 01:17:19 2026] 127.0.0.1:53771 Closing
+[Mon Feb 16 01:18:42 2026] 127.0.0.1:61466 Accepted
+[Mon Feb 16 01:18:43 2026] 127.0.0.1:61466 Closing
+[Mon Feb 16 01:18:43 2026] 127.0.0.1:53195 Accepted
+[Mon Feb 16 01:18:43 2026] 127.0.0.1:53195 Closing
+[Mon Feb 16 01:18:51 2026] 127.0.0.1:61602 Accepted
+[Mon Feb 16 01:18:51 2026] 127.0.0.1:61602 Closing
+[Mon Feb 16 01:18:51 2026] 127.0.0.1:59696 Accepted
+[Mon Feb 16 01:18:51 2026] 127.0.0.1:59696 Closing
+[Mon Feb 16 01:18:52 2026] 127.0.0.1:62370 Accepted
+[Mon Feb 16 01:18:52 2026] 127.0.0.1:62370 Closing
+[Mon Feb 16 01:18:52 2026] 127.0.0.1:54072 Accepted
+[Mon Feb 16 01:21:19 2026] 127.0.0.1:54072 Closed without sending a request; it was probably just an unused speculative preconnection
+[Mon Feb 16 01:21:19 2026] 127.0.0.1:54072 Closing
+[Mon Feb 16 01:26:26 2026] 127.0.0.1:64235 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64235 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:62147 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:62147 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64466 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:52590 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64466 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61296 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:52590 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:62147 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61296 [200]: GET /backend/css/style.css
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64466 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:52590 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61296 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:54628 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:57446 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:54628 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:57446 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:54628 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:57446 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:51603 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:51603 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:51603 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:59872 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64590 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:50122 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61684 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:57324 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:59872 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64590 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:57324 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:58037 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:50122 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61684 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:58037 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:59872 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:64590 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:57324 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:50122 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:58037 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:65086 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61684 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:65086 [200]: GET /backend/js/main.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:59159 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:65086 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61682 Accepted
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:59159 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61682 [200]: GET /backend/js/sample.js
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61682 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:59159 Closing
+[Mon Feb 16 01:26:28 2026] 127.0.0.1:61579 Accepted
+[Mon Feb 16 01:26:29 2026] 127.0.0.1:61579 Closing
+[Mon Feb 16 01:26:29 2026] 127.0.0.1:50499 Accepted
+[Mon Feb 16 01:26:30 2026] 127.0.0.1:50499 Closing
+[Mon Feb 16 01:26:30 2026] 127.0.0.1:63135 Accepted
+[Mon Feb 16 01:26:30 2026] 127.0.0.1:63135 Closing
+[Mon Feb 16 01:26:30 2026] 127.0.0.1:54450 Accepted
+[Mon Feb 16 01:26:31 2026] 127.0.0.1:54450 Closing
+[Mon Feb 16 01:26:31 2026] 127.0.0.1:55505 Accepted
+[Mon Feb 16 01:26:31 2026] 127.0.0.1:55505 Closing
+[Mon Feb 16 01:26:31 2026] 127.0.0.1:65142 Accepted
+[Mon Feb 16 01:26:31 2026] 127.0.0.1:65142 Closing
+[Mon Feb 16 01:26:31 2026] 127.0.0.1:62531 Accepted
+[Mon Feb 16 01:26:32 2026] 127.0.0.1:62531 Closing
+[Mon Feb 16 01:26:32 2026] 127.0.0.1:58943 Accepted
+[Mon Feb 16 01:26:32 2026] 127.0.0.1:58943 Closing
+[Mon Feb 16 01:26:32 2026] 127.0.0.1:59902 Accepted
+[Mon Feb 16 01:26:33 2026] 127.0.0.1:59902 Closing
+[Mon Feb 16 01:26:33 2026] 127.0.0.1:50513 Accepted
+[Mon Feb 16 01:26:33 2026] 127.0.0.1:50513 Closing
+[Mon Feb 16 01:26:33 2026] 127.0.0.1:57247 Accepted
+[Mon Feb 16 01:26:33 2026] 127.0.0.1:57247 Closing
+[Mon Feb 16 01:26:33 2026] 127.0.0.1:58103 Accepted
+[Mon Feb 16 01:26:34 2026] 127.0.0.1:58103 Closing
+[Mon Feb 16 01:26:34 2026] 127.0.0.1:54239 Accepted
+[Mon Feb 16 01:26:34 2026] 127.0.0.1:54239 Closing
+[Mon Feb 16 01:26:35 2026] 127.0.0.1:50947 Accepted
+[Mon Feb 16 01:26:37 2026] 127.0.0.1:50947 Closing
+[Mon Feb 16 01:26:41 2026] 127.0.0.1:58533 Accepted
+[Mon Feb 16 01:26:41 2026] 127.0.0.1:58533 Closing
+[Mon Feb 16 01:33:37 2026] 127.0.0.1:63825 Accepted
+[Mon Feb 16 01:33:37 2026] 127.0.0.1:63825 Closing
+[Mon Feb 16 01:33:37 2026] 127.0.0.1:64956 Accepted
+[Mon Feb 16 01:33:38 2026] 127.0.0.1:64956 Closing
+[Mon Feb 16 01:33:39 2026] 127.0.0.1:49268 Accepted
+[Mon Feb 16 01:33:39 2026] 127.0.0.1:49268 Closing
+[Mon Feb 16 01:33:39 2026] 127.0.0.1:61829 Accepted
+[Mon Feb 16 01:33:40 2026] 127.0.0.1:61829 Closing
+[Mon Feb 16 01:34:29 2026] 127.0.0.1:56762 Accepted
+[Mon Feb 16 01:34:30 2026] 127.0.0.1:56762 Closing
+[Mon Feb 16 01:34:30 2026] 127.0.0.1:51522 Accepted
+[Mon Feb 16 01:34:30 2026] 127.0.0.1:51522 Closing
+[Mon Feb 16 01:35:16 2026] 127.0.0.1:64106 Accepted
+[Mon Feb 16 01:35:16 2026] 127.0.0.1:64106 Closing
+[Mon Feb 16 01:35:16 2026] 127.0.0.1:53236 Accepted
+[Mon Feb 16 01:35:16 2026] 127.0.0.1:53236 Closing
+[Mon Feb 16 01:35:34 2026] 127.0.0.1:61929 Accepted
+[Mon Feb 16 01:35:34 2026] 127.0.0.1:57488 Accepted
+[Mon Feb 16 01:35:34 2026] 127.0.0.1:61929 Closing
+[Mon Feb 16 01:35:34 2026] 127.0.0.1:57091 Accepted
+[Mon Feb 16 01:35:34 2026] 127.0.0.1:57488 Closing
+[Mon Feb 16 01:35:35 2026] 127.0.0.1:57091 Closing
+[Mon Feb 16 01:35:35 2026] 127.0.0.1:59843 Accepted
+[Mon Feb 16 01:35:35 2026] 127.0.0.1:59843 Closing
+[Mon Feb 16 01:45:29 2026] 127.0.0.1:64668 Accepted
+[Mon Feb 16 01:45:30 2026] 127.0.0.1:64668 Closing
+[Mon Feb 16 01:45:30 2026] 127.0.0.1:53247 Accepted
+[Mon Feb 16 01:45:30 2026] 127.0.0.1:53247 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:49327 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:63484 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:60418 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:54232 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:61701 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:58672 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:49327 [200]: GET /images/category/1765949267_784160.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:63484 [200]: GET /images/category/1765698139_699536.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:60418 [200]: GET /images/category/1765949641_198210.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:54232 [200]: GET /images/category/1765368062_275400.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:61701 [200]: GET /images/category/1765949519_654885.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:58672 [200]: GET /images/category/1765949401_688759.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:49327 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:63484 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:60418 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:54232 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:61701 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:58672 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:60782 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:60782 [200]: GET /images/category/1765949303_268960.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:60782 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:55039 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:55432 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:61283 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:65484 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:52310 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:55039 [200]: GET /images/category/1765949158_609529.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:55432 [200]: GET /images/category/1765949131_848306.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:61283 [200]: GET /images/category/1765368037_934165.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:65484 [200]: GET /images/category/1765949075_327954.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:52310 [200]: GET /images/category/1765949023_587507.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:55039 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:55432 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:61283 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:65484 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:52310 Closing
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:62470 Accepted
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:62470 [200]: GET /images/category/1765949625_235715.webp
+[Mon Feb 16 01:45:31 2026] 127.0.0.1:62470 Closing
+[Mon Feb 16 01:47:05 2026] 127.0.0.1:58784 Accepted
+[Mon Feb 16 01:47:06 2026] 127.0.0.1:58784 Closing
+[Mon Feb 16 01:47:06 2026] 127.0.0.1:56389 Accepted
+[Mon Feb 16 01:47:06 2026] 127.0.0.1:56389 Closing
+[Mon Feb 16 01:47:16 2026] 127.0.0.1:56609 Accepted
+[Mon Feb 16 01:47:17 2026] 127.0.0.1:56609 Closing
+[Mon Feb 16 01:47:17 2026] 127.0.0.1:52430 Accepted
+[Mon Feb 16 01:47:17 2026] 127.0.0.1:52430 Closing
+[Mon Feb 16 01:47:18 2026] 127.0.0.1:52084 Accepted
+[Mon Feb 16 01:47:18 2026] 127.0.0.1:52084 Closing
+[Mon Feb 16 01:47:18 2026] 127.0.0.1:51259 Accepted
+[Mon Feb 16 01:47:19 2026] 127.0.0.1:51259 Closing
+[Mon Feb 16 01:47:50 2026] 127.0.0.1:59612 Accepted
+[Mon Feb 16 01:47:50 2026] 127.0.0.1:64845 Accepted
+[Mon Feb 16 01:47:50 2026] 127.0.0.1:53410 Accepted
+[Mon Feb 16 01:47:51 2026] 127.0.0.1:59612 Closing
+[Mon Feb 16 01:47:51 2026] 127.0.0.1:60532 Accepted
+[Mon Feb 16 01:47:51 2026] 127.0.0.1:64845 Closing
+[Mon Feb 16 01:47:51 2026] 127.0.0.1:53410 Closing
+[Mon Feb 16 01:47:51 2026] 127.0.0.1:56300 Accepted
+[Mon Feb 16 01:47:52 2026] 127.0.0.1:60532 Closing
+[Mon Feb 16 01:47:52 2026] 127.0.0.1:62007 Accepted
+[Mon Feb 16 01:47:52 2026] 127.0.0.1:56300 Closing
+[Mon Feb 16 01:47:53 2026] 127.0.0.1:62007 Closing
+[Mon Feb 16 01:48:31 2026] 127.0.0.1:57274 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:57274 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59901 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59901 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:63390 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:62677 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:63390 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:58580 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:62677 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59901 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:58580 [200]: GET /backend/css/style.css
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:63390 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:62677 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:58580 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:54096 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:49859 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:54096 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:49859 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:54096 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:49859 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:50786 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:57154 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:50786 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:57154 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:53515 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:55318 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:50786 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:57154 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:61588 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59867 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:53515 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:55318 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:61588 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59867 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:53515 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:55318 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59867 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:62950 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:62950 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:61588 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:62950 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59543 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59543 [200]: GET /backend/js/main.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:59543 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:56378 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:51761 Accepted
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:56378 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:51761 [200]: GET /backend/js/sample.js
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:51761 Closing
+[Mon Feb 16 01:48:32 2026] 127.0.0.1:56378 Closing
+[Mon Feb 16 01:48:35 2026] 127.0.0.1:64085 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:64085 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58075 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58075 [200]: GET /backend/lib/owlcarousel/assets/owl.carousel.min.css
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58075 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:60957 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58315 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:55362 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:60957 [200]: GET /backend/lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:51341 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58315 [200]: GET /backend/css/bootstrap.min.css
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:55362 [200]: GET /backend/css/style.css
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56198 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:51341 [200]: GET /images/categorybanner/1710611811_selfshop.png
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56198 [200]: GET /backend/img/user.jpg
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:60957 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:55362 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58315 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:51341 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56198 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:50639 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:50639 [200]: GET /backend/lib/chart/chart.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:51782 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:51782 [200]: GET /backend/lib/easing/easing.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:50639 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:51782 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:59620 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:59620 [200]: GET /backend/lib/waypoints/waypoints.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:59620 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58138 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56646 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56671 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:55842 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58138 [200]: GET /backend/lib/owlcarousel/owl.carousel.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56874 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56646 [200]: GET /backend/lib/tempusdominus/js/moment.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56671 [200]: GET /backend/lib/tempusdominus/js/moment-timezone.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:55842 [200]: GET /backend/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:60389 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56874 [200]: GET /backend/js/main.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:60389 [200]: GET /backend/js/ckeditor.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:58138 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56671 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:55842 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56874 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:56646 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:49654 Accepted
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:49654 [200]: GET /backend/js/sample.js
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:49654 Closing
+[Mon Feb 16 01:48:36 2026] 127.0.0.1:60389 Closing
+[Mon Feb 16 01:49:01 2026] 127.0.0.1:56507 Accepted
+[Mon Feb 16 01:49:01 2026] 127.0.0.1:56507 Closing
+[Mon Feb 16 01:49:01 2026] 127.0.0.1:56091 Accepted
+[Mon Feb 16 01:49:02 2026] 127.0.0.1:56091 Closing
+[Mon Feb 16 01:49:14 2026] 127.0.0.1:56513 Accepted
+[Mon Feb 16 01:49:14 2026] 127.0.0.1:60344 Accepted
+[Mon Feb 16 01:49:14 2026] 127.0.0.1:56513 Closing
+[Mon Feb 16 01:49:14 2026] 127.0.0.1:55666 Accepted
+[Mon Feb 16 01:49:14 2026] 127.0.0.1:60344 Closing
+[Mon Feb 16 01:49:15 2026] 127.0.0.1:55666 Closing
+[Mon Feb 16 01:49:15 2026] 127.0.0.1:63418 Accepted
+[Mon Feb 16 01:49:15 2026] 127.0.0.1:63418 Closing
+[Mon Feb 16 01:50:47 2026] 127.0.0.1:50963 Accepted
+[Mon Feb 16 01:50:48 2026] 127.0.0.1:50963 Closing
+[Mon Feb 16 01:50:48 2026] 127.0.0.1:55480 Accepted
+[Mon Feb 16 01:50:48 2026] 127.0.0.1:55480 Closing
+[Mon Feb 16 01:51:16 2026] 127.0.0.1:62370 Accepted
+[Mon Feb 16 01:51:17 2026] 127.0.0.1:62370 Closing
+[Mon Feb 16 01:51:17 2026] 127.0.0.1:51852 Accepted
+[Mon Feb 16 01:51:17 2026] 127.0.0.1:51852 Closing
+[Mon Feb 16 01:51:21 2026] 127.0.0.1:57238 Accepted
+[Mon Feb 16 01:51:21 2026] 127.0.0.1:63232 Accepted
+[Mon Feb 16 01:51:21 2026] 127.0.0.1:57238 Closing
+[Mon Feb 16 01:51:21 2026] 127.0.0.1:49343 Accepted
+[Mon Feb 16 01:51:21 2026] 127.0.0.1:63232 Closing
+[Mon Feb 16 01:51:21 2026] 127.0.0.1:50512 Accepted
+[Mon Feb 16 01:51:22 2026] 127.0.0.1:49343 Closing
+[Mon Feb 16 01:51:22 2026] 127.0.0.1:62932 Accepted
+[Mon Feb 16 01:51:22 2026] 127.0.0.1:50512 Closing
+[Mon Feb 16 01:51:22 2026] 127.0.0.1:59230 Accepted
+[Mon Feb 16 01:51:22 2026] 127.0.0.1:62932 Closing
+[Mon Feb 16 01:51:22 2026] 127.0.0.1:59660 Accepted
+[Mon Feb 16 01:51:23 2026] 127.0.0.1:59230 Closing
+[Mon Feb 16 01:51:23 2026] 127.0.0.1:62080 Accepted
+[Mon Feb 16 01:51:24 2026] 127.0.0.1:59660 Closing
+[Mon Feb 16 01:51:24 2026] 127.0.0.1:53980 Accepted
+[Mon Feb 16 01:51:24 2026] 127.0.0.1:62080 Closing
+[Mon Feb 16 01:51:24 2026] 127.0.0.1:51708 Accepted
+[Mon Feb 16 01:51:24 2026] 127.0.0.1:53980 Closing
+[Mon Feb 16 01:51:24 2026] 127.0.0.1:53894 Accepted
+[Mon Feb 16 01:51:25 2026] 127.0.0.1:51708 Closing
+[Mon Feb 16 01:51:25 2026] 127.0.0.1:51722 Accepted
+[Mon Feb 16 01:51:25 2026] 127.0.0.1:53894 Closing
+[Mon Feb 16 01:53:44 2026] 127.0.0.1:51722 Closed without sending a request; it was probably just an unused speculative preconnection
+[Mon Feb 16 01:53:44 2026] 127.0.0.1:51722 Closing
+[Mon Feb 16 01:54:37 2026] 127.0.0.1:59154 Accepted
+[Mon Feb 16 01:54:37 2026] 127.0.0.1:59154 Closing
+[Mon Feb 16 01:54:37 2026] 127.0.0.1:56411 Accepted
+[Mon Feb 16 01:54:38 2026] 127.0.0.1:56411 Closing
+[Mon Feb 16 01:56:25 2026] 127.0.0.1:55557 Accepted
+[Mon Feb 16 01:56:25 2026] 127.0.0.1:55557 Closing
+[Mon Feb 16 01:56:25 2026] 127.0.0.1:63284 Accepted
+[Mon Feb 16 01:56:26 2026] 127.0.0.1:63284 Closing
+[Mon Feb 16 01:56:26 2026] 127.0.0.1:50320 Accepted
+[Mon Feb 16 01:56:27 2026] 127.0.0.1:50320 Closing
+[Mon Feb 16 01:56:27 2026] 127.0.0.1:61985 Accepted
+[Mon Feb 16 02:02:12 2026] 127.0.0.1:61985 Closed without sending a request; it was probably just an unused speculative preconnection
+[Mon Feb 16 02:02:12 2026] 127.0.0.1:61985 Closing

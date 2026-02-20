@@ -15,6 +15,7 @@ use App\Models\Course;
 use App\Models\Coursecategory;
 use App\Models\Customer;
 use App\Models\Faq;
+use App\Models\FlashSale;
 use App\Models\Fraud;
 use App\Models\Income;
 use App\Models\Message;
@@ -2764,6 +2765,57 @@ class FrontendApiController extends Controller
             'message' => 'Supplier details',
             'data'    => [
                 'vendor'   => $vendor,
+                'products' => $products,
+            ],
+        ]);
+    }
+
+    public function flashSale()
+    {
+        $flashSale = FlashSale::active()
+            ->with(['flashSaleProducts.product'])
+            ->orderBy('end_time', 'asc')
+            ->first();
+
+        if (!$flashSale) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No active flash sale',
+                'data' => null,
+            ]);
+        }
+
+        $products = $flashSale->flashSaleProducts->map(function ($fsp) {
+            $product = $fsp->product;
+            if (!$product) return null;
+
+            $regularPrice = floatval($product->RegularPrice ?? 0);
+            $salePrice = floatval($product->SalePrice ?? $regularPrice);
+            $discount = floatval($fsp->discount_percentage);
+            $flashPrice = $discount > 0
+                ? round($salePrice * (1 - $discount / 100), 2)
+                : $salePrice;
+
+            return [
+                'id' => $product->id,
+                'ProductName' => $product->ProductName,
+                'ProductSlug' => $product->ProductSlug,
+                'ViewProductImage' => $product->ViewProductImage,
+                'RegularPrice' => $regularPrice,
+                'SalePrice' => $salePrice,
+                'FlashPrice' => $flashPrice,
+                'discount_percentage' => $discount,
+            ];
+        })->filter()->values();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Active flash sale',
+            'data' => [
+                'id' => $flashSale->id,
+                'title' => $flashSale->title,
+                'start_time' => $flashSale->start_time,
+                'end_time' => $flashSale->end_time,
                 'products' => $products,
             ],
         ]);

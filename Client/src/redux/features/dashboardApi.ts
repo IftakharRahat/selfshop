@@ -36,6 +36,12 @@ const requestProductListApi = baseApi.injectEndpoints({
 				method: "GET",
 			}),
 		}),
+		getTeamMembers: builder.query({
+			query: () => ({
+				url: `/teams`,
+				method: "GET",
+			}),
+		}),
 
 		// createRequestProduct: builder.mutation({
 		//   query: (data) => {
@@ -75,4 +81,5 @@ export const {
 	useGetAllFAQsQuery,
 	useGetAllReferralDataQuery,
 	useGetSingleOrderQuery,
+	useGetTeamMembersQuery,
 } = requestProductListApi;

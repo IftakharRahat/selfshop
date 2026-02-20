@@ -403,9 +403,59 @@
                                 <input type="number" id="qty"
                                     name="qty" class="form-control" required>
                             </div>
+                            <div class="mb-2 form-group">
+                                <label for="selling_type">Selling Type <span class="text-danger">*</span></label>
+                                <select name="selling_type" id="selling_type" class="form-control" required>
+                                    <option value="both" selected>Both (Wholesale + Dropshipping)</option>
+                                    <option value="wholesale">Wholesale Only</option>
+                                    <option value="dropshipping">Dropshipping Only</option>
+                                </select>
+                            </div>
 
                         </div>
                     </div>
+
+                    <div class="mb-3 card" id="priceTiersCard">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="m-0 mt-0 text-uppercase" style="color: black;">Wholesale Price Tiers</h5>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addTierRow()">+ Add Tier</button>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-3" style="color: #6c757d !important;">Add quantity-based pricing tiers for wholesale orders.</p>
+                            <div id="tierRows"></div>
+                        </div>
+                    </div>
+
+                    <script>
+                        var tierCount = 0;
+                        function addTierRow(data) {
+                            data = data || {};
+                            tierCount++;
+                            var html = '<div class="tier-row mb-3 p-3" style="background:#f8f9fa;border-radius:8px;border:1px solid #dee2e6;" id="tierRow' + tierCount + '">' +
+                                '<div class="row align-items-end">' +
+                                '<div class="col-md-3 mb-2"><label style="color:#333;font-size:13px">Variant / Label</label>' +
+                                '<input type="text" name="tiers[' + tierCount + '][variant_title]" class="form-control form-control-sm" placeholder="e.g. Base, M, L" value="' + (data.variant_title || '') + '"></div>' +
+                                '<div class="col-md-2 mb-2"><label style="color:#333;font-size:13px">Min Qty <span class="text-danger">*</span></label>' +
+                                '<input type="number" name="tiers[' + tierCount + '][min_qty]" class="form-control form-control-sm" placeholder="1" value="' + (data.min_qty || '') + '" required></div>' +
+                                '<div class="col-md-2 mb-2"><label style="color:#333;font-size:13px">Max Qty</label>' +
+                                '<input type="number" name="tiers[' + tierCount + '][max_qty]" class="form-control form-control-sm" placeholder="Optional" value="' + (data.max_qty || '') + '"></div>' +
+                                '<div class="col-md-2 mb-2"><label style="color:#333;font-size:13px">Unit Price <span class="text-danger">*</span></label>' +
+                                '<input type="number" step="0.01" name="tiers[' + tierCount + '][unit_price]" class="form-control form-control-sm" placeholder="0.00" value="' + (data.unit_price || '') + '" required></div>' +
+                                '<div class="col-md-2 mb-2"><label style="color:#333;font-size:13px">Delivery ৳</label>' +
+                                '<input type="number" step="0.01" name="tiers[' + tierCount + '][delivery_charge]" class="form-control form-control-sm" placeholder="0" value="' + (data.delivery_charge || '') + '"></div>' +
+                                '<div class="col-md-1 mb-2"><label style="color:transparent;font-size:13px">X</label>' +
+                                '<button type="button" class="btn btn-danger btn-sm btn-block" onclick="removeTierRow(' + tierCount + ')" title="Remove tier">&times;</button></div>' +
+                                '</div></div>';
+                            document.getElementById('tierRows').insertAdjacentHTML('beforeend', html);
+                        }
+                        function removeTierRow(id) { var el = document.getElementById('tierRow' + id); if (el) el.remove(); }
+                        function toggleTiersCard() {
+                            var type = document.getElementById('selling_type').value;
+                            document.getElementById('priceTiersCard').style.display = (type === 'wholesale' || type === 'both') ? 'block' : 'none';
+                        }
+                        document.getElementById('selling_type').addEventListener('change', toggleTiersCard);
+                        document.addEventListener('DOMContentLoaded', toggleTiersCard);
+                    </script>
 
                     <div class="mb-3 card">
                         <div class="card-header">

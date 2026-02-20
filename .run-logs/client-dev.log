@@ -1,0 +1,19 @@
+
+> self-shop@0.1.0 dev C:\Users\Rahat\OneDrive\Documents\backup\Client
+> next dev --turbopack
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.101:3000
+- Environments: .env
+
+✓ Starting...
+✓ Ready in 1512ms
+ HEAD / 200 in 4.5s (compile: 2.6s, proxy.ts: 193ms, render: 1780ms)
+ GET / 200 in 213ms (compile: 13ms, proxy.ts: 23ms, render: 177ms)
+ GET / 200 in 195ms (compile: 15ms, proxy.ts: 22ms, render: 158ms)
+[next-auth][warn][NEXTAUTH_URL] 
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET] 
+https://next-auth.js.org/warnings#no_secret
+ GET /api/auth/session 200 in 1389ms (compile: 1280ms, render: 109ms)

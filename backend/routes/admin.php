@@ -53,6 +53,7 @@ use App\Http\Controllers\Backend\AdminVendorProductController;
 use App\Http\Controllers\Backend\AdminVendorPayoutController;
 use App\Http\Controllers\Backend\AdminVendorReportController;
 use App\Http\Controllers\Backend\AdminVendorCommissionController;
+use App\Http\Controllers\Backend\FlashSaleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -153,6 +154,16 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('slider/get/data', [SliderController::class, 'sliderdata'])->name('admin.slider.data');
     Route::post('slider/{id}', [SliderController::class, 'update']);
     Route::put('slider/status', [SliderController::class, 'statusupdate']);
+
+    //Flash Sales
+    Route::resource('flashsales', FlashSaleController::class, ['names' => 'admin.flashsales']);
+    Route::get('flashsale/get/data', [FlashSaleController::class, 'flashsaledata'])->name('admin.flashsale.data');
+    Route::post('flashsale/{id}', [FlashSaleController::class, 'update']);
+    Route::put('flashsale/status', [FlashSaleController::class, 'statusupdate']);
+    Route::post('flashsale/add-product', [FlashSaleController::class, 'addProduct'])->name('admin.flashsale.addproduct');
+    Route::delete('flashsale/remove-product/{id}', [FlashSaleController::class, 'removeProduct'])->name('admin.flashsale.removeproduct');
+    Route::get('flashsale/products/{id}', [FlashSaleController::class, 'getProducts'])->name('admin.flashsale.products');
+    Route::get('flashsale/search-products', [FlashSaleController::class, 'searchProducts'])->name('admin.flashsale.searchproducts');
 
     //add banners
     Route::resource('addbanners', AddbannerController::class, ['names' => 'admin.addbanners']);

@@ -99,6 +99,7 @@ export interface VendorProduct {
 	MetaKey?: string | null;
 	Discount?: number | string;
 	vendor_approval_status?: "pending" | "approved" | "rejected" | null;
+	selling_type?: "wholesale" | "dropshipping" | "both";
 	PostImage?: string | null;
 }
 

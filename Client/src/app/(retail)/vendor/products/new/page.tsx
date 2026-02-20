@@ -58,7 +58,7 @@ export default function VendorNewProductPage() {
 		return cat?.subcategories ?? [];
 	}, [categories, selectedCategoryId]);
 
-	const [allowDropship, setAllowDropship] = useState(false);
+	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
@@ -92,8 +92,8 @@ export default function VendorNewProductPage() {
 		if (tags) formData.append("MetaKey", tags);
 		const discount = (form.querySelector('[name="discount"]') as HTMLInputElement)?.value;
 		if (discount !== undefined && discount !== "") formData.append("Discount", discount);
-		const allowDropship = (form.querySelector('[name="allow_dropship"]') as HTMLInputElement)?.checked;
-		formData.append("allow_dropship", allowDropship ? "1" : "0");
+		formData.append("selling_type", sellingType);
+		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
 		const thumb = (form.querySelector('[name="thumbnail"]') as HTMLInputElement)?.files?.[0];
 		if (thumb) formData.append("ProductImage", thumb);
 		const galleryInput = form.querySelector('[name="gallery_images"]') as HTMLInputElement;
@@ -223,7 +223,7 @@ export default function VendorNewProductPage() {
 								</div>
 							</div>
 
-							{allowDropship && (
+							{(sellingType === 'dropshipping' || sellingType === 'both') && (
 								<div className="space-y-3">
 									<h2 className="text-sm font-semibold text-gray-900">
 										Product price &amp; stock
@@ -429,134 +429,176 @@ export default function VendorNewProductPage() {
 								<h2 className="text-sm font-semibold text-gray-900">
 									Visibility &amp; options
 								</h2>
-								<label className="inline-flex items-center gap-2 text-xs text-gray-700">
-									<input
-										type="checkbox"
-										name="allow_dropship"
-										className="rounded border-gray-300"
-										checked={allowDropship}
-										onChange={(e) => setAllowDropship(e.target.checked)}
-									/>
-									Allow dropship
-								</label>
-								<label className="inline-flex items-center gap-2 text-xs text-gray-700 ml-4">
-									<input type="checkbox" className="rounded border-gray-300" />
-									Published
-								</label>
+								<p className="text-xs font-semibold text-gray-900 mb-2">Selling Type</p>
+								<div className="flex flex-col gap-2">
+									<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'wholesale'
+											? 'border-green-500 bg-green-50'
+											: 'border-gray-200 hover:border-gray-300'
+										}`}>
+										<input
+											type="radio"
+											name="selling_type_radio"
+											value="wholesale"
+											checked={sellingType === 'wholesale'}
+											onChange={() => setSellingType('wholesale')}
+											className="accent-green-600"
+										/>
+										<div>
+											<span className="text-xs font-bold text-gray-900">🏭 Wholesale</span>
+											<p className="text-[10px] text-gray-500">Tier-based bulk pricing</p>
+										</div>
+									</label>
+									<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'dropshipping'
+											? 'border-blue-500 bg-blue-50'
+											: 'border-gray-200 hover:border-gray-300'
+										}`}>
+										<input
+											type="radio"
+											name="selling_type_radio"
+											value="dropshipping"
+											checked={sellingType === 'dropshipping'}
+											onChange={() => setSellingType('dropshipping')}
+											className="accent-blue-600"
+										/>
+										<div>
+											<span className="text-xs font-bold text-gray-900">🚀 Dropshipping</span>
+											<p className="text-[10px] text-gray-500">Single price + stock</p>
+										</div>
+									</label>
+									<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'both'
+											? 'border-amber-500 bg-amber-50'
+											: 'border-gray-200 hover:border-gray-300'
+										}`}>
+										<input
+											type="radio"
+											name="selling_type_radio"
+											value="both"
+											checked={sellingType === 'both'}
+											onChange={() => setSellingType('both')}
+											className="accent-amber-600"
+										/>
+										<div>
+											<span className="text-xs font-bold text-gray-900">🔄 Both</span>
+											<p className="text-[10px] text-gray-500">Wholesale + Dropshipping</p>
+										</div>
+									</label>
+								</div>
 							</div>
 						</div>
 					</div>
 
-					{/* Bulk Pricing Variant-Wise */}
-					<div className="rounded-xl bg-indigo-50/30 p-4 sm:p-6 shadow-sm border border-indigo-100">
-						<h2 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
-							📦 Bulk Pricing Variant-Wise
-						</h2>
-						<p className="text-xs text-indigo-700 mb-4">
-							Define quantity-based pricing. Variant name is optional. If left blank, pricing applies to the base product.
-						</p>
-						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm">
-								<thead>
-									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 font-semibold w-[25%] text-indigo-900">Variant (Optional)</th>
-										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Min Qty</th>
-										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Max Qty</th>
-										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Price</th>
-										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Deliv. Charge</th>
-										<th className="py-2 w-[10%]"></th>
-									</tr>
-								</thead>
-								<tbody className="divide-y divide-gray-100">
-									{bulkPricing.map((row, i) => (
-										<tr key={i} className="hover:bg-white/50 transition-colors">
-											<td className="py-3 pr-3 text-gray-700 italic">{row.variant_title || "Base Product"}</td>
-											<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.min_qty}</td>
-											<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.max_qty || "∞"}</td>
-											<td className="py-3 pr-2 font-bold text-gray-900">৳{row.price}</td>
-											<td className="py-3 pr-2 text-gray-600">{row.delivery_charge ? `৳${row.delivery_charge}` : "Default"}</td>
-											<td className="py-3 text-right">
+					{/* Bulk Pricing Variant-Wise — visible for wholesale or both */}
+					{(sellingType === 'wholesale' || sellingType === 'both') && (
+						<div className="rounded-xl bg-indigo-50/30 p-4 sm:p-6 shadow-sm border border-indigo-100">
+							<h2 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
+								📦 Bulk Pricing Variant-Wise
+							</h2>
+							<p className="text-xs text-indigo-700 mb-4">
+								Define quantity-based pricing. Variant name is optional. If left blank, pricing applies to the base product.
+							</p>
+							<div className="overflow-x-auto">
+								<table className="min-w-full text-sm">
+									<thead>
+										<tr className="text-left text-gray-600 border-b border-gray-200">
+											<th className="py-2 pr-3 font-semibold w-[25%] text-indigo-900">Variant (Optional)</th>
+											<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Min Qty</th>
+											<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Max Qty</th>
+											<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Price</th>
+											<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Deliv. Charge</th>
+											<th className="py-2 w-[10%]"></th>
+										</tr>
+									</thead>
+									<tbody className="divide-y divide-gray-100">
+										{bulkPricing.map((row, i) => (
+											<tr key={i} className="hover:bg-white/50 transition-colors">
+												<td className="py-3 pr-3 text-gray-700 italic">{row.variant_title || "Base Product"}</td>
+												<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.min_qty}</td>
+												<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.max_qty || "∞"}</td>
+												<td className="py-3 pr-2 font-bold text-gray-900">৳{row.price}</td>
+												<td className="py-3 pr-2 text-gray-600">{row.delivery_charge ? `৳${row.delivery_charge}` : "Default"}</td>
+												<td className="py-3 text-right">
+													<button
+														type="button"
+														onClick={() => setBulkPricing(prev => prev.filter((_, j) => j !== i))}
+														className="text-xs text-red-600 hover:text-red-800 font-medium underline"
+													>
+														Remove
+													</button>
+												</td>
+											</tr>
+										))}
+										<tr className="bg-white/70">
+											<td className="py-3 pr-3">
+												<input
+													placeholder="e.g. Red / S"
+													value={newBulkRow.variant_title}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
+													className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3 pr-2">
+												<input
+													type="number" min={1}
+													value={newBulkRow.min_qty}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, min_qty: e.target.value }))}
+													className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3 pr-2">
+												<input
+													type="number" min={1}
+													placeholder="Max"
+													value={newBulkRow.max_qty}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, max_qty: e.target.value }))}
+													className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3 pr-2">
+												<input
+													type="number" min={0}
+													placeholder="Price"
+													value={newBulkRow.price}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, price: e.target.value }))}
+													className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3 pr-2">
+												<input
+													type="number" min={0}
+													placeholder="Optional"
+													value={newBulkRow.delivery_charge}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, delivery_charge: e.target.value }))}
+													className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3">
 												<button
 													type="button"
-													onClick={() => setBulkPricing(prev => prev.filter((_, j) => j !== i))}
-													className="text-xs text-red-600 hover:text-red-800 font-medium underline"
+													onClick={() => {
+														if (newBulkRow.price) {
+															setBulkPricing(prev => [...prev, { ...newBulkRow }]);
+															setNewBulkRow({
+																variant_title: "",
+																min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty) + 1).toString(),
+																max_qty: "",
+																price: "",
+																delivery_charge: ""
+															});
+														} else {
+															toast.error("Price is required");
+														}
+													}}
+													className="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
 												>
-													Remove
+													+ Add
 												</button>
 											</td>
 										</tr>
-									))}
-									<tr className="bg-white/70">
-										<td className="py-3 pr-3">
-											<input
-												placeholder="e.g. Red / S"
-												value={newBulkRow.variant_title}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={1}
-												value={newBulkRow.min_qty}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, min_qty: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={1}
-												placeholder="Max"
-												value={newBulkRow.max_qty}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, max_qty: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={0}
-												placeholder="Price"
-												value={newBulkRow.price}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, price: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={0}
-												placeholder="Optional"
-												value={newBulkRow.delivery_charge}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, delivery_charge: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3">
-											<button
-												type="button"
-												onClick={() => {
-													if (newBulkRow.price) {
-														setBulkPricing(prev => [...prev, { ...newBulkRow }]);
-														setNewBulkRow({
-															variant_title: "",
-															min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty) + 1).toString(),
-															max_qty: "",
-															price: "",
-															delivery_charge: ""
-														});
-													} else {
-														toast.error("Price is required");
-													}
-												}}
-												className="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
-											>
-												+ Add
-											</button>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+									</tbody>
+								</table>
+							</div>
 						</div>
-					</div>
+					)}
 
 					<div className="flex justify-end">
 						<button

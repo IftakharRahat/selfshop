@@ -89,6 +89,15 @@ const homeApi = baseApi.injectEndpoints({
 			},
 			providesTags: ["categories"],
 		}),
+		getFlashSale: builder.query({
+			query: () => {
+				return {
+					url: `/flash-sale`,
+					method: "GET",
+				};
+			},
+			providesTags: ["categories"],
+		}),
 		getAllBigSelling: builder.query({
 			query: (data) => {
 				const params = new URLSearchParams();
@@ -195,6 +204,7 @@ export const {
 	useGetAllNewProductsQuery,
 	useGetBasicInfoQuery,
 	useGetAllFeaturedProductsQuery,
+	useGetFlashSaleQuery,
 	useGetCategoryProductsQuery,
 	useGetSubcategoryProductsQuery,
 	useGetPopularSuppliersQuery,
