@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { ChevronRight, Minus, Plus } from "lucide-react";
+import { BadgeCheck, ChevronRight, Minus, Plus } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { TbCurrencyTaka } from "react-icons/tb";
@@ -30,6 +31,35 @@ type ColorOption = {
 	name?: string;
 	color: string;
 };
+
+function SupplierMiniLogo({ logo, name }: { logo: string | null; name: string }) {
+	const [errored, setErrored] = useState(false);
+
+	if (!logo || errored) {
+		const initials = name
+			.split(" ")
+			.map((w) => w[0])
+			.join("")
+			.slice(0, 2)
+			.toUpperCase();
+		return (
+			<div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-600 flex items-center justify-center text-white font-bold text-[10px] select-none shrink-0">
+				{initials}
+			</div>
+		);
+	}
+
+	return (
+		<Image
+			src={getImageUrl(logo)}
+			alt={name}
+			width={32}
+			height={32}
+			className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-gray-200"
+			onError={() => setErrored(true)}
+		/>
+	);
+}
 
 export default function ProductDetailPage({ product }: any) {
 	const [orderOpen, setOrderOpen] = useState(false);
@@ -61,6 +91,8 @@ export default function ProductDetailPage({ product }: any) {
 			? {
 				companyName: product.vendor.company_name || "",
 				isVerifiedBadge: Boolean(product.vendor.is_verified_badge),
+				slug: product.vendor.slug || "",
+				logoPath: product.vendor.logo_path || null,
 			}
 			: null,
 	};
@@ -347,14 +379,26 @@ export default function ProductDetailPage({ product }: any) {
 							{productData.name}
 						</h1>
 						{productData.vendor?.companyName && (
-							<div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
-								<span>Sold by {productData.vendor.companyName}</span>
-								{productData.vendor.isVerifiedBadge && (
-									<span className="rounded-full bg-sky-600 px-2 py-0.5 text-[10px] font-semibold text-white">
-										Verified
+							<Link
+								href={productData.vendor.slug ? `/supplier/${productData.vendor.slug}` : "#"}
+								className="group/vendor inline-flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-2 hover:border-pink-200 hover:bg-pink-50/50 transition-all"
+							>
+								{/* Supplier Logo */}
+								<SupplierMiniLogo
+									logo={productData.vendor.logoPath}
+									name={productData.vendor.companyName}
+								/>
+								<div className="flex flex-col">
+									<span className="text-[10px] text-gray-400 leading-none">Sold by</span>
+									<span className="text-xs font-semibold text-gray-800 group-hover/vendor:text-[#E5005F] transition-colors flex items-center gap-1">
+										{productData.vendor.companyName}
+										{productData.vendor.isVerifiedBadge && (
+											<BadgeCheck className="w-3.5 h-3.5 text-blue-500" />
+										)}
 									</span>
-								)}
-							</div>
+								</div>
+								<ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover/vendor:text-[#E5005F] ml-auto transition-colors" />
+							</Link>
 						)}
 
 						{/* Selling Type Badge */}
@@ -431,9 +475,9 @@ export default function ProductDetailPage({ product }: any) {
 												onClick={() => {
 													setActiveTierId(tier.id);
 													setSellingPrice(tier.unit_price);
-																								if (tier.variant_title && !selectedSizes.includes(tier.variant_title)) {
-													toggleSize(tier.variant_title);
-												}
+													if (tier.variant_title && !selectedSizes.includes(tier.variant_title)) {
+														toggleSize(tier.variant_title);
+													}
 													toast.success(`Selected: ${qtyLabel}`);
 												}}
 												className={`relative flex flex-col items-center px-4 py-3 rounded-xl border-2 transition-all cursor-pointer min-w-[120px] ${isActive

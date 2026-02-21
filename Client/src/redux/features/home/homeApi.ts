@@ -160,6 +160,13 @@ const homeApi = baseApi.injectEndpoints({
 			}),
 			providesTags: ["categories"],
 		}),
+		getBrandProducts: builder.query({
+			query: (slug: string) => ({
+				url: `/brand-products/${slug}`,
+				method: "GET",
+			}),
+			providesTags: ["categories"],
+		}),
 
 		createExample: builder.mutation({
 			query: (data) => {
@@ -210,4 +217,5 @@ export const {
 	useGetSubcategoryProductsQuery,
 	useGetPopularSuppliersQuery,
 	useGetSupplierDetailsQuery,
+	useGetBrandProductsQuery,
 } = homeApi;

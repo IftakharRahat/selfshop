@@ -119,7 +119,7 @@ export default function FlashSaleSection() {
 
                             <Link
                                 href="/flash-sale"
-                                className="hidden sm:inline-flex items-center gap-1 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold transition-all"
+                                className="inline-flex items-center gap-1 hover:bg-white/30 backdrop-blur-sm text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all"
                                 style={{ background: "#E5005F" }}
                             >
                                 See All →
