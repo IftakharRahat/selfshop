@@ -2,6 +2,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import React, { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { getImageUrl } from "@/lib/utils";
@@ -77,7 +78,7 @@ const MostPopularBrands = () => {
 				>
 					{brands.map((brand: any) => (
 						<SwiperSlide key={brand.id}>
-							<div className="w-full aspect-square bg-white border border-gray-100 rounded-xl flex items-center justify-center p-3 cursor-pointer hover:shadow-md transition-shadow">
+							<Link href={`/brand/${brand.slug}`} className="block w-full aspect-square bg-white border border-gray-100 rounded-xl flex items-center justify-center p-3 cursor-pointer hover:shadow-md transition-shadow">
 								<BrandImage
 									icon={brand.icon}
 									name={brand.name}
@@ -85,7 +86,7 @@ const MostPopularBrands = () => {
 									height={72}
 									className="object-contain max-w-full max-h-full"
 								/>
-							</div>
+							</Link>
 						</SwiperSlide>
 					))}
 				</Swiper>
@@ -94,8 +95,9 @@ const MostPopularBrands = () => {
 			{/* ---------- DESKTOP GRID ---------- */}
 			<div className="hidden md:grid md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
 				{brands.map((brand: any) => (
-					<div
+					<Link
 						key={brand.id}
+						href={`/brand/${brand.slug}`}
 						className="aspect-square bg-white border border-gray-100 rounded-xl flex items-center justify-center p-4 cursor-pointer hover:shadow-md transition-shadow"
 					>
 						<BrandImage
@@ -105,7 +107,7 @@ const MostPopularBrands = () => {
 							height={80}
 							className="object-contain max-w-full max-h-full"
 						/>
-					</div>
+					</Link>
 				))}
 			</div>
 		</div>
