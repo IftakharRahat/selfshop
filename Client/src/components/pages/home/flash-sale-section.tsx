@@ -91,7 +91,6 @@ export default function FlashSaleSection() {
                                     { value: timeLeft.days, label: "D" },
                                     { value: timeLeft.hours, label: "H" },
                                     { value: timeLeft.minutes, label: "M" },
-                                    { value: timeLeft.seconds, label: "S" },
                                 ].map((unit, i) => (
                                     <div key={i} className="flex items-center gap-1">
                                         <div
@@ -108,7 +107,7 @@ export default function FlashSaleSection() {
                                         <span className="text-white/70 text-xs font-medium">
                                             {unit.label}
                                         </span>
-                                        {i < 3 && (
+                                        {i < 2 && (
                                             <span className="text-white/50 font-bold mx-0.5">
                                                 :
                                             </span>

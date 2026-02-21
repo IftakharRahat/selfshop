@@ -104,40 +104,35 @@ export default function ProductDetailPage({ product }: any) {
 		);
 
 	// ---- UI States ----
-	const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-	const [selectedVarient, setSelectedVarient] = useState<any>(
-		product?.varients?.[0] ?? null,
-	);
-	const [quantities, setQuantities] = useState<Record<string, number>>({});
+	const variants: any[] = productData.varients || [];
+	const [activeVariantIdx, setActiveVariantIdx] = useState(0);
+	// Per-variant per-size quantities: { [variantId]: { [size]: qty } }
+	const [variantQuantities, setVariantQuantities] = useState<Record<number, Record<string, number>>>({});
 	const [sellingPrice, setSellingPrice] = useState("");
 	const [priceError, setPriceError] = useState<string | null>(null);
 
-	const toggleSize = (size: string) => {
-		setSelectedSizes((prev) => {
-			if (prev.includes(size)) {
-				// Remove size and its quantity
-				setQuantities((q) => {
-					const next = { ...q };
-					delete next[size];
-					return next;
-				});
-				return prev.filter((s) => s !== size);
-			} else {
-				// Add size with default qty 1
-				setQuantities((q) => ({ ...q, [size]: 1 }));
-				return [...prev, size];
-			}
+	const handleQtyChange = (variantId: number, size: string, type: "increase" | "decrease") => {
+		setVariantQuantities((prev) => {
+			const varSizes = { ...(prev[variantId] || {}) };
+			const cur = varSizes[size] || 0;
+			varSizes[size] = type === "increase" ? cur + 1 : Math.max(0, cur - 1);
+			return { ...prev, [variantId]: varSizes };
 		});
 	};
 
-	const handleQtyChange = (size: string, type: "increase" | "decrease") => {
-		setQuantities((prev) => ({
-			...prev,
-			[size]: type === "increase" ? (prev[size] || 0) + 1 : Math.max(1, (prev[size] || 1) - 1),
-		}));
+	const handleQtySet = (variantId: number, size: string, value: string) => {
+		const num = parseInt(value, 10);
+		setVariantQuantities((prev) => {
+			const varSizes = { ...(prev[variantId] || {}) };
+			varSizes[size] = value === '' ? 0 : (isNaN(num) ? 0 : Math.max(0, num));
+			return { ...prev, [variantId]: varSizes };
+		});
 	};
 
-	const totalQuantity = Object.values(quantities).reduce((a, b) => a + b, 0);
+	// Total quantity across ALL variants and sizes
+	const totalQuantity = Object.values(variantQuantities)
+		.flatMap((sizes) => Object.values(sizes))
+		.reduce((a, b) => a + b, 0);
 
 	const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
@@ -146,9 +141,16 @@ export default function ProductDetailPage({ product }: any) {
 	const hasTiers = product.price_tiers && product.price_tiers.length > 0;
 	const showWholesale = (sellingType === 'wholesale' || sellingType === 'both') && hasTiers;
 	const showDropshipping = sellingType === 'dropshipping' || sellingType === 'both';
-	const [activeTierId, setActiveTierId] = useState<number | null>(
-		hasTiers ? product.price_tiers[0]?.id ?? null : null
-	);
+
+	// Auto-select active pricing tier based on total quantity
+	const activeTier = hasTiers
+		? product.price_tiers
+			.slice()
+			.sort((a: any, b: any) => b.min_qty - a.min_qty)
+			.find((t: any) => totalQuantity >= t.min_qty) ?? product.price_tiers[0]
+		: null;
+	const activeTierId = activeTier?.id ?? null;
+	const effectiveUnitPrice = activeTier ? parseFloat(activeTier.unit_price) : productData.currentPrice;
 
 
 
@@ -172,23 +174,23 @@ export default function ProductDetailPage({ product }: any) {
 			});
 			return;
 		}
-		const validPrice = validateSellingPrice();
+		const validPrice = showDropshipping ? validateSellingPrice() : effectiveUnitPrice;
 		if (!validPrice) return;
 
-		if (selectedSizes.length === 0) {
-			toast.error("Please select at least one size.");
+		const items = getSelectedItems();
+		if (items.length === 0) {
+			toast.error("Please select at least one item.");
 			return;
 		}
 
-		for (const size of selectedSizes) {
-			const qty = quantities[size] || 1;
+		for (const item of items) {
 			const formData = new FormData();
 			formData.append("product_id", product.id);
 			formData.append("price", validPrice.toString());
-			formData.append("qty", qty.toString());
-			formData.append("size", size);
-			if (selectedColors.length > 0) {
-				formData.append("color", selectedColors.map(c => c.name).join(","));
+			formData.append("qty", item.qty.toString());
+			formData.append("size", item.size);
+			if (item.variantTitle) {
+				formData.append("color", item.variantTitle);
 			}
 
 			await handleAsyncWithToast(async () => {
@@ -206,24 +208,24 @@ export default function ProductDetailPage({ product }: any) {
 			});
 			return;
 		}
-		const validPrice = validateSellingPrice();
+		const validPrice = showDropshipping ? validateSellingPrice() : effectiveUnitPrice;
 		if (!validPrice) return;
 
-		if (selectedSizes.length === 0) {
-			toast.error("Please select at least one size.");
+		const items = getSelectedItems();
+		if (items.length === 0) {
+			toast.error("Please select at least one item.");
 			return;
 		}
 
 		let lastResult: any;
-		for (const size of selectedSizes) {
-			const qty = quantities[size] || 1;
+		for (const item of items) {
 			const formData = new FormData();
 			formData.append("product_id", product.id);
 			formData.append("price", validPrice.toString());
-			formData.append("qty", qty.toString());
-			formData.append("size", size);
-			if (selectedColors.length > 0) {
-				formData.append("color", selectedColors.map(c => c.name).join(","));
+			formData.append("qty", item.qty.toString());
+			formData.append("size", item.size);
+			if (item.variantTitle) {
+				formData.append("color", item.variantTitle);
 			}
 
 			lastResult = await handleAsyncWithToast(async () => {
@@ -235,7 +237,6 @@ export default function ProductDetailPage({ product }: any) {
 			window.location.href = "/order-confirmation";
 		}
 	};
-	console.log(selectedVarient);
 	const handleOrderNow = async () => {
 		if (!token) {
 			Swal.fire({
@@ -248,21 +249,16 @@ export default function ProductDetailPage({ product }: any) {
 		setOrderOpen(true);
 	};
 
-	const derivedColors: ColorOption[] = [
-		{ id: 1, name: "Red", color: "red" },
-		{ id: 2, name: "Blue", color: "blue" },
-		{ id: 3, name: "Green", color: "green" },
-		{ id: 4, name: "Black", color: "black" },
-	];
-
-	const [selectedColors, setSelectedColors] = useState<ColorOption[]>([]);
-
-	const toggleColor = (c: ColorOption) => {
-		setSelectedColors((prev) =>
-			prev.find((sc) => sc.id === c.id)
-				? prev.filter((sc) => sc.id !== c.id)
-				: [...prev, c],
-		);
+	// Helper: get items that have non-zero quantity for cart submission
+	const getSelectedItems = () => {
+		const items: { variantId: number; variantTitle: string; size: string; qty: number }[] = [];
+		for (const [vid, sizes] of Object.entries(variantQuantities)) {
+			const v = variants.find((vr: any) => vr.id === Number(vid));
+			for (const [size, qty] of Object.entries(sizes)) {
+				if (qty > 0) items.push({ variantId: Number(vid), variantTitle: v?.title || '', size, qty });
+			}
+		}
+		return items;
 	};
 
 	const handleDownloadImage = (imgPath: string) => {
@@ -454,183 +450,163 @@ export default function ProductDetailPage({ product }: any) {
 						<OrderNowModal
 							open={orderOpen}
 							onClose={() => setOrderOpen(false)}
-							variant={selectedVarient}
+							variant={variants[activeVariantIdx] ?? null}
 						/>
 
-						{/* ── Wholesale: MoveOn-Style Tier Price Badges ── */}
-						{showWholesale && (
-							<div className="mt-4">
-								<h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-									📊 Wholesale Price Tiers
-								</h3>
-								<div className="flex flex-wrap gap-2">
-									{product.price_tiers.map((tier: any) => {
-										const isActive = activeTierId === tier.id;
-										const qtyLabel = tier.max_qty
-											? `${tier.min_qty} - ${tier.max_qty} Pcs`
-											: `≥${tier.min_qty} Pcs`;
-										return (
-											<button
-												key={tier.id}
-												onClick={() => {
-													setActiveTierId(tier.id);
-													setSellingPrice(tier.unit_price);
-													if (tier.variant_title && !selectedSizes.includes(tier.variant_title)) {
-														toggleSize(tier.variant_title);
-													}
-													toast.success(`Selected: ${qtyLabel}`);
-												}}
-												className={`relative flex flex-col items-center px-4 py-3 rounded-xl border-2 transition-all cursor-pointer min-w-[120px] ${isActive
-													? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-100'
-													: 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-													}`}
-											>
-												{isActive && (
-													<span className="absolute -top-2 -right-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-														<svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-															<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-														</svg>
-													</span>
-												)}
-												<span className={`text-lg font-bold ${isActive ? 'text-emerald-700' : 'text-gray-900'
-													}`}>
-													৳{parseFloat(tier.unit_price).toFixed(2)}
-												</span>
-												<span className={`text-[11px] font-medium mt-0.5 ${isActive ? 'text-emerald-600' : 'text-gray-500'
-													}`}>
-													{qtyLabel}
-												</span>
-												{tier.delivery_charge && (
-													<span className="text-[10px] text-gray-400 mt-0.5">
-														Deliv: ৳{parseFloat(tier.delivery_charge).toFixed(0)}
-													</span>
-												)}
-											</button>
-										);
-									})}
-								</div>
-							</div>
-						)}
-
-						{/* Size Selection */}
-						<div className="bg-[#F4F4F4] p-4 space-y-4 rounded-lg">
-							{/* Color Multi-Select */}
-							<div className="mb-3">
-								<h3 className="font-medium mb-2 text-sm text-gray-900">Color <span className="text-xs text-gray-500">(select multiple)</span></h3>
-								<div className="flex gap-3 overflow-x-auto p-1">
-									{derivedColors.map((c) => {
-										const isSelected = selectedColors.some((sc) => sc.id === c.id);
-										return (
-											<button
-												key={c.id}
-												onClick={() => toggleColor(c)}
-												className={`relative flex flex-col items-center p-1.5 rounded-md transition min-w-12 ${isSelected
-													? "ring-2 ring-pink-500 bg-pink-50"
-													: "hover:ring-1 hover:ring-gray-300"
-													}`}
-											>
-												{isSelected && (
-													<span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
-														<svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-															<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-														</svg>
-													</span>
-												)}
+						{/* ── Wholesale: Auto-Highlight Tier Price Badges ── */}
+						{
+							showWholesale && (
+								<div className="mt-4">
+									<div className="flex flex-nowrap overflow-x-auto gap-2 pb-1 -mx-1 px-1">
+										{product.price_tiers.map((tier: any) => {
+											const isActive = activeTierId === tier.id;
+											const qtyLabel = tier.max_qty
+												? `${tier.min_qty}-${tier.max_qty} Pcs`
+												: `${tier.min_qty}+ Pcs`;
+											return (
 												<div
-													className="w-6 h-6 rounded-full border-2"
-													style={{ backgroundColor: c.color, borderColor: isSelected ? '#ec4899' : '#d1d5db' }}
-												></div>
-												<span className={`text-[10px] mt-1 ${isSelected ? 'font-semibold text-pink-600' : ''}`}>{c.name}</span>
-											</button>
-										);
-									})}
-								</div>
-							</div>
-
-							{/* Size Multi-Select */}
-							<div className="space-y-3">
-								<h3 className="font-medium text-gray-900">Size <span className="text-xs text-gray-500">(select multiple)</span></h3>
-								<div className="flex flex-wrap gap-2">
-									{productData.sizes.map((size: any) => {
-										const isSelected = selectedSizes.includes(size);
-										return (
-											<button
-												key={size}
-												onClick={() => toggleSize(size)}
-												className={`relative px-4 py-2 border rounded-lg text-sm font-medium transition-all ${isSelected
-													? "border-pink-500 text-pink-600 bg-pink-50 shadow-sm"
-													: "border-gray-300 text-gray-700 hover:border-gray-400 bg-white"
-													}`}
-											>
-												{isSelected && (
-													<span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-pink-500 rounded-full flex items-center justify-center">
-														<svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-															<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-														</svg>
+													key={tier.id}
+													className={`relative flex flex-col items-center px-3 py-2 sm:px-5 sm:py-3 rounded-xl border transition-all min-w-[100px] sm:min-w-[130px] shrink-0 ${isActive
+														? 'border-pink-500 bg-pink-50 shadow-md shadow-pink-100'
+														: 'border-gray-200 bg-white'
+														}`}
+												>
+													<span className={`text-base sm:text-lg font-bold flex items-center ${isActive ? 'text-pink-700' : 'text-gray-900'}`}>
+														<TbCurrencyTaka size={20} />
+														{parseFloat(tier.unit_price).toFixed(2)}
 													</span>
-												)}
-												{size}
-											</button>
-										);
-									})}
-								</div>
-							</div>
-
-							{/* Per-Size Quantity Table */}
-							{selectedSizes.length > 0 && (
-								<div className="space-y-3">
-									<h3 className="font-medium text-gray-900">Quantity per Size</h3>
-									<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-										<div className="grid grid-cols-3 gap-4 px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase">
-											<div>Size</div>
-											<div>Price</div>
-											<div className="text-right">Quantity</div>
-										</div>
-										{selectedSizes.map((size) => (
-											<div key={size} className="grid grid-cols-3 gap-4 px-4 py-3 border-t border-gray-100 items-center">
-												<div className="font-medium text-gray-900 text-sm">{size}</div>
-												<div className="text-gray-700 flex items-center text-sm">
-													<TbCurrencyTaka size={16} />
-													{productData.currentPrice.toFixed(2)}
-												</div>
-												<div className="flex items-center justify-end gap-1">
-													<button
-														onClick={() => handleQtyChange(size, "decrease")}
-														className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
-													>
-														<Minus className="w-3 h-3" />
-													</button>
-													<span className="w-10 h-8 rounded-lg flex items-center justify-center bg-white border border-gray-200 text-sm font-medium">
-														{quantities[size] || 0}
+													<span className={`text-[11px] font-medium mt-0.5 ${isActive ? 'text-pink-600' : 'text-gray-500'}`}>
+														{qtyLabel}
 													</span>
-													<button
-														onClick={() => handleQtyChange(size, "increase")}
-														className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-pink-50 transition-colors bg-white"
-													>
-														<Plus className="w-3 h-3" />
-													</button>
 												</div>
-											</div>
-										))}
-										{/* Total Row */}
-										<div className="grid grid-cols-3 gap-4 px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
-											<div className="text-gray-900">Total</div>
-											<div className="text-pink-600 flex items-center">
-												<TbCurrencyTaka size={16} />
-												{(productData.currentPrice * totalQuantity).toFixed(2)}
-											</div>
-											<div className="text-right text-gray-700">{totalQuantity} pcs</div>
-										</div>
+											);
+										})}
+									</div>
+									{totalQuantity > 0 && (
+										<p className="text-xs text-gray-500 mt-2">
+											Total selected: {totalQuantity} pcs
+										</p>
+									)}
+								</div>
+							)
+						}
+
+						{/* ── Variant (Color) Selection + Per-Color Size Table ── */}
+						<div className="bg-[#F4F4F4] p-2 sm:p-4 space-y-3 sm:space-y-4 rounded-lg">
+							{variants.length > 0 && (
+								<div>
+									<h3 className="font-medium mb-2 text-sm text-gray-900">
+										Color: <span className="font-bold">{variants[activeVariantIdx]?.title || 'Default'}</span>
+									</h3>
+									<div className="flex gap-3 overflow-x-auto p-1">
+										{variants.map((v: any, idx: number) => {
+											const isActive = idx === activeVariantIdx;
+											const varQty = v.qty ?? 0;
+											return (
+												<button
+													key={v.id}
+													onClick={() => setActiveVariantIdx(idx)}
+													className={`relative flex flex-col items-center p-1 rounded-md transition min-w-[52px] ${isActive
+														? "ring-2 ring-pink-500 bg-white"
+														: "hover:ring-1 hover:ring-gray-300"
+														}`}
+												>
+													<span className={`absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${isActive ? 'bg-pink-500 text-white' : 'bg-gray-400 text-white'}`}>
+														{varQty}
+													</span>
+													{productData.images.main[idx] ? (
+														<Image
+															src={getImageUrl(productData.images.main[idx]) || "/placeholder.svg"}
+															alt={v.title || `Variant ${idx + 1}`}
+															width={40}
+															height={40}
+															className="w-10 h-10 rounded object-cover"
+														/>
+													) : (
+														<div className="w-10 h-10 rounded bg-gray-300 flex items-center justify-center text-[10px] font-bold text-white">
+															{(v.title || '?')[0]}
+														</div>
+													)}
+												</button>
+											);
+										})}
 									</div>
 								</div>
 							)}
+
+							{/* Per-Color Size + Quantity Table */}
+							{(() => {
+								const currentVariant = variants[activeVariantIdx];
+								const currentVarId = currentVariant?.id ?? 0;
+								const currentStock = currentVariant?.qty ?? productData.quantity;
+								const sizesForTable = productData.sizes.length > 0 ? productData.sizes : ['Default'];
+
+								return (
+									<div className="space-y-3">
+										<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+											<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase">
+												<div>Size</div>
+												<div>Price</div>
+												<div className="text-center">Stock</div>
+												<div className="text-right">Quantity</div>
+											</div>
+											{sizesForTable.map((size: string) => {
+												const qty = variantQuantities[currentVarId]?.[size] || 0;
+												return (
+													<div key={size} className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-100 items-center">
+														<div className="font-medium text-gray-900 text-sm">{size}</div>
+														<div className="text-gray-700 flex items-center text-sm">
+															<TbCurrencyTaka size={14} />
+															{effectiveUnitPrice.toFixed(2)}
+														</div>
+														<div className="text-gray-600 text-sm text-center">{currentStock}</div>
+														<div className="flex items-center justify-end gap-1">
+															<button
+																onClick={() => handleQtyChange(currentVarId, size, "decrease")}
+																className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
+															>
+																<Minus className="w-3 h-3" />
+															</button>
+															<input
+																type="number"
+																min={0}
+																value={qty || ''}
+																onChange={(e) => handleQtySet(currentVarId, size, e.target.value)}
+																placeholder="0"
+																className={`w-14 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${qty > 0 ? 'bg-pink-50 border-pink-300 text-pink-700' : 'bg-white border-gray-200'}`}
+															/>
+															<button
+																onClick={() => handleQtyChange(currentVarId, size, "increase")}
+																className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-pink-50 transition-colors bg-white"
+															>
+																<Plus className="w-3 h-3" />
+															</button>
+														</div>
+													</div>
+												);
+											})}
+											{/* Total Row */}
+											<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
+												<div className="text-gray-900">Total</div>
+												<div className="text-pink-600 flex items-center">
+													<TbCurrencyTaka size={16} />
+													{(effectiveUnitPrice * totalQuantity).toFixed(2)}
+												</div>
+												<div></div>
+												<div className="text-right text-gray-700">{totalQuantity} pcs</div>
+											</div>
+										</div>
+									</div>
+								);
+							})()}
 						</div>
+
 
 						{/* Unit Price + Total Price */}
 						<div className="space-y-1">
 							<div className="text-3xl font-bold text-gray-900 flex items-center">
 								<TbCurrencyTaka size={35} />
-								{productData.currentPrice.toFixed(2)}
+								{effectiveUnitPrice.toFixed(2)}
 								<span className="text-sm font-normal text-gray-500 ml-1">/pc</span>
 							</div>
 							{totalQuantity > 0 && (
@@ -638,7 +614,7 @@ export default function ProductDetailPage({ product }: any) {
 									<span className="text-gray-500">Total ({totalQuantity} pcs):</span>
 									<span className="font-bold text-lg text-pink-600 flex items-center">
 										<TbCurrencyTaka size={20} />
-										{(productData.currentPrice * totalQuantity).toFixed(2)}
+										{(effectiveUnitPrice * totalQuantity).toFixed(2)}
 									</span>
 								</div>
 							)}
