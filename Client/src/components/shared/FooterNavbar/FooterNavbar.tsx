@@ -57,7 +57,7 @@ const FooterNavbar = () => {
 			if (token) {
 				router.push(item.path || "/dashboard/settings");
 			} else {
-				router.push("/auth/login");
+				setIsLoginModalOpen(true);
 			}
 		} else if (item.path) {
 			router.push(item.path);
