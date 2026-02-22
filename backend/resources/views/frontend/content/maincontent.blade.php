@@ -227,7 +227,12 @@
             </div>
             <div class="col-lg-4 col-12">
                 <div class="adsbanner">
-                    <img src="{{App\Models\Addbanner::where('id',2)->first()->add_image}}" alt="" style="width: 100%;">
+                @php
+                    $banner2 = App\Models\Addbanner::find(2);
+                @endphp
+                @if($banner2)
+                    <img src="{{ asset($banner2->add_image) }}" alt="" style="width: 100%;">
+                @endif
                 </div>
             </div>
         </div>

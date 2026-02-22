@@ -22,12 +22,23 @@ export default function VendorNewProductPage() {
 	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
 	const { data: brandData } = useGetAllBrandsQuery(undefined);
 	const { data: commissionData } = useGetVendorCategoryCommissionsQuery();
-	type CatItem = { id: number; category_name: string; subcategories?: { id: number; sub_category_name: string; category_id: number }[] };
+	type CatItem = {
+		id: number;
+		category_name: string;
+		subcategories?: {
+			id: number;
+			sub_category_name: string;
+			category_id: number;
+			minicategories?: { id: number; mini_category_name: string }[];
+		}[];
+	};
 	const categories = (catData as { data?: CatItem[] })?.data ?? [];
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
 	const commissionRows = commissionData?.data?.categories ?? [];
 
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+	const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
+	const [selectedMinicategoryId, setSelectedMinicategoryId] = useState<string>("");
 	const selectedCategoryCommission = selectedCategoryId
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
 			?.commission_percent
@@ -58,6 +69,12 @@ export default function VendorNewProductPage() {
 		return cat?.subcategories ?? [];
 	}, [categories, selectedCategoryId]);
 
+	const minicategories = useMemo(() => {
+		if (!selectedSubcategoryId) return [];
+		const sub = subcategories.find((s) => s.id === Number(selectedSubcategoryId));
+		return sub?.minicategories ?? [];
+	}, [subcategories, selectedSubcategoryId]);
+
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -68,6 +85,8 @@ export default function VendorNewProductPage() {
 		formData.append("ProductName", (form.querySelector('[name="name"]') as HTMLInputElement).value);
 		formData.append("category_id", (form.querySelector('[name="category_id"]') as HTMLSelectElement).value);
 		formData.append("subcategory_id", (form.querySelector('[name="subcategory_id"]') as HTMLSelectElement).value);
+		const miniId = (form.querySelector('[name="minicategory_id"]') as HTMLSelectElement)?.value;
+		if (miniId) formData.append("minicategory_id", miniId);
 		formData.append("brand_id", (form.querySelector('[name="brand_id"]') as HTMLSelectElement).value);
 		const brief = (form.querySelector('[name="short_description"]') as HTMLTextAreaElement).value;
 		const details = (form.querySelector('[name="description"]') as HTMLTextAreaElement).value;
@@ -195,6 +214,62 @@ export default function VendorNewProductPage() {
 								<h2 className="text-sm font-semibold text-gray-900">
 									Basic information
 								</h2>
+								<div className="space-y-2">
+									<p className="text-xs font-semibold text-gray-900 mb-2">Selling Type</p>
+									<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+										<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'wholesale'
+											? 'border-green-500 bg-green-50'
+											: 'border-gray-200 hover:border-gray-300'
+											}`}>
+											<input
+												type="radio"
+												name="selling_type_radio"
+												value="wholesale"
+												checked={sellingType === 'wholesale'}
+												onChange={() => setSellingType('wholesale')}
+												className="accent-green-600"
+											/>
+											<div>
+												<span className="text-xs font-bold text-gray-900">🏭 Wholesale</span>
+												<p className="text-[10px] text-gray-500">Tier-based bulk pricing</p>
+											</div>
+										</label>
+										<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'dropshipping'
+											? 'border-blue-500 bg-blue-50'
+											: 'border-gray-200 hover:border-gray-300'
+											}`}>
+											<input
+												type="radio"
+												name="selling_type_radio"
+												value="dropshipping"
+												checked={sellingType === 'dropshipping'}
+												onChange={() => setSellingType('dropshipping')}
+												className="accent-blue-600"
+											/>
+											<div>
+												<span className="text-xs font-bold text-gray-900">🚀 Dropshipping</span>
+												<p className="text-[10px] text-gray-500">Single price + stock</p>
+											</div>
+										</label>
+										<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'both'
+											? 'border-amber-500 bg-amber-50'
+											: 'border-gray-200 hover:border-gray-300'
+											}`}>
+											<input
+												type="radio"
+												name="selling_type_radio"
+												value="both"
+												checked={sellingType === 'both'}
+												onChange={() => setSellingType('both')}
+												className="accent-amber-600"
+											/>
+											<div>
+												<span className="text-xs font-bold text-gray-900">🔄 Both</span>
+												<p className="text-[10px] text-gray-500">Wholesale + Dropshipping</p>
+											</div>
+										</label>
+									</div>
+								</div>
 								<label className="flex flex-col text-sm font-medium text-gray-700">
 									Product name
 									<input
@@ -203,6 +278,7 @@ export default function VendorNewProductPage() {
 										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									/>
 								</label>
+
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 									<label className="flex flex-col text-sm font-medium text-gray-700">
 										Unit (e.g. Pc, Kg)
@@ -348,6 +424,11 @@ export default function VendorNewProductPage() {
 									<select
 										name="subcategory_id"
 										required
+										value={selectedSubcategoryId}
+										onChange={(e) => {
+											setSelectedSubcategoryId(e.target.value);
+											setSelectedMinicategoryId("");
+										}}
 										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									>
 										<option value="">Select subcategory</option>
@@ -356,6 +437,24 @@ export default function VendorNewProductPage() {
 										))}
 									</select>
 								</label>
+
+								{minicategories.length > 0 && (
+									<label className="flex flex-col text-xs font-medium text-gray-700">
+										Child Category (Optional)
+										<select
+											name="minicategory_id"
+											value={selectedMinicategoryId}
+											onChange={(e) => setSelectedMinicategoryId(e.target.value)}
+											className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+										>
+											<option value="">Select child category</option>
+											{minicategories.map((m) => (
+												<option key={m.id} value={m.id}>{m.mini_category_name}</option>
+											))}
+										</select>
+									</label>
+								)}
+
 								<label className="flex flex-col text-xs font-medium text-gray-700">
 									Brand
 									<select
@@ -425,65 +524,6 @@ export default function VendorNewProductPage() {
 								</label>
 							</div>
 
-							<div className="space-y-2">
-								<h2 className="text-sm font-semibold text-gray-900">
-									Visibility &amp; options
-								</h2>
-								<p className="text-xs font-semibold text-gray-900 mb-2">Selling Type</p>
-								<div className="flex flex-col gap-2">
-									<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'wholesale'
-											? 'border-green-500 bg-green-50'
-											: 'border-gray-200 hover:border-gray-300'
-										}`}>
-										<input
-											type="radio"
-											name="selling_type_radio"
-											value="wholesale"
-											checked={sellingType === 'wholesale'}
-											onChange={() => setSellingType('wholesale')}
-											className="accent-green-600"
-										/>
-										<div>
-											<span className="text-xs font-bold text-gray-900">🏭 Wholesale</span>
-											<p className="text-[10px] text-gray-500">Tier-based bulk pricing</p>
-										</div>
-									</label>
-									<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'dropshipping'
-											? 'border-blue-500 bg-blue-50'
-											: 'border-gray-200 hover:border-gray-300'
-										}`}>
-										<input
-											type="radio"
-											name="selling_type_radio"
-											value="dropshipping"
-											checked={sellingType === 'dropshipping'}
-											onChange={() => setSellingType('dropshipping')}
-											className="accent-blue-600"
-										/>
-										<div>
-											<span className="text-xs font-bold text-gray-900">🚀 Dropshipping</span>
-											<p className="text-[10px] text-gray-500">Single price + stock</p>
-										</div>
-									</label>
-									<label className={`flex items-center gap-3 rounded-lg border-2 p-3 cursor-pointer transition-all ${sellingType === 'both'
-											? 'border-amber-500 bg-amber-50'
-											: 'border-gray-200 hover:border-gray-300'
-										}`}>
-										<input
-											type="radio"
-											name="selling_type_radio"
-											value="both"
-											checked={sellingType === 'both'}
-											onChange={() => setSellingType('both')}
-											className="accent-amber-600"
-										/>
-										<div>
-											<span className="text-xs font-bold text-gray-900">🔄 Both</span>
-											<p className="text-[10px] text-gray-500">Wholesale + Dropshipping</p>
-										</div>
-									</label>
-								</div>
-							</div>
 						</div>
 					</div>
 

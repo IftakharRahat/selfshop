@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRegisterVendorMutation } from "@/redux/api/vendorApi";
+import Link from "next/link";
 import { toast } from "sonner";
 
 const VendorRegisterPage = () => {
@@ -36,7 +37,7 @@ const VendorRegisterPage = () => {
 			}
 
 			toast.success(
-				"Registration submitted. Admin will approve your vendor account.",
+				"Registration submitted. Admin will approve your supplier account.",
 			);
 			router.replace("/vendor/login");
 		} catch (error) {
@@ -50,10 +51,10 @@ const VendorRegisterPage = () => {
 			<div className="w-full max-w-xl rounded-2xl bg-white shadow-sm border border-gray-100 p-8 space-y-6">
 				<div className="space-y-1 text-center">
 					<h1 className="text-2xl font-bold text-gray-900">
-						Become a SelfShop vendor
+						Become a SelfShop Supplier
 					</h1>
 					<p className="text-sm text-gray-600">
-						Create your vendor account. We will review your details before
+						Create your supplier account. We will review your details before
 						activating access to the portal.
 					</p>
 				</div>
@@ -137,10 +138,22 @@ const VendorRegisterPage = () => {
 					</button>
 				</form>
 
-				<p className="text-xs text-gray-500 text-center">
-					After approval, you can sign in from the vendor login page using the
-					same email and password.
-				</p>
+				<div className="space-y-4 text-center">
+					<p className="text-sm text-gray-600">
+						Already have an account?{" "}
+						<Link
+							href="/vendor/login"
+							className="font-medium text-[#2d2a5d] hover:underline"
+						>
+							Sign in
+						</Link>
+					</p>
+
+					<p className="text-xs text-gray-500">
+						After approval, you can sign in from the supplier login page using
+						the same email and password.
+					</p>
+				</div>
 			</div>
 		</div>
 	);
