@@ -72,7 +72,12 @@ class AuthenticatedSessionController extends Controller
 
     public function dashboard()
     {
-        $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
+        $user = Auth::guard('admin')->user();
+        if (!$user) {
+            return redirect()->route('admin.loginview');
+        }
+
+        $admin = Admin::where('email', $user->email)->first();
 
         return view('backend.content.maincontent');
     }

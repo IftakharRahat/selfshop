@@ -153,8 +153,8 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 									>
 										<Icon
 											className={`h-4 w-4 shrink-0 ${active
-													? "text-white"
-													: "text-gray-500 group-hover:text-[#2d2a5d]"
+												? "text-white"
+												: "text-gray-500 group-hover:text-[#2d2a5d]"
 												}`}
 										/>
 										<span className="truncate">{item.label}</span>
@@ -177,7 +177,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							href="/vendor"
 							className="text-lg font-semibold tracking-tight text-[#2d2a5d]"
 						>
-							SelfShop Vendor
+							SelfShop Supplier
 						</Link>
 					</div>
 
@@ -203,7 +203,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 								href="/vendor"
 								className="text-base font-semibold tracking-tight text-[#2d2a5d]"
 							>
-								SelfShop Vendor
+								SelfShop Supplier
 							</Link>
 							<button
 								type="button"
@@ -243,7 +243,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 								href="/vendor"
 								className="truncate text-base font-semibold tracking-tight text-[#2d2a5d] sm:text-lg"
 							>
-								SelfShop Vendor
+								SelfShop Supplier
 							</Link>
 						</div>
 						{!isAuthPage && (

@@ -40,7 +40,10 @@
     <?php
     use App\Models\Comment;
     use App\Models\Admin;
-    $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
+    $admin = Auth::guard('admin')->user();
+    if (!$admin) {
+        return redirect()->to('/admin/login')->send();
+    }
     $users = Admin::whereHas('roles', function ($q) {
         $q->where('name', 'user');
     })->count();
