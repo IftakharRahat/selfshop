@@ -35,7 +35,11 @@ class WithdrewController extends Controller
         return Datatables::of($invoices)
             ->editColumn('user', function ($invoices) {
                 if ($invoices->user_id) {
-                    return '<a href="../../resellerinvoice/user/view-dashboard/' . $invoices->user_id . '" target="_blank">' . User::where('id', $invoices->user_id)->first()->name . '(' . User::where('id', $invoices->user_id)->first()->my_referral_code . ')' . '</a><br> Date: ' . $invoices->created_at->format('Y-m-d') . '<br><a class="btn btn-success btn-sm" href="../../user/view-incomehistory/' . $invoices->user_id . '" target="_blank">See History</a>';
+                    $user = User::where('id', $invoices->user_id)->first();
+                    if (!$user) {
+                        return 'User Deleted';
+                    }
+                    return '<a href="../../resellerinvoice/user/view-dashboard/' . $invoices->user_id . '" target="_blank">' . $user->name . '(' . $user->my_referral_code . ')' . '</a><br> Date: ' . $invoices->created_at->format('Y-m-d') . '<br><a class="btn btn-success btn-sm" href="../../user/view-incomehistory/' . $invoices->user_id . '" target="_blank">See History</a>';
                 } else {
                     return 'user not founds';
                 }

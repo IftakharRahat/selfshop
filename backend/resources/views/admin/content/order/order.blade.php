@@ -24,328 +24,229 @@
             background-color: #005a0a;
             transition: width 0.6s ease;
         }
-        #orderinfo_filter input[type="search"]{
+        #orderinfo_filter input[type="search"] {
             display: none;
         }
+        /* Order status bar */
+        .order-status-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .order-status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .order-status-pill:hover {
+            border-color: #3b82f6;
+            color: #2563eb;
+            background: #eff6ff;
+            text-decoration: none;
+        }
+        .order-status-pill .pill-count {
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
+        }
+        .order-status-pill:hover .pill-count {
+            color: #2563eb;
+        }
+        /* Table footer summary */
+        #orderinfo tfoot th {
+            font-weight: 600;
+            color: #374151;
+            font-size: 13px;
+            padding: 12px 8px;
+            border-top: 2px solid #e5e7eb;
+            background: #f9fafb;
+        }
     </style>
-    <div class="px-4 pt-4 container-fluid">
+    <div class="container-fluid pt-4 px-4">
 
-        <div class="pagetitle row">
-            <div class="col-6">
+        <div class="pagetitle row mb-3">
+            <div class="col-12">
                 <nav>
-                    <ol class="breadcrumb">
+                    <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Pending Orders</li>
+                        <li class="breadcrumb-item active">Orders</li>
                     </ol>
                 </nav>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6 col-xl-2">
-                @if ($admin->hasrole('Executive'))
-                    <a href="{{ url('user/order') }}">
-                    @else
-                        <a href="{{ url('admin_order/orderall') }}">
-                @endif
-                <div class="pt-1 pb-1 widget-rounded-circle card-box order">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="float-left">
-                                <h3 class="mt-1 mb-0 text-dark">
-                                    <span id="all">0</span>
-                                </h3>
-                                <p class="mb-1 text-muted text-truncate">All Orders</p>
-                            </div>
-                        </div>
-                    </div> <!-- end row-->
-                </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Pending') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="pending" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Pending</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Confirmed') }}">
-
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="confirmed" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Confirmed</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Processing') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="processing" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Processing</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Packageing') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="packageing" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Packageing</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Ontheway') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="ontheway" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Ontheway</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Delivered') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="delivered" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Delivered</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Canceled') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="canceled" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Canceled</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Return') }}">
-                    <div class="pt-1 pb-1 widget-rounded-circle card-box order" style="background: #fff;">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="return" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Return</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
+        {{-- Status pills --}}
+        <div class="order-status-bar">
+            @if ($admin->hasrole('Executive'))
+                <a href="{{ url('user/order') }}" class="order-status-pill">
+            @else
+                <a href="{{ url('admin_order/orderall') }}" class="order-status-pill">
+            @endif
+                <span class="pill-count" id="all">0</span> All
+            </a>
+            <a href="{{ url('admin_order/Pending') }}" class="order-status-pill">
+                <span class="pill-count" id="pending">0</span> Pending
+            </a>
+            <a href="{{ url('admin_order/Confirmed') }}" class="order-status-pill">
+                <span class="pill-count" id="confirmed">0</span> Confirmed
+            </a>
+            <a href="{{ url('admin_order/Processing') }}" class="order-status-pill">
+                <span class="pill-count" id="processing">0</span> Processing
+            </a>
+            <a href="{{ url('admin_order/Packageing') }}" class="order-status-pill">
+                <span class="pill-count" id="packageing">0</span> Packaging
+            </a>
+            <a href="{{ url('admin_order/Ontheway') }}" class="order-status-pill">
+                <span class="pill-count" id="ontheway">0</span> On the Way
+            </a>
+            <a href="{{ url('admin_order/Delivered') }}" class="order-status-pill">
+                <span class="pill-count" id="delivered">0</span> Delivered
+            </a>
+            <a href="{{ url('admin_order/Canceled') }}" class="order-status-pill">
+                <span class="pill-count" id="canceled">0</span> Canceled
+            </a>
+            <a href="{{ url('admin_order/Return') }}" class="order-status-pill">
+                <span class="pill-count" id="return">0</span> Return
+            </a>
         </div>
 
-        {{-- //popup modal for edit user --}}
+        {{-- Edit order modal --}}
         <div class="modal" id="editmainOrder">
             <div class="modal-dialog" style="width: 92%;max-width: none;">
-                <div class="modal-content">
+                <div class="modal-content admin-modal">
                     <div class="modal-header">
                         <h5 class="modal-title">Edit Order</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-
-
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div>
 
-        {{-- //table section for category --}}
-
-        <section class="section">
-            <div class="row">
-                <div class="col-lg-12">
-
-                    <div class="card">
-                        <div class="pt-4 pb-2 card-body">
-                            <div class="row">
-                                <div class="col-4">
-                                    <h4><a href="">Total <span class="total">0</span> Orders </a></h4>
-                                </div>
-
-                                <div class="col-8" style="text-align: right">
-                                    <a href="{{ url('admin/create/order') }}" class="btn btn-info btn-sm"><span
-                                            style="font-weight: bold;">+</span> Create New</a>
-                                    <button type="button" class="btn btn-warning order-print-btn btn-sm">
-                                        <i class="mr-1 fas fa-print"></i> Invoice Print
-                                    </button>
-                                    <div class="btn-group dropdown">
-                                        <a href="javascript: void(0);" style="color: white"
-                                            class="table-action-btn dropdown-toggle arrow-none btn bg-danger btn-sm"
-                                            data-bs-toggle="dropdown" aria-expanded="false"><i
-                                                class="mr-1 fas fa-truck"></i> Assign Courier</a>
-                                        <div class="dropdown-menu dropdown-menu-right">
-                                            @foreach (App\Models\Courier::where('status','Active')->get()->reverse() as $courier)
-                                                <a class="dropdown-item assign-courier" data-id="{{ $courier->id }}"
-                                                    href="#">{{ $courier->courierName }}</a>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            @if (\Session::has('success'))
-                                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    {{ \Session::get('success') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                                </div>
-                            @endif
-
-                            @if($admin->hasrole('Shop'))
-                                <!-- Table with stripped rows -->
-                                <div class="table-responsive">
-                                    <table class="table mb-0 table-centered table-borderless table-hover" id="orderinfo"
-                                        width="100%">
-                                        <thead>
-                                            <tr>
-                                                <th></th>
-                                                <th>Invoice ID</th>
-                                                <th>Name</th>
-                                                <th>Products</th>
-                                                <th>Wholesale Price</th>
-                                                <th>Total</th>
-                                                <th>Courier</th>
-                                                <th>Order Date</th>
-                                                <th>Status</th>
-                                                    <th style="width: 133px;">User</th>
-
-                                                <th class="hidden-sm">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            @else
-                                <!-- Table with stripped rows -->
-                                <div class="table-responsive">
-                                    <table class="table mb-0 table-centered table-borderless table-hover" id="orderinfo"
-                                        width="100%">
-                                        <thead>
-                                            <tr>
-                                                <th></th>
-                                                <th>Invoice ID</th>
-                                                <th>Name</th>
-                                                <th>Products</th>
-                                                <th>RS Price</th>
-                                                <th>Profit</th>
-                                                <th>Total</th>
-                                                <th>Courier</th>
-                                                <th>Order Date</th>
-                                                <th>Status</th>
-                                                    <th style="width: 133px;">User</th>
-
-                                                <th class="hidden-sm">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                                <th></th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            @endif
-
-
-                            <!-- End Table with stripped rows -->
-
+        {{-- Orders table --}}
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">Total <span class="total">0</span> Orders</h6>
+                <div class="admin-card-actions d-flex align-items-center gap-2">
+                    <a href="{{ url('admin/create/order') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg"></i> Create New
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary order-print-btn btn-sm">
+                        <i class="bi bi-printer"></i> Invoice Print
+                    </button>
+                    <div class="btn-group dropdown">
+                        <a href="javascript: void(0);"
+                            class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-truck"></i> Assign Courier
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            @foreach (App\Models\Courier::where('status','Active')->get()->reverse() as $courier)
+                                <a class="dropdown-item assign-courier" data-id="{{ $courier->id }}"
+                                    href="#">{{ $courier->courierName }}</a>
+                            @endforeach
                         </div>
                     </div>
-
                 </div>
             </div>
-        </section>
+            <div class="admin-card-body">
+                @if (\Session::has('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {{ \Session::get('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                @if($admin->hasrole('Shop'))
+                    <div class="table-responsive">
+                        <table class="table" id="orderinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Invoice ID</th>
+                                    <th>Name</th>
+                                    <th>Products</th>
+                                    <th>Wholesale Price</th>
+                                    <th>Total</th>
+                                    <th>Courier</th>
+                                    <th>Order Date</th>
+                                    <th>Status</th>
+                                    <th style="width: 133px;">User</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table" id="orderinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Invoice ID</th>
+                                    <th>Name</th>
+                                    <th>Products</th>
+                                    <th>RS Price</th>
+                                    <th>Profit</th>
+                                    <th>Total</th>
+                                    <th>Courier</th>
+                                    <th>Order Date</th>
+                                    <th>Status</th>
+                                    <th style="width: 133px;">User</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                            <tfoot>
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                @endif
+            </div>
+        </div>
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
         {{-- //user role --}}
         @if ($admin->hasrole('Executive'))

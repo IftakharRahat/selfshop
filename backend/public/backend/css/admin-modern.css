@@ -1,0 +1,1585 @@
+/*=================================================================
+  Admin Modern Override
+  Loaded AFTER backend/css/style.css to modernize the admin layout
+  Design: Clean white sidebar, deep purple accents (#2d2a5d)
+=================================================================*/
+
+/* ----------------------------------------------------------------
+   CSS Custom Properties
+---------------------------------------------------------------- */
+:root {
+    --admin-primary: #2d2a5d;
+    --admin-primary-light: #3d3a7d;
+    --admin-primary-lighter: #eeedfa;
+    --admin-accent: #6c63ff;
+    --admin-bg: #f5f7fa;
+    --admin-sidebar-width: 250px;
+    --admin-header-height: 60px;
+    --admin-text: #1e293b;
+    --admin-text-muted: #64748b;
+    --admin-border: #e2e8f0;
+    --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --admin-transition: 0.2s ease;
+}
+
+/* ----------------------------------------------------------------
+   Base / Body
+---------------------------------------------------------------- */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    background-color: var(--admin-bg) !important;
+    color: var(--admin-text) !important;
+    font-size: 0.875rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----------------------------------------------------------------
+   Sidebar (override backend/css/style.css .sidebar)
+---------------------------------------------------------------- */
+.sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: var(--admin-sidebar-width) !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    background: #fff !important;
+    border-right: 1px solid var(--admin-border) !important;
+    z-index: 999 !important;
+    padding: 0 !important;
+    transition: 0.3s ease !important;
+    box-shadow: none !important;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--admin-border);
+    border-radius: 10px;
+}
+
+/* Sidebar Logo */
+.sidebar .sidebar-brand {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--admin-border);
+    min-height: var(--admin-header-height);
+}
+
+.sidebar .sidebar-brand img {
+    max-width: 140px;
+    height: auto;
+}
+
+/* Sidebar nav container */
+.sidebar .navbar {
+    padding: 12px 10px !important;
+    background: transparent !important;
+    align-items: flex-start !important;
+}
+
+.sidebar .navbar-nav {
+    width: 100% !important;
+}
+
+/* Section headings */
+.sidebar .nav-section-title {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--admin-text-muted);
+    font-weight: 600;
+    padding: 14px 14px 6px 14px;
+    margin: 0;
+}
+
+/* Nav links */
+.sidebar .navbar .navbar-nav .nav-link {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--admin-text) !important;
+    background: transparent !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    border-left: none !important;
+    margin-bottom: 1px !important;
+    transition: var(--admin-transition) !important;
+    position: relative;
+}
+
+.sidebar .navbar .navbar-nav .nav-link i {
+    width: auto !important;
+    height: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    font-size: 15px !important;
+    margin-right: 10px;
+    color: var(--admin-text-muted) !important;
+    width: 20px !important;
+}
+
+/* Nav link hover */
+.sidebar .navbar .navbar-nav .nav-link:hover,
+.sidebar .navbar .navbar-nav .nav-link:focus {
+    background: var(--admin-primary-lighter) !important;
+    color: var(--admin-primary) !important;
+}
+
+.sidebar .navbar .navbar-nav .nav-link:hover i,
+.sidebar .navbar .navbar-nav .nav-link:focus i {
+    background: transparent !important;
+    color: var(--admin-primary) !important;
+}
+
+/* Active nav link */
+.sidebar .navbar .navbar-nav .nav-link.active-nav {
+    background: var(--admin-primary) !important;
+    color: #fff !important;
+}
+
+.sidebar .navbar .navbar-nav .nav-link.active-nav i {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.sidebar .navbar .navbar-nav .nav-link.active-nav:hover {
+    background: var(--admin-primary-light) !important;
+}
+
+/* Dropdown toggle arrow */
+.sidebar .navbar .dropdown-toggle::after {
+    position: absolute !important;
+    top: 11px !important;
+    right: 12px !important;
+    border: none !important;
+    content: "\f078" !important;
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900 !important;
+    font-size: 10px !important;
+    color: var(--admin-text-muted) !important;
+    transition: 0.3s !important;
+}
+
+/* Dropdown items */
+.sidebar .navbar .dropdown-menu,
+.sidebar .navbar .bg-transparent {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 2px 0 2px 0 !important;
+    margin: 0 !important;
+}
+
+.sidebar .navbar .dropdown-item {
+    font-size: 13px !important;
+    font-weight: 450 !important;
+    color: var(--admin-text-muted) !important;
+    padding: 6px 14px 6px 40px !important;
+    border-radius: 6px !important;
+    transition: var(--admin-transition) !important;
+}
+
+.sidebar .navbar .dropdown-item:hover,
+.sidebar .navbar .dropdown-item.active,
+.sidebar .navbar .dropdown-item:focus {
+    background: var(--admin-primary-lighter) !important;
+    color: var(--admin-primary) !important;
+}
+
+/* Logout link */
+.sidebar .logout-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #ef4444 !important;
+    padding: 10px 14px !important;
+    border-radius: 8px !important;
+    text-transform: none !important;
+    text-align: left !important;
+}
+
+.sidebar .logout-link:hover {
+    background: #fef2f2 !important;
+}
+
+.sidebar .logout-link i {
+    margin-right: 6px;
+}
+
+/* ----------------------------------------------------------------
+   Content area (override backend/css/style.css .content)
+---------------------------------------------------------------- */
+.content {
+    margin-left: var(--admin-sidebar-width) !important;
+    min-height: 100vh !important;
+    background: var(--admin-bg) !important;
+    transition: 0.3s ease !important;
+}
+
+@media (min-width: 992px) {
+    .content {
+        width: calc(100% - var(--admin-sidebar-width)) !important;
+    }
+
+    .sidebar.open {
+        margin-left: calc(var(--admin-sidebar-width) * -1) !important;
+    }
+
+    .content.open {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        margin-left: calc(var(--admin-sidebar-width) * -1) !important;
+    }
+
+    .sidebar.open {
+        margin-left: 0 !important;
+    }
+
+    .content {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+}
+
+/* ----------------------------------------------------------------
+   Header / Top navbar
+---------------------------------------------------------------- */
+.content>.navbar:first-child,
+.container-fluid>.navbar:first-child {
+    background: #fff !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    box-shadow: none !important;
+    min-height: var(--admin-header-height);
+    padding: 0 20px !important;
+}
+
+.content>.navbar .navbar-brand img,
+.container-fluid>.navbar .navbar-brand img {
+    max-width: 130px;
+}
+
+/* Profile section in header */
+.content .navbar .profile h4,
+.container-fluid .navbar .profile h4 {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--admin-text) !important;
+}
+
+.content .navbar .profile small,
+.container-fluid .navbar .profile small {
+    font-size: 12px !important;
+    color: var(--admin-text-muted) !important;
+}
+
+.content .navbar .profile img,
+.container-fluid .navbar .profile img {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    object-fit: cover;
+}
+
+/* Sidebar toggle button in header */
+.content .navbar .sidebar-toggler,
+.container-fluid .navbar .sidebar-toggler {
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--admin-bg) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    transition: var(--admin-transition);
+}
+
+.content .navbar .sidebar-toggler:hover,
+.container-fluid .navbar .sidebar-toggler:hover {
+    background: var(--admin-primary-lighter) !important;
+    border-color: var(--admin-primary-lighter) !important;
+}
+
+.content .navbar .sidebar-toggler i,
+.content .navbar .sidebar-toggler .toggle-sidebar-btn,
+.container-fluid .navbar .sidebar-toggler i,
+.container-fluid .navbar .sidebar-toggler .toggle-sidebar-btn {
+    font-size: 18px !important;
+    color: var(--admin-text) !important;
+    background: transparent !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Header nav icons override */
+.content .navbar .navbar-nav .nav-link i {
+    width: 36px !important;
+    height: 36px !important;
+    background: var(--admin-bg) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+}
+
+/* ----------------------------------------------------------------
+   Cards
+---------------------------------------------------------------- */
+.card,
+.card-box {
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--admin-card-shadow) !important;
+    background: #fff !important;
+    overflow: visible !important;
+}
+
+.card-header,
+.card-footer {
+    background: #fff !important;
+    border-color: var(--admin-border) !important;
+}
+
+/* ----------------------------------------------------------------
+   Tables
+---------------------------------------------------------------- */
+table.dataTable thead th,
+table.dataTable thead td,
+.table thead th {
+    font-size: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    padding: 10px 8px !important;
+    background: var(--admin-bg) !important;
+}
+
+table.dataTable tbody td,
+.table tbody td {
+    font-size: 13px !important;
+    padding: 10px 8px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: var(--admin-text) !important;
+    vertical-align: middle;
+}
+
+table.dataTable tbody tr:hover,
+.table tbody tr:hover {
+    background: #fafbfe !important;
+}
+
+/* ----------------------------------------------------------------
+   Buttons
+---------------------------------------------------------------- */
+.btn-primary {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+.btn-primary:hover {
+    background: var(--admin-primary-light) !important;
+    border-color: var(--admin-primary-light) !important;
+}
+
+.btn-dark {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    border-radius: 8px !important;
+}
+
+.btn-dark:hover {
+    background: var(--admin-primary-light) !important;
+    border-color: var(--admin-primary-light) !important;
+}
+
+/* ----------------------------------------------------------------
+   Form controls
+---------------------------------------------------------------- */
+.form-control {
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    transition: var(--admin-transition);
+    color: var(--admin-text) !important;
+    background: #fff !important;
+}
+
+.form-control:focus {
+    border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1) !important;
+    background: #fff !important;
+}
+
+.form-select {
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    font-size: 13px !important;
+    background: #fff !important;
+    color: var(--admin-text) !important;
+}
+
+/* ----------------------------------------------------------------
+   Labels
+---------------------------------------------------------------- */
+label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--admin-text) !important;
+}
+
+/* ----------------------------------------------------------------
+   Headings
+---------------------------------------------------------------- */
+h1,
+.h1,
+h2,
+.h2,
+h3,
+.h3,
+h4,
+.h4,
+h5,
+.h5,
+h6,
+.h6 {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--admin-text) !important;
+}
+
+/* ----------------------------------------------------------------
+   Links
+---------------------------------------------------------------- */
+a {
+    color: var(--admin-text);
+    text-decoration: none;
+}
+
+/* ----------------------------------------------------------------
+   Badge
+---------------------------------------------------------------- */
+.badge {
+    font-weight: 500 !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+}
+
+/* ----------------------------------------------------------------
+   Toast
+---------------------------------------------------------------- */
+.toast-success {
+    background: #059669 !important;
+    border-radius: 8px !important;
+}
+
+.toast-error {
+    background: #dc2626 !important;
+    border-radius: 8px !important;
+}
+
+/* ----------------------------------------------------------------
+   Status colors fix
+---------------------------------------------------------------- */
+.bg-info {
+    background-color: var(--admin-primary) !important;
+}
+
+.bg-secondary {
+    background-color: #f8f9fc !important;
+}
+
+.bg-dark {
+    background-color: #fff !important;
+}
+
+/* ----------------------------------------------------------------
+   DataTables pagination
+---------------------------------------------------------------- */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    color: var(--admin-text) !important;
+    font-size: 13px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--admin-primary) !important;
+    color: #fff !important;
+    border-color: var(--admin-primary) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--admin-primary-lighter) !important;
+    color: var(--admin-primary) !important;
+    border-color: var(--admin-primary-lighter) !important;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    color: var(--admin-text) !important;
+    font-size: 13px !important;
+}
+
+/* ----------------------------------------------------------------
+   Scrollbar (global)
+---------------------------------------------------------------- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ----------------------------------------------------------------
+   Misc text overrides
+---------------------------------------------------------------- */
+.text-dark {
+    color: var(--admin-text) !important;
+}
+
+.text-muted {
+    color: var(--admin-text-muted) !important;
+}
+
+/* ================================================================
+   DASHBOARD PAGE STYLES
+   Pattern: Clean flat stat cards — label on top, large number,
+   optional secondary info. Inspired by modern admin UI kits.
+================================================================ */
+
+/* ---- Page Header ---- */
+.dash-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.dash-page-header h4 {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: var(--admin-text) !important;
+    margin: 0 !important;
+}
+
+.dash-page-header .dash-header-meta {
+    font-size: 13px;
+    color: var(--admin-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+
+/* ==========================================================================
+   CONTENT CARDS (used on table/list pages)
+   ========================================================================== */
+
+.admin-content-card {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.admin-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--admin-border);
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-card-header .admin-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin: 0;
+}
+
+.admin-card-header .admin-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-card-body {
+    padding: 0;
+}
+
+.admin-card-body .data-tables {
+    overflow-x: auto;
+}
+
+/* ==========================================================================
+   TABLE STYLING (clean, white, minimal borders — matches reference)
+   ========================================================================== */
+
+.admin-content-card .table {
+    width: 100% !important;
+    margin-bottom: 0;
+    border-collapse: collapse;
+    font-size: 13px;
+    color: var(--admin-text);
+    background: #fff;
+}
+
+.admin-content-card .table thead th {
+    background: var(--admin-bg) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    padding: 10px 16px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--admin-text-muted) !important;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.admin-content-card .table tbody td {
+    padding: 10px 16px !important;
+    border: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle;
+    color: var(--admin-text) !important;
+    background: transparent !important;
+}
+
+.admin-content-card .table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.admin-content-card .table tbody tr:hover td {
+    background: #f8fafc !important;
+}
+
+.admin-content-card .table tbody td img {
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+/* Status buttons inside tables */
+.admin-content-card .table .btn-sm {
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   DATATABLES OVERRIDES
+   ========================================================================== */
+
+/* Top bar (length + filter/search) */
+.admin-content-card .dataTables_wrapper {
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-content-card .dataTables_length,
+.admin-content-card .dataTables_filter {
+    padding: 12px 20px !important;
+    margin: 0 !important;
+}
+
+.admin-content-card .dataTables_length {
+    float: left;
+}
+
+.admin-content-card .dataTables_filter {
+    float: right;
+}
+
+.admin-content-card .dataTables_length label,
+.admin-content-card .dataTables_filter label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--admin-text-muted) !important;
+    margin: 0 !important;
+}
+
+.admin-content-card .dataTables_length select {
+    background: #fff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    color: var(--admin-text) !important;
+    margin: 0 6px !important;
+    min-width: 60px;
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+}
+
+.admin-content-card .dataTables_filter input {
+    background: #fff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    color: var(--admin-text) !important;
+    margin-left: 6px !important;
+    outline: none !important;
+    transition: border-color 0.15s ease;
+}
+
+.admin-content-card .dataTables_filter input:focus {
+    border-color: var(--admin-primary) !important;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
+}
+
+/* Bottom bar (info + pagination) */
+.admin-content-card .dataTables_info {
+    padding: 12px 20px !important;
+    font-size: 12px !important;
+    color: var(--admin-text-muted) !important;
+    float: left;
+}
+
+.admin-content-card .dataTables_paginate {
+    padding: 12px 20px !important;
+    float: right;
+}
+
+.admin-content-card .dataTables_paginate .paginate_button {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px !important;
+    margin: 0 2px !important;
+    font-size: 12px !important;
+    font-weight: 500;
+    color: var(--admin-text-muted) !important;
+    background: #fff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none !important;
+}
+
+.admin-content-card .dataTables_paginate .paginate_button:hover {
+    background: var(--admin-bg) !important;
+    border-color: var(--admin-primary) !important;
+    color: var(--admin-primary) !important;
+    box-shadow: none !important;
+}
+
+.admin-content-card .dataTables_paginate .paginate_button.current {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+
+.admin-content-card .dataTables_paginate .paginate_button.disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* DataTables sorting icons — DT 1.11.4 uses background-image PNGs, override with SVGs */
+.admin-content-card table.dataTable thead .sorting,
+.admin-content-card table.dataTable thead .sorting_asc,
+.admin-content-card table.dataTable thead .sorting_desc,
+.admin-content-card table.dataTable thead .sorting_asc_disabled,
+.admin-content-card table.dataTable thead .sorting_desc_disabled {
+    background-repeat: no-repeat !important;
+    background-position: center right 8px !important;
+    background-size: 14px !important;
+    padding-right: 26px !important;
+    cursor: pointer;
+}
+
+/* Neutral: both arrows faint */
+.admin-content-card table.dataTable thead .sorting {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 15l5 5 5-5'/%3E%3Cpath d='M7 9l5-5 5 5'/%3E%3C/svg%3E") !important;
+}
+
+/* Ascending: up arrow highlighted */
+.admin-content-card table.dataTable thead .sorting_asc {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9l5-5 5 5'/%3E%3C/svg%3E") !important;
+}
+
+/* Descending: down arrow highlighted */
+.admin-content-card table.dataTable thead .sorting_desc {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 15l5 5 5-5'/%3E%3C/svg%3E") !important;
+}
+
+/* Disabled states: very faint */
+.admin-content-card table.dataTable thead .sorting_asc_disabled {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9l5-5 5 5'/%3E%3C/svg%3E") !important;
+}
+
+.admin-content-card table.dataTable thead .sorting_desc_disabled {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 15l5 5 5-5'/%3E%3C/svg%3E") !important;
+}
+
+/* Processing indicator */
+.admin-content-card .dataTables_processing {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: var(--admin-text) !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 8px !important;
+    padding: 12px 24px !important;
+    font-size: 13px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* DataTables empty row */
+.admin-content-card .dataTables_empty {
+    padding: 40px 20px !important;
+    text-align: center;
+    color: var(--admin-text-muted) !important;
+    font-size: 13px;
+}
+
+
+/* ==========================================================================
+   MODAL STYLING (clean, white, modern)
+   ========================================================================== */
+
+.admin-modal {
+    background: #fff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+    overflow: hidden;
+}
+
+.admin-modal-header {
+    background: #fff !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    padding: 16px 20px !important;
+}
+
+.admin-modal-header .modal-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: var(--admin-text) !important;
+}
+
+.admin-modal-header .btn-close {
+    filter: none !important;
+    opacity: 0.5;
+}
+
+.admin-modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.admin-modal-body {
+    padding: 20px !important;
+    background: #fff !important;
+}
+
+.admin-modal-body .form-label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--admin-text) !important;
+    margin-bottom: 6px !important;
+}
+
+.admin-modal-body .form-control {
+    background: #fff !important;
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    color: var(--admin-text) !important;
+    transition: border-color 0.15s ease;
+}
+
+.admin-modal-body .form-control:focus {
+    border-color: var(--admin-primary) !important;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
+}
+
+.admin-modal-body .form-control::placeholder {
+    color: var(--admin-text-muted) !important;
+}
+
+.admin-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px solid var(--admin-border);
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .admin-card-header {
+        padding: 12px 16px;
+    }
+
+    .admin-card-header .admin-card-title {
+        font-size: 14px;
+    }
+
+    .admin-content-card .dataTables_length,
+    .admin-content-card .dataTables_filter {
+        padding: 10px 16px !important;
+        float: none;
+        text-align: left;
+    }
+
+    .admin-content-card .dataTables_info {
+        padding: 10px 16px !important;
+        float: none;
+    }
+
+    .admin-content-card .dataTables_paginate {
+        padding: 10px 16px !important;
+        float: none;
+        text-align: left;
+    }
+
+    .admin-content-card .table thead th,
+    .admin-content-card .table tbody td {
+        padding: 8px 12px !important;
+        font-size: 12px !important;
+    }
+
+    .admin-modal-body {
+        padding: 16px !important;
+    }
+}
+
+/* ---- Section Title ---- */
+.dash-section-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--admin-text) !important;
+    margin: 0 0 12px 0 !important;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+/* ---- Stat Card ---- */
+.dash-card {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    height: 100%;
+    transition: all 0.2s ease;
+    text-decoration: none !important;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dash-card:hover {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
+}
+
+.dash-card .dash-card-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--admin-text-muted);
+    margin-bottom: 4px;
+    display: block;
+    line-height: 1.3;
+}
+
+.dash-card .dash-card-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--admin-text);
+    line-height: 1.2;
+    margin-bottom: 0;
+}
+
+.dash-card .dash-card-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--admin-text-muted);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dash-card .dash-card-sub .dash-up {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.dash-card .dash-card-sub .dash-down {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Small icon in card top-right corner */
+.dash-card .dash-card-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    background: var(--admin-bg);
+    color: var(--admin-text-muted);
+}
+
+/* ---- Section Wrapper ---- */
+.dash-section {
+    margin-bottom: 20px;
+}
+
+/* ---- Date Filter (inline toolbar style) ---- */
+.dash-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.dash-toolbar .dash-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dash-toolbar .dash-filter-group label {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--admin-text-muted) !important;
+    margin: 0 !important;
+    white-space: nowrap;
+}
+
+.dash-toolbar .dash-filter-group .form-control {
+    max-width: 160px;
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+}
+
+/* Quick-select date range presets */
+.dash-presets {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.dash-presets .dash-preset-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--admin-text-muted);
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.dash-presets .dash-preset-btn:hover {
+    border-color: var(--admin-primary);
+    color: var(--admin-primary);
+}
+
+.dash-presets .dash-preset-btn.active {
+    background: var(--admin-primary);
+    border-color: var(--admin-primary);
+    color: #fff;
+}
+
+/* ---- Chart Card ---- */
+.dash-chart-card {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    height: 100%;
+}
+
+.dash-chart-card .dash-chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin-bottom: 12px;
+}
+
+.dash-chart-container {
+    min-height: 240px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* ---- Device Category List ---- */
+.dash-device-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.dash-device-item:last-child {
+    border-bottom: none;
+}
+
+.dash-device-item .dash-device-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--admin-text);
+}
+
+.dash-device-item .dash-device-label i {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: var(--admin-bg);
+    color: var(--admin-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+}
+
+.dash-device-item .dash-device-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--admin-text);
+}
+
+/* ---- Responsive: Tablet ---- */
+@media (max-width: 991.98px) {
+    .dash-card .dash-card-icon {
+        display: none;
+    }
+}
+
+/* ---- Responsive: Mobile ---- */
+@media (max-width: 767.98px) {
+    .dash-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        margin-bottom: 16px;
+    }
+
+    .dash-page-header h4 {
+        font-size: 18px !important;
+    }
+
+    .dash-page-header .dash-header-meta {
+        font-size: 12px;
+    }
+
+    .dash-section {
+        margin-bottom: 16px;
+    }
+
+    .dash-section-title {
+        font-size: 13px !important;
+        margin: 0 0 10px 0 !important;
+        padding-bottom: 8px;
+    }
+
+    .dash-card {
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    .dash-card .dash-card-label {
+        font-size: 11px;
+        margin-bottom: 2px;
+    }
+
+    .dash-card .dash-card-value {
+        font-size: 16px;
+    }
+
+    .dash-card .dash-card-sub {
+        font-size: 10px;
+        margin-top: 2px;
+    }
+
+    .dash-card .dash-card-icon {
+        display: none;
+    }
+
+    /* Toolbar stacks vertically */
+    .dash-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    /* Presets scroll horizontally */
+    .dash-presets {
+        gap: 4px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+    }
+
+    .dash-presets .dash-preset-btn {
+        padding: 4px 10px;
+        font-size: 11px;
+        flex-shrink: 0;
+    }
+
+    /* Date filter row */
+    .dash-toolbar .dash-filter-group {
+        width: 100%;
+    }
+
+    .dash-toolbar .dash-filter-group .form-control {
+        max-width: 100%;
+        flex: 1;
+    }
+
+    /* Chart */
+    .dash-chart-card {
+        padding: 12px;
+    }
+
+    .dash-chart-container {
+        min-height: 200px;
+    }
+
+    .dash-chart-card .dash-chart-title {
+        font-size: 12px;
+    }
+
+    .dash-device-item .dash-device-label i {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+    }
+}
+
+/* ================================================================
+   Admin Content Card
+   Reusable card wrapper used across all admin pages
+================================================================ */
+.admin-content-card {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    box-shadow: var(--admin-card-shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.admin-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--admin-border);
+    background: #fff;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.admin-card-body {
+    padding: 20px;
+}
+
+.admin-card-body:not(:first-child) {
+    border-top: 0;
+}
+
+/* When card body has p-0, remove padding for edge-to-edge tables */
+.admin-card-body.p-0 {
+    padding: 0 !important;
+}
+
+/* ================================================================
+   Admin Table
+   Clean, modern data table styling
+================================================================ */
+.admin-table {
+    margin-bottom: 0;
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+.admin-table thead th {
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid var(--admin-border) !important;
+    border-top: none !important;
+    background: var(--admin-bg) !important;
+    white-space: nowrap;
+}
+
+.admin-table tbody td {
+    font-size: 13px !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-top: none !important;
+    color: var(--admin-text) !important;
+    vertical-align: middle;
+}
+
+.admin-table tbody tr:hover {
+    background: #f8fafc !important;
+}
+
+/* Subtle striped rows */
+.admin-table tbody tr:nth-child(even) {
+    background: #fdfdfe;
+}
+
+.admin-table tbody tr:nth-child(even):hover {
+    background: #f8fafc !important;
+}
+
+/* Table footer */
+.admin-table tfoot td {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-top: 2px solid var(--admin-border) !important;
+    border-bottom: none !important;
+    background: var(--admin-bg) !important;
+    color: var(--admin-text) !important;
+}
+
+/* Status badges within tables */
+.admin-table .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+/* DataTables integration — when admin-table is used with DataTables */
+.admin-table.dataTable thead th {
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid var(--admin-border) !important;
+    background: var(--admin-bg) !important;
+}
+
+.admin-table.dataTable tbody td {
+    font-size: 13px !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* DataTables wrapper spacing when inside admin-content-card */
+.admin-card-body .dataTables_wrapper {
+    padding: 0;
+}
+
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_info,
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_paginate {
+    padding: 12px 16px;
+}
+
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_filter,
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_length {
+    padding: 12px 16px 0;
+}
+
+/* ================================================================
+   Admin Table — Responsive adjustments
+================================================================ */
+@media (max-width: 768px) {
+    .admin-card-header {
+        padding: 12px 16px;
+    }
+
+    .admin-card-body {
+        padding: 16px;
+    }
+
+    .admin-card-title {
+        font-size: 14px;
+    }
+
+    .admin-table thead th {
+        padding: 10px 12px !important;
+        font-size: 10px !important;
+    }
+
+    .admin-table tbody td {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+
+    .admin-table tfoot td {
+        padding: 10px 12px !important;
+    }
+}
+
+/* ================================================================
+   DataTables Processing Loader — Modern Overlay
+   Replaces the default "Processing..." text globally
+================================================================ */
+
+/* Overlay backdrop */
+.dataTables_processing {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 100 !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    border: none !important;
+    animation: adminLoaderFadeIn 0.2s ease;
+}
+
+/* Loader spinner — centered via absolute positioning */
+.dataTables_processing::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -20px;
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: var(--admin-primary, #2d2a5d);
+    border-radius: 50%;
+    animation: adminSpinnerRotate 0.7s linear infinite;
+}
+
+/* Shimmer bar at the top of the table while loading */
+.dataTables_processing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            var(--admin-primary, #2d2a5d) 50%,
+            transparent 100%);
+    background-size: 200% 100%;
+    animation: adminShimmerBar 1.5s ease-in-out infinite;
+}
+
+@keyframes adminSpinnerRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes adminShimmerBar {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes adminLoaderFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

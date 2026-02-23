@@ -6,41 +6,72 @@
         {{ env('APP_NAME') }}-Create New Admin
     @endsection
 
+<style>
+    .admin-form-wrapper label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--admin-text, #1e293b);
+        margin-bottom: 5px;
+        display: block;
+    }
+    .admin-form-wrapper .form-group {
+        margin-bottom: 16px;
+    }
+    .password-mismatch {
+        font-size: 12px;
+        color: #ef4444;
+        margin-top: 4px;
+        display: none;
+    }
+</style>
+
 <div class="container-fluid pt-4 px-4">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.admins.index') }}">Shops</a></li>
+                <li class="breadcrumb-item active">Create</li>
+            </ol>
+        </nav>
+    </div>
+
     <form name="form" id="CreateRole" method="POST" action="{{ route("admin.admins.store") }}" enctype="multipart/form-data">
         @csrf
-        <div class="bg-secondary rounded h-100 p-4">
-            <div class="row">
-                <div class="col-sm-12 col-md-12">
-                    <h6 class="mb-4">Create New Admin</h6>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="name" id="floatingInput" placeholder="Your name here" required>
-                                <label for="floatingInput" style="color: red">Name</label>
-                            </div>
-                            <div class="form-floating mb-3">
-                                <input type="email" class="form-control" name="email" id="floatingInput" placeholder="name@ayebazar.com" required>
-                                <label for="floatingInput" style="color: red">Email address</label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <input type="password" class="form-control" name="password" id="floatingPassword" placeholder="Password" required>
-                                <label for="floatingPassword" style="color: red">Password</label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <input type="password" class="form-control" onchange="checkpassword()" name="confirmpassword" id="floatingConfirmPassword" placeholder="Confirm Password" required>
-                                <label for="floatingPassword" style="color: red">Confirm Password</label>
-                                <label for="floatingPassword" id="checkText" style="color: red;display:none">Password does not match !</label>
-                            </div>
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">Create New Shop Admin</h6>
+            </div>
+            <div class="admin-card-body admin-form-wrapper">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Name <span style="color: #ef4444;">*</span></label>
+                            <input type="text" class="form-control" name="name" id="floatingInput" placeholder="Full name" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="phone" id="floatingInput" placeholder="Type Phone" required>
-                                <label for="floatingInput" style="color: red">Phone</label>
-                            </div>
-                            <select class="form-select mb-4" name="roles[]" id="role" style="font-size: 1rem;" aria-label=".form-select-lg example" multiple>
-                                <option value="" style="color: red">Select Roles</option>
+                        <div class="form-group">
+                            <label>Email <span style="color: #ef4444;">*</span></label>
+                            <input type="email" class="form-control" name="email" id="floatingInput" placeholder="name@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password <span style="color: #ef4444;">*</span></label>
+                            <input type="password" class="form-control" name="password" id="floatingPassword" placeholder="Password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password <span style="color: #ef4444;">*</span></label>
+                            <input type="password" class="form-control" onchange="checkpassword()" name="confirmpassword" id="floatingConfirmPassword" placeholder="Confirm password" required>
+                            <div class="password-mismatch" id="checkText">Password does not match!</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Phone <span style="color: #ef4444;">*</span></label>
+                            <input type="text" class="form-control" name="phone" id="floatingInput" placeholder="Phone number" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Assign Roles</label>
+                            <select class="form-select" name="roles[]" id="role" multiple style="min-height: 80px;">
+                                <option value="">Select Roles</option>
                                 @if (Auth::guard('admin')->user()->id == 1)
                                     @forelse ($roles as $role)
                                         @if ($role->id == 2)
@@ -59,18 +90,18 @@
                                     @endforelse
                                 @endif
                             </select>
-
-                            <select class="form-select mb-4" name="status" id="status"  aria-label=".form-select-lg example" >
-                                <option value="Active" style="color: red">Active</option>
-                                <option value="Inactive" style="color: red">Inactive</option>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-select" name="status" id="status">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
                             </select>
-
-                            <div class="form-floating mb-3 mt-4 pt-4">
-                                <button type="submit" class="btn btn-primary w-100 mt-3">Create Admin</button>
-                            </div>
+                        </div>
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn w-100" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 8px; padding: 10px 16px; font-weight: 600;">Create Admin</button>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -83,10 +114,11 @@
         var pass =$('#floatingPassword').val();
         var confirmpass =$('#floatingConfirmPassword').val();
         if(pass==confirmpass){
-
+            $('#checkText').hide();
+            $('#floatingConfirmPassword').css('border','');
         }else{
-
-            $('#floatingConfirmPassword').css('border','1px solid white');
+            $('#checkText').show();
+            $('#floatingConfirmPassword').css('border','1px solid #ef4444');
         }
     }
 

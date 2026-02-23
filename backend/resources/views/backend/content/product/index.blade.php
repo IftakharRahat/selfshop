@@ -5,76 +5,45 @@
     {{ env('APP_NAME') }}- Products
 @endsection
 
-<style>
-    a.paginate_button {
-        background: gray;
-    }
-    div#roleinfo_length {
-        color: red;
-    }
-
-    div#roleinfo_filter {
-        color: red;
-    }
-
-    div#roleinfo_info {
-        color: red;
-    }
-
-    label {
-        color: white;
-    }
-
-    div#productinfo_filter {
-        display: none;
-    }
-
-
-</style>
 {{-- summernote --}}
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
 
-<div class="px-4 pt-4 container-fluid">
+<div class="container-fluid pt-4 px-4">
     <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 pb-0 rounded h-100 bg-secondary">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Products List</h6>
-                </div>
-                <div class="d-flex" style="width: 50%;float:left;">
-                    <div class="form-group">
-                        <label for="">Search</label>
-                        <input type="text" class="form-control" name="search" id="search">
+        <div class="col-12">
+            <div class="admin-content-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title">Products List</h6>
+                    <div class="admin-card-actions d-flex align-items-center gap-2">
+                        <input type="text" class="form-control form-control-sm" name="search" id="search" placeholder="Search products..." style="width: 200px;">
+                        <a href="{{ url('admin/products/create') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> Create New Product
+                        </a>
                     </div>
-                    <a href="{{ url('admin/products/create') }}" class="m-2 mt-4 btn btn-primary"
-                        style="float: right"> + Create New Product</a>
                 </div>
-            </div>
-        </div>
+                <div class="admin-card-body">
+                    <div class="data-tables">
+                        <table class="table" id="productinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>SL</th>
+                                    <th>Image</th>
+                                    <th>Name</th>
+                                    <th>SKU</th>
+                                    <th>Wholesale Price</th>
+                                    <th>Price</th>
+                                    <th>Sale Price</th>
+                                    <th>Featured</th>
+                                    <th>Big Sell</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
 
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 rounded bg-secondary h-100">
-                <div class="data-tables">
-                    <table class="table table-dark" id="productinfo" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>SL</th>
-                                <th>Image</th>
-                                <th>Name</th>
-                                <th>SKU</th>
-                                <th>Wholesale Price</th>
-                                <th>Price</th>
-                                <th>Sale Price</th>
-                                <th>Featured</th>
-                                <th>Big Sell</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -82,6 +51,7 @@
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
     </div>
 </div>
+
 
 
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>

@@ -12,122 +12,125 @@
 
 <style>
     .flatpickr-input { background: white; }
-    .card-body .row .col-lg-3 .card { min-height: 80px; }
 </style>
 
 <div class="container-fluid pt-4 px-4">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <section class="section">
-                <div class="row">
-                    <div class="col-lg-12">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url('admin/withdrawrequest') }}">Withdrawals</a></li>
+                <li class="breadcrumb-item active">Income History — {{ $user->name }}</li>
+            </ol>
+        </nav>
+    </div>
 
-                        <!-- User Info Card -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="sideinfo">
-                                        <h4 class="p-0 m-0 fw-bold" style="font-size: 18px;">{{ $user->name }}</h4>
-                                        <p class="p-0 m-0 text-muted" style="font-size:13px;">{{ $user->email }}</p>
-                                        <p class="p-0 m-0 text-muted" style="font-size:13px;">SHOP: {{ $user->shop_name ?? 'N/A' }}</p>
-                                        <p class="p-0 m-0 text-muted" style="font-size:13px;">ID: {{ $user->my_referral_code ?? 'N/A' }}</p>
-                                    </div>
-                                    <div class="text-end">
-                                        <img src="{{ asset($user->profile ?? 'backend/img/default-avatar.png') }}"
-                                             alt="Profile" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
-                                    </div>
-                                </div>
-                            </div>
-
-                             <!-- Summary Boxes -->
-                            <div class="card-body pt-4">
-                                <div class="row text-center text-lg-start">
-                                    <div class="col-6 col-lg-3 mb-3">
-                                        <div class="card card-body bg-red text-white">
-                                            <h6>Current Balance</h6>
-                                            <h5 class="m-0">৳ {{ number_format($user->account_balance, 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-lg-3 mb-3">
-                                        <div class="card card-body bg-warning text-white">
-                                            <h6>Pending Withdrawal</h6>
-                                            <h5 class="m-0">৳ {{ number_format($user->pending_cashout_balance ?? 0, 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-lg-3 mb-3">
-                                        <div class="card card-body bg-success text-white">
-                                            <h6>Total Withdrawn</h6>
-                                            <h5 class="m-0">৳ {{ number_format($user->cashout_balance ?? 0, 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-lg-3 mb-3">
-                                        <div class="card card-body bg-red text-white">
-                                            <h6>Total Income</h6>
-                                            <h5 class="m-0">৳ {{ number_format($incomes->sum('amount'), 2) }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 col-lg-3 mb-3">
-                                        <div class="card card-body bg-danger text-white">
-                                            <h6>Charge / Deduct</h6>
-                                            <h5 class="m-0">৳ {{ number_format($chargededucts->sum('amount'), 2) }}</h5>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Orders History Table (Main Income Source) -->
-                        <div class="card">
-                            <div class="card-header bg-dark text-white">
-                                <h5 class="mb-0">Order History – Seller Income Details</h5>
-                            </div>
-                            <div class="card-body">
-                                <!-- Filters -->
-                                <div class="row mb-4">
-                                    <div class="col-md-5">
-                                        <label class="form-label">Date Range</label>
-                                        <input type="text" id="date_range" class="form-control" placeholder="Select date range">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Status</label>
-                                        <select id="status_filter" class="form-control select2">
-                                            <option value="">All Status</option>
-                                            <option value="Pending">Pending</option>
-                                            <option value="Processing">Processing</option>
-                                            <option value="Delivered">Delivered</option>
-                                            <option value="Completed">Completed</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3 d-flex align-items-end">
-                                        <button id="clear_filters" class="btn btn-secondary">Clear Filters</button>
-                                    </div>
-                                </div>
-
-                                <!-- DataTable -->
-                                <table id="orders_table" class="table table-striped table-hover" style="width:100%">
-                                    <thead class="table-dark">
-                                        <tr>
-                                            <th>Order Date</th>
-                                            <th>Invoice ID</th>
-                                            <th>Sub Total</th>
-                                            <th>Delivery Charge</th>
-                                            <th>Discount</th>
-                                            <th>Payment Amount</th>
-                                            <th>Profit (Income)</th>
-                                            <th>Bonus</th>
-                                            <th>Status</th>
-                                            <th>Payment Method</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                        </div>
-
+    {{-- User Info Card --}}
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <div>
+                <h6 class="admin-card-title mb-1">
+                    <i class="bi bi-person-circle me-2"></i>{{ $user->name }}
+                </h6>
+                <div class="text-muted" style="font-size: 13px;">
+                    {{ $user->email }}
+                    @if($user->shop_name) &nbsp;•&nbsp; Shop: {{ $user->shop_name }} @endif
+                    @if($user->my_referral_code) &nbsp;•&nbsp; ID: {{ $user->my_referral_code }} @endif
+                </div>
+            </div>
+            <div>
+                <img src="{{ asset($user->profile ?? 'backend/img/default-avatar.png') }}"
+                     alt="Profile" class="rounded-circle" style="width: 56px; height: 56px; object-fit: cover; border: 2px solid var(--admin-border);">
+            </div>
+        </div>
+        <div class="admin-card-body">
+            <div class="row g-3">
+                <div class="col-6 col-lg-3">
+                    <div style="background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 10px; padding: 16px; color: #fff;">
+                        <div style="font-size: 12px; opacity: 0.85; margin-bottom: 4px;">Current Balance</div>
+                        <div style="font-size: 18px; font-weight: 700;">৳ {{ number_format($user->account_balance, 2) }}</div>
                     </div>
                 </div>
-            </section>
+                <div class="col-6 col-lg-3">
+                    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 10px; padding: 16px; color: #fff;">
+                        <div style="font-size: 12px; opacity: 0.85; margin-bottom: 4px;">Pending Withdrawal</div>
+                        <div style="font-size: 18px; font-weight: 700;">৳ {{ number_format($user->pending_cashout_balance ?? 0, 2) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div style="background: linear-gradient(135deg, #22c55e, #16a34a); border-radius: 10px; padding: 16px; color: #fff;">
+                        <div style="font-size: 12px; opacity: 0.85; margin-bottom: 4px;">Total Withdrawn</div>
+                        <div style="font-size: 18px; font-weight: 700;">৳ {{ number_format($user->cashout_balance ?? 0, 2) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div style="background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 10px; padding: 16px; color: #fff;">
+                        <div style="font-size: 12px; opacity: 0.85; margin-bottom: 4px;">Total Income</div>
+                        <div style="font-size: 18px; font-weight: 700;">৳ {{ number_format($incomes->sum('amount'), 2) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <div style="background: linear-gradient(135deg, #e11d48, #be123c); border-radius: 10px; padding: 16px; color: #fff;">
+                        <div style="font-size: 12px; opacity: 0.85; margin-bottom: 4px;">Charge / Deduct</div>
+                        <div style="font-size: 18px; font-weight: 700;">৳ {{ number_format($chargededucts->sum('amount'), 2) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Orders History Table --}}
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">
+                <i class="bi bi-receipt me-2"></i>Order History – Seller Income Details
+            </h6>
+        </div>
+        <div class="admin-card-body">
+            {{-- Filters --}}
+            <div class="row g-3 mb-4">
+                <div class="col-md-5">
+                    <label class="form-label">Date Range</label>
+                    <input type="text" id="date_range" class="form-control" placeholder="Select date range">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select id="status_filter" class="form-select select2">
+                        <option value="">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button id="clear_filters" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            {{-- DataTable --}}
+            <div class="table-responsive">
+                <table id="orders_table" class="table admin-table" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Order Date</th>
+                            <th>Invoice ID</th>
+                            <th>Sub Total</th>
+                            <th>Delivery Charge</th>
+                            <th>Discount</th>
+                            <th>Payment Amount</th>
+                            <th>Profit (Income)</th>
+                            <th>Bonus</th>
+                            <th>Status</th>
+                            <th>Payment Method</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

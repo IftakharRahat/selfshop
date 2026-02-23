@@ -3,45 +3,76 @@
 @section('maincontent')
 
     @section('title')
-        {{ env('APP_NAME') }}-Edit ADmin
+        {{ env('APP_NAME') }}-Edit Admin
     @endsection
 
+<style>
+    .admin-form-wrapper label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--admin-text, #1e293b);
+        margin-bottom: 5px;
+        display: block;
+    }
+    .admin-form-wrapper .form-group {
+        margin-bottom: 16px;
+    }
+    .password-mismatch {
+        font-size: 12px;
+        color: #ef4444;
+        margin-top: 4px;
+        display: none;
+    }
+</style>
+
 <div class="container-fluid pt-4 px-4">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.admins.index') }}">Shops</a></li>
+                <li class="breadcrumb-item active">Edit: {{ $admin->name }}</li>
+            </ol>
+        </nav>
+    </div>
+
     <form name="form" id="EditRole" method="POST" action="{{ route("admin.admins.update",$admin->id) }}" enctype="multipart/form-data">
         @method('PUT')
         @csrf
-        <div class="bg-secondary rounded h-100 p-4">
-            <div class="row">
-                <div class="col-sm-12 col-md-12">
-                    <h6 class="mb-4">Edit Admin - {{ $admin->name }}</h6>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="name" id="floatingInput" placeholder="Your name here" value="{{ $admin->name }}" required>
-                                <label for="floatingInput" style="color: red">Name</label>
-                            </div>
-                            <div class="form-floating mb-3">
-                                <input type="email" class="form-control" name="email" id="floatingInput" placeholder="name@ayebazar.com" value="{{ $admin->email }}" required>
-                                <label for="floatingInput" style="color: red">Email address</label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <input type="password" class="form-control" name="password" id="floatingPassword" placeholder="Password" >
-                                <label for="floatingPassword" style="color: red">Password</label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <input type="password" class="form-control" onchange="checkpassword()" name="confirmpassword" id="floatingConfirmPassword" placeholder="Confirm Password" >
-                                <label for="floatingPassword" style="color: red">Confirm Password</label>
-                                <label for="floatingPassword" id="checkText" style="color: red;display:none">Password does not match !</label>
-                            </div>
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">Edit Admin — {{ $admin->name }}</h6>
+            </div>
+            <div class="admin-card-body admin-form-wrapper">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Name <span style="color: #ef4444;">*</span></label>
+                            <input type="text" class="form-control" name="name" id="floatingInput" value="{{ $admin->name }}" placeholder="Full name" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="phone" id="floatingInput" placeholder="Type Phone" value="{{ $admin->phone }}" required>
-                                <label for="floatingInput" style="color: red">Phone</label>
-                            </div>
-                            <select class="form-select mb-4" name="roles[]" id="role" style="font-size: 1rem;" aria-label=".form-select-lg example" multiple>
-                                <option value="" style="color: red">Assign Roles</option>
+                        <div class="form-group">
+                            <label>Email <span style="color: #ef4444;">*</span></label>
+                            <input type="email" class="form-control" name="email" id="floatingInput" value="{{ $admin->email }}" placeholder="name@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Password <span class="text-muted" style="font-size:11px;">(leave blank to keep current)</span></label>
+                            <input type="password" class="form-control" name="password" id="floatingPassword" placeholder="New password">
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <input type="password" class="form-control" onchange="checkpassword()" name="confirmpassword" id="floatingConfirmPassword" placeholder="Confirm password">
+                            <div class="password-mismatch" id="checkText">Password does not match!</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Phone <span style="color: #ef4444;">*</span></label>
+                            <input type="text" class="form-control" name="phone" id="floatingInput" value="{{ $admin->phone }}" placeholder="Phone number" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Assign Roles</label>
+                            <select class="form-select" name="roles[]" id="role" multiple style="min-height: 80px;">
+                                <option value="">Assign Roles</option>
                                 @if (Auth::guard('admin')->user()->id == 1)
                                     @forelse ($roles as $role)
                                         @if ($role->id == 2)
@@ -65,18 +96,18 @@
                                     @endforelse
                                 @endif
                             </select>
-
-                            <select class="form-select mb-4" name="status" id="status"  aria-label=".form-select-lg example" >
-                                <option value="Active" style="color: red" @if($admin->status=='Active') selected @endif>Active</option>
-                                <option value="Inactive" style="color: red" @if($admin->status=='Inactive') selected @endif>Inactive</option>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-select" name="status" id="status">
+                                <option value="Active" @if($admin->status=='Active') selected @endif>Active</option>
+                                <option value="Inactive" @if($admin->status=='Inactive') selected @endif>Inactive</option>
                             </select>
-
-                            <div class="form-floating mb-3 mt-4 pt-4">
-                                <button type="submit" class="btn btn-primary w-100 mt-3">Update Admin</button>
-                            </div>
+                        </div>
+                        <div class="form-group mt-4">
+                            <button type="submit" class="btn w-100" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 8px; padding: 10px 16px; font-weight: 600;">Update Admin</button>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -89,10 +120,11 @@
         var pass =$('#floatingPassword').val();
         var confirmpass =$('#floatingConfirmPassword').val();
         if(pass==confirmpass){
-            $('#floatingConfirmPassword').css('border','none');
+            $('#checkText').hide();
+            $('#floatingConfirmPassword').css('border','');
         }else{
-
-            $('#floatingConfirmPassword').css('border','1px solid white');
+            $('#checkText').show();
+            $('#floatingConfirmPassword').css('border','1px solid #ef4444');
         }
     }
 

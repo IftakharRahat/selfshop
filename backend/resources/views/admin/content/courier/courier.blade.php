@@ -3,22 +3,16 @@
 @section('maincontent')
     <div class="container-fluid pt-4 px-4">
 
-        <div class="pagetitle row">
-            <div class="col-6">
-                <nav>
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Couriers</li>
-                    </ol>
-                </nav>
-            </div>
-            <div class="col-6" style="text-align: right">
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#mainCourier"><span style="font-weight: bold;">+</span> Add New Courier</button>
-            </div>
-        </div><!-- End Page Title -->
+        <div class="pagetitle mb-3">
+            <nav>
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                    <li class="breadcrumb-item active">Couriers</li>
+                </ol>
+            </nav>
+        </div>
 
-        {{-- //popup modal for create user --}}
+        {{-- Add Courier Modal --}}
         <div class="modal fade" id="mainCourier" tabindex="-1" data-bs-backdrop="false">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -77,52 +71,46 @@
 
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div>
 
-        {{-- //table section for category --}}
-
-        <section class="section">
-            <div class="row">
-                <div class="col-lg-12">
-
-                    <div class="card">
-                        <div class="card-body pt-4">
-                            @if (\Session::has('success'))
-                                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    {{ \Session::get('success') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                                </div>
-                            @endif
-                            <!-- Table with stripped rows -->
-                            <div class="table-responsive">
-                                <table class="table table-centered table-borderless table-hover mb-0" id="courierinfo"
-                                    width="100%">
-                                    <thead class="thead-light">
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Courier Name</th>
-                                            <th>City Available</th>
-                                            <th>Zone Available</th>
-                                            <th>Courier Charge</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
-                            <!-- End Table with stripped rows -->
-
-                        </div>
-                    </div>
-
+        {{-- Courier Table --}}
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title"><i class="bi bi-truck me-2"></i>Courier List</h6>
+                <div class="admin-card-actions">
+                    <button type="button" class="btn btn-sm" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;" data-bs-toggle="modal"
+                        data-bs-target="#mainCourier"><i class="bi bi-plus-lg me-1"></i> Add New Courier</button>
                 </div>
             </div>
-        </section>
+            <div class="admin-card-body p-0">
+                @if (\Session::has('success'))
+                    <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {{ \Session::get('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"
+                            aria-label="Close"></button>
+                    </div>
+                @endif
+                <div class="table-responsive">
+                    <table class="table admin-table mb-0" id="courierinfo" width="100%">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Courier Name</th>
+                                <th>City Available</th>
+                                <th>Zone Available</th>
+                                <th>Courier Charge</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-        {{-- //popup modal for edit user --}}
+        {{-- Edit Courier Modal --}}
         <div class="modal fade" id="editmainCourier" tabindex="-1" data-bs-backdrop="false">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -182,7 +170,7 @@
 
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div>
 
     </div>
     
@@ -414,16 +402,6 @@
 
                 });
             });
-
-
-
-
-
-
-
-
-
-
 
         });
     </script>

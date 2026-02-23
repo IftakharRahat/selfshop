@@ -2,79 +2,62 @@
 
 @section('maincontent')
 @section('title')
-    {{ env('APP_NAME') }}- Attrvalue
+    {{ env('APP_NAME') }}- Attribute Values
 @endsection
-<style>
-    div#roleinfo_length {
-        color: red;
-    }
-
-    div#roleinfo_filter {
-        color: red;
-    }
-
-    div#roleinfo_info {
-        color: red;
-    }
-
-</style>
 
 <div class="container-fluid pt-4 px-4">
     <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Attrvalue List</h6>
+        <div class="col-12">
+            <div class="admin-content-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title">Attribute Value List</h6>
+                    <div class="admin-card-actions">
+                        <a type="button" data-bs-toggle="modal" data-bs-target="#mainAttrvalue" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> Create Attribute Value
+                        </a>
+                    </div>
                 </div>
-                <div class="" style="width: 50%;float:left;">
-                    <a type="button" data-bs-toggle="modal" data-bs-target="#mainAttrvalue" class="btn btn-primary m-2"
-                        style="float: right"> + Create Attrvalue</a>
-                </div>
-            </div>
-        </div>
+                <div class="admin-card-body">
+                    <div class="data-tables">
+                        <table class="table" id="attrvalueinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>SL</th>
+                                    <th>Attribute</th>
+                                    <th>Value</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
 
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="attrvalueinfo" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>SL</th>
-                                <th>Attribute</th>
-                                <th>Attrvalue</th>
-                                <th>status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- create payment icon --}}
+        {{-- Create Attribute Value Modal --}}
         <div class="modal fade" id="mainAttrvalue" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Create New Attrvalue</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Create Attribute Value</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-
+                    <div class="modal-body admin-modal-body">
                         <form name="form" id="AddAttrvalue" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="value" id="value" placeholder="Name">
-                                <label for="floatingInput">Name</label>
+                            <div class="mb-3">
+                                <label class="form-label">Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="value" id="value" placeholder="Enter value name">
                             </div>
-                            <div class="form-floating mb-3">
-                                <select class="form-select mb-4" name="attribute_id" id="attribute_id"
-                                    style="font-size: 1rem;" aria-label=".form-select-lg example">
-                                    <option value="" style="color: red">Select Attributes</option>
+                            <div class="mb-3">
+                                <label class="form-label">Attribute <span class="text-danger">*</span></label>
+                                <select class="form-select" name="attribute_id" id="attribute_id">
+                                    <option value="">Select Attribute</option>
                                     @forelse ($attributes as $attribute)
                                         <option value="{{ $attribute->id }}">{{ $attribute->attribute_name }}
                                         </option>
@@ -82,47 +65,39 @@
                                     @endforelse
                                 </select>
                             </div>
-                            <br>
-
-                            <div class="form-group mt-2" style="text-align: right">
-                                <div class="submitBtnSCourse">
-                                    <button type="submit" name="btn" data-bs-dismiss="modal"
-                                        class="btn btn-dark btn-block" style="float: left">Close</button>
-                                    <button type="submit" name="btn"
-                                        class="btn btn-primary AddCourierBtn btn-block">Save</button>
-                                </div>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" name="btn"
+                                    class="btn btn-primary btn-sm">Save</button>
                             </div>
                         </form>
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div><!-- End Create Modal -->
 
-        {{-- edit payment icon --}}
+        {{-- Edit Attribute Value Modal --}}
         <div class="modal fade" id="editmainAttrvalue" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Edit Attrvalue</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Edit Attribute Value</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-
+                    <div class="modal-body admin-modal-body">
                         <form name="form" id="EditAttrvalue" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="value" id="value"
-                                    placeholder="Service Package Name">
-                                <label for="floatingInput">Name</label>
+                                    placeholder="Enter value name">
                             </div>
-
-                            <div class="form-floating mb-3">
-                                <select class="form-select mb-4" name="attribute_id" id="attribute_id"
-                                    style="font-size: 1rem;" aria-label=".form-select-lg example">
-                                    <option value="" style="color: red">Select Attributes</option>
+                            <div class="mb-3">
+                                <label class="form-label">Attribute <span class="text-danger">*</span></label>
+                                <select class="form-select" name="attribute_id" id="attribute_id">
+                                    <option value="">Select Attribute</option>
                                     @forelse ($attributes as $attribute)
                                         <option value="{{ $attribute->id }}">{{ $attribute->attribute_name }}
                                         </option>
@@ -130,25 +105,18 @@
                                     @endforelse
                                 </select>
                             </div>
-
                             <input type="text" name="attrvalue_id" id="attrvalue_id" hidden>
-
-                            <br>
-                            <div class="form-group mt-2" style="text-align: right">
-                                <div class="submitBtnSCourse">
-                                    <button type="submit" name="btn" data-bs-dismiss="modal"
-                                        class="btn btn-dark btn-block" style="float: left">Close</button>
-                                    <button type="submit" name="btn"
-                                        class="btn btn-primary AddCourierBtn btn-block">Update</button>
-                                </div>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" name="btn"
+                                    class="btn btn-primary btn-sm">Update</button>
                             </div>
                         </form>
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div><!-- End Edit Modal -->
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
     </div>
 </div>

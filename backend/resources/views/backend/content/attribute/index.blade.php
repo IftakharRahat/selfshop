@@ -4,128 +4,95 @@
 @section('title')
     {{ env('APP_NAME') }}- Attribute
 @endsection
-<style>
-    div#roleinfo_length {
-        color: red;
-    }
-
-    div#roleinfo_filter {
-        color: red;
-    }
-
-    div#roleinfo_info {
-        color: red;
-    }
-</style>
 
 <div class="container-fluid pt-4 px-4">
     <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Attribute List</h6>
+        <div class="col-12">
+            <div class="admin-content-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title">Attribute List</h6>
+                    <div class="admin-card-actions">
+                        {{-- Create button commented out in original --}}
+                    </div>
                 </div>
-                {{-- <div class="" style="width: 50%;float:left;">
-                    <a type="button" data-bs-toggle="modal" data-bs-target="#mainAttribute" class="btn btn-primary m-2"
-                        style="float: right"> + Create Attribute</a>
-                </div> --}}
-            </div>
-        </div>
+                <div class="admin-card-body">
+                    <div class="data-tables">
+                        <table class="table" id="attributeinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>SL</th>
+                                    <th>Attribute</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
 
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="attributeinfo" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>SL</th>
-                                <th>Attribute</th>
-                                <th>status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- create payment icon --}}
+        {{-- Create Attribute Modal --}}
         <div class="modal fade" id="mainAttribute" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Create New Attribute</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Create New Attribute</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-
+                    <div class="modal-body admin-modal-body">
                         <form name="form" id="AddAttribute" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="attribute_name" id="attribute_name"
-                                    placeholder="Service Package Name">
-                                <label for="floatingInput">Name</label>
+                                    placeholder="Enter attribute name">
                             </div>
-
-                            <br>
-
-                            <div class="form-group mt-2" style="text-align: right">
-                                <div class="submitBtnSCourse">
-                                    <button type="submit" name="btn" data-bs-dismiss="modal"
-                                        class="btn btn-dark btn-block" style="float: left">Close</button>
-                                    <button type="submit" name="btn"
-                                        class="btn btn-primary AddCourierBtn btn-block">Save</button>
-                                </div>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" name="btn"
+                                    class="btn btn-primary btn-sm">Save</button>
                             </div>
                         </form>
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div><!-- End Create Modal -->
 
-        {{-- edit payment icon --}}
+        {{-- Edit Attribute Modal --}}
         <div class="modal fade" id="editmainAttribute" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Edit Attribute</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Edit Attribute</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-
+                    <div class="modal-body admin-modal-body">
                         <form name="form" id="EditAttribute" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Name <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="attribute_name" id="attribute_name"
-                                    placeholder="Service Package Name">
-                                <label for="floatingInput">Name</label>
+                                    placeholder="Enter attribute name">
                             </div>
-
                             <input type="text" name="attribute_id" id="attribute_id" hidden>
-
-                            <br>
-                            <div class="form-group mt-2" style="text-align: right">
-                                <div class="submitBtnSCourse">
-                                    <button type="submit" name="btn" data-bs-dismiss="modal"
-                                        class="btn btn-dark btn-block" style="float: left">Close</button>
-                                    <button type="submit" name="btn"
-                                        class="btn btn-primary AddCourierBtn btn-block">Update</button>
-                                </div>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" name="btn"
+                                    class="btn btn-primary btn-sm">Update</button>
                             </div>
                         </form>
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div><!-- End Edit Modal -->
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
     </div>
 </div>

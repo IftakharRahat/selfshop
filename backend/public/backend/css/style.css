@@ -78,7 +78,7 @@
     background: #2E294E;
     transition: 0.5s;
     z-index: 999;
-    padding-top:50px;
+    padding-top: 50px;
 }
 
 .content {
@@ -92,12 +92,15 @@
     .sidebar {
         margin-left: 0;
     }
+
     .sidebar.open {
         margin-left: -150px;
     }
+
     .content {
         width: calc(100% - 150px);
     }
+
     .content.open {
         width: 100%;
         margin-left: 0;
@@ -108,9 +111,11 @@
     .sidebar {
         margin-left: -150px;
     }
+
     .sidebar.open {
         margin-left: 0;
     }
+
     .content {
         width: 100%;
         margin-left: 0;
@@ -226,7 +231,7 @@
     .content .navbar .navbar-nav .nav-link {
         margin-left: 15px;
     }
-     
+
 }
 
 

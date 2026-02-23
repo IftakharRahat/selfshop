@@ -5,38 +5,43 @@
 @endsection
 
 @section('maincontent')
-<div class="px-4 pt-4 container-fluid">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 pb-0 rounded h-100 bg-secondary">
-                <h6 class="mb-0">Vendor Category Commission</h6>
-                <p class="text-muted small mb-0">
-                    Set global commission per category for all vendors. If no category-specific value is set, default is {{ number_format($globalDefault, 2) }}%.
-                </p>
-            </div>
+<div class="container-fluid pt-4 px-4">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Vendor Category Commission</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if(session('message'))
+    <div class="alert alert-success">{{ session('message') }}</div>
+    @endif
+
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">Vendor Category Commission</h6>
+            <p class="mb-0" style="font-size: 12px; color: #64748b;">
+                Set global commission per category. Default: {{ number_format($globalDefault, 2) }}%.
+            </p>
         </div>
-
-        @if(session('message'))
-        <div class="col-12 mt-2">
-            <div class="alert alert-success">{{ session('message') }}</div>
+        <div class="admin-card-body">
+            <form method="get" action="{{ route('admin.vendor-category-commissions.index') }}" class="row g-2 mb-0">
+                <div class="col-sm-4">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search category" value="{{ $search }}">
+                </div>
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-sm w-100" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">Filter</button>
+                </div>
+                <div class="col-sm-2">
+                    <a href="{{ route('admin.vendor-category-commissions.index') }}" class="btn btn-sm btn-outline-secondary w-100">Reset</a>
+                </div>
+            </form>
         </div>
-        @endif
-
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 rounded bg-secondary h-100 mt-2">
-                <form method="get" action="{{ route('admin.vendor-category-commissions.index') }}" class="row g-2 mb-3">
-                    <div class="col-sm-4">
-                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search category" value="{{ $search }}">
-                    </div>
-                    <div class="col-sm-2">
-                        <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
-                    </div>
-                    <div class="col-sm-2">
-                        <a href="{{ route('admin.vendor-category-commissions.index') }}" class="btn btn-sm btn-secondary w-100">Reset</a>
-                    </div>
-                </form>
-
-                <table class="table table-dark" width="100%">
+        <div class="admin-card-body p-0" style="border-top: 1px solid var(--admin-border, #f1f5f9);">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0" width="100%">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -50,37 +55,26 @@
                         @forelse($categories as $category)
                             <tr>
                                 <td>{{ $category->id }}</td>
-                                <td>{{ $category->category_name }}</td>
+                                <td><strong>{{ $category->category_name }}</strong></td>
                                 <td>{{ $category->slug }}</td>
                                 <td>
                                     <form method="post" action="{{ route('admin.vendor-category-commissions.update', $category->id) }}" class="d-flex gap-2 align-items-center">
                                         @csrf
-                                        <input
-                                            type="number"
-                                            name="commission_percent"
-                                            min="0"
-                                            max="100"
-                                            step="0.01"
-                                            class="form-control form-control-sm"
-                                            value="{{ number_format((float) ($commissionRows[$category->id] ?? $globalDefault), 2, '.', '') }}"
-                                            required
-                                        >
-                                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                        <input type="number" name="commission_percent" min="0" max="100" step="0.01" class="form-control form-control-sm" value="{{ number_format((float) ($commissionRows[$category->id] ?? $globalDefault), 2, '.', '') }}" required style="max-width: 100px;">
+                                        <button type="submit" class="btn btn-sm" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">Save</button>
                                     </form>
                                     @error('commission_percent')
                                         <small class="text-danger">{{ $message }}</small>
                                     @enderror
                                 </td>
                                 <td>
-                                    <span class="badge bg-info text-white">
+                                    <span class="badge" style="background: var(--admin-primary-lighter, #eef2ff); color: var(--admin-primary, #2d2a5d); font-size: 11px;">
                                         {{ array_key_exists($category->id, $commissionRows->toArray()) ? 'Category specific' : 'Using default' }}
                                     </span>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="5" class="text-center">No active categories found.</td>
-                            </tr>
+                            <tr><td colspan="5" class="text-center text-muted py-4">No active categories found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

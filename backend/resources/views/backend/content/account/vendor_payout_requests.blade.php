@@ -5,108 +5,120 @@
     {{ env('APP_NAME') }} - Vendor Payout Requests
 @endsection
 
-<div class="px-4 pt-4 container-fluid">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 pb-0 rounded h-100 bg-secondary">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Vendor Payout Requests</h6>
+<div class="container-fluid pt-4 px-4">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Vendor Payout Requests</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-lg-3 col-md-6 mb-2">
+            <a href="{{ url('admin/view-vendor-payout-requests/pending') }}">
+                <div class="admin-content-card {{ ($currentStatus ?? '') === 'pending' ? 'border-start border-primary border-3' : '' }}">
+                    <div class="admin-card-body text-center py-3">
+                        <p class="mb-1" style="color: #6c757d; font-size: 13px;">Pending</p>
+                        <h4 style="color: #ffc107; font-weight: 700;">{{ $counts['pending'] ?? 0 }}</h4>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
-
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 rounded bg-secondary h-100">
-                <div class="row">
-                    <div class="col-lg-3">
-                        <a href="{{ url('admin/view-vendor-payout-requests/pending') }}">
-                            <div class="card card-body {{ ($currentStatus ?? '') === 'pending' ? 'border-primary' : '' }}">
-                                <p>Pending</p>
-                                <h4>{{ $counts['pending'] ?? 0 }}</h4>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-lg-3">
-                        <a href="{{ url('admin/view-vendor-payout-requests/approved') }}">
-                            <div class="card card-body {{ ($currentStatus ?? '') === 'approved' ? 'border-success' : '' }}">
-                                <p>Approved</p>
-                                <h4>{{ $counts['approved'] ?? 0 }}</h4>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-lg-3">
-                        <a href="{{ url('admin/view-vendor-payout-requests/rejected') }}">
-                            <div class="card card-body {{ ($currentStatus ?? '') === 'rejected' ? 'border-danger' : '' }}">
-                                <p>Rejected</p>
-                                <h4>{{ $counts['rejected'] ?? 0 }}</h4>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-lg-3">
-                        <a href="{{ url('admin/view-vendor-payout-requests') }}">
-                            <div class="card card-body {{ ($currentStatus ?? null) === null ? 'border-secondary' : '' }}">
-                                <p>All</p>
-                                <h4>{{ ($counts['pending'] ?? 0) + ($counts['approved'] ?? 0) + ($counts['rejected'] ?? 0) }}</h4>
-                            </div>
-                        </a>
+        <div class="col-lg-3 col-md-6 mb-2">
+            <a href="{{ url('admin/view-vendor-payout-requests/approved') }}">
+                <div class="admin-content-card {{ ($currentStatus ?? '') === 'approved' ? 'border-start border-success border-3' : '' }}">
+                    <div class="admin-card-body text-center py-3">
+                        <p class="mb-1" style="color: #6c757d; font-size: 13px;">Approved</p>
+                        <h4 style="color: #198754; font-weight: 700;">{{ $counts['approved'] ?? 0 }}</h4>
                     </div>
                 </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-2">
+            <a href="{{ url('admin/view-vendor-payout-requests/rejected') }}">
+                <div class="admin-content-card {{ ($currentStatus ?? '') === 'rejected' ? 'border-start border-danger border-3' : '' }}">
+                    <div class="admin-card-body text-center py-3">
+                        <p class="mb-1" style="color: #6c757d; font-size: 13px;">Rejected</p>
+                        <h4 style="color: #dc3545; font-weight: 700;">{{ $counts['rejected'] ?? 0 }}</h4>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-2">
+            <a href="{{ url('admin/view-vendor-payout-requests') }}">
+                <div class="admin-content-card {{ ($currentStatus ?? null) === null ? 'border-start border-secondary border-3' : '' }}">
+                    <div class="admin-card-body text-center py-3">
+                        <p class="mb-1" style="color: #6c757d; font-size: 13px;">All</p>
+                        <h4 style="color: var(--admin-primary, #2d2a5d); font-weight: 700;">{{ ($counts['pending'] ?? 0) + ($counts['approved'] ?? 0) + ($counts['rejected'] ?? 0) }}</h4>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
 
-                <div class="data-tables mt-4">
-                    <table class="table table-dark" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">Payout Requests</h6>
+        </div>
+        <div class="admin-card-body p-0">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0" width="100%">
+                    <thead>
+                        <tr>
+                            <th>SL</th>
+                            <th>Date</th>
+                            <th>Vendor</th>
+                            <th>Account</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($requests as $ind => $req)
                             <tr>
-                                <th>SL</th>
-                                <th>Date</th>
-                                <th>Vendor</th>
-                                <th>Account</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <td>{{ $requests->firstItem() + $ind }}</td>
+                                <td>{{ $req->created_at->format('Y-m-d H:i') }}</td>
+                                <td>
+                                    {{ $req->vendor->company_name ?? '—' }}<br>
+                                    <small class="text-muted">{{ $req->vendor->contact_email ?? '' }}</small>
+                                </td>
+                                <td>
+                                    @if($req->payoutAccount)
+                                        {{ $req->payoutAccount->account_name ?? $req->payoutAccount->channel_type }}<br>
+                                        <small class="text-muted">***{{ substr($req->payoutAccount->account_number ?? '', -4) }}</small>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td>৳{{ number_format((float)$req->amount, 2) }}</td>
+                                <td>
+                                    @if($req->status === 'pending')
+                                        <span class="badge bg-info">pending</span>
+                                    @elseif($req->status === 'approved')
+                                        <span class="badge bg-success">approved</span>
+                                    @else
+                                        <span class="badge bg-danger">rejected</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($req->status === 'pending')
+                                        <button type="button" class="btn btn-success btn-sm btn-approve" data-id="{{ $req->id }}">Approve</button>
+                                        <button type="button" class="btn btn-danger btn-sm btn-reject" data-id="{{ $req->id }}">Reject</button>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($requests as $ind => $req)
-                                <tr>
-                                    <td>{{ $requests->firstItem() + $ind }}</td>
-                                    <td>{{ $req->created_at->format('Y-m-d H:i') }}</td>
-                                    <td>
-                                        {{ $req->vendor->company_name ?? '—' }}<br>
-                                        <small>{{ $req->vendor->contact_email ?? '' }}</small>
-                                    </td>
-                                    <td>
-                                        @if($req->payoutAccount)
-                                            {{ $req->payoutAccount->account_name ?? $req->payoutAccount->channel_type }}<br>
-                                            <small>***{{ substr($req->payoutAccount->account_number ?? '', -4) }}</small>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                    <td>৳{{ number_format((float)$req->amount, 2) }}</td>
-                                    <td>
-                                        @if($req->status === 'pending')
-                                            <span class="badge bg-info">pending</span>
-                                        @elseif($req->status === 'approved')
-                                            <span class="badge bg-success">approved</span>
-                                        @else
-                                            <span class="badge bg-danger">rejected</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($req->status === 'pending')
-                                            <button type="button" class="btn btn-success btn-sm btn-approve" data-id="{{ $req->id }}">Approve</button>
-                                            <button type="button" class="btn btn-danger btn-sm btn-reject" data-id="{{ $req->id }}">Reject</button>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="7" class="text-center py-4">No payout requests.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                        @empty
+                            <tr><td colspan="7" class="text-center py-4">No payout requests.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-3">
                 {{ $requests->links('pagination::bootstrap-4') }}
             </div>
         </div>
@@ -118,7 +130,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Reject payout request</h5>
+                <h5 class="modal-title" style="font-weight: 600;">Reject payout request</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -127,7 +139,7 @@
                 <textarea id="reject-notes" class="form-control" rows="2" placeholder="Admin notes"></textarea>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="reject-confirm">Reject</button>
             </div>
         </div>

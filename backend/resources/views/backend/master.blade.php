@@ -211,9 +211,6 @@
 </head>
 
 <body>
-    <!-- Navbar Start -->
-    @include('backend.partials.header')
-    <!-- Navbar End -->
     <div class="p-0 container-fluid">
 
         <!-- Sidebar Start -->
@@ -224,6 +221,10 @@
         <!-- Content Start -->
 
         <div class="content">
+
+            <!-- Navbar Start -->
+            @include('backend.partials.header')
+            <!-- Navbar End -->
 
             <!-- Sale & Revenue Start  main content-->
             @yield('maincontent')

@@ -5,1431 +5,550 @@
 @section('title')
     {{ env('APP_NAME') }}-Admin
 @endsection
-<style>
-    .rounded-leftc{
-        color: black;
-        margin-left: -17px;
-        background: #e8e8e8;
-        width: 50px;
-        border-radius: 0px 30px 30px 0px;
-    }
-    .card {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-        word-wrap: break-word;
-        background-color: #11186b;
-        background-clip: border-box;
-        border: 1px solid #fff;
-        border-radius: 5px;
-        box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
-    }
 
-    .text-dark {
-        color: #000 !important;
-    }
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-    .text-muted {
-        color: #000 !important;
-    }
-</style>
+<?php
+use App\Models\Comment;
+use App\Models\Admin;
+$admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
+$users = Admin::whereHas('roles', function ($q) {
+    $q->where('name', 'user');
+})->count();
+$ordercount = DB::table('orders')->count();
+$orderamount = DB::table('orders')
+    ->where('status', 'Paid')
+    ->sum('subTotal');
+$comments = Comment::latest()
+    ->take(100)
+    ->get();
+?>
+
 <div class="px-4 pt-4 container-fluid">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
-    <?php
-    use App\Models\Comment;
-    use App\Models\Admin;
-    $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
-    $users = Admin::whereHas('roles', function ($q) {
-        $q->where('name', 'user');
-    })->count();
-    $ordercount = DB::table('orders')->count();
-    $orderamount = DB::table('orders')
-        ->where('status', 'Paid')
-        ->sum('subTotal');
-    $comments = Comment::latest()
-        ->take(100)
-        ->get();
+    {{-- Page Header --}}
+    <div class="dash-page-header">
+        <h4>Dashboard</h4>
+        <div class="dash-header-meta">
+            <i class="bi bi-calendar3"></i> {{ date('l, F j, Y') }}
+        </div>
+    </div>
 
-    ?>
     @if ($admin->hasRole('user'))
-        <div class="row">
-            <!-- Revenue Card -->
-            <div class="mb-2 col-md-6 col-xl-2">
-                @if ($admin->hasRole('user'))
-                    <a href="{{ url('/user/order') }}">
-                    @else
-                        <a href="{{ url('admin_order/orderall') }}">
-                @endif
-                <div class="p-2 widget-rounded-circle card order">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="float-left">
-                                <h3 class="mt-1 mb-0 text-dark">
-                                    <span id="all">0</span>
-                                </h3>
-                                <p class="mb-1 text-muted text-truncate">All Orders</p>
-                            </div>
-                        </div>
-                    </div> <!-- end row-->
-                </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Processing') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="processing" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Processing</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Canceled') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="canceled" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Canceled</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Completed') }}">
-
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="completed" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Completed</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Processing') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="processing" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Processing</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        {{-- ═══════════════════════════════════════════
+            USER ROLE VIEW
+        ═══════════════════════════════════════════ --}}
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('/user/order') }}" class="dash-card">
+                    <span class="dash-card-label">All Orders</span>
+                    <div class="dash-card-value"><span id="all">0</span></div>
                 </a>
             </div>
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Packageing') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="packageing" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Packageing</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Processing') }}" class="dash-card">
+                    <span class="dash-card-label">Processing</span>
+                    <div class="dash-card-value"><span id="processing">0</span></div>
                 </a>
             </div>
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Ontheway') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="ontheway" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Ontheway</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Canceled') }}" class="dash-card">
+                    <span class="dash-card-label">Canceled</span>
+                    <div class="dash-card-value"><span id="canceled">0</span></div>
                 </a>
             </div>
-
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Delivered') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="delivered" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Delivered</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Completed') }}" class="dash-card">
+                    <span class="dash-card-label">Completed</span>
+                    <div class="dash-card-value"><span id="completed">0</span></div>
                 </a>
             </div>
-            <div class="mb-2 col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Return') }}">
-                    <div class="p-2 widget-rounded-circle card order">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="mt-1 mb-0 text-dark">
-                                        <span id="return" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="mb-1 text-muted text-truncate">Return</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Packageing') }}" class="dash-card">
+                    <span class="dash-card-label">Packaging</span>
+                    <div class="dash-card-value"><span id="packageing">0</span></div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Ontheway') }}" class="dash-card">
+                    <span class="dash-card-label">On the Way</span>
+                    <div class="dash-card-value"><span id="ontheway">0</span></div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Delivered') }}" class="dash-card">
+                    <span class="dash-card-label">Delivered</span>
+                    <div class="dash-card-value"><span id="delivered">0</span></div>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <a href="{{ url('admin_order/Return') }}" class="dash-card">
+                    <span class="dash-card-label">Return</span>
+                    <div class="dash-card-value"><span id="return">0</span></div>
                 </a>
             </div>
         </div>
     @else
-        <div class="row">
+        {{-- ═══════════════════════════════════════════
+            ADMIN / SHOP ROLE VIEW
+        ═══════════════════════════════════════════ --}}
 
-            <!-- Left side columns -->
-            <div class="col-lg-12">
-                @if($admin->hasRole('Shop'))
-                <div class="mb-4 row">
-                    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div id="chartContainer" style="height: 300px; width: 100%;"></div>
-                                <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
-                            </div>
-                            <div class="col-md-9 ps-4">
-                                <h4 style="font-size:16px">Check Date-wise Report</h4>
-                                 <div class="d-flex justify-content-between">
-                                     <div class="ms-lg-1">
-                                        <h4 style="font-size:16px">From</h4>
-                                        <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="startDate">
-                                     </div>
-                                      <div>
-                                        <h4 style="font-size:16px">To</h4>
-                                        <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="endDate">
-                                     </div>
-                                 </div>
-
-                                 <div class="mt-4 row">
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/orderall') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="all" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">All</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Pending') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="pending" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Pending</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Canceled') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="canceled" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Canceled</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Confirmed') }}">
-
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="confirmed" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Confirmed</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Processing') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="processing" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Processing</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Packageing') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="packageing" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Packageing</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Ontheway') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="ontheway" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Ontheway</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Delivered') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="delivered" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Delivered</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Return') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="return" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Return</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        {{-- 1. ORDER OVERVIEW — stat cards + date filter + pie chart --}}
+        <div class="dash-section">
+            <div class="dash-toolbar">
+                <div class="dash-presets" id="orderPresets">
+                    <button class="dash-preset-btn active" data-range="today" onclick="datePreset('order','today',this)">Today</button>
+                    <button class="dash-preset-btn" data-range="week" onclick="datePreset('order','week',this)">This Week</button>
+                    <button class="dash-preset-btn" data-range="month" onclick="datePreset('order','month',this)">This Month</button>
+                    <button class="dash-preset-btn" data-range="year" onclick="datePreset('order','year',this)">This Year</button>
+                    <button class="dash-preset-btn" data-range="all" onclick="datePreset('order','all',this)">All Time</button>
                 </div>
-                @else
-                <div class="mb-4 row">
-                    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div id="chartContainer" style="height: 300px; width: 100%;"></div>
-                                <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
-                            </div>
-                            <div class="col-md-9 ps-4">
-                                <h4 style="font-size:16px">Check Date-wise Report</h4>
-                                 <div class="d-flex justify-content-between">
-                                     <div class="ms-lg-1">
-                                        <h4 style="font-size:16px">From</h4>
-                                        <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="startDate">
-                                     </div>
-                                      <div>
-                                        <h4 style="font-size:16px">To</h4>
-                                        <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="endDate">
-                                     </div>
-                                 </div>
-
-                                 <div class="mt-4 row">
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/orderall') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="all" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">All</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Pending') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="pending" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Pending</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Canceled') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="canceled" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Canceled</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Confirmed') }}">
-
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="confirmed" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Confirmed</p>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end row-->
-                                            </div> <!-- end widget-rounded-circle-->
-                                        </a>
-                                    </div> <!-- end col-->
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Processing') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="processing" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Processing</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Packageing') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="packageing" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Packageing</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Ontheway') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="ontheway" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Ontheway</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Delivered') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="delivered" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Delivered</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                    <div class="mb-2 col-md-6 col-xl-3">
-                                        <a href="{{ url('admin_order/Return') }}">
-                                            <div class="p-2 widget-rounded-circle card-box order" style="background: #fff;">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="float-left">
-                                                            <h3 class="mt-1 mb-0 text-dark">
-                                                                <span id="return" data-plugin="counterup">0</span>
-                                                            </h3>
-                                                            <p class="mb-1 text-muted text-truncate">Return</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="dash-filter-group">
+                    <label>From</label>
+                    <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="startDate">
                 </div>
-                <div class="mb-4 row">
-                    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-                        <div class="row">
-
-                            <div class="mb-3 col-md-12">
-                                <h6>Date filter Profit-Loss System</h6>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="ms-lg-1">
-                                        <h4 style="font-size:16px">From</h4>
-                                        <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="fromDate">
-                                    </div>
-                                    <div>
-                                        <h4 style="font-size:16px">To</h4>
-                                        <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="toDate">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background:#fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Profit</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="order">
-                                                0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: black;margin: 0;" id="profit"> 0 </h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card sales-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Reseller Profit<span></span></h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="resellerorder">
-                                                0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: black;margin: 0;" id="resellerprofit"> 0 </h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Sales Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Profit</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="totalorder">
-                                                0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: black;margin: 0;" id="totalprofit">  {{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->sum('subTotal')}}</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                            <!-- Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;"> Pending Profit</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="pendingorder">
-                                                0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: black;margin: 0;" id="pendingprofit">0</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card sales-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;"> Pending Reseller Profit<span></span></h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="resellerpendingorder">
-                                                 0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: black;margin: 0;" id="resellerpendingprofit"> 0 </h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Sales Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;"> Pending Total Profit</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="totalpendingorder">
-                                                0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="totalpendingprofit"> 0 </h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                        </div>
-                    </div>
+                <div class="dash-filter-group">
+                    <label>To</label>
+                    <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="endDate">
                 </div>
-
-<div class="mb-4 row">
-    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-        <div class="row">
-            <div class="col-md-12">
-                <h6>Sales Report</h6>
             </div>
-            <!-- Revenue Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card revenue-card" style="background:#fff;">
 
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Sales</h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::where('status','Delivered')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::where('status','Delivered')->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/orderall') }}" class="dash-card">
+                        <span class="dash-card-label">All Orders</span>
+                        <div class="dash-card-value"><span id="all">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-stack"></i></div>
+                    </a>
                 </div>
-            </div><!-- End Revenue Card -->
-
-            <!-- Order Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card sales-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">This Year Sales<span></span></h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="color: #6e6e6e;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Pending') }}" class="dash-card">
+                        <span class="dash-card-label">Pending</span>
+                        <div class="dash-card-value"><span id="pending">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-clock"></i></div>
+                    </a>
                 </div>
-            </div><!-- End Sales Card -->
-            
-            <!-- Revenue Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card revenue-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">This Month Sales</h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::whereMonth('deliveryDate', Carbon\Carbon::now()->month)->where('status','Delivered')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <?php
-                                        $monthSubTotal = \App\Models\Order::where('status','Delivered')
-                                            ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
-                                            ->get()->sum('subTotal');
-                                        $monthPaymentAmount = \App\Models\Order::where('status','Delivered')
-                                            ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
-                                            ->get()->sum('paymentAmount');
-                                        $monthTotal = $monthSubTotal + $monthPaymentAmount;
-                                    ?>
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format($monthTotal) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Confirmed') }}" class="dash-card">
+                        <span class="dash-card-label">Confirmed</span>
+                        <div class="dash-card-value"><span id="confirmed">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-check-circle"></i></div>
+                    </a>
                 </div>
-            </div><!-- End Revenue Card -->
-            
-            <!-- Customers Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card customers-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today's Sales<span></span></h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::where('deliveryDate', date('Y-m-d'))->where('status','Delivered')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::where('status','Delivered')->where('deliveryDate', date('Y-m-d'))->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Canceled') }}" class="dash-card">
+                        <span class="dash-card-label">Canceled</span>
+                        <div class="dash-card-value"><span id="canceled">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-x-circle"></i></div>
+                    </a>
                 </div>
-            </div><!-- End Customers Card -->
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Processing') }}" class="dash-card">
+                        <span class="dash-card-label">Processing</span>
+                        <div class="dash-card-value"><span id="processing">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-gear"></i></div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Packageing') }}" class="dash-card">
+                        <span class="dash-card-label">Packaging</span>
+                        <div class="dash-card-value"><span id="packageing">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-box-seam"></i></div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Ontheway') }}" class="dash-card">
+                        <span class="dash-card-label">On the Way</span>
+                        <div class="dash-card-value"><span id="ontheway">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-truck"></i></div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Delivered') }}" class="dash-card">
+                        <span class="dash-card-label">Delivered</span>
+                        <div class="dash-card-value"><span id="delivered">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-check2-all"></i></div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/Return') }}" class="dash-card">
+                        <span class="dash-card-label">Return</span>
+                        <div class="dash-card-value"><span id="return">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-arrow-return-left"></i></div>
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-                <div class="mb-4 row">
-                    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <h6>Today's Report</h6>
-                            </div>
-                            <!-- Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background: #fff;">
+        {{-- 2. PROFIT & LOSS --}}
+        <div class="dash-section">
+            <h6 class="dash-section-title">Profit & Loss Report</h6>
 
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today’s Orders</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="to">
-                                                 {{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->count()}}
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="toa">  {{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->sum('subTotal')}}</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                            <!-- Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background:#fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today’s Confirmed</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="tc">
-                                                 {{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->get()->count()}}
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="tca">  {{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal')}}</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                            <!-- Revenue Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card revenue-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today's Ontheway</h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="tod">
-                                                 {{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->get()->count()}}
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="toda">  {{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal')}}</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Revenue Card -->
-                            <!-- Order Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-                                <div class="card info-card sales-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today’s Delivered<span></span></h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="td">
-                                                 {{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->get()->count()}}
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="tda">  {{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal')}}</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- End Sales Card -->
-                            <!-- Customers Card -->
-                            <div class="mb-2 col-xxl-3 col-md-3">
-
-                                <div class="card info-card customers-card" style="background: #fff;">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today’s Returned <span></span></h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="tr">
-                                                 {{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->get()->count()}}
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="tra">  {{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal')}}</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                            </div><!-- End Customers Card -->
-
-                            <div class="mb-2 col-xxl-3 col-md-3">
-
-                                <div class="card info-card customers-card" style="background: #fff">
-
-                                    <div class="card-body">
-                                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today’s Others <span></span></h5>
-
-                                        <div class="d-flex justify-content-between">
-                                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center" id="totd">
-                                                 0
-                                            </div>
-                                            <div class="d-flex align-items-center">
-                                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="color: black;font-weight:normal;">
-                                                    ৳
-                                                </div>
-                                                <div class="ps-1">
-                                                    <h6 style="color: #6e6e6e;margin: 0;" id="totda">  0</h6>
-
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                            </div><!-- End Customers Card -->
-
-                        </div>
-                    </div>
+            <div class="dash-toolbar">
+                <div class="dash-presets" id="profitPresets">
+                    <button class="dash-preset-btn active" data-range="today" onclick="datePreset('profit','today',this)">Today</button>
+                    <button class="dash-preset-btn" data-range="week" onclick="datePreset('profit','week',this)">This Week</button>
+                    <button class="dash-preset-btn" data-range="month" onclick="datePreset('profit','month',this)">This Month</button>
+                    <button class="dash-preset-btn" data-range="year" onclick="datePreset('profit','year',this)">This Year</button>
+                    <button class="dash-preset-btn" data-range="all" onclick="datePreset('profit','all',this)">All Time</button>
                 </div>
-
-               <div class="mb-4 row">
-    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-        <div class="row">
-            <div class="col-md-12">
-                <h6>Total Report</h6>
-            </div>
-            <!-- Revenue Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card revenue-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Orders</h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                <div class="dash-filter-group">
+                    <label>From</label>
+                    <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="fromDate">
                 </div>
-            </div><!-- End Revenue Card -->
-            <!-- Revenue Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card revenue-card" style="background:#fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Confirmed</h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::where('status','Confirmed')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::where('status','Confirmed')->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div><!-- End Revenue Card -->
-            <!-- Revenue Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card revenue-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Ontheway</h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::where('status','Ontheway')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::where('status','Ontheway')->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div><!-- End Revenue Card -->
-            <!-- Order Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card info-card sales-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Delivered<span></span></h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::where('status','Delivered')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::where('status','Delivered')->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div><!-- End Sales Card -->
-            <!-- Customers Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-
-                <div class="card info-card customers-card" style="background: #fff;">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Returned <span></span></h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::where('status','Return')->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::where('status','Return')->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div><!-- End Customers Card -->
-            <div class="mb-2 col-xxl-3 col-md-3">
-
-                <div class="card info-card customers-card" style="background: #fff">
-
-                    <div class="card-body">
-                        <h5 class="text-left card-title" style="color: black;font-weight:normal;">Other Statuses <span></span></h5>
-
-                        <div class="d-flex justify-content-between">
-                            <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                {{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->get()->count()) }}
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                    style="color: black;font-weight:normal;">
-                                    ৳
-                                </div>
-                                <div class="ps-1">
-                                    <h6 style="color: #6e6e6e;margin: 0;"> {{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->get()->sum('subTotal')) }}</h6>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-            </div><!-- End Customers Card -->
-        </div>
-    </div>
-</div>
-
-<div class="mb-4 row">
-    <div class="col-md-12 card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-        <div class="row">
-            <div class="mb-2 col-xxl-8 col-md-8">
-                <div class="row">
-                    <div class="col-md-12">
-                        <h6>Reseller Report</h6>
-                    </div>
-                    <!-- Revenue Card -->
-                    <div class="mb-2 col-xxl-4 col-md-4">
-                        <div class="card info-card revenue-card" style="background: #fff;">
-
-                            <div class="card-body">
-                                <h5 class="text-left card-title" style="color: black;font-weight:normal;">Total Resellers</h5>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                        {{ number_format(App\Models\User::get()->count()) }}
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center"
-                                            style="color: black;font-weight:normal;">
-
-                                        </div>
-                                        <div class="ps-1">
-                                            <h6 style="color: #6e6e6e;margin: 0;">
-                                                {{ number_format(App\Models\User::get()->count()) }}
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div><!-- End Revenue Card -->
-                    
-                    <!-- Revenue Card -->
-                    <div class="mb-2 col-xxl-4 col-md-4">
-                        <div class="card info-card revenue-card" style="background:#fff;">
-
-                            <div class="card-body">
-                                <h5 class="text-left card-title" style="color: black;font-weight:normal;">Paid Resellers</h5>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                        {{ number_format(App\Models\User::where('status','Active')->where('membership_status','Paid')->get()->count()) }}
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="color: #6e6e6e;">
-
-                                        </div>
-                                        <div class="ps-1">
-                                            <h6 style="color: #6e6e6e;margin: 0;">
-                                                {{ number_format(App\Models\User::where('status','Active')->where('membership_status','Paid')->get()->count()) }}
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div><!-- End Revenue Card -->
-                    
-                    <!-- Revenue Card -->
-                    <div class="mb-2 col-xxl-4 col-md-4">
-                        <div class="card info-card revenue-card" style="background: #fff;">
-
-                            <div class="card-body">
-                                <h5 class="text-left card-title" style="color: black;font-weight:normal;">Unpaid Resellers</h5>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                        {{ number_format(App\Models\User::where('membership_status','Unpaid')->get()->count()) }}
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="color: #6e6e6e;">
-
-                                        </div>
-                                        <div class="ps-1">
-                                            <h6 style="color: #6e6e6e;margin: 0;">
-                                                {{ number_format(App\Models\User::where('membership_status','Unpaid')->get()->count()) }}
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div><!-- End Revenue Card -->
-                    
-                    <!-- Order Card -->
-                    <div class="mb-2 col-xxl-4 col-md-4">
-                        <div class="card info-card sales-card" style="background: #fff;">
-
-                            <div class="card-body">
-                                <h5 class="text-left card-title" style="color: black;font-weight:normal;">Banned Resellers<span></span></h5>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                        {{ number_format(App\Models\User::where('status','Block')->get()->count()) }}
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="color: #6e6e6e;">
-
-                                        </div>
-                                        <div class="ps-1">
-                                            <h6 style="color: #6e6e6e;margin: 0;">
-                                                {{ number_format(App\Models\User::where('status','Block')->get()->count()) }}
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div><!-- End Sales Card -->
-                    
-                    <!-- Customers Card -->
-                    <div class="mb-2 col-xxl-4 col-md-4">
-                        <div class="card info-card customers-card" style="background: #fff;">
-
-                            <div class="card-body">
-                                <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today's Registered<span></span></h5>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                        {{ number_format(App\Models\User::where('created_at', '>=', Carbon\Carbon::today())->get()->count()) }}
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="color: #6e6e6e;">
-
-                                        </div>
-                                        <div class="ps-1">
-                                            <h6 style="color: #6e6e6e;margin: 0;">
-                                                {{ number_format(App\Models\User::where('created_at', '>=', Carbon\Carbon::today())->get()->count()) }}
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div><!-- End Customers Card -->
-
-                    <!-- Customers Card -->
-                    <div class="mb-2 col-xxl-4 col-md-4">
-                        <div class="card info-card customers-card" style="background: #fff;">
-
-                            <div class="card-body">
-                                <h5 class="text-left card-title" style="color: black;font-weight:normal;">Today's Active<span></span></h5>
-
-                                <div class="d-flex justify-content-between">
-                                    <div class="card-icon rounded-leftc d-flex align-items-center justify-content-center">
-                                        {{ number_format(App\Models\User::where('active_date', '>=', Carbon\Carbon::today())->get()->count()) }}
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="color: #6e6e6e;">
-
-                                        </div>
-                                        <div class="ps-1">
-                                            <h6 style="color: #6e6e6e;margin: 0;">
-                                                {{ number_format(App\Models\User::where('active_date', '>=', Carbon\Carbon::today())->get()->count()) }}
-                                            </h6>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div><!-- End Customers Card -->
+                <div class="dash-filter-group">
+                    <label>To</label>
+                    <input type="date" class="form-control datepicker" value="{{date('Y-m-d')}}" id="toDate">
                 </div>
             </div>
-            <div class="mb-2 col-xxl-1 col-md-1"></div>
-            <div class="mb-2 col-xxl-3 col-md-3">
-                <div class="card card-body" style="background:#fff !important;box-shadow: 0px 0px 75px 0px rgba(239, 145, 85, 0.14);">
-                    <div class="mb-3 col-md-12">
-                        <h6>Device Category</h6>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Profit</span>
+                        <div class="dash-card-value">৳ <span id="profit">0</span></div>
+                        <div class="dash-card-sub"><span id="order">0</span> orders</div>
                     </div>
-                    <div class="mb-3 d-flex justify-content-between">
-                        <h6><i class="fas fa-mobile" style="color:#1A2B88"></i> &nbsp;&nbsp; Mobile</h6>
-                        <p class="m-0">96.42%</p>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Reseller Profit</span>
+                        <div class="dash-card-value">৳ <span id="resellerprofit">0</span></div>
+                        <div class="dash-card-sub"><span id="resellerorder">0</span> orders</div>
                     </div>
-                    <div class="mb-3 d-flex justify-content-between">
-                        <h6><i class="fas fa-desktop" style="color:#1A2B88"></i> &nbsp;&nbsp; Desktop</h6>
-                        <p class="m-0">2.76%</p>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Total Profit</span>
+                        <div class="dash-card-value">৳ <span id="totalprofit">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-sub"><span id="totalorder">0</span> orders</div>
                     </div>
-                    <div class="mb-3 d-flex justify-content-between">
-                        <h6><i class="fas fa-tablet-alt" style="color:#1A2B88"></i> &nbsp;&nbsp; Tablet</h6>
-                        <p class="m-0">0.82%</p>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Pending Profit</span>
+                        <div class="dash-card-value">৳ <span id="pendingprofit">0</span></div>
+                        <div class="dash-card-sub"><span id="pendingorder">0</span> orders</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Pending Reseller</span>
+                        <div class="dash-card-value">৳ <span id="resellerpendingprofit">0</span></div>
+                        <div class="dash-card-sub"><span id="resellerpendingorder">0</span> orders</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Pending Total</span>
+                        <div class="dash-card-value">৳ <span id="totalpendingprofit">0</span></div>
+                        <div class="dash-card-sub"><span id="totalpendingorder">0</span> orders</div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-                @endif
-            </div><!-- End Left side columns -->
 
+        {{-- 3. SALES REPORT --}}
+        <div class="dash-section">
+            <h6 class="dash-section-title">Sales Report</h6>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Total Sales</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="dash-card">
+                        <span class="dash-card-label">This Year</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <?php
+                        $monthSubTotal = \App\Models\Order::where('status','Delivered')
+                            ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
+                            ->get()->sum('subTotal');
+                        $monthPaymentAmount = \App\Models\Order::where('status','Delivered')
+                            ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
+                            ->get()->sum('paymentAmount');
+                        $monthTotal = $monthSubTotal + $monthPaymentAmount;
+                    ?>
+                    <div class="dash-card">
+                        <span class="dash-card-label">This Month</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereMonth('deliveryDate', Carbon\Carbon::now()->month)->where('status','Delivered')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format($monthTotal) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Today's Sales</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('deliveryDate', date('Y-m-d'))->where('status','Delivered')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->where('deliveryDate', date('Y-m-d'))->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        {{-- 4. TODAY'S REPORT --}}
+        <div class="dash-section">
+            <h6 class="dash-section-title">Today's Report</h6>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Orders</span>
+                        <div class="dash-card-value"><span id="to">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="toa">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Confirmed</span>
+                        <div class="dash-card-value"><span id="tc">{{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="tca">{{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">On the Way</span>
+                        <div class="dash-card-value"><span id="tod">{{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="toda">{{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Delivered</span>
+                        <div class="dash-card-value"><span id="td">{{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="tda">{{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Returned</span>
+                        <div class="dash-card-value"><span id="tr">{{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="tra">{{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Others</span>
+                        <div class="dash-card-value"><span id="totd">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="totda">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 5. TOTAL REPORT --}}
+        <div class="dash-section">
+            <h6 class="dash-section-title">Total Report (All Time)</h6>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Total Orders</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Confirmed</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Confirmed')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Confirmed')->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">On the Way</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Ontheway')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Ontheway')->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Delivered</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Returned</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Return')->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Return')->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Other Statuses</span>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->get()->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->get()->sum('subTotal')) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 6. RESELLER REPORT + PIE CHART + DEVICE CATEGORY --}}
+        <div class="dash-section">
+            <h6 class="dash-section-title">Reseller Report</h6>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Total Resellers</span>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::get()->count()) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Paid Resellers</span>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('status','Active')->where('membership_status','Paid')->get()->count()) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Unpaid Resellers</span>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('membership_status','Unpaid')->get()->count()) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Banned</span>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('status','Block')->get()->count()) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Today's Registered</span>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('created_at', '>=', Carbon\Carbon::today())->get()->count()) }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-xl-2">
+                    <div class="dash-card">
+                        <span class="dash-card-label">Today's Active</span>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('active_date', '>=', Carbon\Carbon::today())->get()->count()) }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 7. PIE CHART + DEVICE CATEGORY --}}
+        <div class="dash-section">
+            <div class="row g-3">
+                <div class="col-lg-8">
+                    <div class="dash-chart-card">
+                        <div class="dash-chart-title">Order Status Distribution</div>
+                        <div class="dash-chart-container" id="chartContainer"></div>
+                        <script src="https://cdn.canvasjs.com/canvasjs.min.js"></script>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="dash-chart-card">
+                        <div class="dash-chart-title">Device Category</div>
+                        <div class="dash-device-item">
+                            <div class="dash-device-label">
+                                <i class="fas fa-mobile"></i> Mobile
+                            </div>
+                            <div class="dash-device-pct">96.42%</div>
+                        </div>
+                        <div class="dash-device-item">
+                            <div class="dash-device-label">
+                                <i class="fas fa-desktop"></i> Desktop
+                            </div>
+                            <div class="dash-device-pct">2.76%</div>
+                        </div>
+                        <div class="dash-device-item">
+                            <div class="dash-device-label">
+                                <i class="fas fa-tablet-alt"></i> Tablet
+                            </div>
+                            <div class="dash-device-pct">0.82%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     @endif
 </div>
-<!-- Sale & Revenue End -->
 
 <script>
-    // Helper function to format numbers with commas
     function formatNumberWithCommas(num) {
         if (num === null || num === undefined) return '0';
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
+    function datePreset(section, range, btn) {
+        var today = new Date();
+        var start, end;
+        end = today.toISOString().slice(0, 10);
+
+        switch (range) {
+            case 'today':
+                start = end;
+                break;
+            case 'week':
+                var d = new Date(today);
+                d.setDate(d.getDate() - d.getDay());
+                start = d.toISOString().slice(0, 10);
+                break;
+            case 'month':
+                start = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-01';
+                break;
+            case 'year':
+                start = today.getFullYear() + '-01-01';
+                break;
+            case 'all':
+                start = '2020-01-01';
+                break;
+            default:
+                start = end;
+        }
+
+        if (section === 'order') {
+            $('#startDate').val(start);
+            $('#endDate').val(end);
+            if ($('#startDate')[0]._flatpickr) $('#startDate')[0]._flatpickr.setDate(start, false);
+            if ($('#endDate')[0]._flatpickr) $('#endDate')[0]._flatpickr.setDate(end, false);
+            $('#orderPresets .dash-preset-btn').removeClass('active');
+            infocount();
+        } else {
+            $('#fromDate').val(start);
+            $('#toDate').val(end);
+            if ($('#fromDate')[0]._flatpickr) $('#fromDate')[0]._flatpickr.setDate(start, false);
+            if ($('#toDate')[0]._flatpickr) $('#toDate')[0]._flatpickr.setDate(end, false);
+            $('#profitPresets .dash-preset-btn').removeClass('active');
+            salsecount();
+        }
+
+        if (btn) $(btn).addClass('active');
+    }
+
     $(document).ready(function() {
         $(".datepicker").flatpickr();
-        infocount();
+        // default to "This Month" on page load
+        datePreset('order', 'month', document.querySelector('#orderPresets .dash-preset-btn[data-range="month"]'));
+        datePreset('profit', 'month', document.querySelector('#profitPresets .dash-preset-btn[data-range="month"]'));
 
-        $(document).on('change', '#startDate', function(){
-            infocount();
-        });
-        $(document).on('change', '#endDate', function(){
-            infocount();
-        });
-
-        $(document).on('change', '#fromDate', function(){
-            salsecount();
-        });
-        $(document).on('change', '#toDate', function(){
-            salsecount();
-        });
+        $(document).on('change', '#startDate', function(){ infocount(); });
+        $(document).on('change', '#endDate', function(){ infocount(); });
+        $(document).on('change', '#fromDate', function(){ salsecount(); });
+        $(document).on('change', '#toDate', function(){ salsecount(); });
 
         $('#orderFilter').text('/Today');
         $('#topsellProduct').text('/Today');
 
-        //topsell products
+        // top selling products
         $.ajax({
             type: "get",
             url: "{{ url('admin_order/product/topsell/0') }}",
@@ -1440,22 +559,17 @@
                 if (data["status"] == "success") {
                     for (let i = 0; i < data["orders"].length; i++) {
                         $('#topsellProductTbl').append(
-                            `
-                                <tr>
-                                    <th>` + data["orders"][i].productCode + `</th>
-                                    <td scope="row"><a href="#"><img src="{{ asset('public/image/default.png') }}" alt=""></a></td>
-                                    <td><a href="#" class="text-primary fw-bold">` + data["orders"][i].productName + `</a></td>
-                                    <td>TK. ` + formatNumberWithCommas(data["orders"][i].productPrice) + `</td>
-                                    <td class="fw-bold">` + formatNumberWithCommas(data["orders"][i].total_amount) + `</td>
-                                </tr>
-                            `);
+                            `<tr>
+                                <th>` + data["orders"][i].productCode + `</th>
+                                <td scope="row"><a href="#"><img src="{{ asset('public/image/default.png') }}" alt=""></a></td>
+                                <td><a href="#" class="text-primary fw-bold">` + data["orders"][i].productName + `</a></td>
+                                <td>TK. ` + formatNumberWithCommas(data["orders"][i].productPrice) + `</td>
+                                <td class="fw-bold">` + formatNumberWithCommas(data["orders"][i].total_amount) + `</td>
+                            </tr>`);
                     }
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
@@ -1472,34 +586,23 @@
                 if (data["status"] == "success") {
                     for (let i = 0; i < data["orders"].length; i++) {
                         $('#recentsellProductTbl').append(
-                            `
-                                <tr>
-                                    <th>` + data["orders"][i].invoiceID + `</th>
-                                    <td>` + data["orders"][i].customers.customerName + `</td>
-                                    <td id="recentsellproname` + data["orders"][i].id + `">
-                                    </td>
-                                    <td>TK. ` + formatNumberWithCommas(data["orders"][i].subTotal) + `</td>
-                                    <td class="fw-bold">` + data["orders"][i].status + `</td>
-                                </tr>
-                            `);
+                            `<tr>
+                                <th>` + data["orders"][i].invoiceID + `</th>
+                                <td>` + data["orders"][i].customers.customerName + `</td>
+                                <td id="recentsellproname` + data["orders"][i].id + `"></td>
+                                <td>TK. ` + formatNumberWithCommas(data["orders"][i].subTotal) + `</td>
+                                <td class="fw-bold">` + data["orders"][i].status + `</td>
+                            </tr>`);
                     }
-
                     for (let i = 0; i < data["orders"].length; i++) {
                         for (let j = 0; j < data["orders"][i].orderproducts.length; j++) {
                             $('#recentsellproname' + data["orders"][i].id).append(
-                                `
-                                <a href="#" class="text-primary fw-bold">` + j + `.` + data["orders"][i].orderproducts[
-                                    j].productName + `</a><br>
-                                `);
+                                `<a href="#" class="text-primary fw-bold">` + j + `.` + data["orders"][i].orderproducts[j].productName + `</a><br>`);
                         }
                     }
-
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
@@ -1516,9 +619,7 @@
             contentType: "application/json",
             success: function(response) {
                 var data = JSON.parse(response);
-
                 if (data["status"] == "success") {
-                    // Format all count numbers
                     $('#pending').text(formatNumberWithCommas(data["pending"]));
                     $('#canceled').text(formatNumberWithCommas(data["canceled"]));
                     $('#confirmed').text(formatNumberWithCommas(data["confirmed"]));
@@ -1530,14 +631,12 @@
                     $('#all').text(formatNumberWithCommas(data["all"]));
                     $('#allorder').text(formatNumberWithCommas(data["allorder"]));
 
-                    // Today's report counts
                     $('#to').text(formatNumberWithCommas(data["all"]));
                     $('#tc').text(formatNumberWithCommas(data["confirmed"]));
                     $('#tod').text(formatNumberWithCommas(data["ontheway"]));
                     $('#td').text(formatNumberWithCommas(data["delivered"]));
                     $('#tr').text(formatNumberWithCommas(data["return"]));
 
-                    // Today's report amounts (formatted with commas)
                     $('#toa').text(formatNumberWithCommas(data["toa"]));
                     $('#tca').text(formatNumberWithCommas(data["tca"]));
                     $('#toda').text(formatNumberWithCommas(data["toda"]));
@@ -1546,11 +645,8 @@
                     $('#totd').text(formatNumberWithCommas(data["too"]));
                     $('#totda').text(formatNumberWithCommas(data["tooa"]));
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
@@ -1567,9 +663,7 @@
             contentType: "application/json",
             success: function(response) {
                 var data = JSON.parse(response);
-
                 if (data["status"] == "success") {
-                    // Format all count numbers
                     $('#order').text(formatNumberWithCommas(data["order"]));
                     $('#pendingorder').text(formatNumberWithCommas(data["pendingorder"]));
                     $('#pendingprofit').text(formatNumberWithCommas(data["pendingprofit"]));
@@ -1578,25 +672,19 @@
                     $('#resellerpendingorder').text(formatNumberWithCommas(data["resellerpendingorder"]));
                     $('#resellerpendingprofit').text(formatNumberWithCommas(data["resellerpendingprofit"]));
                     $('#resellerprofit').text(formatNumberWithCommas(data["resellerprofit"]));
-
-                    // Format total amounts
                     $('#totalpendingprofit').text(formatNumberWithCommas(data["totalpendingprofit"]));
                     $('#totalpendingorder').text(formatNumberWithCommas(data["totalpendingorder"]));
                     $('#totalorder').text(formatNumberWithCommas(data["totalorder"]));
                     $('#totalprofit').text(formatNumberWithCommas(data["totalprofit"]));
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
     }
 
     function recentsellfilter(id) {
-        // recent sale
         $.ajax({
             type: "get",
             url: "{{ url('admin_order/product/recentsell/') }}" + '/' + id,
@@ -1608,34 +696,23 @@
                 if (data["status"] == "success") {
                     for (let i = 0; i < data["orders"].length; i++) {
                         $('#recentsellProductTbl').append(
-                            `
-                                <tr>
-                                    <th>` + data["orders"][i].invoiceID + `</th>
-                                    <td>` + data["orders"][i].customers.customerName + `</td>
-                                    <td id="recentsellproname` + data["orders"][i].id + `">
-                                    </td>
-                                    <td>TK. ` + formatNumberWithCommas(data["orders"][i].subTotal) + `</td>
-                                    <td class="fw-bold">` + data["orders"][i].status + `</td>
-                                </tr>
-                            `);
+                            `<tr>
+                                <th>` + data["orders"][i].invoiceID + `</th>
+                                <td>` + data["orders"][i].customers.customerName + `</td>
+                                <td id="recentsellproname` + data["orders"][i].id + `"></td>
+                                <td>TK. ` + formatNumberWithCommas(data["orders"][i].subTotal) + `</td>
+                                <td class="fw-bold">` + data["orders"][i].status + `</td>
+                            </tr>`);
                     }
-
                     for (let i = 0; i < data["orders"].length; i++) {
                         for (let j = 0; j < data["orders"][i].orderproducts.length; j++) {
                             $('#recentsellproname' + data["orders"][i].id).append(
-                                `
-                                <a href="#" class="text-primary fw-bold">` + j + `.` + data["orders"][i].orderproducts[
-                                    j].productName + `</a><br>
-                                `);
+                                `<a href="#" class="text-primary fw-bold">` + j + `.` + data["orders"][i].orderproducts[j].productName + `</a><br>`);
                         }
                     }
-
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
@@ -1652,22 +729,17 @@
                 if (data["status"] == "success") {
                     for (let i = 0; i < data["orders"].length; i++) {
                         $('#topsellProductTbl').append(
-                            `
-                                <tr>
-                                    <th>` + data["orders"][i].productCode + `</th>
-                                    <td scope="row"><a href="#"><img src="{{ asset('public/image/default.png') }}" alt=""></a></td>
-                                    <td><a href="#" class="text-primary fw-bold">` + data["orders"][i].productName + `</a></td>
-                                    <td>TK. ` + formatNumberWithCommas(data["orders"][i].productPrice) + `</td>
-                                    <td class="fw-bold">` + formatNumberWithCommas(data["orders"][i].total_amount) + `</td>
-                                </tr>
-                            `);
+                            `<tr>
+                                <th>` + data["orders"][i].productCode + `</th>
+                                <td scope="row"><a href="#"><img src="{{ asset('public/image/default.png') }}" alt=""></a></td>
+                                <td><a href="#" class="text-primary fw-bold">` + data["orders"][i].productName + `</a></td>
+                                <td>TK. ` + formatNumberWithCommas(data["orders"][i].productPrice) + `</td>
+                                <td class="fw-bold">` + formatNumberWithCommas(data["orders"][i].total_amount) + `</td>
+                            </tr>`);
                     }
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
@@ -1682,9 +754,6 @@
                 var data = JSON.parse(response);
                 if (data["status"] == "success") {
                     $('#orderFilter').text(data["title"]);
-                    $('orderFilter').text('Today');
-                    
-                    // Format all count numbers
                     $('#delivered').text(formatNumberWithCommas(data["delivered"]));
                     $('#customerConfirm').text(formatNumberWithCommas(data["customerConfirm"]));
                     $('#paid').text(formatNumberWithCommas(data["paid"]));
@@ -1701,11 +770,8 @@
                     $('#canceled').text(formatNumberWithCommas(data["canceled"]));
                     $('#completed').text(formatNumberWithCommas(data["completed"]));
                 } else {
-                    if (data["status"] == "failed") {
-                        swal(data["message"]);
-                    } else {
-                        swal("Something wrong ! Please try again.");
-                    }
+                    if (data["status"] == "failed") { swal(data["message"]); }
+                    else { swal("Something wrong ! Please try again."); }
                 }
             }
         });
@@ -1714,7 +780,7 @@
     window.onload = function () {
         var chart = new CanvasJS.Chart("chartContainer", {
             animationEnabled: true,
-            legend:{
+            legend: {
                 cursor: "pointer",
                 itemclick: explodePie
             },
@@ -1730,15 +796,15 @@
                     { y: 3, name: "Invoiced" },
                     { y: 7, name: "On Delivery" },
                     { y: 17, name: "Delivered" },
-                    { y: 22, name: "Return"}
+                    { y: 22, name: "Return" }
                 ]
             }]
         });
         chart.render();
     }
 
-    function explodePie (e) {
-        if(typeof (e.dataSeries.dataPoints[e.dataPointIndex].exploded) === "undefined" || !e.dataSeries.dataPoints[e.dataPointIndex].exploded) {
+    function explodePie(e) {
+        if (typeof(e.dataSeries.dataPoints[e.dataPointIndex].exploded) === "undefined" || !e.dataSeries.dataPoints[e.dataPointIndex].exploded) {
             e.dataSeries.dataPoints[e.dataPointIndex].exploded = true;
         } else {
             e.dataSeries.dataPoints[e.dataPointIndex].exploded = false;

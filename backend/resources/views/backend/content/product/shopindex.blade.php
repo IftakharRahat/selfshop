@@ -5,67 +5,45 @@
     {{ env('APP_NAME') }}- Shop Products
 @endsection
 
-<style>
-    a.paginate_button {
-        background: gray;
-    }
-    div#roleinfo_length {
-        color: red;
-    }
-
-    div#roleinfo_filter {
-        color: red;
-    }
-
-    div#roleinfo_info {
-        color: red;
-    }
-
-    label {
-        color: white;
-    }
-</style>
 {{-- summernote --}}
 <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
 
 <div class="container-fluid pt-4 px-4">
     <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Shop Products List</h6>
+        <div class="col-12">
+            <div class="admin-content-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title">Shop Products List</h6>
+                    <div class="admin-card-actions">
+                        <a href="{{ url('admin/shop/product-create') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> Create New Shop Product
+                        </a>
+                    </div>
                 </div>
-                <div class="" style="width: 50%;float:left;">
-                    <a href="{{ url('admin/shop/product-create') }}" class="btn btn-primary m-2"
-                        style="float: right"> + Create New Shop Product</a>
-                </div>
-            </div>
-        </div>
+                <div class="admin-card-body">
+                    <div class="data-tables">
+                        <table class="table" id="productinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>SL</th>
+                                    <th>Image</th>
+                                    <th>Shop Name</th>
+                                    <th>Name</th>
+                                    <th>SKU</th>
+                                    <th>Wholesale Price</th>
+                                    <th>Price</th>
+                                    <th>Sale Price</th>
+                                    <th>Featured</th>
+                                    <th>Promotion</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
 
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="productinfo" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>SL</th>
-                                <th>Image</th>
-                                <th>Shop Name</th>
-                                <th>Name</th>
-                                <th>SKU</th>
-                                <th>Wholesale Price</th>
-                                <th>Price</th>
-                                <th>Sale Price</th>
-                                <th>Featured</th>
-                                <th>Promotion</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -73,6 +51,7 @@
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
     </div>
 </div>
+
 
 
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>

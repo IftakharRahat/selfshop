@@ -1,0 +1,586 @@
+/*=================================================================
+  Admin Modern Override
+  Loaded AFTER style.css to override the NiceAdmin template
+  Color scheme matches the vendor dashboard (#2d2a5d deep purple)
+=================================================================*/
+
+/* ----------------------------------------------------------------
+   CSS Custom Properties
+---------------------------------------------------------------- */
+:root {
+  --admin-primary: #2d2a5d;
+  --admin-primary-light: #3d3a7d;
+  --admin-primary-lighter: #eeedfa;
+  --admin-accent: #6c63ff;
+  --admin-bg: #f8f9fc;
+  --admin-sidebar-width: 260px;
+  --admin-header-height: 64px;
+  --admin-text: #1e293b;
+  --admin-text-muted: #64748b;
+  --admin-border: #e2e8f0;
+  --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --admin-transition: 0.2s ease;
+}
+
+/* ----------------------------------------------------------------
+   Base / Body
+---------------------------------------------------------------- */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  background-color: var(--admin-bg) !important;
+  color: var(--admin-text) !important;
+  font-size: 0.875rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----------------------------------------------------------------
+   Header
+---------------------------------------------------------------- */
+.header {
+  height: var(--admin-header-height) !important;
+  background: #fff !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  box-shadow: none !important;
+  padding-left: 20px;
+  padding-right: 16px;
+  backdrop-filter: blur(8px);
+}
+
+.header .toggle-sidebar-btn {
+  font-size: 24px !important;
+  color: var(--admin-text) !important;
+  padding: 6px;
+  border-radius: 8px;
+  transition: var(--admin-transition);
+}
+
+.header .toggle-sidebar-btn:hover {
+  background: var(--admin-primary-lighter);
+  color: var(--admin-primary) !important;
+}
+
+/* Logo in header */
+#largelogotext h2,
+#small_logo h2 {
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  color: var(--admin-primary) !important;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+
+/* Search bar */
+.header .search-bar {
+  min-width: 280px;
+}
+
+.header .search-form input {
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 8px !important;
+  padding: 8px 38px 8px 14px !important;
+  font-size: 13px !important;
+  background: var(--admin-bg) !important;
+  transition: var(--admin-transition);
+}
+
+.header .search-form input:focus {
+  border-color: var(--admin-accent) !important;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1) !important;
+  background: #fff !important;
+}
+
+.header .search-form button i {
+  color: var(--admin-text-muted) !important;
+}
+
+/* Header nav icons */
+.header-nav .nav-icon {
+  color: var(--admin-text-muted) !important;
+  font-size: 18px !important;
+  position: relative;
+  padding: 6px 8px !important;
+  border-radius: 8px;
+  transition: var(--admin-transition);
+}
+
+.header-nav .nav-icon:hover {
+  background: var(--admin-primary-lighter);
+  color: var(--admin-primary) !important;
+}
+
+/* Profile in header */
+.header-nav .nav-profile {
+  color: var(--admin-text) !important;
+}
+
+.header-nav .nav-profile img {
+  width: 34px !important;
+  height: 34px !important;
+  max-height: none !important;
+  object-fit: cover;
+  border: 2px solid var(--admin-primary-lighter);
+}
+
+.header-nav .nav-profile span {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--admin-text) !important;
+}
+
+/* Badge */
+.header-nav .badge-number {
+  font-size: 10px !important;
+  padding: 2px 5px !important;
+  border-radius: 20px;
+  background: var(--admin-accent) !important;
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important;
+  padding: 6px !important;
+}
+
+.dropdown-menu .dropdown-item {
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+  color: var(--admin-text) !important;
+}
+
+.dropdown-menu .dropdown-item:hover {
+  background: var(--admin-primary-lighter) !important;
+  color: var(--admin-primary) !important;
+}
+
+.dropdown-menu .dropdown-item i {
+  color: var(--admin-text-muted);
+  font-size: 16px !important;
+}
+
+.dropdown-menu .dropdown-header {
+  padding: 10px 12px !important;
+}
+
+.dropdown-menu .dropdown-header h6 {
+  color: var(--admin-text) !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.dropdown-menu .dropdown-header span {
+  color: var(--admin-text-muted) !important;
+  font-size: 12px !important;
+}
+
+/* ----------------------------------------------------------------
+   Sidebar
+---------------------------------------------------------------- */
+.sidebar {
+  width: var(--admin-sidebar-width) !important;
+  top: var(--admin-header-height) !important;
+  background: #fff !important;
+  border-right: 1px solid var(--admin-border) !important;
+  box-shadow: none !important;
+  padding: 16px 12px !important;
+  overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--admin-border) !important;
+  border-radius: 10px;
+}
+
+/* Main content offset for wider sidebar */
+@media (min-width: 1200px) {
+
+  #main,
+  #footer {
+    margin-left: var(--admin-sidebar-width) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+
+  .toggle-sidebar #main,
+  .toggle-sidebar #footer {
+    margin-left: 0 !important;
+  }
+
+  .toggle-sidebar .sidebar {
+    left: calc(var(--admin-sidebar-width) * -1) !important;
+  }
+}
+
+/* Section headings */
+.sidebar-nav .nav-heading,
+.sidebar .sidebar-section-title {
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--admin-text-muted) !important;
+  font-weight: 600 !important;
+  padding: 12px 12px 6px 12px !important;
+  margin: 4px 0 0 0 !important;
+}
+
+/* Nav links */
+.sidebar-nav .nav-link {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--admin-text) !important;
+  background: transparent !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  transition: var(--admin-transition) !important;
+  margin-bottom: 2px !important;
+}
+
+.sidebar-nav .nav-link i {
+  font-size: 16px !important;
+  margin-right: 10px !important;
+  color: var(--admin-text-muted) !important;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Collapsed (inactive) state */
+.sidebar-nav .nav-link.collapsed {
+  color: var(--admin-text) !important;
+  background: transparent !important;
+}
+
+.sidebar-nav .nav-link.collapsed i {
+  color: var(--admin-text-muted) !important;
+}
+
+/* Expanded dropdown parent (NOT the active page link) */
+.sidebar-nav .nav-link:not(.collapsed):not(.active-nav) {
+  background: var(--admin-primary-lighter) !important;
+  color: var(--admin-primary) !important;
+}
+
+.sidebar-nav .nav-link:not(.collapsed):not(.active-nav) i {
+  color: var(--admin-primary) !important;
+}
+
+/* Active page link */
+.sidebar-nav .nav-link.active-nav {
+  background: var(--admin-primary) !important;
+  color: #fff !important;
+}
+
+.sidebar-nav .nav-link.active-nav i {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Hover */
+.sidebar-nav .nav-link:hover {
+  background: var(--admin-primary-lighter) !important;
+  color: var(--admin-primary) !important;
+}
+
+.sidebar-nav .nav-link:hover i {
+  color: var(--admin-primary) !important;
+}
+
+/* Don't override active-nav on hover */
+.sidebar-nav .nav-link.active-nav:hover {
+  background: var(--admin-primary-light) !important;
+  color: #fff !important;
+}
+
+.sidebar-nav .nav-link.active-nav:hover i {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Chevron */
+.sidebar-nav .nav-link .bi-chevron-down {
+  font-size: 12px !important;
+  opacity: 0.5;
+}
+
+/* Sub-nav items */
+.sidebar-nav .nav-content {
+  padding: 4px 0 4px 0 !important;
+  margin: 0 !important;
+}
+
+.sidebar-nav .nav-content a {
+  font-size: 13px !important;
+  font-weight: 450 !important;
+  color: var(--admin-text-muted) !important;
+  padding: 7px 12px 7px 42px !important;
+  border-radius: 6px !important;
+  transition: var(--admin-transition) !important;
+}
+
+.sidebar-nav .nav-content a i {
+  display: none !important;
+}
+
+.sidebar-nav .nav-content a:hover {
+  color: var(--admin-primary) !important;
+  background: var(--admin-primary-lighter) !important;
+}
+
+.sidebar-nav .nav-content a.active {
+  color: var(--admin-primary) !important;
+  background: var(--admin-primary-lighter) !important;
+  font-weight: 600 !important;
+}
+
+/* ----------------------------------------------------------------
+   Cards (global)
+---------------------------------------------------------------- */
+.card {
+  border: 1px solid var(--admin-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--admin-card-shadow) !important;
+  margin-bottom: 20px !important;
+  overflow: visible !important;
+}
+
+.card-header,
+.card-footer {
+  background: #fff !important;
+  border-color: var(--admin-border) !important;
+}
+
+.card-title {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--admin-text) !important;
+  padding: 16px 0 12px 0 !important;
+}
+
+.card-body {
+  font-size: 13px !important;
+  padding: 16px 20px !important;
+}
+
+/* ----------------------------------------------------------------
+   Page title / Breadcrumb
+---------------------------------------------------------------- */
+.pagetitle h1 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: var(--admin-text) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.breadcrumb {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+}
+
+/* ----------------------------------------------------------------
+   Tables
+---------------------------------------------------------------- */
+table.dataTable thead th,
+table.dataTable thead td {
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-muted) !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--admin-border) !important;
+  padding: 10px 8px !important;
+  background: var(--admin-bg) !important;
+}
+
+table.dataTable tbody td {
+  font-size: 13px !important;
+  padding: 10px 8px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: var(--admin-text) !important;
+}
+
+table.dataTable tbody tr:hover {
+  background: #fafbfe !important;
+}
+
+/* ----------------------------------------------------------------
+   Buttons
+---------------------------------------------------------------- */
+.btn-primary {
+  background: var(--admin-primary) !important;
+  border-color: var(--admin-primary) !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+  transition: var(--admin-transition);
+}
+
+.btn-primary:hover {
+  background: var(--admin-primary-light) !important;
+  border-color: var(--admin-primary-light) !important;
+}
+
+/* ----------------------------------------------------------------
+   Main content area
+---------------------------------------------------------------- */
+#main {
+  padding: 24px 24px 24px 24px !important;
+  margin-top: var(--admin-header-height) !important;
+}
+
+/* ----------------------------------------------------------------
+   Footer
+---------------------------------------------------------------- */
+#footer {
+  padding: 16px 24px !important;
+  font-size: 12px !important;
+  color: var(--admin-text-muted) !important;
+  border-top: 1px solid var(--admin-border);
+  background: transparent !important;
+}
+
+#footer .copyright {
+  text-align: center;
+}
+
+#footer .credits {
+  text-align: center;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+#footer .credits a {
+  color: var(--admin-accent);
+}
+
+/* ----------------------------------------------------------------
+   Back to top
+---------------------------------------------------------------- */
+.back-to-top {
+  background: var(--admin-primary) !important;
+  border-radius: 8px !important;
+}
+
+/* ----------------------------------------------------------------
+   Dashboard info cards
+---------------------------------------------------------------- */
+.dashboard .info-card h6 {
+  color: var(--admin-text) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.dashboard .card-icon {
+  border-radius: 12px !important;
+}
+
+.dashboard .sales-card .card-icon {
+  color: var(--admin-accent) !important;
+  background: var(--admin-primary-lighter) !important;
+}
+
+.dashboard .revenue-card .card-icon {
+  color: #10b981 !important;
+  background: #ecfdf5 !important;
+}
+
+.dashboard .customers-card .card-icon {
+  color: #f59e0b !important;
+  background: #fffbeb !important;
+}
+
+/* ----------------------------------------------------------------
+   Toast overrides
+---------------------------------------------------------------- */
+.toast.toast-success {
+  background: #059669 !important;
+  border-radius: 8px !important;
+}
+
+.toast.toast-error {
+  background: #dc2626 !important;
+  border-radius: 8px !important;
+}
+
+/* ----------------------------------------------------------------
+   Form controls
+---------------------------------------------------------------- */
+.form-control {
+  border-radius: 8px !important;
+  border: 1px solid var(--admin-border) !important;
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+  transition: var(--admin-transition);
+}
+
+.form-control:focus {
+  border-color: var(--admin-accent) !important;
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1) !important;
+}
+
+.form-select {
+  border-radius: 8px !important;
+  border: 1px solid var(--admin-border) !important;
+  font-size: 13px !important;
+}
+
+/* ----------------------------------------------------------------
+   Badge / Pill refinements
+---------------------------------------------------------------- */
+.badge {
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  border-radius: 6px !important;
+}
+
+/* ----------------------------------------------------------------
+   Scrollbar (global)
+---------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ----------------------------------------------------------------
+   Responsive tweaks
+---------------------------------------------------------------- */
+@media (max-width: 1199px) {
+  .sidebar {
+    width: var(--admin-sidebar-width) !important;
+    left: calc(var(--admin-sidebar-width) * -1) !important;
+  }
+
+  .toggle-sidebar .sidebar {
+    left: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #main {
+    padding: 16px !important;
+  }
+
+  .card-body {
+    padding: 12px 14px !important;
+  }
+}

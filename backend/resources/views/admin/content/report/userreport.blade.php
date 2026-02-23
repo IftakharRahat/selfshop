@@ -2,95 +2,104 @@
 
 @section('maincontent')
     <div class="px-4 pt-4 container-fluid">
-
-        <div class="pagetitle row">
-            <div class="col-6">
-                <h1><a href="{{url('/admindashboard')}}">Dashboard</a></h1>
-                <nav>
-                    <ol class="breadcrumb">
+        <div class="pagetitle mb-3">
+            <nav>
+                <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
-                    <li class="breadcrumb-item active">userreport</li>
-                    </ol>
-                </nav>
+                    <li class="breadcrumb-item"><a href="#">Reports</a></li>
+                    <li class="breadcrumb-item active">User Report</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">User Report</h6>
+                <div class="admin-card-actions">
+                    <button class="btn btn-sm btn-outline-primary btn-print-courieruserreport"><i class="bi bi-printer me-1"></i> Print</button>
+                </div>
             </div>
-        </div><!-- End Page Title -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="mb-2 row">
-                            <div class="col-lg-12">
-                                <div class="form-row">
-                                    <div class="p-2 form-group col-md-2">
-                                        <label for="inputCity" class="col-form-label">Start Date</label>
-                                        <input type="text" class="form-control datepicker" id="startDate"  value="<?php echo date('Y-m-d')?>" placeholder="Select Date">
-                                    </div>
-                                    <div class="p-2 form-group col-md-2">
-                                        <label for="inputCity" class="col-form-label">End Date</label>
-                                        <input type="text" class="form-control datepicker" id="endDate" value="<?php echo date('Y-m-d')?>" placeholder="Select Date">
-                                    </div>
-                                    <div class="p-2 form-group col-md-3">
-                                        <label for="inputState" class="col-form-label">Select User</label>
-                                        <select id="userID" class="form-control"></select>
-                                    </div>
-                                    <div class="pt-2 form-group col-md-1">
-                                        <label for="inputZip" class="col-form-label" style="opacity: 0">Print</label>
-                                        <button class="btn btn-info btn-print-courieruserreport"><i class="fas fa-print"></i> Print</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="table-responsive">
-                            <table id="webreportTable" class="table mb-0 table-centered table-nowrap" style="width: 100%">
-                                <thead class="thead-light" >
-                                <tr>
-                                    <th>Date</th>
-                                    <th>User Name</th>
-                                    <th>Total Order</th>
-                                    <th>Pending</th>
-                                    <th>Canceled</th>
-                                    <th>Confirmed</th>
-                                    <th>Invoiced</th>
-                                    <th>On Delivery</th>
-                                    <th>Delivered</th>
-                                    <th>Return</th>
-                                    <th>Paid Amount</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-
-                                </tbody>
-                                <tfoot>
-                                <tr>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-
-                                </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+            <div class="admin-card-body">
+                {{-- Date preset toolbar --}}
+                <div class="dash-toolbar mb-3">
+                    <div class="dash-presets" id="reportPresets">
+                        <button class="dash-preset-btn active" data-range="today" onclick="reportDatePreset('today',this)">Today</button>
+                        <button class="dash-preset-btn" data-range="week" onclick="reportDatePreset('week',this)">This Week</button>
+                        <button class="dash-preset-btn" data-range="month" onclick="reportDatePreset('month',this)">This Month</button>
+                        <button class="dash-preset-btn" data-range="year" onclick="reportDatePreset('year',this)">This Year</button>
+                        <button class="dash-preset-btn" data-range="all" onclick="reportDatePreset('all',this)">All Time</button>
                     </div>
+                    <div class="dash-filter-group">
+                        <label>From</label>
+                        <input type="date" class="form-control datepicker" id="startDate" value="<?php echo date('Y-m-d')?>" placeholder="Select Date">
+                    </div>
+                    <div class="dash-filter-group">
+                        <label>To</label>
+                        <input type="date" class="form-control datepicker" id="endDate" value="<?php echo date('Y-m-d')?>" placeholder="Select Date">
+                    </div>
+                </div>
+                {{-- Additional filters --}}
+                <div class="row g-2 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Select User</label>
+                        <select id="userID" class="form-select"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-card-body p-0">
+                <div class="table-responsive">
+                    <table id="webreportTable" class="table admin-table mb-0" style="width: 100%">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User Name</th>
+                            <th>Total Order</th>
+                            <th>Pending</th>
+                            <th>Canceled</th>
+                            <th>Confirmed</th>
+                            <th>Invoiced</th>
+                            <th>On Delivery</th>
+                            <th>Delivered</th>
+                            <th>Return</th>
+                            <th>Paid Amount</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                        <tr>
+                            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                        </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        function reportDatePreset(range, btn) {
+            var today = new Date();
+            var start, end;
+            end = today.toISOString().slice(0, 10);
+            switch (range) {
+                case 'today': start = end; break;
+                case 'week': var d = new Date(today); d.setDate(d.getDate() - d.getDay()); start = d.toISOString().slice(0, 10); break;
+                case 'month': start = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-01'; break;
+                case 'year': start = today.getFullYear() + '-01-01'; break;
+                case 'all': start = '2020-01-01'; break;
+                default: start = end;
+            }
+            $('#startDate').val(start);
+            $('#endDate').val(end);
+            if ($('#startDate')[0]._flatpickr) $('#startDate')[0]._flatpickr.setDate(start, false);
+            if ($('#endDate')[0]._flatpickr) $('#endDate')[0]._flatpickr.setDate(end, false);
+            $('#reportPresets .dash-preset-btn').removeClass('active');
+            if (btn) $(btn).addClass('active');
+            if (typeof table !== 'undefined') table.ajax.reload();
+        }
 
         $(document).ready(function() {
-            //token
             var token = $("input[name='_token']").val();
-            //date picker
             $(".datepicker").flatpickr();
 
             var table = $("#webreportTable").DataTable({
@@ -206,31 +215,7 @@
 
     </script>
 
-
-
 <style>
-    .card-box {
-    background-color: #fff;
-    padding: 1.5rem;
-    -webkit-box-shadow: 0 1px 4px 0 rgb(0 0 0 / 10%);
-    box-shadow: 0 1px 4px 0 rgb(0 0 0 / 10%);
-    margin-bottom: 24px;
-    border-radius: 0.25rem;
-}
-a {
-    text-decoration: none;
-}
-
-
-.form-row {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    -ms-flex-wrap: wrap;
-    flex-wrap: wrap;
-    margin-right: -5px;
-    margin-left: -5px;
-}
 .select2-container--default .select2-selection--single {
     display: block;
     width: 100%;

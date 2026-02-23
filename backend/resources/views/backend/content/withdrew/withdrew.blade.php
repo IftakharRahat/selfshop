@@ -2,32 +2,24 @@
 
 @section('maincontent')
 
-@section('subcss')
-    <link rel="stylesheet" type="text/css"
-        href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.0-alpha1/css/bootstrap.min.css">
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/jquery-datatables-checkboxes@1.2.13/css/dataTables.checkboxes.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-@endsection
+
+
 <style>
     #to_account_number::placeholder {
         color: white;
         opacity: 1; /* Firefox */
     }
 </style>
-<div class="px-4 pt-4 container-fluid">
+<div class="container-fluid pt-4 px-4">
     <div class="row">
         <div class="col-sm-12 col-md-12 col-xl-12">
     {{-- edit payment icon --}}
     <div class="modal fade" id="editmainFrd" tabindex="-1">
         <div class="modal-dialog">
-            <div class="rounded modal-content bg-secondary h-100">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" style="color: red;">Edit Withdrew Request </h5>
-                    <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
-                        aria-label="Close" style="background-color: red !important;color: white !important;opacity: 1;"></button>
+                    <h5 class="modal-title" style="font-weight: 600;">Edit Withdrew Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
 
@@ -58,7 +50,7 @@
                                 </div>
                                 <input type="text" name="withdrew_id" id="withdrew_id" hidden>
                                 <div class="mt-3 form-group">
-                                    <label for="" class="m-0">একাউন্ট নাম্বার মিলিয়ে নিন</label>
+                                    <label for="" class="m-0">একাউন্ট নাম্বার মিলিয়ে নিন</label>
                                     <div class="d-flex justify-content-between">
                                         <button id="account" style="padding: 0px 10px;border: 2px solid #FAE2FE !important;font-weight: bold;margin-left: -8px;border-radius: 6px;background: #FAE2FE;margin-right:30px;"></button>
                                         <input type="text" style="background: #E2136E !important;border:none;border-radius: 6px;color: white;" class="form-control" name="to_account_number" id="to_account_number" placeholder="এখানে নম্বর লিখুন" required>
@@ -67,7 +59,7 @@
                                 <br>
                                 <div class="form-group">
                                     <label for=""> Choose Status</label>
-                                    <select name="status" id="status" class="form-control">
+                                    <select name="status" id="status" class="form-select">
                                         <option value="Pending">Pending</option>
                                         <option value="Paid">Paid</option>
                                         <option value="Cancel">Cancel</option>
@@ -97,28 +89,32 @@
         <div class="row">
             <div class="col-lg-12">
 
-                <div class="card">
-                    <div class="pt-4 card-body" style="text-align: center;">
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title">Withdrew List Of User</h6>
+                        <div class="admin-card-actions">
+                            <div class="buttonsec d-flex gap-1 flex-wrap">
+                                <a href="{{ url('withdrew/All') }}" class="btn btn-sm" style="background:#2A74B8;color:#fff;">All</a>
+                                <a href="{{ url('withdrew/Pending') }}" class="btn btn-sm" style="background:#EB762A;color:#fff;">Pending</a>
+                                <a href="{{ url('withdrew/Paid') }}" class="btn btn-sm" style="background:#14BF7D;color:#fff;">Paid</a>
+                                <a href="{{ url('withdrew/Cancel') }}" class="btn btn-sm" style="background:#613EEA;color:#fff;">Cancel</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-card-body p-0">
                         @if (\Session::has('success'))
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
                                 <i class="bi bi-check-circle me-1"></i>
                                 {{ \Session::get('success') }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
                             </div>
                         @endif
-                        <h4>Withdrew List Of User</h4>
-                        <div class="buttonsec">
-                            <a href="{{ url('withdrew/All') }}" class="text-white btn btn-sm" style="background:#2A74B8;border:1px solid #2A74B8;">All</a>
-                            <a href="{{ url('withdrew/Pending') }}" class="text-white btn btn-sm" style="background:#EB762A;border:1px solid #EB762A;">Pending</a>
-                            <a href="{{ url('withdrew/Paid') }}" class="text-white btn btn-sm" style="background:#14BF7D;border:1px solid #14BF7D;">Paid</a>
-                            <a href="{{ url('withdrew/Cancel') }}" class="text-white btn btn-sm" style="background:#613EEA;border:1px solid #613EEA;">Cancel</a>
-                        </div>
                         <!-- Table with stripped rows -->
                         <div class="table-responsive">
-                            <table class="table mb-0 table-centered table-borderless table-hover" id="productrqinfo"
+                            <table class="table admin-table mb-0 table-centered table-borderless table-hover" id="productrqinfo"
                                 width="100%">
-                                <thead class="thead-light">
+                                <thead>
                                     <tr>
                                         <th></th>
                                         <th>User</th>
@@ -133,7 +129,6 @@
                             </table>
                         </div>
                         <!-- End Table with stripped rows -->
-
                     </div>
                 </div>
 
@@ -159,7 +154,7 @@
         overflow: hidden;
     }
 
-    .nav-icons-container {
+    .bottom-navbar .nav-icons-container {
         display: flex;
         justify-content: space-around;
         align-items: center;
@@ -167,7 +162,7 @@
         padding: 0 10px;
     }
 
-    .nav-item {
+    .bottom-navbar .nav-item {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -180,11 +175,12 @@
         flex: 1;
     }
 
-    .nav-item:hover, .nav-item.active {
+    .bottom-navbar .nav-item:hover,
+    .bottom-navbar .nav-item.active {
         background: rgb(230, 0, 76);
     }
 
-    .nav-icon-container {
+    .bottom-navbar .nav-icon-container {
         position: relative;
         width: 28px;
         height: 28px;
@@ -194,7 +190,7 @@
         justify-content: center;
     }
 
-    .nav-icon {
+    .bottom-navbar .nav-icon {
         font-size: 20px;
         color: #8E8E93;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -202,7 +198,7 @@
         z-index: 2;
     }
 
-    .nav-icon-bg {
+    .bottom-navbar .nav-icon-bg {
         position: absolute;
         top: 50%;
         left: 50%;
@@ -215,14 +211,14 @@
         z-index: 1;
     }
 
-    .nav-item:hover .nav-icon-bg,
-    .nav-item.active .nav-icon-bg {
+    .bottom-navbar .nav-item:hover .nav-icon-bg,
+    .bottom-navbar .nav-item.active .nav-icon-bg {
         background: rgba(255, 255, 255, 0.1);
         width: 40px;
         height: 40px;
     }
 
-    .nav-label {
+    .bottom-navbar .nav-label {
         color: #8E8E93;
         font-size: 10px;
         font-weight: 500;
@@ -232,21 +228,21 @@
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
     }
 
-    .nav-item:hover .nav-icon,
-    .nav-item.active .nav-icon {
+    .bottom-navbar .nav-item:hover .nav-icon,
+    .bottom-navbar .nav-item.active .nav-icon {
         color: #FFFFFF;
         transform: scale(1.1);
     }
 
-    .nav-item:hover .nav-label,
-    .nav-item.active .nav-label {
+    .bottom-navbar .nav-item:hover .nav-label,
+    .bottom-navbar .nav-item.active .nav-label {
         color: #FFFFFF;
         opacity: 1;
         transform: translateY(-1px);
     }
 
     /* Special cart button styling (iPhone-like floating) */
-    .cart-nav-item {
+    .bottom-navbar .cart-nav-item {
         margin-top: -25px;
         background: linear-gradient(135deg, #E5005F 0%, #5856D6 100%);
         border-radius: 50%;
@@ -262,19 +258,19 @@
         justify-content: center;
     }
 
-    .cart-nav-item .nav-icon-container {
+    .bottom-navbar .cart-nav-item .nav-icon-container {
         margin-bottom: 0;
         width: 24px;
         height: 24px;
     }
 
-    .cart-nav-item .nav-icon {
+    .bottom-navbar .cart-nav-item .nav-icon {
         font-size: 18px;
         color: #FFFFFF;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     }
 
-    .cart-nav-item .nav-label {
+    .bottom-navbar .cart-nav-item .nav-label {
         position: absolute;
         bottom: -20px;
         font-size: 9px;
@@ -283,12 +279,12 @@
         opacity: 0.9;
     }
 
-    .cart-nav-item:hover .nav-label {
+    .bottom-navbar .cart-nav-item:hover .nav-label {
         color: #FFFFFF;
     }
 
     /* Cart badge (iOS style) */
-    .cart-badge {
+    .bottom-navbar .cart-badge {
         position: absolute;
         top: -6px;
         right: -6px;
@@ -309,7 +305,7 @@
     }
 
     /* Active state indicators */
-    .nav-item.active::before {
+    .bottom-navbar .nav-item.active::before {
         content: '';
         position: absolute;
         top: 4px;
@@ -321,34 +317,34 @@
         transition: opacity 0.3s ease;
     }
 
-    .nav-item.active::before {
+    .bottom-navbar .nav-item.active::before {
         opacity: 1;
     }
 
     /* Home icon active state */
-    .nav-item.active[href*="/"] .nav-icon {
+    .bottom-navbar .nav-item.active[href*="/"] .nav-icon {
         color: #E5005F;
     }
 
     /* Dashboard icon active state */
-    .nav-item.active[href*="dashboard"] .nav-icon {
+    .bottom-navbar .nav-item.active[href*="dashboard"] .nav-icon {
         color: #34C759;
     }
 
     /* Profile/Login icon active state */
-    .nav-item.active[href*="login"] .nav-icon,
-    .nav-item.active[onclick*="profile"] .nav-icon {
+    .bottom-navbar .nav-item.active[href*="login"] .nav-icon,
+    .bottom-navbar .nav-item.active[onclick*="profile"] .nav-icon {
         color: #FF9500;
     }
 
     /* Menu icon active state */
-    .nav-item[onclick*="openNav"]:hover .nav-icon,
-    .nav-item[onclick*="openNav"]:active .nav-icon {
+    .bottom-navbar .nav-item[onclick*="openNav"]:hover .nav-icon,
+    .bottom-navbar .nav-item[onclick*="openNav"]:active .nav-icon {
         color: #AF52DE;
     }
 
     /* Touch feedback */
-    .nav-item:active .nav-icon-container {
+    .bottom-navbar .nav-item:active .nav-icon-container {
         transform: scale(0.95);
     }
 
@@ -376,20 +372,20 @@
             padding: 10px 0 8px 0;
         }
         
-        .nav-item {
+        .bottom-navbar .nav-item {
             min-width: 55px;
             padding: 6px 8px;
         }
         
-        .nav-icon {
+        .bottom-navbar .nav-icon {
             font-size: 18px;
         }
         
-        .nav-label {
+        .bottom-navbar .nav-label {
             font-size: 9px;
         }
         
-        .cart-nav-item {
+        .bottom-navbar .cart-nav-item {
             width: 60px;
             height: 60px;
             padding: 16px;
@@ -471,7 +467,7 @@
 <script>
     // iPhone-style touch feedback
     document.addEventListener('DOMContentLoaded', function() {
-        const navItems = document.querySelectorAll('.nav-item');
+        const navItems = document.querySelectorAll('.bottom-navbar .nav-item');
         
         navItems.forEach(item => {
             // Touch start effect

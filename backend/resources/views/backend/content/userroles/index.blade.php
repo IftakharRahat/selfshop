@@ -2,85 +2,75 @@
 
 @section('maincontent')
     @section('title')
-        {{ env('APP_NAME') }}- Roles
+        {{ env('APP_NAME') }}- User Roles
     @endsection
-<style>
-    div#roleinfo_length {
-        color: red;
-    }
-    div#roleinfo_filter {
-        color: red;
-    }
-    div#roleinfo_info {
-        color: red;
-    }
-</style>
 
 <div class="container-fluid pt-4 px-4">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between"  style="width: 50%;float:left;">
-                    <h6 class="mb-0">Roles List</h6>
-                </div>
-                <div class="" style="width: 50%;float:left;">
-                    <a href="{{ route('admin.userroles.create') }}" class="btn btn-dark" style="color:red;float: right"> + Create Roles</a>
-                </div>
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">User Roles</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">User Roles List</h6>
+            <div class="admin-card-actions">
+                <a href="{{ route('admin.userroles.create') }}" class="btn btn-sm" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">
+                    <i class="bi bi-plus-lg me-1"></i> Create Role
+                </a>
             </div>
         </div>
-
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="roleinfo" width="100%"  style="text-align: center;">
-                        <thead class="thead-light">
+        <div class="admin-card-body p-0">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0" id="roleinfo" width="100%">
+                    <thead>
+                        <tr>
+                            <th>SL</th>
+                            <th>Role</th>
+                            <th>Guard</th>
+                            <th>Permission</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($roles as $role)
                             <tr>
-                                <th>SL</th>
-                                <th>Role</th>
-                                <th>Guard</th>
-                                <th>Permission</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($roles as $role)
-                                <tr class="">
-                                    <td>{{ $role->id }}</td>
-                                    <td>{{ $role->name }}</td>
-                                    <td>
-                                        <span class="badge badge-info mr-2" style="    background: green;">
-                                        {{  $role->guard_name }}
+                                <td>{{ $role->id }}</td>
+                                <td><strong>{{ $role->name }}</strong></td>
+                                <td>
+                                    <span class="badge" style="background: var(--admin-primary-lighter, #eef2ff); color: var(--admin-primary, #2d2a5d); font-weight: 500;">
+                                        {{ $role->guard_name }}
+                                    </span>
+                                </td>
+                                <td style="max-width: 500px;">
+                                    @forelse ($role->permissions as $perm)
+                                        <span class="badge mb-1" style="background: var(--admin-primary-lighter, #eef2ff); color: var(--admin-primary, #2d2a5d); font-size: 11px;">
+                                            {{ $perm->name }}
                                         </span>
-                                    </td>
-                                    <td style="width:600px">
-                                        @forelse ($role->permissions as $perm)
-                                            <span class="badge badge-info mr-2" style="    background: #790707;">
-                                                {{  $perm->name }}
-                                            </span>
-                                        @empty
-
-                                        @endforelse
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('admin.userroles.edit',$role->id) }}" type="button" class="btn btn-primary btn-sm mt-2"><i class="bi bi-pencil-square"></i></a>
-                                        <a href="{{ route('admin.userroles.destroy',$role->id) }}" onclick="event.preventDefault(); document.getElementById('delete-role-{{ $role->id }}').submit(); " class="btn btn-primary btn-sm mt-2"><i class="bi bi-archive"></i></a>
-
-                                        <form id="delete-role-{{ $role->id }}" action="{{ route('admin.userroles.destroy',$role->id) }}" method="post">
-                                            @method('delete')
-                                            @csrf
-                                        </form>
-                                    </td>
-                                </tr>
-                            @empty
-
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                    @empty
+                                        <span class="text-muted" style="font-size: 12px;">No permissions</span>
+                                    @endforelse
+                                </td>
+                                <td>
+                                    <a href="{{ route('admin.userroles.edit',$role->id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a>
+                                    <a href="{{ route('admin.userroles.destroy',$role->id) }}" onclick="event.preventDefault(); document.getElementById('delete-role-{{ $role->id }}').submit(); " class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                    <form id="delete-role-{{ $role->id }}" action="{{ route('admin.userroles.destroy',$role->id) }}" method="post">
+                                        @method('delete')
+                                        @csrf
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="text-center text-muted py-4">No roles found</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
-
-
     </div>
 </div>
 
