@@ -181,15 +181,15 @@ export default function VendorInventoryPage() {
                     ) : (
                         <>
                             <div className="overflow-x-auto">
-                                <table className="min-w-full text-sm">
-                                    <thead className="bg-gray-50 text-gray-600">
+                                <table className="w-full table-fixed text-sm border-collapse">
+                                    <thead className="bg-gray-50 text-gray-600 text-[10px] sm:text-xs">
                                         <tr>
-                                            <th className="px-3 py-2 text-left font-medium">Product</th>
-                                            <th className="px-3 py-2 text-left font-medium">SKU</th>
-                                            <th className="px-3 py-2 text-right font-medium">Current Qty</th>
-                                            <th className="px-3 py-2 text-right font-medium">Low Stock</th>
-                                            <th className="px-3 py-2 text-center font-medium">Status</th>
-                                            <th className="px-3 py-2 text-center font-medium">Actions</th>
+                                            <th className="px-1 sm:px-3 py-2 text-left font-medium w-[20%] truncate">Product</th>
+                                            <th className="px-1 sm:px-3 py-2 text-left font-medium w-[17%] truncate">SKU</th>
+                                            <th className="px-1 sm:px-3 py-2 text-right font-medium w-[15%] truncate">Qty</th>
+                                            <th className="px-1 sm:px-3 py-2 text-right font-medium w-[15%] truncate">Low</th>
+                                            <th className="px-1 sm:px-3 py-2 text-center font-medium w-[16%] truncate">Status</th>
+                                            <th className="px-1 sm:px-3 py-2 text-center font-medium w-[17%] truncate">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -203,41 +203,42 @@ export default function VendorInventoryPage() {
                                             products.map((p: VendorProduct) => {
                                                 const badge = getStockBadge(p.qty ?? 0, p.low_stock ?? 0);
                                                 return (
-                                                    <tr key={p.id} className="hover:bg-gray-50">
-                                                        <td className="px-3 py-2 align-middle">
+                                                    <tr key={p.id} className="hover:bg-gray-50 text-[10px] sm:text-xs">
+                                                        <td className="px-1 sm:px-3 py-2 align-middle truncate overflow-hidden">
                                                             <Link
                                                                 href={`/vendor/inventory/${p.id}`}
                                                                 className="text-gray-900 hover:text-[#2d2a5d] font-medium"
+                                                                title={p.ProductName}
                                                             >
                                                                 {p.ProductName}
                                                             </Link>
                                                         </td>
-                                                        <td className="px-3 py-2 align-middle text-gray-600 font-mono text-xs">
+                                                        <td className="px-1 sm:px-3 py-2 align-middle text-gray-600 font-mono text-[9px] sm:text-xs truncate overflow-hidden" title={p.ProductSku}>
                                                             {p.ProductSku || "—"}
                                                         </td>
-                                                        <td className="px-3 py-2 align-middle text-right font-semibold text-gray-900">
+                                                        <td className="px-1 sm:px-3 py-2 align-middle text-right font-semibold text-gray-900 truncate overflow-hidden">
                                                             {p.qty ?? 0}
                                                         </td>
-                                                        <td className="px-3 py-2 align-middle text-right text-gray-600">
+                                                        <td className="px-1 sm:px-3 py-2 align-middle text-right text-gray-600 truncate overflow-hidden">
                                                             {p.low_stock ?? 0}
                                                         </td>
-                                                        <td className="px-3 py-2 align-middle text-center">
-                                                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${badge.cls}`}>
+                                                        <td className="px-1 sm:px-3 py-2 align-middle text-center truncate overflow-hidden">
+                                                            <span className={`inline-block px-1 py-0.5 rounded text-[9px] sm:text-xs font-medium truncate w-full ${badge.cls}`}>
                                                                 {badge.label}
                                                             </span>
                                                         </td>
-                                                        <td className="px-3 py-2 align-middle text-center">
-                                                            <div className="inline-flex items-center gap-2">
+                                                        <td className="px-1 sm:px-3 py-2 align-middle text-center">
+                                                            <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
                                                                 <Link
                                                                     href={`/vendor/inventory/${p.id}`}
-                                                                    className="text-xs font-medium text-blue-600 hover:underline"
+                                                                    className="text-[9px] sm:text-xs font-medium text-blue-600 hover:underline"
                                                                 >
                                                                     Details
                                                                 </Link>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setAdjustModal({ open: true, productId: p.id, productName: p.ProductName })}
-                                                                    className="text-xs font-medium text-indigo-600 hover:underline"
+                                                                    className="text-[9px] sm:text-xs font-medium text-indigo-600 hover:underline"
                                                                 >
                                                                     Adjust
                                                                 </button>
