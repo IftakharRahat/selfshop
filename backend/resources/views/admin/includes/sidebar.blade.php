@@ -4,20 +4,24 @@
     @endphp
     <ul class="sidebar-nav" id="sidebar-nav">
 
+        {{-- ═══ MAIN ═══ --}}
+        <li class="nav-heading">Main</li>
         <li class="nav-item">
-            <a class="nav-link " href="{{ url('admin/dashboard') }}">
-                <i class="bi bi-grid"></i>
+            <a class="nav-link {{ request()->is('admin/dashboard') ? 'active-nav' : 'collapsed' }}" href="{{ url('admin/dashboard') }}">
+                <i class="bi bi-grid-1x2"></i>
                 <span>Dashboard</span>
             </a>
-        </li><!-- End Dashboard Nav -->
+        </li>
+
         @if ($admin->hasrole('Executive'))
         @else
+            {{-- ═══ STORE ═══ --}}
+            <li class="nav-heading">Store</li>
             <li class="nav-item">
-                <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
-                    <i class="bi bi-box"></i><span>Store</span><i class="bi bi-chevron-down ms-auto"></i>
+                <a class="nav-link collapsed" data-bs-target="#store-nav" data-bs-toggle="collapse" href="#">
+                    <i class="bi bi-box-seam"></i><span>Inventory</span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-
+                <ul id="store-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
                     <li>
                         <a href="{{ route('purchases.index') }}">
                             <span>Purchase</span>
@@ -33,6 +37,13 @@
                             <span>Supplier</span>
                         </a>
                     </li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" data-bs-target="#finance-nav" data-bs-toggle="collapse" href="#">
+                    <i class="bi bi-wallet2"></i><span>Finance</span><i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <ul id="finance-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
                     <li>
                         <a href="{{ route('payments.index') }}">
                             <span>Payment</span>
@@ -49,13 +60,15 @@
                         </a>
                     </li>
                 </ul>
-            </li><!-- End Components Nav -->
+            </li>
 
+            {{-- ═══ SHIPPING ═══ --}}
+            <li class="nav-heading">Shipping</li>
             <li class="nav-item">
-                <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
+                <a class="nav-link collapsed" data-bs-target="#courier-nav" data-bs-toggle="collapse" href="#">
                     <i class="bi bi-truck"></i><span>Courier</span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul id="forms-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <ul id="courier-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
                     <li>
                         <a href="{{ route('couriers.index') }}">
                             <span>Courier</span>
@@ -72,53 +85,56 @@
                         </a>
                     </li>
                 </ul>
-            </li><!-- End Forms Nav -->
+            </li>
         @endif
 
+        {{-- ═══ ORDERS ═══ --}}
+        <li class="nav-heading">Orders</li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ url('admin_order/Pending') }}">
-                <i class="bi bi-cart"></i>
+            <a class="nav-link {{ request()->is('admin_order/Pending') ? 'active-nav' : 'collapsed' }}" href="{{ url('admin_order/Pending') }}">
+                <i class="bi bi-clock"></i>
                 <span>Pending</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ url('admin_order/On Delivery') }}">
-                <i class="bi bi-file-richtext"></i>
+            <a class="nav-link {{ request()->is('admin_order/On Delivery') ? 'active-nav' : 'collapsed' }}" href="{{ url('admin_order/On Delivery') }}">
+                <i class="bi bi-send"></i>
                 <span>On Delivery</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ url('admin_order/Delivered') }}">
-                <i class="bi bi-truck-flatbed"></i>
+            <a class="nav-link {{ request()->is('admin_order/Delivered') ? 'active-nav' : 'collapsed' }}" href="{{ url('admin_order/Delivered') }}">
+                <i class="bi bi-check2-circle"></i>
                 <span>Delivered</span>
             </a>
         </li>
+
+        {{-- ═══ SUPPORT ═══ --}}
+        <li class="nav-heading">Support</li>
         @if ($admin->hasRole('manager') || $admin->hasrole('Executive'))
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ url('order/complain') }}">
-                    <i class="bi bi-truck-flatbed"></i>
+                    <i class="bi bi-chat-dots"></i>
                     <span>Complain</span>
                 </a>
             </li>
-        @else
         @endif
-
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ url('complain/Pending') }}">
-                <i class="bi bi-truck-flatbed"></i>
+            <a class="nav-link {{ request()->is('complain/*') ? 'active-nav' : 'collapsed' }}" href="{{ url('complain/Pending') }}">
+                <i class="bi bi-inbox"></i>
                 <span>Complain Box</span>
             </a>
         </li>
 
-
-
         @if ($admin->hasRole('manager') || $admin->hasrole('Executive'))
         @else
+            {{-- ═══ REPORTS ═══ --}}
+            <li class="nav-heading">Reports</li>
             <li class="nav-item">
-                <a class="nav-link collapsed" data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
-                    <i class="bi bi-truck"></i><span>Report</span><i class="bi bi-chevron-down ms-auto"></i>
+                <a class="nav-link collapsed" data-bs-target="#report-nav" data-bs-toggle="collapse" href="#">
+                    <i class="bi bi-bar-chart-line"></i><span>Reports</span><i class="bi bi-chevron-down ms-auto"></i>
                 </a>
-                <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <ul id="report-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
                     <li>
                         <a href="{{ route('courieruserreport') }}">
                             <span>Courier User Report</span>
@@ -145,11 +161,8 @@
                         </a>
                     </li>
                 </ul>
-            </li><!-- End Tables Nav -->
-
-
+            </li>
         @endif
-
 
     </ul>
 

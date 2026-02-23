@@ -1,0 +1,574 @@
+/*=================================================================
+  Admin Modern Override
+  Loaded AFTER backend/css/style.css to modernize the admin layout
+  Design: Clean white sidebar, deep purple accents (#2d2a5d)
+=================================================================*/
+
+/* ----------------------------------------------------------------
+   CSS Custom Properties
+---------------------------------------------------------------- */
+:root {
+    --admin-primary: #2d2a5d;
+    --admin-primary-light: #3d3a7d;
+    --admin-primary-lighter: #eeedfa;
+    --admin-accent: #6c63ff;
+    --admin-bg: #f5f7fa;
+    --admin-sidebar-width: 250px;
+    --admin-header-height: 60px;
+    --admin-text: #1e293b;
+    --admin-text-muted: #64748b;
+    --admin-border: #e2e8f0;
+    --admin-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --admin-transition: 0.2s ease;
+}
+
+/* ----------------------------------------------------------------
+   Base / Body
+---------------------------------------------------------------- */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    background-color: var(--admin-bg) !important;
+    color: var(--admin-text) !important;
+    font-size: 0.875rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ----------------------------------------------------------------
+   Sidebar (override backend/css/style.css .sidebar)
+---------------------------------------------------------------- */
+.sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: var(--admin-sidebar-width) !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    background: #fff !important;
+    border-right: 1px solid var(--admin-border) !important;
+    z-index: 999 !important;
+    padding: 0 !important;
+    transition: 0.3s ease !important;
+    box-shadow: none !important;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--admin-border);
+    border-radius: 10px;
+}
+
+/* Sidebar Logo */
+.sidebar .sidebar-brand {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--admin-border);
+    min-height: var(--admin-header-height);
+}
+
+.sidebar .sidebar-brand img {
+    max-width: 140px;
+    height: auto;
+}
+
+/* Sidebar nav container */
+.sidebar .navbar {
+    padding: 12px 10px !important;
+    background: transparent !important;
+    align-items: flex-start !important;
+}
+
+.sidebar .navbar-nav {
+    width: 100% !important;
+}
+
+/* Section headings */
+.sidebar .nav-section-title {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--admin-text-muted);
+    font-weight: 600;
+    padding: 14px 14px 6px 14px;
+    margin: 0;
+}
+
+/* Nav links */
+.sidebar .navbar .navbar-nav .nav-link {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--admin-text) !important;
+    background: transparent !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    border-left: none !important;
+    margin-bottom: 1px !important;
+    transition: var(--admin-transition) !important;
+    position: relative;
+}
+
+.sidebar .navbar .navbar-nav .nav-link i {
+    width: auto !important;
+    height: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    font-size: 15px !important;
+    margin-right: 10px;
+    color: var(--admin-text-muted) !important;
+    width: 20px !important;
+}
+
+/* Nav link hover */
+.sidebar .navbar .navbar-nav .nav-link:hover,
+.sidebar .navbar .navbar-nav .nav-link:focus {
+    background: var(--admin-primary-lighter) !important;
+    color: var(--admin-primary) !important;
+}
+
+.sidebar .navbar .navbar-nav .nav-link:hover i,
+.sidebar .navbar .navbar-nav .nav-link:focus i {
+    background: transparent !important;
+    color: var(--admin-primary) !important;
+}
+
+/* Active nav link */
+.sidebar .navbar .navbar-nav .nav-link.active-nav {
+    background: var(--admin-primary) !important;
+    color: #fff !important;
+}
+
+.sidebar .navbar .navbar-nav .nav-link.active-nav i {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.sidebar .navbar .navbar-nav .nav-link.active-nav:hover {
+    background: var(--admin-primary-light) !important;
+}
+
+/* Dropdown toggle arrow */
+.sidebar .navbar .dropdown-toggle::after {
+    position: absolute !important;
+    top: 11px !important;
+    right: 12px !important;
+    border: none !important;
+    content: "\f078" !important;
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900 !important;
+    font-size: 10px !important;
+    color: var(--admin-text-muted) !important;
+    transition: 0.3s !important;
+}
+
+/* Dropdown items */
+.sidebar .navbar .dropdown-menu,
+.sidebar .navbar .bg-transparent {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 2px 0 2px 0 !important;
+    margin: 0 !important;
+}
+
+.sidebar .navbar .dropdown-item {
+    font-size: 13px !important;
+    font-weight: 450 !important;
+    color: var(--admin-text-muted) !important;
+    padding: 6px 14px 6px 40px !important;
+    border-radius: 6px !important;
+    transition: var(--admin-transition) !important;
+}
+
+.sidebar .navbar .dropdown-item:hover,
+.sidebar .navbar .dropdown-item.active,
+.sidebar .navbar .dropdown-item:focus {
+    background: var(--admin-primary-lighter) !important;
+    color: var(--admin-primary) !important;
+}
+
+/* Logout link */
+.sidebar .logout-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #ef4444 !important;
+    padding: 10px 14px !important;
+    border-radius: 8px !important;
+    text-transform: none !important;
+    text-align: left !important;
+}
+
+.sidebar .logout-link:hover {
+    background: #fef2f2 !important;
+}
+
+.sidebar .logout-link i {
+    margin-right: 6px;
+}
+
+/* ----------------------------------------------------------------
+   Content area (override backend/css/style.css .content)
+---------------------------------------------------------------- */
+.content {
+    margin-left: var(--admin-sidebar-width) !important;
+    min-height: 100vh !important;
+    background: var(--admin-bg) !important;
+    transition: 0.3s ease !important;
+}
+
+@media (min-width: 992px) {
+    .content {
+        width: calc(100% - var(--admin-sidebar-width)) !important;
+    }
+
+    .sidebar.open {
+        margin-left: calc(var(--admin-sidebar-width) * -1) !important;
+    }
+
+    .content.open {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .sidebar {
+        margin-left: calc(var(--admin-sidebar-width) * -1) !important;
+    }
+
+    .sidebar.open {
+        margin-left: 0 !important;
+    }
+
+    .content {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+}
+
+/* ----------------------------------------------------------------
+   Header / Top navbar
+---------------------------------------------------------------- */
+.content>.navbar:first-child,
+.container-fluid>.navbar:first-child {
+    background: #fff !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    box-shadow: none !important;
+    min-height: var(--admin-header-height);
+    padding: 0 20px !important;
+}
+
+.content>.navbar .navbar-brand img,
+.container-fluid>.navbar .navbar-brand img {
+    max-width: 130px;
+}
+
+/* Profile section in header */
+.content .navbar .profile h4,
+.container-fluid .navbar .profile h4 {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: var(--admin-text) !important;
+}
+
+.content .navbar .profile small,
+.container-fluid .navbar .profile small {
+    font-size: 12px !important;
+    color: var(--admin-text-muted) !important;
+}
+
+.content .navbar .profile img,
+.container-fluid .navbar .profile img {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 8px !important;
+    object-fit: cover;
+}
+
+/* Sidebar toggle button in header */
+.content .navbar .sidebar-toggler,
+.container-fluid .navbar .sidebar-toggler {
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--admin-bg) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    transition: var(--admin-transition);
+}
+
+.content .navbar .sidebar-toggler:hover,
+.container-fluid .navbar .sidebar-toggler:hover {
+    background: var(--admin-primary-lighter) !important;
+    border-color: var(--admin-primary-lighter) !important;
+}
+
+.content .navbar .sidebar-toggler i,
+.content .navbar .sidebar-toggler .toggle-sidebar-btn,
+.container-fluid .navbar .sidebar-toggler i,
+.container-fluid .navbar .sidebar-toggler .toggle-sidebar-btn {
+    font-size: 18px !important;
+    color: var(--admin-text) !important;
+    background: transparent !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+/* Header nav icons override */
+.content .navbar .navbar-nav .nav-link i {
+    width: 36px !important;
+    height: 36px !important;
+    background: var(--admin-bg) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+}
+
+/* ----------------------------------------------------------------
+   Cards
+---------------------------------------------------------------- */
+.card,
+.card-box {
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--admin-card-shadow) !important;
+    background: #fff !important;
+    overflow: visible !important;
+}
+
+.card-header,
+.card-footer {
+    background: #fff !important;
+    border-color: var(--admin-border) !important;
+}
+
+/* ----------------------------------------------------------------
+   Tables
+---------------------------------------------------------------- */
+table.dataTable thead th,
+table.dataTable thead td,
+.table thead th {
+    font-size: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid var(--admin-border) !important;
+    padding: 10px 8px !important;
+    background: var(--admin-bg) !important;
+}
+
+table.dataTable tbody td,
+.table tbody td {
+    font-size: 13px !important;
+    padding: 10px 8px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: var(--admin-text) !important;
+    vertical-align: middle;
+}
+
+table.dataTable tbody tr:hover,
+.table tbody tr:hover {
+    background: #fafbfe !important;
+}
+
+/* ----------------------------------------------------------------
+   Buttons
+---------------------------------------------------------------- */
+.btn-primary {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+.btn-primary:hover {
+    background: var(--admin-primary-light) !important;
+    border-color: var(--admin-primary-light) !important;
+}
+
+.btn-dark {
+    background: var(--admin-primary) !important;
+    border-color: var(--admin-primary) !important;
+    border-radius: 8px !important;
+}
+
+.btn-dark:hover {
+    background: var(--admin-primary-light) !important;
+    border-color: var(--admin-primary-light) !important;
+}
+
+/* ----------------------------------------------------------------
+   Form controls
+---------------------------------------------------------------- */
+.form-control {
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    transition: var(--admin-transition);
+    color: var(--admin-text) !important;
+    background: #fff !important;
+}
+
+.form-control:focus {
+    border-color: var(--admin-accent) !important;
+    box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1) !important;
+    background: #fff !important;
+}
+
+.form-select {
+    border-radius: 8px !important;
+    border: 1px solid var(--admin-border) !important;
+    font-size: 13px !important;
+    background: #fff !important;
+    color: var(--admin-text) !important;
+}
+
+/* ----------------------------------------------------------------
+   Labels
+---------------------------------------------------------------- */
+label {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--admin-text) !important;
+}
+
+/* ----------------------------------------------------------------
+   Headings
+---------------------------------------------------------------- */
+h1,
+.h1,
+h2,
+.h2,
+h3,
+.h3,
+h4,
+.h4,
+h5,
+.h5,
+h6,
+.h6 {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--admin-text) !important;
+}
+
+/* ----------------------------------------------------------------
+   Links
+---------------------------------------------------------------- */
+a {
+    color: var(--admin-text);
+    text-decoration: none;
+}
+
+/* ----------------------------------------------------------------
+   Badge
+---------------------------------------------------------------- */
+.badge {
+    font-weight: 500 !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+}
+
+/* ----------------------------------------------------------------
+   Toast
+---------------------------------------------------------------- */
+.toast-success {
+    background: #059669 !important;
+    border-radius: 8px !important;
+}
+
+.toast-error {
+    background: #dc2626 !important;
+    border-radius: 8px !important;
+}
+
+/* ----------------------------------------------------------------
+   Status colors fix
+---------------------------------------------------------------- */
+.bg-info {
+    background-color: var(--admin-primary) !important;
+}
+
+.bg-secondary {
+    background-color: #f8f9fc !important;
+}
+
+.bg-dark {
+    background-color: #fff !important;
+}
+
+/* ----------------------------------------------------------------
+   DataTables pagination
+---------------------------------------------------------------- */
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border: 1px solid var(--admin-border) !important;
+    border-radius: 6px !important;
+    color: var(--admin-text) !important;
+    font-size: 13px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--admin-primary) !important;
+    color: #fff !important;
+    border-color: var(--admin-primary) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--admin-primary-lighter) !important;
+    color: var(--admin-primary) !important;
+    border-color: var(--admin-primary-lighter) !important;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+    color: var(--admin-text) !important;
+    font-size: 13px !important;
+}
+
+/* ----------------------------------------------------------------
+   Scrollbar (global)
+---------------------------------------------------------------- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ----------------------------------------------------------------
+   Misc text overrides
+---------------------------------------------------------------- */
+.text-dark {
+    color: var(--admin-text) !important;
+}
+
+.text-muted {
+    color: var(--admin-text-muted) !important;
+}

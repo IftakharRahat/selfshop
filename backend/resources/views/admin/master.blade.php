@@ -22,24 +22,11 @@
     .data-tables {
     overflow: scroll;
 }
-    body {
-    margin: 0;
-    font-family: Roboto,sans-serif;
-    font-size: .875rem;
-    font-weight: 400;
-    line-height: 1.5;
-    color: #6c757d;
-    text-align: left;
-    background-color: #f5f5f5;
-}
 .toast.toast-success {
-    background: rgb(7, 90, 7);
+    background: #059669;
 }
 .toast.toast-error {
-    background: #CA5E59;
-}
-.card-body {
-    font-size: 14px;
+    background: #dc2626;
 }
 th.sorting_disabled {
     width: max-content !important;
@@ -61,7 +48,7 @@ th.sorting_disabled input.form-control {
 }
 table.dataTable thead th, table.dataTable thead td {
     padding: 10px 8px  !important;
-    border-bottom: 1px solid #111;
+    border-bottom: 1px solid var(--admin-border, #e2e8f0);
 }
 </style>
 </head>

@@ -2,18 +2,18 @@
  <header id="header" class="header fixed-top d-flex align-items-center">
 
      <div class="d-flex align-items-center justify-content-between">
-         <a href="" class="text-center" id="largelogotext">
-             <h2 style="font-family: Roboto,sans-serif;">{{ env('APP_NAME') }}</h2>
+         <a href="{{ url('admin/dashboard') }}" class="text-center text-decoration-none" id="largelogotext">
+             <h2>{{ env('APP_NAME') }} <span style="font-weight:400;font-size:13px;color:#64748b;margin-left:2px;">Admin</span></h2>
          </a>
-         <a href="" class="text-center" id="small_logo">
-             <h2 style="font-family: Roboto,sans-serif;">INV</h2>
+         <a href="{{ url('admin/dashboard') }}" class="text-center text-decoration-none" id="small_logo">
+             <h2>{{ substr(env('APP_NAME'), 0, 2) }}</h2>
          </a>
          <i class="bi bi-list toggle-sidebar-btn"></i>
      </div><!-- End Logo -->
 
      <div class="search-bar">
          <form class="search-form d-flex align-items-center" method="POST" action="#">
-             <input type="text" name="query" placeholder="Search" title="Enter search keyword">
+             <input type="text" name="query" placeholder="Search..." title="Enter search keyword">
              <button type="submit" title="Search"><i class="bi bi-search"></i></button>
          </form>
      </div><!-- End Search Bar -->
@@ -27,150 +27,19 @@
                  </a>
              </li><!-- End Search Icon-->
 
+             {{-- Notification Bell (only show if real notifications exist) --}}
              <li class="nav-item dropdown">
-
                  <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
                      <i class="bi bi-bell"></i>
-                     <span class="badge bg-primary badge-number">4</span>
-                 </a><!-- End Notification Icon -->
-
+                 </a>
                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
                      <li class="dropdown-header">
-                         You have 4 new notifications
-                         <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+                         No new notifications
                      </li>
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="notification-item">
-                         <i class="bi bi-exclamation-circle text-warning"></i>
-                         <div>
-                             <h4>Lorem Ipsum</h4>
-                             <p>Quae dolorem earum veritatis oditseno</p>
-                             <p>30 min. ago</p>
-                         </div>
-                     </li>
-
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="notification-item">
-                         <i class="bi bi-x-circle text-danger"></i>
-                         <div>
-                             <h4>Atque rerum nesciunt</h4>
-                             <p>Quae dolorem earum veritatis oditseno</p>
-                             <p>1 hr. ago</p>
-                         </div>
-                     </li>
-
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="notification-item">
-                         <i class="bi bi-check-circle text-success"></i>
-                         <div>
-                             <h4>Sit rerum fuga</h4>
-                             <p>Quae dolorem earum veritatis oditseno</p>
-                             <p>2 hrs. ago</p>
-                         </div>
-                     </li>
-
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="notification-item">
-                         <i class="bi bi-info-circle text-primary"></i>
-                         <div>
-                             <h4>Dicta reprehenderit</h4>
-                             <p>Quae dolorem earum veritatis oditseno</p>
-                             <p>4 hrs. ago</p>
-                         </div>
-                     </li>
-
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-                     <li class="dropdown-footer">
-                         <a href="#">Show all notifications</a>
-                     </li>
-
-                 </ul><!-- End Notification Dropdown Items -->
-
+                 </ul>
              </li><!-- End Notification Nav -->
 
-             <li class="nav-item dropdown">
-
-                 <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
-                     <i class="bi bi-chat-left-text"></i>
-                     <span class="badge bg-success badge-number">3</span>
-                 </a><!-- End Messages Icon -->
-
-                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
-                     <li class="dropdown-header">
-                         You have 3 new messages
-                         <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
-                     </li>
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="message-item">
-                         <a href="#">
-                             <img src="{{ asset('public/admin/assets/') }}/img/messages-1.jpg" alt=""
-                                 class="rounded-circle">
-                             <div>
-                                 <h4>Maria Hudson</h4>
-                                 <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                 <p>4 hrs. ago</p>
-                             </div>
-                         </a>
-                     </li>
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="message-item">
-                         <a href="#">
-                             <img src="{{ asset('public/admin/assets/') }}/img/messages-2.jpg" alt=""
-                                 class="rounded-circle">
-                             <div>
-                                 <h4>Anna Nelson</h4>
-                                 <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                 <p>6 hrs. ago</p>
-                             </div>
-                         </a>
-                     </li>
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="message-item">
-                         <a href="#">
-                             <img src="{{ asset('public/admin/assets/') }}/img/messages-3.jpg" alt=""
-                                 class="rounded-circle">
-                             <div>
-                                 <h4>David Muldon</h4>
-                                 <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                 <p>8 hrs. ago</p>
-                             </div>
-                         </a>
-                     </li>
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
-
-                     <li class="dropdown-footer">
-                         <a href="#">Show all messages</a>
-                     </li>
-
-                 </ul><!-- End Messages Dropdown Items -->
-
-             </li><!-- End Messages Nav -->
-
+             {{-- Profile Dropdown --}}
              <li class="nav-item dropdown pe-3">
 
                  <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#"
@@ -183,17 +52,17 @@
                      @endif
 
                      <span class="d-none d-md-block dropdown-toggle ps-2">{{ Auth::user()->name }}</span>
-                 </a><!-- End Profile Iamge Icon -->
+                 </a><!-- End Profile Image Icon -->
 
                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
                      <li class="dropdown-header">
                          <h6>{{ Auth::user()->name }}</h6>
                          @if (Auth::user()->role == 2)
-                             <span>As Super Admin</span>
+                             <span>Super Admin</span>
                          @elseif (Auth::user()->role == 1)
-                             <span>As Manager</span>
+                             <span>Manager</span>
                          @else
-                             <span>As User</span>
+                             <span>User</span>
                          @endif
                      </li>
                      <li>
@@ -207,10 +76,6 @@
                              </a>
                          </li>
                          <li>
-                             <hr class="dropdown-divider">
-                         </li>
-
-                         <li>
                              <a class="dropdown-item d-flex align-items-center" href="{{ url('/account/settings') }}">
                                  <i class="bi bi-gear"></i>
                                  <span>Account Settings</span>
@@ -219,18 +84,7 @@
                          <li>
                              <hr class="dropdown-divider">
                          </li>
-
-                         <li>
-                             <a class="dropdown-item d-flex align-items-center" href="pages-faq.html">
-                                 <i class="bi bi-question-circle"></i>
-                                 <span>Need Help?</span>
-                             </a>
-                         </li>
                      @endif
-
-                     <li>
-                         <hr class="dropdown-divider">
-                     </li>
 
                      <li>
                          <a class="dropdown-item d-flex align-items-center" href="{{ route('admin.logout') }}">
