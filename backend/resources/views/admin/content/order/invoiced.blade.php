@@ -13,38 +13,26 @@
     ?>
     <div class="container-fluid pt-4 px-4">
 
-        <div class="pagetitle row">
-            <div class="col-6">
+        <div class="pagetitle row mb-3">
+            <div class="col-12">
                 <nav>
-                    <ol class="breadcrumb">
+                    <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
                         <li class="breadcrumb-item active">On Delivery</li>
                     </ol>
                 </nav>
             </div>
-        </div><!-- End Page Title -->
-
-        <div class="row">
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/On Delivery') }}">
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1" style="background: linear-gradient(73deg, #D4911D 4.54%, #FFA386 98.27%);">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="ondelivery" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">On Delivery</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
         </div>
 
-        {{-- //popup modal for edit user --}}
-        <div class="modal" id="editmainOrder">
+        <!-- Status Pills -->
+        <div class="order-status-bar mb-3">
+            <a href="{{ url('admin_order/On Delivery') }}" class="order-status-pill" style="--pill-color: #D4911D;">
+                On Delivery <span class="pill-count" id="ondelivery">0</span>
+            </a>
+        </div>
+
+        {{-- Edit Order Modal --}}
+        <div class="modal admin-modal" id="editmainOrder">
             <div class="modal-dialog" style="width: 92%;max-width: none;">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -52,110 +40,90 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-
-
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div>
 
-        {{-- //table section for category --}}
-
-        <section class="section">
-            <div class="row">
-                <div class="col-lg-12">
-                    @if ($message = Session::get('error'))
-                        <div class="alert alert-primary alert-dismissible fade show" role="alert" style="color: red">
-                            {{ $message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <!-- Orders Table -->
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">Total <span class="total">0</span> Orders</h6>
+                <div class="admin-card-actions">
+                    <div class="btn-group dropdown">
+                        <a href="javascript: void(0);" style="color: white"
+                            class="table-action-btn dropdown-toggle arrow-none btn bg-danger btn-sm"
+                            data-bs-toggle="dropdown" aria-expanded="false"><i
+                                class="fas fa-truck mr-1"></i> Assign Courier</a>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            @foreach (App\Models\Courier::where('status','Active')->get()->reverse() as $courier)
+                                <a class="dropdown-item assign-courier" data-id="{{ $courier->id }}"
+                                    href="#">{{ $courier->courierName }}</a>
+                            @endforeach
                         </div>
+                    </div>
+                    @if ($admin->hasRole('user'))
+                        <a href="{{ url('admin/create/order') }}" class="btn btn-primary btn-sm"><span
+                                style="font-weight: bold;">+</span> Create Order</a>
                     @endif
-                    <div class="card">
-                        <div class="card-body pt-4 pb-2">
-                            <div class="row">
-                                <div class="col-3">
-                                    <h4><a href="">Total <span class="total">0</span> Orders </a></h4>
-                                </div>
-                                <div class="col-9" style="text-align: right">
-                                    <div class="btn-group dropdown">
-                                        <a href="javascript: void(0);" style="color: white"
-                                            class="table-action-btn dropdown-toggle arrow-none btn bg-danger btn-sm"
-                                            data-bs-toggle="dropdown" aria-expanded="false"><i
-                                                class="fas fa-truck mr-1"></i> Assign Courier</a>
-                                        <div class="dropdown-menu dropdown-menu-right">
-                                            @foreach (App\Models\Courier::where('status','Active')->get()->reverse() as $courier)
-                                                <a class="dropdown-item assign-courier" data-id="{{ $courier->id }}"
-                                                    href="#">{{ $courier->courierName }}</a>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                    @if ($admin->hasRole('user'))
-                                        <a href="{{ url('admin/create/order') }}" class="btn btn-primary btn-sm"><span
-                                                style="font-weight: bold;">+</span> Create Order</a>
-                                    @else
-                                    @endif
-                                </div>
-                            </div>
-                            @if (\Session::has('success'))
-                                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    {{ \Session::get('success') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                                </div>
-                            @endif
-
-                            <!-- Table with stripped rows -->
-                            <div class="table-responsive">
-                                <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo"
-                                    width="100%">
-                                    <thead>
-                                        <tr>
-                                            <th></th>
-                                            <th>Invoice ID</th>
-                                            <th>Name</th>
-                                            <th>Products</th>
-                                            <th>Total</th>
-                                            <th>Courier</th>
-                                            <th>Order Date</th>
-                                            <th>Status</th>
-                                            @if ($admin->hasrole('user'))
-                                                <th style="width: 133px;">Notes</th>
-                                            @elseif($admin->hasrole('superadmin') || $admin->hasrole('manager') || $admin->hasrole('admin'))
-                                                <th style="width: 133px;">Notes</th>
-                                                <th style="width: 133px;">User</th>
-                                            @else
-                                            @endif
-                                            <th class="hidden-sm">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <!-- End Table with stripped rows -->
-
-                        </div>
-                    </div>
-
                 </div>
             </div>
-        </section>
+            <div class="admin-card-body">
+                @if ($message = Session::get('error'))
+                    <div class="alert alert-primary alert-dismissible fade show" role="alert" style="color: red">
+                        {{ $message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+                @if (\Session::has('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {{ \Session::get('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                <div class="table-responsive">
+                    <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo" width="100%">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Invoice ID</th>
+                                <th>Name</th>
+                                <th>Products</th>
+                                <th>Total</th>
+                                <th>Courier</th>
+                                <th>Order Date</th>
+                                <th>Status</th>
+                                @if ($admin->hasrole('user'))
+                                    <th style="width: 133px;">Notes</th>
+                                @elseif($admin->hasrole('superadmin') || $admin->hasrole('manager') || $admin->hasrole('admin'))
+                                    <th style="width: 133px;">Notes</th>
+                                    <th style="width: 133px;">User</th>
+                                @else
+                                @endif
+                                <th class="hidden-sm">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
 
         {{-- //user role --}}
         @if ($admin->hasrole('user'))

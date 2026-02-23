@@ -13,55 +13,29 @@
     ?>
     <div class="container-fluid pt-4 px-4">
 
-        <div class="pagetitle row">
-            <div class="col-6">
+        <div class="pagetitle row mb-3">
+            <div class="col-12">
                 <nav>
-                    <ol class="breadcrumb">
+                    <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Delivered</li>
+                        <li class="breadcrumb-item active">Delivered Orders</li>
                     </ol>
                 </nav>
             </div>
-        </div><!-- End Page Title -->
-
-        <div class="row">
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Delivered') }}">
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1" style="background: linear-gradient(79deg, #14BF7D 4.74%, #13EA97 98.84%);">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="delivered" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">Delivered</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{ url('admin_order/Return') }}">
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1" style="background: linear-gradient(79deg, #9C0000 0%, #FFBA69 100%);">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="return" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">Return</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
         </div>
 
-        {{-- //popup modal for edit user --}}
-        <div class="modal fade" id="editmainOrder" tabindex="-1">
+        <!-- Status Pills -->
+        <div class="order-status-bar mb-3">
+            <a href="{{ url('admin_order/Delivered') }}" class="order-status-pill" style="--pill-color: #14BF7D;">
+                Delivered <span class="pill-count" id="delivered">0</span>
+            </a>
+            <a href="{{ url('admin_order/Return') }}" class="order-status-pill" style="--pill-color: #dc3545;">
+                Return <span class="pill-count" id="return">0</span>
+            </a>
+        </div>
+
+        {{-- Edit Order Modal --}}
+        <div class="modal fade admin-modal" id="editmainOrder" tabindex="-1">
             <div class="modal-dialog" style="width: 92%;max-width: none;">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -69,90 +43,66 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-
-
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div>
 
-        {{-- //table section for category --}}
-
-        <section class="section">
-            <div class="row">
-                <div class="col-lg-12">
-
-                    <div class="card">
-                        <div class="card-body pt-4 pb-2">
-                            <div class="row">
-                                <div class="col-4">
-                                    <h4><a href="">Total <span class="total">0</span> Orders </a></h4>
-                                </div>
-                                <div class="col-8" style="text-align: right">
-
-                                </div>
-                            </div>
-                            @if (\Session::has('success'))
-                                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    {{ \Session::get('success') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                                </div>
-                            @endif
-
-                            <!-- Table with stripped rows -->
-                            <div class="table-responsive">
-                                <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo"
-                                    width="100%">
-                                    <thead>
-                                        <tr>
-                                            <th></th>
-                                            <th>Invoice ID</th>
-                                            <th>Name</th>
-                                            <th>Products</th>
-                                            <th>Total</th>
-                                            <th>Courier</th>
-                                            <th>Order Date</th>
-                                            <th>Status</th>
-                                            @if ($admin->hasRole('user'))
-                                                <th style="width: 133px;">Notes</th>
-                                            @elseif($admin->hasRole('superadmin') || $admin->hasRole('manager') || $admin->hasRole('admin'))
-                                                <th style="width: 133px;">Notes</th>
-                                                <th style="width: 133px;">User</th>
-                                            @else
-                                            @endif
-                                            <th class="hidden-sm">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <!-- End Table with stripped rows -->
-
-                        </div>
+        <!-- Orders Table -->
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">Total <span class="total">0</span> Orders</h6>
+            </div>
+            <div class="admin-card-body">
+                @if (\Session::has('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {{ \Session::get('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
+                @endif
 
+                <div class="table-responsive">
+                    <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo" width="100%">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Invoice ID</th>
+                                <th>Name</th>
+                                <th>Products</th>
+                                <th>Total</th>
+                                <th>Courier</th>
+                                <th>Order Date</th>
+                                <th>Status</th>
+                                @if ($admin->hasRole('user'))
+                                    <th style="width: 133px;">Notes</th>
+                                @elseif($admin->hasRole('superadmin') || $admin->hasRole('manager') || $admin->hasRole('admin'))
+                                    <th style="width: 133px;">Notes</th>
+                                    <th style="width: 133px;">User</th>
+                                @else
+                                @endif
+                                <th class="hidden-sm">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
-        </section>
-
+        </div>
 
         {{-- //user role --}}
         @if ($admin->hasrole('user'))

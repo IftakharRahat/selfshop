@@ -3,26 +3,26 @@
 @section('maincontent')
     <div class="container-fluid pt-4 px-4">
 
-        <div class="pagetitle row">
-            <div class="col-6">
+        <div class="pagetitle row mb-3">
+            <div class="col-12">
                 <nav>
-                    <ol class="breadcrumb">
+                    <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">Orders</li>
+                        <li class="breadcrumb-item active">Create Order</li>
                     </ol>
                 </nav>
             </div>
-        </div><!-- End Page Title -->
+        </div>
 
         <div class="row">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="mb-4">
-                            <strong style="margin-bottom:10px">Customer (Invoice: {{ $uniqueId }})</strong>
-                        </div>
-                        <div class="row">
-                            <div class="col-lg-6" hidden>
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title">Customer (Invoice: {{ $uniqueId }})</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="row" hidden>
+                            <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="storeID">Store Name</label>
                                     <select id="storeID" class="form-control">
@@ -30,7 +30,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-lg-6" hidden>
+                            <div class="col-lg-6">
                                 <div class="form-group">
                                     <label for="invoiceID">Invoice Number</label>
                                     <input type="text" readonly class="form-control" style="cursor: not-allowed;"
@@ -40,30 +40,30 @@
                         </div>
                         <div class="row">
                             <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="customerName">Customer Name</label>
+                                <div class="form-group mb-3">
+                                    <label for="customerName" class="form-label">Customer Name</label>
                                     <input type="text" class="form-control" id="customerName">
                                 </div>
                             </div>
                             <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="customerPhone">Customer Phone</label>
+                                <div class="form-group mb-3">
+                                    <label for="customerPhone" class="form-label">Customer Phone</label>
                                     <input type="text" class="form-control" id="customerPhone">
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-lg-12">
-                                <div class="form-group">
-                                    <label for="customerAddress">Customer Address</label>
+                                <div class="form-group mb-3">
+                                    <label for="customerAddress" class="form-label">Customer Address</label>
                                     <textarea name="" class="form-control" placeholder="Customer Address" id="customerAddress" rows="2"></textarea>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-lg-12">
-                                <div class="form-group">
-                                    <label for="courierID">Courier Name</label>
+                                <div class="form-group mb-3">
+                                    <label for="courierID" class="form-label">Courier Name</label>
                                     <select id="courierID" class="form-control">
                                         <option value="">Courier Name</option>
                                     </select>
@@ -73,16 +73,16 @@
                                 </div>
                             </div>
                             <div class="col-lg-12 hasCity">
-                                <div class="form-group">
-                                    <label for="cityID">City Name</label>
+                                <div class="form-group mb-3">
+                                    <label for="cityID" class="form-label">City Name</label>
                                     <select id="cityID" class="form-control">
                                         <option value="">City Name</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="col-lg-12 hasZone">
-                                <div class="form-group">
-                                    <label for="zoneID">Zone Name</label>
+                                <div class="form-group mb-3">
+                                    <label for="zoneID" class="form-label">Zone Name</label>
                                     <select id="zoneID" class="form-control">
                                         <option value="">Zone Name</option>
                                     </select>
@@ -102,10 +102,11 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <strong style="margin-bottom:10px">Products</strong>
-
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title">Products</h6>
+                    </div>
+                    <div class="admin-card-body">
                         <table id="productTable" style="width: 100% !important;" class="table table-bordered table-striped">
                             <thead>
                                 <tr>
@@ -129,17 +130,16 @@
                                     </td>
                                 </tr>
                             </tfoot>
-
                         </table>
 
-                        <br>
-                        <button type="button" id="submit" class="btn btn-primary btn-block" data-style="expand-left"
-                            style="width: 100%;margin-bottom: 20px;">Save</button>
-                        <br>
+                        <button type="button" id="submit" class="btn btn-primary w-100 my-3" data-style="expand-left">
+                            <i class="bi bi-check2-circle me-1"></i> Save Order
+                        </button>
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-2">
-                                    <label>Payment</label>
+                                    <label class="form-label">Payment</label>
                                     <select id="paymentTypeID" class="form-control select2">
                                         <option value="">Select payment Type</option>
                                     </select>
@@ -153,7 +153,7 @@
                                     <input type="text" class="form-control" id="paymentAgentNumber"
                                         placeholder="Enter Bkash Agent Number">
                                 </div>
-                                <div class="form-group row">
+                                <div class="form-group row mb-2">
                                     <label for="fname"
                                         class="col-sm-4 text-right control-label col-form-label">Discount</label>
                                     <div class="col-sm-8">
@@ -168,7 +168,7 @@
 
                             </div>
                             <div class="col-md-6">
-                                <div class="form-group row">
+                                <div class="form-group row mb-2">
                                     <label for="fname" class="col-sm-4 text-right control-label col-form-label">Sub
                                         Total</label>
                                     <div class="col-sm-8">
@@ -183,14 +183,14 @@
                                     </div>
                                 </div>
 
-                                <div class="form-group row paymentAmount">
+                                <div class="form-group row paymentAmount mb-2">
                                     <label for="fname"
                                         class="col-sm-4 text-right control-label col-form-label">Payment</label>
                                     <div class="col-sm-8">
                                         <input type="text" value="0" class="form-control" id="paymentAmount">
                                     </div>
                                 </div>
-                                <div class="form-group row">
+                                <div class="form-group row mb-2">
                                     <label for="fname"
                                         class="col-sm-4 text-right control-label col-form-label">Total</label>
                                     <div class="col-sm-8">

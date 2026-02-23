@@ -11,131 +11,49 @@
 
     <main id="main" class="main">
 
-        <div class="pagetitle row">
-            <div class="col-6">
-                <h1><a href="{{url('/admindashboard')}}">Dashboard</a></h1>
+        <div class="container-fluid pt-4 px-4">
+
+        <div class="pagetitle row mb-3">
+            <div class="col-12">
                 <nav>
-                    <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
-                    <li class="breadcrumb-item active">User-Orders</li>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
+                        <li class="breadcrumb-item active">User Orders</li>
                     </ol>
                 </nav>
             </div>
-        </div><!-- End Page Title -->
-
-        <div class="row">
-            <div class="col-md-6 col-xl-2">
-                @if (Auth::user()->role ==0)
-                    <a href="{{url('user/order')}}">
-                @else
-                    <a href="{{url('admin_order/orderall')}}">
-                @endif
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="all">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">All Orders</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{url('admin_order/Processing')}}">
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="processing" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">Processing</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{url('admin_order/Payment Pending')}}">
-
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="pendingPayment" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">Payment Pending</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{url('admin_order/On Hold')}}">
-
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="onHold" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">On Hold</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{url('admin_order/Canceled')}}">
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="canceled" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">Canceled</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
-
-            <div class="col-md-6 col-xl-2">
-                <a href="{{url('admin_order/Completed')}}">
-
-                    <div class="widget-rounded-circle card-box order pt-1 pb-1">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="float-left">
-                                    <h3 class="text-dark mt-1 mb-0">
-                                        <span id="completed" data-plugin="counterup">0</span>
-                                    </h3>
-                                    <p class="text-muted mb-1 text-truncate">Completed</p>
-                                </div>
-                            </div>
-                        </div> <!-- end row-->
-                    </div> <!-- end widget-rounded-circle-->
-                </a>
-            </div> <!-- end col-->
         </div>
 
-      {{-- //popup modal for edit user --}}
-        <div class="modal" id="editmainOrder">
+        <!-- Status Pills -->
+        <div class="order-status-bar mb-3">
+            @if (Auth::user()->role ==0)
+                <a href="{{url('user/order')}}" class="order-status-pill" style="--pill-color: #4e73df;">
+                    All <span class="pill-count" id="all">0</span>
+                </a>
+            @else
+                <a href="{{url('admin_order/orderall')}}" class="order-status-pill" style="--pill-color: #4e73df;">
+                    All <span class="pill-count" id="all">0</span>
+                </a>
+            @endif
+            <a href="{{url('admin_order/Processing')}}" class="order-status-pill" style="--pill-color: #36b9cc;">
+                Processing <span class="pill-count" id="processing">0</span>
+            </a>
+            <a href="{{url('admin_order/Payment Pending')}}" class="order-status-pill" style="--pill-color: #f6c23e;">
+                Payment Pending <span class="pill-count" id="pendingPayment">0</span>
+            </a>
+            <a href="{{url('admin_order/On Hold')}}" class="order-status-pill" style="--pill-color: #858796;">
+                On Hold <span class="pill-count" id="onHold">0</span>
+            </a>
+            <a href="{{url('admin_order/Canceled')}}" class="order-status-pill" style="--pill-color: #e74a3b;">
+                Canceled <span class="pill-count" id="canceled">0</span>
+            </a>
+            <a href="{{url('admin_order/Completed')}}" class="order-status-pill" style="--pill-color: #1cc88a;">
+                Completed <span class="pill-count" id="completed">0</span>
+            </a>
+        </div>
+
+        {{-- Edit Order Modal --}}
+        <div class="modal admin-modal" id="editmainOrder">
             <div class="modal-dialog" style="width: 92%;max-width: none;">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -143,100 +61,82 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-
-
-
                     </div>
-
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div>
 
-        {{-- //table section for category --}}
-
-        <section class="section">
-            <div class="row">
-                <div class="col-lg-12">
-
-                <div class="card">
-                    <div class="card-body pt-4 pb-2">
-                        <div class="row">
-                            <div class="col-4">
-                                <h4><a href="">Total  <span class="total">0</span> Orders </a></h4>
-                            </div>
-                            <?php
-                                use App\Models\User;
-                                $users = DB::table('users')->where([
-                                    ['status', 'like', 'Active'],
-                                    ['role', '=', '0']
-                                ])->inRandomOrder()->get();
-                            ?>
-                            <div class="col-8" style="text-align: right">
-
-                                @if (Auth::user()->role == 1)
-
-                                @else
-                                    <a href="{{url('admin/create/order')}}" class="btn btn-primary btn-sm"><span style="font-weight: bold;">+</span>  Add New Order</a>
-                                @endif
-
-                                @if (Auth::user()->role ==0)
-
-                                @else
-                                    <!--<button type="button" class="btn btn-danger btn-sm " id="delete_selected_order"><i class="fas fa-trash mr-1"></i>  Delete Order</button>-->
-                                    <div class="btn-group dropdown">
-                                        <a href="javascript: void(0);" style="color: white" class="table-action-btn dropdown-toggle arrow-none btn bg-success btn-sm" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user-check mr-1"></i> Assign User</a>
-                                        <div class="dropdown-menu dropdown-menu-right">
-
-                                            @foreach($users as $user)
-                                                    <a class="dropdown-item assign-user" data-id="{{$user->id}}" href="#">{{$user->name}}</a>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                    <div class="btn-group dropdown">
-                                        <a href="javascript: void(0);" style="color: white" class="table-action-btn dropdown-toggle arrow-none btn bg-info btn-sm" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-thumbtack mr-1"></i> Change Status</a>
-                                        <div class="dropdown-menu dropdown-menu-right">
-                                            <a class="dropdown-item btn-change-status" data-status="Processing" href="#"><i class="fas fa-tag mr-2 font-18 text-muted vertical-middle"></i>Processing</a>
-                                            <a class="dropdown-item btn-change-status" data-status="On Hold" href="#"><i class="far fa-stop-circle mr-2 font-18 text-muted vertical-middle"></i>On Hold</a>
-                                            <a class="dropdown-item btn-change-status"  data-status="Payment Pending" href="#"><i class="fas fa-tag mr-2 font-18 text-muted vertical-middle"></i>Payment Pending</a>
-                                            <a class="dropdown-item btn-change-status" data-status="Canceled" href="#"><i class="fas fa-trash mr-2 font-18 text-muted vertical-middle"></i>Canceled</a>
-                                            <a class="dropdown-item btn-change-status" data-status="Completed" href="#"><i class="fas fa-check-circle mr-2 font-18 text-muted vertical-middle"></i>Completed</a>
-                                        </div>
-                                    </div>
-                                @endif
-                                {{-- <button type="button" class="btn btn-warning btn-sm btn-syncorder"  style="color: #fff"><i class="fas fa-sync fa-spin mr-1"></i>  Sync Order</button> --}}
-                            </div>
-                        </div>
-                    @if(\Session::has('success'))
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="bi bi-check-circle me-1"></i>
-                            {{ \Session::get('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
+        <!-- Orders Table -->
+        <div class="admin-content-card">
+            <div class="admin-card-header">
+                <h6 class="admin-card-title">Total <span class="total">0</span> Orders</h6>
+                <?php
+                    use App\Models\User;
+                    $users = DB::table('users')->where([
+                        ['status', 'like', 'Active'],
+                        ['role', '=', '0']
+                    ])->inRandomOrder()->get();
+                ?>
+                <div class="admin-card-actions">
+                    @if (Auth::user()->role == 1)
+                    @else
+                        <a href="{{url('admin/create/order')}}" class="btn btn-primary btn-sm"><span style="font-weight: bold;">+</span> Add New Order</a>
                     @endif
 
-                    <!-- Table with stripped rows -->
-                    <div class="table-responsive">
-                        <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo" width="100%">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Invoice ID</th>
-                                    <th>Name</th>
-                                    <th>Products</th>
-                                    <th>Total</th>
-                                    <th>Courier</th>
-                                    <th>Order Date</th>
-                                    <th>Status</th>
-                                    @if (Auth::user()->role ==0)
-                                        <th style="width: 133px;">Notes</th>
-                                    @else
-                                        <th style="width: 133px;">User</th>
-                                    @endif
-                                    <th class="hidden-sm">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                            <tfoot>
+                    @if (Auth::user()->role ==0)
+                    @else
+                        <div class="btn-group dropdown">
+                            <a href="javascript: void(0);" style="color: white" class="table-action-btn dropdown-toggle arrow-none btn bg-success btn-sm" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user-check mr-1"></i> Assign User</a>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                @foreach($users as $user)
+                                    <a class="dropdown-item assign-user" data-id="{{$user->id}}" href="#">{{$user->name}}</a>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="btn-group dropdown">
+                            <a href="javascript: void(0);" style="color: white" class="table-action-btn dropdown-toggle arrow-none btn bg-info btn-sm" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-thumbtack mr-1"></i> Change Status</a>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item btn-change-status" data-status="Processing" href="#"><i class="fas fa-tag mr-2 font-18 text-muted vertical-middle"></i>Processing</a>
+                                <a class="dropdown-item btn-change-status" data-status="On Hold" href="#"><i class="far fa-stop-circle mr-2 font-18 text-muted vertical-middle"></i>On Hold</a>
+                                <a class="dropdown-item btn-change-status"  data-status="Payment Pending" href="#"><i class="fas fa-tag mr-2 font-18 text-muted vertical-middle"></i>Payment Pending</a>
+                                <a class="dropdown-item btn-change-status" data-status="Canceled" href="#"><i class="fas fa-trash mr-2 font-18 text-muted vertical-middle"></i>Canceled</a>
+                                <a class="dropdown-item btn-change-status" data-status="Completed" href="#"><i class="fas fa-check-circle mr-2 font-18 text-muted vertical-middle"></i>Completed</a>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            <div class="admin-card-body">
+                @if(\Session::has('success'))
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle me-1"></i>
+                        {{ \Session::get('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                <div class="table-responsive">
+                    <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo" width="100%">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Invoice ID</th>
+                                <th>Name</th>
+                                <th>Products</th>
+                                <th>Total</th>
+                                <th>Courier</th>
+                                <th>Order Date</th>
+                                <th>Status</th>
+                                @if (Auth::user()->role ==0)
+                                    <th style="width: 133px;">Notes</th>
+                                @else
+                                    <th style="width: 133px;">User</th>
+                                @endif
+                                <th class="hidden-sm">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
                             <tr>
                                 <th></th>
                                 <th></th>
@@ -249,17 +149,11 @@
                                 <th></th>
                                 <th></th>
                             </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <!-- End Table with stripped rows -->
-
-                    </div>
+                        </tfoot>
+                    </table>
                 </div>
-
             </div>
-            </div>
-        </section>
+        </div>
 
         {{-- //user role --}}
         <input type="text" id="user_role" value="{{Auth::user()->role}}" hidden>
