@@ -2,12 +2,8 @@
 
 @section('maincontent')
 
-@section('subcss')
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/jquery-datatables-checkboxes@1.2.13/css/dataTables.checkboxes.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-@endsection
+
+
 <style>
     #to_account_number::placeholder {
         color: white;
@@ -158,7 +154,7 @@
         overflow: hidden;
     }
 
-    .nav-icons-container {
+    .bottom-navbar .nav-icons-container {
         display: flex;
         justify-content: space-around;
         align-items: center;
@@ -166,7 +162,7 @@
         padding: 0 10px;
     }
 
-    .nav-item {
+    .bottom-navbar .nav-item {
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -179,11 +175,12 @@
         flex: 1;
     }
 
-    .nav-item:hover, .nav-item.active {
+    .bottom-navbar .nav-item:hover,
+    .bottom-navbar .nav-item.active {
         background: rgb(230, 0, 76);
     }
 
-    .nav-icon-container {
+    .bottom-navbar .nav-icon-container {
         position: relative;
         width: 28px;
         height: 28px;
@@ -193,7 +190,7 @@
         justify-content: center;
     }
 
-    .nav-icon {
+    .bottom-navbar .nav-icon {
         font-size: 20px;
         color: #8E8E93;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -201,7 +198,7 @@
         z-index: 2;
     }
 
-    .nav-icon-bg {
+    .bottom-navbar .nav-icon-bg {
         position: absolute;
         top: 50%;
         left: 50%;
@@ -214,14 +211,14 @@
         z-index: 1;
     }
 
-    .nav-item:hover .nav-icon-bg,
-    .nav-item.active .nav-icon-bg {
+    .bottom-navbar .nav-item:hover .nav-icon-bg,
+    .bottom-navbar .nav-item.active .nav-icon-bg {
         background: rgba(255, 255, 255, 0.1);
         width: 40px;
         height: 40px;
     }
 
-    .nav-label {
+    .bottom-navbar .nav-label {
         color: #8E8E93;
         font-size: 10px;
         font-weight: 500;
@@ -231,21 +228,21 @@
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
     }
 
-    .nav-item:hover .nav-icon,
-    .nav-item.active .nav-icon {
+    .bottom-navbar .nav-item:hover .nav-icon,
+    .bottom-navbar .nav-item.active .nav-icon {
         color: #FFFFFF;
         transform: scale(1.1);
     }
 
-    .nav-item:hover .nav-label,
-    .nav-item.active .nav-label {
+    .bottom-navbar .nav-item:hover .nav-label,
+    .bottom-navbar .nav-item.active .nav-label {
         color: #FFFFFF;
         opacity: 1;
         transform: translateY(-1px);
     }
 
     /* Special cart button styling (iPhone-like floating) */
-    .cart-nav-item {
+    .bottom-navbar .cart-nav-item {
         margin-top: -25px;
         background: linear-gradient(135deg, #E5005F 0%, #5856D6 100%);
         border-radius: 50%;
@@ -261,19 +258,19 @@
         justify-content: center;
     }
 
-    .cart-nav-item .nav-icon-container {
+    .bottom-navbar .cart-nav-item .nav-icon-container {
         margin-bottom: 0;
         width: 24px;
         height: 24px;
     }
 
-    .cart-nav-item .nav-icon {
+    .bottom-navbar .cart-nav-item .nav-icon {
         font-size: 18px;
         color: #FFFFFF;
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
     }
 
-    .cart-nav-item .nav-label {
+    .bottom-navbar .cart-nav-item .nav-label {
         position: absolute;
         bottom: -20px;
         font-size: 9px;
@@ -282,12 +279,12 @@
         opacity: 0.9;
     }
 
-    .cart-nav-item:hover .nav-label {
+    .bottom-navbar .cart-nav-item:hover .nav-label {
         color: #FFFFFF;
     }
 
     /* Cart badge (iOS style) */
-    .cart-badge {
+    .bottom-navbar .cart-badge {
         position: absolute;
         top: -6px;
         right: -6px;
@@ -308,7 +305,7 @@
     }
 
     /* Active state indicators */
-    .nav-item.active::before {
+    .bottom-navbar .nav-item.active::before {
         content: '';
         position: absolute;
         top: 4px;
@@ -320,34 +317,34 @@
         transition: opacity 0.3s ease;
     }
 
-    .nav-item.active::before {
+    .bottom-navbar .nav-item.active::before {
         opacity: 1;
     }
 
     /* Home icon active state */
-    .nav-item.active[href*="/"] .nav-icon {
+    .bottom-navbar .nav-item.active[href*="/"] .nav-icon {
         color: #E5005F;
     }
 
     /* Dashboard icon active state */
-    .nav-item.active[href*="dashboard"] .nav-icon {
+    .bottom-navbar .nav-item.active[href*="dashboard"] .nav-icon {
         color: #34C759;
     }
 
     /* Profile/Login icon active state */
-    .nav-item.active[href*="login"] .nav-icon,
-    .nav-item.active[onclick*="profile"] .nav-icon {
+    .bottom-navbar .nav-item.active[href*="login"] .nav-icon,
+    .bottom-navbar .nav-item.active[onclick*="profile"] .nav-icon {
         color: #FF9500;
     }
 
     /* Menu icon active state */
-    .nav-item[onclick*="openNav"]:hover .nav-icon,
-    .nav-item[onclick*="openNav"]:active .nav-icon {
+    .bottom-navbar .nav-item[onclick*="openNav"]:hover .nav-icon,
+    .bottom-navbar .nav-item[onclick*="openNav"]:active .nav-icon {
         color: #AF52DE;
     }
 
     /* Touch feedback */
-    .nav-item:active .nav-icon-container {
+    .bottom-navbar .nav-item:active .nav-icon-container {
         transform: scale(0.95);
     }
 
@@ -375,20 +372,20 @@
             padding: 10px 0 8px 0;
         }
         
-        .nav-item {
+        .bottom-navbar .nav-item {
             min-width: 55px;
             padding: 6px 8px;
         }
         
-        .nav-icon {
+        .bottom-navbar .nav-icon {
             font-size: 18px;
         }
         
-        .nav-label {
+        .bottom-navbar .nav-label {
             font-size: 9px;
         }
         
-        .cart-nav-item {
+        .bottom-navbar .cart-nav-item {
             width: 60px;
             height: 60px;
             padding: 16px;
@@ -470,7 +467,7 @@
 <script>
     // iPhone-style touch feedback
     document.addEventListener('DOMContentLoaded', function() {
-        const navItems = document.querySelectorAll('.nav-item');
+        const navItems = document.querySelectorAll('.bottom-navbar .nav-item');
         
         navItems.forEach(item => {
             // Touch start effect
