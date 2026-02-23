@@ -1313,3 +1313,183 @@ a {
         font-size: 12px;
     }
 }
+
+/* ================================================================
+   Admin Content Card
+   Reusable card wrapper used across all admin pages
+================================================================ */
+.admin-content-card {
+    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 12px;
+    box-shadow: var(--admin-card-shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.admin-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--admin-border);
+    background: #fff;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--admin-text);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.admin-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.admin-card-body {
+    padding: 20px;
+}
+
+.admin-card-body:not(:first-child) {
+    border-top: 0;
+}
+
+/* When card body has p-0, remove padding for edge-to-edge tables */
+.admin-card-body.p-0 {
+    padding: 0 !important;
+}
+
+/* ================================================================
+   Admin Table
+   Clean, modern data table styling
+================================================================ */
+.admin-table {
+    margin-bottom: 0;
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+.admin-table thead th {
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid var(--admin-border) !important;
+    border-top: none !important;
+    background: var(--admin-bg) !important;
+    white-space: nowrap;
+}
+
+.admin-table tbody td {
+    font-size: 13px !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    border-top: none !important;
+    color: var(--admin-text) !important;
+    vertical-align: middle;
+}
+
+.admin-table tbody tr:hover {
+    background: #f8fafc !important;
+}
+
+/* Subtle striped rows */
+.admin-table tbody tr:nth-child(even) {
+    background: #fdfdfe;
+}
+
+.admin-table tbody tr:nth-child(even):hover {
+    background: #f8fafc !important;
+}
+
+/* Table footer */
+.admin-table tfoot td {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-top: 2px solid var(--admin-border) !important;
+    border-bottom: none !important;
+    background: var(--admin-bg) !important;
+    color: var(--admin-text) !important;
+}
+
+/* Status badges within tables */
+.admin-table .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+/* DataTables integration — when admin-table is used with DataTables */
+.admin-table.dataTable thead th {
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--admin-text-muted) !important;
+    font-weight: 600 !important;
+    padding: 12px 16px !important;
+    border-bottom: 2px solid var(--admin-border) !important;
+    background: var(--admin-bg) !important;
+}
+
+.admin-table.dataTable tbody td {
+    font-size: 13px !important;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* DataTables wrapper spacing when inside admin-content-card */
+.admin-card-body .dataTables_wrapper {
+    padding: 0;
+}
+
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_info,
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_paginate {
+    padding: 12px 16px;
+}
+
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_filter,
+.admin-card-body.p-0 .dataTables_wrapper .dataTables_length {
+    padding: 12px 16px 0;
+}
+
+/* ================================================================
+   Admin Table — Responsive adjustments
+================================================================ */
+@media (max-width: 768px) {
+    .admin-card-header {
+        padding: 12px 16px;
+    }
+
+    .admin-card-body {
+        padding: 16px;
+    }
+
+    .admin-card-title {
+        font-size: 14px;
+    }
+
+    .admin-table thead th {
+        padding: 10px 12px !important;
+        font-size: 10px !important;
+    }
+
+    .admin-table tbody td {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+
+    .admin-table tfoot td {
+        padding: 10px 12px !important;
+    }
+}
