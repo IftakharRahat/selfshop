@@ -4,80 +4,64 @@
 @section('title')
     {{ env('APP_NAME') }}- Minicategory
 @endsection
-<style>
-    div#roleinfo_length {
-        color: red;
-    }
-
-    div#roleinfo_filter {
-        color: red;
-    }
-
-    div#roleinfo_info {
-        color: red;
-    }
-</style>
 
 <div class="container-fluid pt-4 px-4">
     <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Minicategory List</h6>
+        <div class="col-12">
+            <div class="admin-content-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title">Minicategory List</h6>
+                    <div class="admin-card-actions">
+                        <a type="button" data-bs-toggle="modal" data-bs-target="#mainMinicategory" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> Create Minicategory
+                        </a>
+                    </div>
                 </div>
-                <div class="" style="width: 50%;float:left;">
-                    <a type="button" data-bs-toggle="modal" data-bs-target="#mainMinicategory"
-                        class="btn btn-primary m-2" style="float: right"> + Create Minicategory</a>
-                </div>
-            </div>
-        </div>
+                <div class="admin-card-body">
+                    <div class="data-tables">
+                        <table class="table" id="minicategoryinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>SL</th>
+                                    <th>Icon</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Subcategory</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
 
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="minicategoryinfo" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>SL</th>
-                                <th>Icon</th>
-                                <th>Name</th>
-                                <th>Category</th>
-                                <th>Subcategory</th>
-                                <th>status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {{-- create payment icon --}}
+        {{-- create minicategory modal --}}
         <div class="modal fade" id="mainMinicategory" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Create New Minicategory</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Create New Minicategory</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body admin-modal-body">
 
                         <form name="form" id="AddMinicategory" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Minicategory Name</label>
                                 <input type="text" class="form-control" name="mini_category_name"
-                                    id="mini_category_name" placeholder="Minicategory Name">
-                                <label for="floatingInput">Minicategory Name</label>
+                                    id="mini_category_name" placeholder="Enter minicategory name">
                             </div>
 
-                            <div class="form-group mb-3">
-                                <label for="ProductCategory" style="width: 100%;">Categories <span
-                                        class="text-danger">*</span></label>
-                                <select class="form-control" id="category_id" style="background: black;"
+                            <div class="mb-3">
+                                <label class="form-label">Category <span class="text-danger">*</span></label>
+                                <select class="form-select" id="category_id"
                                     name="category_id" onchange="setsubcategory()" required>
                                     <option>Select Category</option>
                                     @forelse ($categories as $category)
@@ -88,25 +72,24 @@
                                     @endforelse
                                 </select>
                             </div>
-                            <div class="mt-4 mb-4">
-                                <select name="subcategory_id" id="subcategory_id" class="form-select form-select-lg mb-3"
-                                    aria-label=".form-select-lg example">
+                            <div class="mb-3">
+                                <label class="form-label">Subcategory</label>
+                                <select name="subcategory_id" id="subcategory_id" class="form-select"
+                                    aria-label="Choose Sub-Category">
                                     <option value="">Choose Sub-Category</option>
                                 </select>
                             </div>
 
-                            <div class="mt-4 mb-4">
-                                <input class="form-control form-control-lg bg-dark" name="minicategory_icon"
+                            <div class="mb-3">
+                                <label class="form-label">Minicategory Icon</label>
+                                <input class="form-control" name="minicategory_icon"
                                     id="minicategory_icon" type="file">
                             </div>
-                            <br>
-                            <div class="form-group mt-2" style="text-align: right">
-                                <div class="minimitBtnSCourse">
-                                    <button type="minimit" name="btn" data-bs-dismiss="modal"
-                                        class="btn btn-dark btn-block" style="float: left">Close</button>
-                                    <button type="minimit" name="btn"
-                                        class="btn btn-primary AddCourierBtn btn-block">Save</button>
-                                </div>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" name="btn"
+                                    class="btn btn-primary AddCourierBtn btn-sm">Save</button>
                             </div>
                         </form>
 
@@ -114,30 +97,31 @@
 
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div><!-- End create modal-->
 
-        {{-- edit payment icon --}}
+        {{-- edit minicategory modal --}}
         <div class="modal fade" id="editmainMinicategory" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Edit Minicategory</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Edit Minicategory</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body admin-modal-body">
 
                         <form name="form" id="EditMinicategory" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Minicategory Name</label>
                                 <input type="text" class="form-control" name="mini_category_name"
-                                    id="mini_category_name" placeholder="Minicategory Name">
-                                <label for="floatingInput">Minicategory Name</label>
+                                    id="mini_category_name" placeholder="Enter minicategory name">
                             </div>
 
-                            <div class="mt-4 mb-4">
-                                <select name="category_id" id="category_id" class="form-select form-select-lg mb-3"
-                                    aria-label=".form-select-lg example">
+                            <div class="mb-3">
+                                <label class="form-label">Category</label>
+                                <select name="category_id" id="category_id" class="form-select"
+                                    aria-label="Choose Category">
                                     <option value="">Choose Category</option>
                                     @forelse ($categories as $category)
                                         <option value="{{ $category->id }}">{{ $category->category_name }}</option>
@@ -146,30 +130,28 @@
                                 </select>
                             </div>
 
-                            <div class="mt-4 mb-4">
-                                <select name="subcategory_id" id="editsubcategory_id" class="form-select form-select-lg mb-3"
-                                    aria-label=".form-select-lg example">
+                            <div class="mb-3">
+                                <label class="form-label">Subcategory</label>
+                                <select name="subcategory_id" id="editsubcategory_id" class="form-select"
+                                    aria-label="Choose Sub-Category">
                                 </select>
                             </div>
 
-                            <div class="mt-4 mb-4">
-                                <input class="form-control form-control-lg bg-dark" name="minicategory_icon"
+                            <div class="mb-3">
+                                <label class="form-label">Minicategory Icon</label>
+                                <input class="form-control" name="minicategory_icon"
                                     id="minicategory_icon" type="file">
                             </div>
-                            <div class="m-3 ms-0 mb-0"
-                                style="text-align: center;height: 100px;margin-top:20px !important">
-                                <h4 style="width:30%;float: left;text-align: left;">Icon : </h4>
-                                <div id="previmg" style="float: left;"></div>
+                            <div class="mb-3 d-flex align-items-center gap-3">
+                                <span class="form-label mb-0">Current Icon:</span>
+                                <div id="previmg"></div>
                             </div>
                             <input type="text" name="minicategory_id" id="minicategory_id" hidden>
-                            <br>
-                            <div class="form-group mt-2" style="text-align: right">
-                                <div class="minimitBtnSCourse">
-                                    <button type="minimit" name="btn" data-bs-dismiss="modal"
-                                        class="btn btn-dark btn-block" style="float: left">Close</button>
-                                    <button type="minimit" name="btn"
-                                        class="btn btn-primary AddCourierBtn btn-block">Update</button>
-                                </div>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" name="btn"
+                                    class="btn btn-primary AddCourierBtn btn-sm">Update</button>
                             </div>
                         </form>
 
@@ -177,7 +159,7 @@
 
                 </div>
             </div>
-        </div><!-- End popup Modal-->
+        </div><!-- End edit modal-->
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
     </div>
 </div>
@@ -198,8 +180,13 @@
                 }, {
                     data: 'minicategory_icon',
                     name: 'minicategory_icon',
+                    orderable: false,
                     render: function(data, type, full, meta) {
-                        return "<img src=../" + data + " height=\"40\" alt='No Image'/>";
+                        if (data && data.trim() !== '') {
+                            return '<img src=../' + data + ' height="40" style="border-radius:6px;object-fit:cover;width:40px;height:40px;" onerror="this.outerHTML=\'<div style=padding:8px;width:40px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px><i class=bi.bi-image></i></div>\'" />';
+                        } else {
+                            return '<div style="width:40px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px"><i class="bi bi-image"></i></div>';
+                        }
                     }
                 },
                 {
