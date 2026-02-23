@@ -88,39 +88,6 @@ class OrderController extends Controller
         $income->save();
     }
 
-    private function configureOrderProductsQuery($query): void
-    {
-        $orderProductColumns = ['id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id'];
-        if (Schema::hasColumn('orderproducts', 'fulfillment_status')) {
-            $orderProductColumns[] = 'fulfillment_status';
-        }
-        if (Schema::hasColumn('orderproducts', 'tracking_number')) {
-            $orderProductColumns[] = 'tracking_number';
-        }
-        if (Schema::hasColumn('orderproducts', 'shipped_at')) {
-            $orderProductColumns[] = 'shipped_at';
-        }
-
-        $query->select($orderProductColumns);
-
-        if (!Schema::hasTable('products')) {
-            return;
-        }
-
-        $productColumns = ['id', 'ProductName'];
-        $hasVendorSupport = Schema::hasColumn('products', 'vendor_id');
-        if ($hasVendorSupport) {
-            $productColumns[] = 'vendor_id';
-        }
-
-        if ($hasVendorSupport && Schema::hasTable('vendors')) {
-            $query->with('product:' . implode(',', $productColumns), 'product.vendor:id,company_name');
-            return;
-        }
-
-        $query->with('product:' . implode(',', $productColumns));
-    }
-
     public function fraudcheck(Request $request)
     {
         $curl = curl_init();
@@ -660,8 +627,7 @@ class OrderController extends Controller
                 return $orders->customerName . '<br>' . $orders->customerPhone . '<br>' . $orders->customerAddress . '<br>' . $orders->entry_complete;
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->created_at ? $orders->created_at->diffForHumans() : '';
-                return '<a href="https://localhost/resellbd/admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . $orders->web_ID . '<br>' . $ago;
+                return '<a href="https://localhost/resellbd/admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . $orders->web_ID . '<br>' . $orders->created_at->diffForhumans();
             })
             ->editColumn('products', function ($orders) {
                 $orderProducts = '';
@@ -694,9 +660,8 @@ class OrderController extends Controller
             })
             ->editColumn('notification', function ($orders) {
                 if (isset($orders->comments)) {
-                    $commentAgo = $orders->comments->created_at ? $orders->comments->created_at->diffForHumans() : '';
-                    if (isset($orders->customerNote)) return $orders->comments->comment . '<br>' . $commentAgo . '<br><span style="color:red;font-weight:bold;">[ Note:' . $orders->customerNote . ' ]</span>';
-                    return $orders->comments->comment . '<br>' . $commentAgo;
+                    if (isset($orders->customerNote)) return $orders->comments->comment . '<br>' . $orders->comments->created_at->diffForhumans() . '<br><span style="color:red;font-weight:bold;">[ Note:' . $orders->customerNote . ' ]</span>';
+                    return $orders->comments->comment . '<br>' . $orders->comments->created_at->diffForhumans();
                 } else {
                     return 'No Comments Now';
                 }
@@ -735,7 +700,7 @@ class OrderController extends Controller
                 $orders =  Order::with(
                     [
                         'orderproducts' => function ($query) {
-                            $this->configureOrderProductsQuery($query);
+                            $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                         },
                         'admins' => function ($query) {
                             $query->select('id', 'name');
@@ -768,7 +733,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $this->configureOrderProductsQuery($query);
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -799,7 +764,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $this->configureOrderProductsQuery($query);
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -832,7 +797,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $this->configureOrderProductsQuery($query);
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -864,7 +829,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $this->configureOrderProductsQuery($query);
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -895,7 +860,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $this->configureOrderProductsQuery($query);
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -931,7 +896,7 @@ class OrderController extends Controller
                 $orders =  Order::with(
                     [
                         'orderproducts' => function ($query) {
-                            $this->configureOrderProductsQuery($query);
+                            $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                         },
                         'admins' => function ($query) {
                             $query->select('id', 'name');
@@ -958,7 +923,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $this->configureOrderProductsQuery($query);
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -989,7 +954,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $this->configureOrderProductsQuery($query);
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -1023,7 +988,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $this->configureOrderProductsQuery($query);
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -1054,7 +1019,7 @@ class OrderController extends Controller
                             $orders =  Order::with(
                                 [
                                     'orderproducts' => function ($query) {
-                                        $this->configureOrderProductsQuery($query);
+                                        $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                     },
                                     'admins' => function ($query) {
                                         $query->select('id', 'name');
@@ -1086,7 +1051,7 @@ class OrderController extends Controller
                         $orders =  Order::with(
                             [
                                 'orderproducts' => function ($query) {
-                                    $this->configureOrderProductsQuery($query);
+                                    $query->select('id', 'order_id', 'productName', 'quantity', 'color', 'size', 'product_id', 'fulfillment_status', 'tracking_number', 'shipped_at')->with('product:id,ProductName,vendor_id', 'product.vendor:id,company_name');
                                 },
                                 'admins' => function ($query) {
                                     $query->select('id', 'name');
@@ -1169,7 +1134,7 @@ class OrderController extends Controller
                 return $name . '<br>' . $phone . '<br>' . $address . '<br> <span style="color:red;font-weight:bold;">' . $entry . '</span><br><button class="btn btn-success btn-sm" style="margin: 4px;padding: 0px 4px;" data-num="' . ($orders->customerPhone ?? '') . '" data-inv="' . $orders->invoiceID . '" id="checkfraud">Check</button>';
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->updated_at ? $orders->updated_at->diffForHumans() : '';
+                $ago = $orders->updated_at ? $orders->updated_at->diffForhumans() : '';
                 return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . ($orders->web_ID ?? '') . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
@@ -1235,9 +1200,8 @@ class OrderController extends Controller
             })
             ->editColumn('notification', function ($orders) {
                 if (isset($orders->comments)) {
-                    $commentAgo = $orders->comments->created_at ? $orders->comments->created_at->diffForHumans() : '';
-                    if (isset($orders->customerNote)) return $orders->comments->comment . '<br>' . $commentAgo . '<br><span style="color:red;font-weight:bold;">[ Note:' . $orders->customerNote . ' ]</span>';
-                    return $orders->comments->comment . '<br>' . $commentAgo;
+                    if (isset($orders->customerNote)) return $orders->comments->comment . '<br>' . $orders->comments->created_at->diffForhumans() . '<br><span style="color:red;font-weight:bold;">[ Note:' . $orders->customerNote . ' ]</span>';
+                    return $orders->comments->comment . '<br>' . $orders->comments->created_at->diffForhumans();
                 } else {
                     return 'No Comments Now';
                 }
@@ -2390,7 +2354,7 @@ class OrderController extends Controller
         $comment['data'] = $comment->map(function ($comment) {
             $admin = DB::table('admins')->select('admins.name')->where('id', '=', $comment->admin_id)->get()->first();
             $comment->name = $admin->name;
-            $comment->date = $comment->created_at ? $comment->created_at->diffForHumans() : '';
+            $comment->date = $comment->created_at->diffForHumans();
             return $comment;
         });
         return json_encode($comment);
@@ -2658,4 +2622,3 @@ class OrderController extends Controller
         die();
     }
 }
-

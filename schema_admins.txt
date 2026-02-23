@@ -1,0 +1,11 @@
+﻿Field	Type	Null	Key	Default	Extra
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment
+name	varchar(255)	NO		NULL	
+phone	varchar(255)	NO		NULL	
+email	varchar(255)	NO	UNI	NULL	
+email_verified_at	timestamp	YES		NULL	
+password	varchar(255)	NO		NULL	
+status	varchar(255)	NO		Active	
+remember_token	varchar(100)	YES		NULL	
+created_at	timestamp	YES		NULL	
+updated_at	timestamp	YES		NULL	

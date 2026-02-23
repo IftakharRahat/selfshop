@@ -16,9 +16,13 @@ class DatabaseSeeder extends Seeder
         // Run in this order: roles first, then admin, then fix default admin role, then vendor examples
         // NOTE: Commented out items can be enabled when you are ready.
 
-        // $this->call(RolePermissionSeeder::class);
-        // $this->call(AdminSeeder::class);
-        // $this->call(FixAdminRoleSeeder::class);
+        $this->call(RolePermissionSeeder::class);
+        $this->call(AdminSeeder::class);
+        $this->call(FixAdminRoleSeeder::class);
+        $this->call(BasicinfoSeeder::class);
+        $this->call(AddbannerSeeder::class);
+        $this->call(CategorySeeder::class);
+        $this->call(BrandSeeder::class);
         // $this->call(InformationSeeder::class);
         // $this->call(UserSeeder::class);
         // $this->call(UserRolePermissionSeeder::class);

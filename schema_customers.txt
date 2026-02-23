@@ -1,0 +1,8 @@
+﻿Field	Type	Null	Key	Default	Extra
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment
+order_id	int(11)	NO		NULL	
+customerName	varchar(255)	NO		NULL	
+customerPhone	varchar(255)	NO		NULL	
+customerAddress	varchar(255)	NO		NULL	
+created_at	timestamp	YES		NULL	
+updated_at	timestamp	YES		NULL	

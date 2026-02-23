@@ -1,0 +1,4 @@
+﻿[!] Aliasing 'Package' to 'App\Models\Package' for this Tinker session.
+
+   Illuminate\Database\QueryException  could not find driver (SQL: select * from `packages`).
+

@@ -29,6 +29,11 @@ class User extends Authenticatable
         'is_verified_wholesaler',
         'my_referral_code',
         'refer_by',
+        'membership_status',
+        'shop_name',
+        'expire_date',
+        'p_system',
+        'active_date',
     ];
 
     /**

@@ -77,7 +77,7 @@ export default function VendorNotificationCenter({ disabled = false }: Props) {
 			</button>
 
 			{open && (
-				<div className="absolute right-0 mt-2 w-[340px] max-w-[90vw] rounded-xl border border-gray-200 bg-white shadow-xl z-50">
+				<div className="fixed left-1/2 -translate-x-1/2 sm:absolute sm:left-auto sm:translate-x-0 sm:right-0 mt-2 w-[calc(100vw-2rem)] max-w-[340px] rounded-xl border border-gray-200 bg-white shadow-xl z-50">
 					<div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
 						<p className="text-sm font-semibold text-gray-900">Notifications</p>
 						<button
@@ -101,9 +101,8 @@ export default function VendorNotificationCenter({ disabled = false }: Props) {
 								{notifications.map((item) => (
 									<li
 										key={item.id}
-										className={`px-3 py-2 transition ${
-											item.is_read ? "bg-white" : "bg-indigo-50"
-										}`}
+										className={`px-3 py-2 transition ${item.is_read ? "bg-white" : "bg-indigo-50"
+											}`}
 									>
 										<button
 											type="button"
