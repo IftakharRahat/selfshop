@@ -366,6 +366,74 @@
             fill: #fff !important;                /* override inline fill attr */
         }
 
+        .target-widget {
+            background: #101828;
+            color: #f9fafb;
+            border: 1px solid #293144;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0 12px;
+        }
+
+        .target-widget h6 {
+            color: #facc15;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .target-widget ul {
+            margin: 0 0 8px 16px;
+            padding: 0;
+            font-size: 12px;
+        }
+
+        .target-widget ul li {
+            margin-bottom: 2px;
+            line-height: 1.35;
+        }
+
+        .target-widget .small {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .target-progress {
+            margin-top: 8px;
+        }
+
+        .target-progress .progress {
+            height: 7px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
+        }
+
+        .target-progress .progress-bar {
+            background: linear-gradient(90deg, #f59e0b, #facc15);
+            border-radius: 999px;
+        }
+
+        .target-metrics {
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .target-badge-done {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #022c22;
+            background: #bbf7d0;
+            border-radius: 999px;
+            padding: 2px 8px;
+        }
+
     </style>
 </head>
 
@@ -395,6 +463,7 @@
                                     </div>
                                 </div>
                                </div>
+                               @include('user.partials.sales_target_widget')
                             </div>
                         </div>
 
@@ -560,6 +629,7 @@
                         </div>
                     </div>
                     </div>
+                    @include('user.partials.sales_target_widget')
                 </div>
             </div>
 

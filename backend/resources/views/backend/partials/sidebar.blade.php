@@ -92,6 +92,9 @@
             <a href="{{ route('admin.basicinfos.index') }}" class="nav-item nav-link {{ request()->is('admin/basicinfos*') ? 'active-nav' : '' }}">
                 <i class="bi bi-gear"></i> Settings
             </a>
+            <a href="{{ route('admin.sales-targets.index') }}" class="nav-item nav-link {{ request()->is('admin/sales-targets*') ? 'active-nav' : '' }}">
+                <i class="bi bi-bullseye"></i> Sales Targets
+            </a>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-shop"></i> Shops</a>
                 <div class="bg-transparent border-0 dropdown-menu">

@@ -14,6 +14,7 @@ use App\Models\Addbanner;
 use App\Models\Servicepackage;
 use App\Models\Comment;
 use App\Models\Order;
+use App\Models\SalesTarget;
 use Stevebauman\Location\Facades\Location;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -209,6 +210,28 @@ class AppServiceProvider extends ServiceProvider
             $basicinfo = Basicinfo::first();
             $view->with([
                 'basicinfo' => $basicinfo,
+            ]);
+        });
+
+        View()->composer('user.master', function ($view) {
+            $activeSalesTarget = null;
+            $salesTargetProgress = null;
+
+            if (Auth::guard('web')->check()) {
+                $activeSalesTarget = SalesTarget::query()
+                    ->activeNow()
+                    ->orderByDesc('priority')
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($activeSalesTarget) {
+                    $salesTargetProgress = $activeSalesTarget->getProgressForUser((int) Auth::guard('web')->id());
+                }
+            }
+
+            $view->with([
+                'activeSalesTarget' => $activeSalesTarget,
+                'salesTargetProgress' => $salesTargetProgress,
             ]);
         });
     }

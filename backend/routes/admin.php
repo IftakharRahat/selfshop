@@ -54,6 +54,7 @@ use App\Http\Controllers\Backend\AdminVendorPayoutController;
 use App\Http\Controllers\Backend\AdminVendorReportController;
 use App\Http\Controllers\Backend\AdminVendorCommissionController;
 use App\Http\Controllers\Backend\FlashSaleController;
+use App\Http\Controllers\Backend\SalesTargetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -167,6 +168,13 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('flashsale/search-products', [FlashSaleController::class, 'searchProducts'])->name('admin.flashsale.searchproducts');
     // {id} wildcard MUST come after all literal flashsale/* routes
     Route::post('flashsale/{id}', [FlashSaleController::class, 'update']);
+
+    // Sales Targets
+    Route::get('sales-targets', [SalesTargetController::class, 'index'])->name('admin.sales-targets.index');
+    Route::post('sales-targets', [SalesTargetController::class, 'store'])->name('admin.sales-targets.store');
+    Route::put('sales-targets/{id}', [SalesTargetController::class, 'update'])->name('admin.sales-targets.update');
+    Route::put('sales-targets/{id}/toggle-status', [SalesTargetController::class, 'toggleStatus'])->name('admin.sales-targets.toggle-status');
+    Route::delete('sales-targets/{id}', [SalesTargetController::class, 'destroy'])->name('admin.sales-targets.destroy');
 
     //add banners
     Route::resource('addbanners', AddbannerController::class, ['names' => 'admin.addbanners']);
