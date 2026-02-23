@@ -5,10 +5,6 @@
     {{ env('APP_NAME') }}- Flash Sales
 @endsection
 <style>
-    div#flashsaleinfo_length { color: red; }
-    div#flashsaleinfo_filter { color: red; }
-    div#flashsaleinfo_info { color: red; }
-
     /* Dropdown trigger */
     .fs-dropdown-trigger {
         display: flex; align-items: center; justify-content: space-between;
@@ -75,44 +71,42 @@
         background: #fff; border-radius: 8px; padding: 20px 24px; width: 320px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.2);
     }
-    .fs-discount-box h6 { color: red; margin-bottom: 4px; }
+    .fs-discount-box h6 { color: #0d6efd; margin-bottom: 4px; font-weight: 600; }
     .fs-discount-box .prod-label { font-size: 12px; color: #888; margin-bottom: 12px; }
 </style>
 
 <div class="container-fluid pt-4 px-4">
     <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between" style="width: 50%;float:left;">
-                    <h6 class="mb-0">Flash Sale List</h6>
+        <div class="col-12">
+            <div class="admin-content-card">
+                <div class="admin-card-header">
+                    <h6 class="admin-card-title">Flash Sale List</h6>
+                    <div class="admin-card-actions">
+                        <a type="button" data-bs-toggle="modal" data-bs-target="#createFlashSaleModal" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-lg"></i> Create Flash Sale
+                        </a>
+                    </div>
                 </div>
-                <div class="" style="width: 50%;float:left;">
-                    <a type="button" data-bs-toggle="modal" data-bs-target="#createFlashSaleModal" class="btn btn-primary m-2"
-                        style="float: right"> + Create Flash Sale</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="flashsaleinfo" width="100%" style="text-align: center;">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>SL</th>
-                                <th>Banner</th>
-                                <th>Title</th>
-                                <th>Start Time</th>
-                                <th>End Time</th>
-                                <th>Reg. Deadline</th>
-                                <th>Products</th>
-                                <th>Vendor Reg.</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                <div class="admin-card-body">
+                    <div class="data-tables">
+                        <table class="table" id="flashsaleinfo" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>SL</th>
+                                    <th>Banner</th>
+                                    <th>Title</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Reg. Deadline</th>
+                                    <th>Products</th>
+                                    <th>Vendor Reg.</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -120,41 +114,41 @@
         {{-- Create Flash Sale Modal --}}
         <div class="modal fade" id="createFlashSaleModal" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Create New Flash Sale</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Create New Flash Sale</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body admin-modal-body">
                         <form name="form" id="AddFlashSale" enctype="multipart/form-data">
                             @csrf
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="title" id="create_title" placeholder="Title" required>
-                                <label>Title</label>
+                            <div class="mb-3">
+                                <label class="form-label">Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="title" id="create_title" placeholder="Enter flash sale title" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:13px;font-weight:600;">Banner Image</label>
+                                <label class="form-label">Banner Image</label>
                                 <input type="file" class="form-control" name="banner_image" id="create_banner_image" accept="image/*">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Start Time <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control" name="start_time" id="create_start_time" required>
-                                <label>Start Time</label>
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">End Time <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control" name="end_time" id="create_end_time" required>
-                                <label>End Time</label>
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Registration Deadline</label>
                                 <input type="datetime-local" class="form-control" name="registration_deadline" id="create_registration_deadline">
-                                <label>Registration Deadline</label>
                             </div>
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" name="vendor_registration" id="create_vendor_registration" value="1" checked>
                                 <label class="form-check-label" for="create_vendor_registration">Open for Vendor Registration</label>
                             </div>
-                            <div class="form-group mt-2" style="text-align: right">
-                                <button type="button" data-bs-dismiss="modal" class="btn btn-dark btn-block" style="float: left">Close</button>
-                                <button type="submit" class="btn btn-primary btn-block">Save</button>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" class="btn btn-primary btn-sm">Save</button>
                             </div>
                         </form>
                     </div>
@@ -165,43 +159,43 @@
         {{-- Edit Flash Sale Modal --}}
         <div class="modal fade" id="editFlashSaleModal" tabindex="-1">
             <div class="modal-dialog">
-                <div class="modal-content bg-secondary rounded h-100">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Edit Flash Sale</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-content admin-modal">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Edit Flash Sale</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body admin-modal-body">
                         <form name="form" id="EditFlashSale" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="flash_sale_id" id="edit_flash_sale_id">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="title" id="edit_title" placeholder="Title" required>
-                                <label>Title</label>
+                            <div class="mb-3">
+                                <label class="form-label">Title <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="title" id="edit_title" placeholder="Enter flash sale title" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label" style="font-size:13px;font-weight:600;">Banner Image</label>
+                                <label class="form-label">Banner Image</label>
                                 <div id="edit_banner_preview" style="margin-bottom:6px;"></div>
                                 <input type="file" class="form-control" name="banner_image" id="edit_banner_image" accept="image/*">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Start Time <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control" name="start_time" id="edit_start_time" required>
-                                <label>Start Time</label>
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">End Time <span class="text-danger">*</span></label>
                                 <input type="datetime-local" class="form-control" name="end_time" id="edit_end_time" required>
-                                <label>End Time</label>
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Registration Deadline</label>
                                 <input type="datetime-local" class="form-control" name="registration_deadline" id="edit_registration_deadline">
-                                <label>Registration Deadline</label>
                             </div>
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" name="vendor_registration" id="edit_vendor_registration" value="1">
                                 <label class="form-check-label" for="edit_vendor_registration">Open for Vendor Registration</label>
                             </div>
-                            <div class="form-group mt-2" style="text-align: right">
-                                <button type="button" data-bs-dismiss="modal" class="btn btn-dark btn-block" style="float: left">Close</button>
-                                <button type="submit" class="btn btn-primary btn-block">Update</button>
+                            <div class="admin-modal-footer">
+                                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary btn-sm">Close</button>
+                                <button type="submit" class="btn btn-primary btn-sm">Update</button>
                             </div>
                         </form>
                     </div>
@@ -212,12 +206,12 @@
         {{-- Manage Products Modal --}}
         <div class="modal fade" id="manageProductsModal" tabindex="-1">
             <div class="modal-dialog modal-lg">
-                <div class="modal-content bg-secondary rounded h-100" style="position: relative;">
-                    <div class="modal-header">
-                        <h5 class="modal-title" style="color: red;">Manage Flash Sale Products</h5>
-                        <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-content admin-modal" style="position: relative;">
+                    <div class="modal-header admin-modal-header">
+                        <h5 class="modal-title">Manage Flash Sale Products</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body admin-modal-body">
                         <input type="hidden" id="manage_flash_sale_id">
 
                         {{-- Product Dropdown --}}
@@ -257,12 +251,12 @@
                             <div class="fs-discount-box">
                                 <h6>Set Discount %</h6>
                                 <p class="prod-label" id="discountProductName"></p>
-                                <div class="form-floating mb-3">
-                                    <input type="number" class="form-control" id="discountInput" placeholder="Discount %" min="0" max="99" value="10">
-                                    <label>Discount %</label>
+                                <div class="mb-3">
+                                    <label class="form-label">Discount %</label>
+                                    <input type="number" class="form-control" id="discountInput" placeholder="Enter discount %" min="0" max="99" value="10">
                                 </div>
                                 <div style="display:flex; gap:8px; justify-content:flex-end;">
-                                    <button type="button" class="btn btn-dark btn-sm" id="discountCancel">Cancel</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="discountCancel">Cancel</button>
                                     <button type="button" class="btn btn-primary btn-sm" id="discountConfirm">Add Product</button>
                                 </div>
                             </div>
