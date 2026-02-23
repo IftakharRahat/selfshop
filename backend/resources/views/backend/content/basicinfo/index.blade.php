@@ -5,301 +5,376 @@
     {{ env('APP_NAME') }}- Basicinfo
 @endsection
 
+<style>
+    .basicinfo-wrapper {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .basicinfo-wrapper .admin-card-body {
+        padding: 20px;
+    }
+    .basicinfo-wrapper .form-group {
+        margin-bottom: 16px;
+    }
+    .basicinfo-wrapper .form-group:last-child {
+        margin-bottom: 0;
+    }
+    .basicinfo-wrapper .form-group > label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--admin-text, #1e293b);
+        margin-bottom: 5px;
+    }
+    .basicinfo-wrapper .form-group > label .text-muted {
+        font-weight: 400;
+        font-size: 12px;
+    }
+
+    /* Current asset preview */
+    .current-asset {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+        padding: 10px 14px;
+        background: var(--admin-bg, #f8fafc);
+        border: 1px solid var(--admin-border, #e2e8f0);
+        border-radius: 8px;
+    }
+    .current-asset .asset-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--admin-text-muted, #94a3b8);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+    .current-asset img {
+        max-height: 40px;
+        border-radius: 4px;
+    }
+
+    /* Submit button */
+    .basicinfo-wrapper .btn-save-section {
+        padding: 10px 32px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        background: var(--admin-primary, #2d2a5d);
+        border: none;
+        color: #fff;
+        transition: all 0.2s ease;
+    }
+    .basicinfo-wrapper .btn-save-section:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(45, 42, 93, 0.3);
+    }
+
+    /* Section icon in header */
+    .section-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+    .section-icon.settings { background: #eef2ff; color: #4f46e5; }
+    .section-icon.analytics { background: #fef3c7; color: #d97706; }
+    .section-icon.social { background: #dbeafe; color: #2563eb; }
+    .section-icon.shipping { background: #d1fae5; color: #059669; }
+</style>
+
 <div class="container-fluid pt-4 px-4">
-    <div class="row">
+    <div class="basicinfo-wrapper">
 
-        <div class="col-sm-12 col-md-12 col-xl-6 mb-4">
-            <div class="bg-secondary rounded h-100 p-4">
-                <h2 class="mb-4" style="text-align: center;color:#0a296f">Settings Update</h2>
-                <form action="{{ route('admin.basicinfos.update', $webinfo->id) }}" method="POST"
-                    enctype="multipart/form-data">
-                    @method('PUT')
-                    @csrf
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
+        {{-- Breadcrumb --}}
+        <div class="pagetitle mb-3">
+            <nav>
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                    <li class="breadcrumb-item active">Basic Information</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="row">
+
+            {{-- ============ LEFT COLUMN ============ --}}
+            <div class="col-xl-6 mb-4">
+
+                {{-- Settings Update --}}
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="section-icon settings"><i class="bi bi-gear"></i></div>
+                            <h6 class="admin-card-title mb-0">General Settings</h6>
+                        </div>
+                    </div>
+                    <div class="admin-card-body">
+                        <form action="{{ route('admin.basicinfos.update', $webinfo->id) }}" method="POST"
+                            enctype="multipart/form-data">
+                            @method('PUT')
+                            @csrf
+                            <div class="form-group">
+                                <label>Email Address</label>
                                 <input type="email" class="form-control" name="email" value="{{ $webinfo->email }}"
-                                    id="floatingInput" placeholder="name@example.com">
-                                <label for="floatingInput">Email address</label>
+                                    placeholder="name@example.com">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label>WhatsApp Number</label>
                                 <input type="text" class="form-control" name="wp_number"
-                                    value="{{ $webinfo->wp_number }}" id="floatingPassword" placeholder="What's Number">
-                                <label for="floatingPassword">What's Number</label>
+                                    value="{{ $webinfo->wp_number }}" placeholder="WhatsApp number">
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="phone_one"
-                                    value="{{ $webinfo->phone_one }}" id="floatingPassword" placeholder="Phone One">
-                                <label for="floatingPassword">Phone One</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Phone One</label>
+                                        <input type="text" class="form-control" name="phone_one"
+                                            value="{{ $webinfo->phone_one }}" placeholder="Primary phone">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Phone Two</label>
+                                        <input type="text" class="form-control" name="phone_two"
+                                            value="{{ $webinfo->phone_two }}" placeholder="Secondary phone">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="phone_two"
-                                    value="{{ $webinfo->phone_two }}" id="floatingPassword" placeholder="Phone Two">
-                                <label for="floatingPassword">Phone Two</label>
+                            <div class="form-group">
+                                <label>Office Address</label>
+                                <textarea class="form-control" name="address" rows="2" placeholder="Office address">{{ $webinfo->address }}</textarea>
                             </div>
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" placeholder="Office Address" name="address" id="floatingTextarea" style="height: 100px;">{{ $webinfo->address }}</textarea>
-                                <label for="floatingTextarea">Office Address</label>
-                            </div>
-
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label>Account Opening Bonus</label>
                                 <input type="text" class="form-control" name="bonus_percent"
-                                    value="{{ $webinfo->bonus_percent }}" id="floatingPassword" placeholder="Account Opening Bonus">
-                                <label for="floatingPassword">Account Opening Bonus</label>
+                                    value="{{ $webinfo->bonus_percent }}" placeholder="Bonus percentage">
                             </div>
-                            <div class="mb-3">
-                                <input class="form-control form-control-lg bg-dark" name="logo" id="formFileLg"
-                                    type="file">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Logo</label>
+                                        <input class="form-control" name="logo" type="file">
+                                        @if($webinfo->logo)
+                                        <div class="current-asset">
+                                            <span class="asset-label">Current:</span>
+                                            <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->logo ?? '')) }}" alt="Logo">
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Favicon</label>
+                                        <input class="form-control" name="fav_icon" type="file">
+                                        @if($webinfo->fav_icon)
+                                        <div class="current-asset">
+                                            <span class="asset-label">Current:</span>
+                                            <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->fav_icon ?? '')) }}" alt="Favicon">
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
-                            <div class="m-3 ms-0" style="text-align: center;height: 50px;">
-                                <h4 style="width:30%;float: left;text-align: left;">LOGO : </h4>
-                                <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->logo ?? '')) }}" alt="" srcset=""
-                                    style="max-height: 50px;">
+
+                            <div class="mt-3 text-end">
+                                <button type="submit" class="btn btn-save-section">Save Settings</button>
                             </div>
-                            <br>
-                            <br> 
-                            <div class="mb-3">
-                                <input class="form-control form-control-lg bg-dark" name="fav_icon" id="formFileLg"
-                                    type="file">
-                            </div>
-                            <div class="m-3 ms-0" style="text-align: center;height: 50px;">
-                                <h4 style="width:30%;float: left;text-align: left;">FAV ICON : </h4>
-                                <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->fav_icon ?? '')) }}" alt="" srcset=""
-                                    style="max-height: 100px;">
-                            </div>
-                            
-                            <div class="mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg w-100">Update</button>
-                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Social Links --}}
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="section-icon social"><i class="bi bi-share"></i></div>
+                            <h6 class="admin-card-title mb-0">Social Links</h6>
                         </div>
                     </div>
-                </form>
-            </div>
-        </div>
-        <div class="col-sm-12 col-md-12 col-xl-6 mb-4">
-            <div class="bg-secondary rounded h-100 p-4">
-                <h2 class="mb-4" style="text-align: center;color:#0a296f">Pixel & Analytics</h2>
-                <form action="{{ url('/admin/pixel/analytics', $webinfo->id) }}" method="POST"
-                    enctype="multipart/form-data">
-                    @csrf
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" placeholder="Invoice Footer Text" name="invoice_footer" id="floatingTextarea"
-                                    style="height: 80px;">{{ $webinfo->invoice_footer }}</textarea>
-                                <label for="floatingTextarea">Invoice Footer Text</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" placeholder="Facebook Pixel" name="facebook_pixel" id="floatingTextarea"
-                                    style="height: 150px;">{{ $webinfo->facebook_pixel }}</textarea>
-                                <label for="floatingTextarea">Facebook Pixel</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" placeholder="Google Analytics" name="google_analytics" id="floatingTextarea"
-                                    style="height: 150px;">{{ $webinfo->google_analytics }}</textarea>
-                                <label for="floatingTextarea">Google Analytics</label>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" placeholder="Marquee Text" name="marquee_text" id="marquee_text"
-                                    style="height: 100px;">{{ $webinfo->marquee_text }}</textarea>
-                                <label for="floatingTextarea">Marquee Text</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" placeholder="Chatbox Script" name="chat_box" id="chat_box" style="height: 100px;">{{ $webinfo->chat_box }}</textarea>
-                                <label for="floatingTextarea">Chatbox Script</label>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">Update</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div class="col-sm-12 col-md-12 col-xl-6">
-            <div class="bg-secondary rounded h-100 p-4">
-                <h2 class="mb-4" style="text-align: center;color:#0a296f">Social Links Update</h2>
-                <form action="{{ url('/admin/basicinfo/update', $webinfo->id) }}" method="POST"
-                    enctype="multipart/form-data">
-                    @csrf
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
+                    <div class="admin-card-body">
+                        <form action="{{ url('/admin/basicinfo/update', $webinfo->id) }}" method="POST"
+                            enctype="multipart/form-data">
+                            @csrf
+                            <div class="form-group">
+                                <label><i class="bi bi-whatsapp me-1"></i> WhatsApp Link</label>
                                 <input type="text" class="form-control" name="wp_link"
-                                    value="{{ $webinfo->wp_link }}" id="floatingInput"
-                                    placeholder="">
-                                <label for="floatingInput">What's App Link</label>
+                                    value="{{ $webinfo->wp_link }}" placeholder="https://wa.me/...">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label><i class="bi bi-messenger me-1"></i> Messenger Link</label>
                                 <input type="text" class="form-control" name="messanger_link"
-                                    value="{{ $webinfo->messanger_link }}" id="floatingInput"
-                                    placeholder="">
-                                <label for="floatingInput">messanger_link</label>
+                                    value="{{ $webinfo->messanger_link }}" placeholder="https://m.me/...">
                             </div>
-
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label><i class="bi bi-facebook me-1"></i> Facebook</label>
                                 <input type="text" class="form-control" name="facebook"
-                                    value="{{ $webinfo->facebook }}" id="floatingInput"
-                                    placeholder="https://www.facebook.com/">
-                                <label for="floatingInput">Facebook</label>
+                                    value="{{ $webinfo->facebook }}" placeholder="https://www.facebook.com/">
                             </div>
-                            <div class="form-floating mb-3" hidden>
+                            <div class="form-group" hidden>
+                                <label>Twitter</label>
                                 <input type="text" class="form-control" name="twitter"
-                                    value="{{ $webinfo->twitter }}" id="floatingInput"
-                                    placeholder="https://www.twitter.com/">
-                                <label for="floatingInput">Twitter</label>
+                                    value="{{ $webinfo->twitter }}" placeholder="https://www.twitter.com/">
                             </div>
-                            <div class="form-floating mb-3" hidden>
+                            <div class="form-group" hidden>
+                                <label>Google</label>
                                 <input type="text" class="form-control" name="google"
-                                    value="{{ $webinfo->google }}" id="floatingInput"
-                                    placeholder="https://google.com">
-                                <label for="floatingInput">Google</label>
+                                    value="{{ $webinfo->google }}" placeholder="https://google.com">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label><i class="bi bi-tiktok me-1"></i> TikTok</label>
                                 <input type="text" class="form-control" name="rss"
-                                    value="{{ $webinfo->rss }}" id="floatingInput"
-                                    placeholder="https://www.tiktok.com/">
-                                <label for="floatingInput">Tiktok</label>
+                                    value="{{ $webinfo->rss }}" placeholder="https://www.tiktok.com/">
                             </div>
-                            <div class="form-floating mb-3" hidden>
+                            <div class="form-group" hidden>
+                                <label>Pinterest</label>
                                 <input type="text" class="form-control" name="pinterest"
-                                    value="{{ $webinfo->pinterest }}" id="floatingInput"
-                                    placeholder="https://www.pinterest.com/">
-                                <label for="floatingInput">Penterest</label>
+                                    value="{{ $webinfo->pinterest }}" placeholder="https://www.pinterest.com/">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label><i class="bi bi-instagram me-1"></i> Instagram</label>
                                 <input type="text" class="form-control" name="linkedin"
-                                    value="{{ $webinfo->linkedin }}" id="floatingInput"
-                                    placeholder="https://www.Instagram.com/">
-                                <label for="floatingInput">Instagram</label>
+                                    value="{{ $webinfo->linkedin }}" placeholder="https://www.instagram.com/">
                             </div>
-                            <div class="form-floating mb-3">
+                            <div class="form-group">
+                                <label><i class="bi bi-youtube me-1"></i> YouTube</label>
                                 <input type="text" class="form-control" name="youtube"
-                                    value="{{ $webinfo->youtube }}" id="floatingInput"
-                                    placeholder="https://www.Youtube.com/">
-                                <label for="floatingInput">Youtube</label>
+                                    value="{{ $webinfo->youtube }}" placeholder="https://www.youtube.com/">
                             </div>
 
-
-                            <div class="mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg w-100">Update</button>
+                            <div class="mt-3 text-end">
+                                <button type="submit" class="btn btn-save-section">Save Social Links</button>
                             </div>
-                        </div>
-
+                        </form>
                     </div>
-                </form>
+                </div>
             </div>
-        </div>
 
-        <div class="col-sm-12 col-md-12 col-xl-6 mb-4">
-            <div class="bg-secondary rounded h-100 p-4">
-                <h2 class="mb-4" style="text-align: center;color:#0a296f">Shipping Information Update</h2>
-                <form action="{{ route('admin.shipping.update', $webinfo->id) }}" method="POST"
-                    enctype="multipart/form-data">
-                    @method('PUT')
-                    @csrf
-                    <div class="row">
-                        <div class="col-lg-12">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="b_one"
-                                    value="{{ $webinfo->b_one }}" id="floatingPassword" placeholder="Bkash One">
-                                <label for="floatingPassword">Bkash One</label>
+            {{-- ============ RIGHT COLUMN ============ --}}
+            <div class="col-xl-6 mb-4">
+
+                {{-- Pixel & Analytics --}}
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="section-icon analytics"><i class="bi bi-graph-up"></i></div>
+                            <h6 class="admin-card-title mb-0">Pixel & Analytics</h6>
+                        </div>
+                    </div>
+                    <div class="admin-card-body">
+                        <form action="{{ url('/admin/pixel/analytics', $webinfo->id) }}" method="POST"
+                            enctype="multipart/form-data">
+                            @csrf
+                            <div class="form-group">
+                                <label>Invoice Footer Text</label>
+                                <textarea class="form-control" name="invoice_footer" rows="2" placeholder="Text shown at the bottom of invoices">{{ $webinfo->invoice_footer }}</textarea>
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="b_two"
-                                    value="{{ $webinfo->b_two }}" id="floatingPassword" placeholder="Nagad One">
-                                <label for="floatingPassword">Nagad One</label>
+                            <div class="form-group">
+                                <label>Facebook Pixel <span class="text-muted">(paste full script)</span></label>
+                                <textarea class="form-control" name="facebook_pixel" rows="4" placeholder="<!-- Facebook Pixel Code -->">{{ $webinfo->facebook_pixel }}</textarea>
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="b_three"
-                                    value="{{ $webinfo->b_three }}" id="floatingPassword" placeholder="Rocket One">
-                                <label for="floatingPassword">Rocket One</label>
+                            <div class="form-group">
+                                <label>Google Analytics <span class="text-muted">(paste full script)</span></label>
+                                <textarea class="form-control" name="google_analytics" rows="4" placeholder="<!-- Global site tag (gtag.js) -->">{{ $webinfo->google_analytics }}</textarea>
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="inside_dhaka_charge"
-                                    value="{{ $webinfo->inside_dhaka_charge }}" id="inside_dhaka_charge"
-                                    placeholder="Inside Dhaka Charge">
-                                <label for="floatingInput">Inside Dhaka Charge</label>
+                            <div class="form-group">
+                                <label>Marquee Text</label>
+                                <textarea class="form-control" name="marquee_text" id="marquee_text" rows="2" placeholder="Scrolling announcement text">{{ $webinfo->marquee_text }}</textarea>
                             </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="near_dhaka_charge"
-                                    value="{{ $webinfo->near_dhaka_charge }}" id="near_dhaka_charge"
-                                    placeholder="Near Dhaka Charge">
-                                <label for="floatingPassword">Near Dhaka Charge</label>
-                            </div>
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="outside_dhaka_charge"
-                                    value="{{ $webinfo->outside_dhaka_charge }}" id="outside_dhaka_charge"
-                                    placeholder="Outside Dhaka Charge">
-                                <label for="floatingPassword">Outside Dhaka Charge</label>
-                            </div>
-                            <div class="form-floating mb-3" hidden>
-                                <input type="text" class="form-control" name="insie_dhaka"
-                                    value="{{ $webinfo->insie_dhaka }}" id="insie_dhaka"
-                                    placeholder="Inside Dhaka Delivery Time">
-                                <label for="floatingPassword">Inside Dhaka Delivery Time</label>
-                            </div>
-                            <div class="form-floating mb-3" hidden>
-                                <input type="text" class="form-control" name="outside_dhaka"
-                                    value="{{ $webinfo->outside_dhaka }}" id="outside_dhaka"
-                                    placeholder="Outside Dhaka Delivery Time">
-                                <label for="floatingPassword">Outside Dhaka Delivery Time</label>
+                            <div class="form-group">
+                                <label>Chatbox Script <span class="text-muted">(paste full script)</span></label>
+                                <textarea class="form-control" name="chat_box" id="chat_box" rows="3" placeholder="<!-- Chat widget script -->">{{ $webinfo->chat_box }}</textarea>
                             </div>
 
-                            <div class="form-floating mb-3" hidden>
-                                <input type="text" class="form-control" name="contact"
-                                    value="{{ $webinfo->contact }}" id="contact" placeholder="Contact Info">
-                                <label for="floatingInput">Contact Info</label>
+                            <div class="mt-3 text-end">
+                                <button type="submit" class="btn btn-save-section">Save Analytics</button>
                             </div>
+                        </form>
+                    </div>
+                </div>
 
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="title"
-                                    value="{{ $webinfo->title }}" id="floatingInput" >
-                                <label for="floatingInput">Meta Title</label>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="form-floating mb-3">
-                                    <textarea class="form-control" placeholder="Meta Description" name="meta_description" id="meta_description"
-                                        style="height: 100px;">{{ $webinfo->meta_description }}</textarea>
-                                    <label for="floatingTextarea">Meta Description</label>
+                {{-- Shipping & Payment Information --}}
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="section-icon shipping"><i class="bi bi-truck"></i></div>
+                            <h6 class="admin-card-title mb-0">Shipping & Payment Info</h6>
+                        </div>
+                    </div>
+                    <div class="admin-card-body">
+                        <form action="{{ route('admin.shipping.update', $webinfo->id) }}" method="POST"
+                            enctype="multipart/form-data">
+                            @method('PUT')
+                            @csrf
+
+                            <p style="font-size: 13px; font-weight: 600; color: var(--admin-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Payment Numbers</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>bKash</label>
+                                        <input type="text" class="form-control" name="b_one"
+                                            value="{{ $webinfo->b_one }}" placeholder="bKash number">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Nagad</label>
+                                        <input type="text" class="form-control" name="b_two"
+                                            value="{{ $webinfo->b_two }}" placeholder="Nagad number">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Rocket</label>
+                                        <input type="text" class="form-control" name="b_three"
+                                            value="{{ $webinfo->b_three }}" placeholder="Rocket number">
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-lg-12">
-                                <div class="form-floating mb-3">
-                                    <textarea class="form-control" placeholder="Meta Keyword" name="meta_keyword" id="meta_keyword"
-                                        style="height: 100px;">{{ $webinfo->meta_keyword }}</textarea>
-                                    <label for="floatingTextarea">Meta Keyword</label>
+
+                            <hr style="border-color: var(--admin-border, #e2e8f0); margin: 16px 0;">
+
+                            <p style="font-size: 13px; font-weight: 600; color: var(--admin-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Delivery Charges</p>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Inside Dhaka</label>
+                                        <input type="text" class="form-control" name="inside_dhaka_charge"
+                                            value="{{ $webinfo->inside_dhaka_charge }}" id="inside_dhaka_charge"
+                                            placeholder="৳ 0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Near Dhaka</label>
+                                        <input type="text" class="form-control" name="near_dhaka_charge"
+                                            value="{{ $webinfo->near_dhaka_charge }}" id="near_dhaka_charge"
+                                            placeholder="৳ 0">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Outside Dhaka</label>
+                                        <input type="text" class="form-control" name="outside_dhaka_charge"
+                                            value="{{ $webinfo->outside_dhaka_charge }}" id="outside_dhaka_charge"
+                                            placeholder="৳ 0">
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <input class="form-control form-control-lg bg-dark" name="meta_image" id="formFileLg"
-                                    type="file">
-                            </div>
-                            <div class="m-3 ms-0" style="text-align: center;height: 85px;margin-top:50px !important">
-                                <h4 style="width:30%;float: left;text-align: left;">Meta Image : </h4>
-                                <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->meta_image ?? '')) }}" alt="" srcset=""
-                                    style="max-height: 100px;">
-                            </div>
-
-                            <div class="form-floating mb-3" hidden>
-                                <input type="text" class="form-control" name="refund_rule"
-                                    value="{{ $webinfo->refund_rule }}" id="refund_rule" placeholder="Refund Rules">
-                                <label for="floatingPassword">Refund Rules</label>
-                            </div>
-                            <div class=" mb-4" hidden>
-                                <select name="cash_on_delivery" id="cash_on_delivery" required
-                                    class="form-select form-select-lg mb-3" aria-label=".form-select-lg example">
+                            {{-- Hidden fields preserved --}}
+                            <div hidden>
+                                <input type="text" class="form-control" name="insie_dhaka" value="{{ $webinfo->insie_dhaka }}" id="insie_dhaka">
+                                <input type="text" class="form-control" name="outside_dhaka" value="{{ $webinfo->outside_dhaka }}" id="outside_dhaka">
+                                <input type="text" class="form-control" name="contact" value="{{ $webinfo->contact }}" id="contact">
+                                <input type="text" class="form-control" name="refund_rule" value="{{ $webinfo->refund_rule }}" id="refund_rule">
+                                <select name="cash_on_delivery" id="cash_on_delivery">
                                     @if ($webinfo->cash_on_delivery == 'ON')
                                         <option value="ON" selected>ON</option>
                                         <option value="OFF">OFF</option>
@@ -307,19 +382,46 @@
                                         <option value="ON">ON</option>
                                         <option value="OFF" selected>OFF</option>
                                     @endif
-
                                 </select>
                             </div>
-                            <div class="mt-3">
-                                <button type="submit" class="btn btn-primary btn-lg w-100">Update</button>
+
+                            <hr style="border-color: var(--admin-border, #e2e8f0); margin: 16px 0;">
+
+                            <p style="font-size: 13px; font-weight: 600; color: var(--admin-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">SEO / Meta</p>
+                            <div class="form-group">
+                                <label>Meta Title</label>
+                                <input type="text" class="form-control" name="title"
+                                    value="{{ $webinfo->title }}" placeholder="Site meta title">
                             </div>
-                        </div>
+                            <div class="form-group">
+                                <label>Meta Description</label>
+                                <textarea class="form-control" name="meta_description" id="meta_description" rows="2" placeholder="Site meta description">{{ $webinfo->meta_description }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Meta Keywords</label>
+                                <textarea class="form-control" name="meta_keyword" id="meta_keyword" rows="2" placeholder="Comma-separated keywords">{{ $webinfo->meta_keyword }}</textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Meta Image</label>
+                                <input class="form-control" name="meta_image" type="file">
+                                @if($webinfo->meta_image)
+                                <div class="current-asset">
+                                    <span class="asset-label">Current:</span>
+                                    <img src="{{ asset(preg_replace('#^public/#', '', $webinfo->meta_image ?? '')) }}" alt="Meta Image">
+                                </div>
+                                @endif
+                            </div>
 
+                            <div class="mt-3 text-end">
+                                <button type="submit" class="btn btn-save-section">Save Shipping Info</button>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </div>
-        </div>
+                </div>
 
+            </div>
+
+        </div>
     </div>
 </div>
 
