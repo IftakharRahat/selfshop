@@ -6,8 +6,6 @@
 @endsection
 
 @section('subcss')
-    <link rel="stylesheet" type="text/css"
-        href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.0.0-alpha1/css/bootstrap.min.css">
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/jquery-datatables-checkboxes@1.2.13/css/dataTables.checkboxes.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.4/css/jquery.dataTables.min.css">
@@ -40,9 +38,9 @@
                     <thead>
                         <tr>
                             <th></th>
-                            <th>Invoice</th>
-                            <th>Customer</th>
-                            <th>Phone</th>
+                            <th>Reseller</th>
+                            <th>Email</th>
+                            <th>Package</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -220,13 +218,13 @@
             order: [[0, 'desc']],
             processing: true,
             serverSide: true,
-            ajax: '{{ route('admin.invoice.data') }}',
+            ajax: '{{ route('invoicedata.info', $status) }}',
             columnDefs: [{ targets: 0, checkboxes: { selectRow: false } }],
             columns: [
                 { data: 'id' },
-                { data: 'invoice' },
-                { data: 'name' },
-                { data: 'phone' },
+                { data: 'user', name: 'user', orderable: false, searchable: false },
+                { data: 'email', name: 'email', orderable: false, searchable: false },
+                { data: 'package', name: 'package', orderable: false, searchable: false },
                 { data: 'amount' },
                 { data: 'status', name: 'status', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false },
@@ -249,7 +247,7 @@
         $('#AddInvoice').submit(function(e) {
             e.preventDefault();
             $.ajax({
-                type: 'POST', url: '{{ route('admin.invoice.store') }}',
+                type: 'POST', url: 'resellerinvoice/store',
                 processData: false, contentType: false, data: new FormData(this),
                 success: function(data) {
                     $('#name').val(''); $('#phone').val(''); $('#email').val('');

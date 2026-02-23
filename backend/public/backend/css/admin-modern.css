@@ -1493,3 +1493,91 @@ a {
         padding: 10px 12px !important;
     }
 }
+
+/* ================================================================
+   DataTables Processing Loader — Modern Overlay
+   Replaces the default "Processing..." text globally
+================================================================ */
+
+/* Overlay backdrop */
+.dataTables_processing {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 100 !important;
+    font-size: 0 !important;
+    color: transparent !important;
+    border: none !important;
+    animation: adminLoaderFadeIn 0.2s ease;
+}
+
+/* Loader spinner — centered via absolute positioning */
+.dataTables_processing::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -20px;
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: var(--admin-primary, #2d2a5d);
+    border-radius: 50%;
+    animation: adminSpinnerRotate 0.7s linear infinite;
+}
+
+/* Shimmer bar at the top of the table while loading */
+.dataTables_processing::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+            transparent 0%,
+            var(--admin-primary, #2d2a5d) 50%,
+            transparent 100%);
+    background-size: 200% 100%;
+    animation: adminShimmerBar 1.5s ease-in-out infinite;
+}
+
+@keyframes adminSpinnerRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes adminShimmerBar {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes adminLoaderFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
