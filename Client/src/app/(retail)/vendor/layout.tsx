@@ -195,7 +195,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 							}`}
 					/>
 					<aside
-						className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[86vw] bg-white border-r border-gray-200 md:hidden transform transition-transform ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+						className={`fixed inset-y-0 left-0 z-40 w-64 max-w-[80vw] bg-white border-r border-gray-200 md:hidden transform transition-transform ${mobileNavOpen ? "translate-x-0" : "-translate-x-full"
 							}`}
 					>
 						<div className="h-14 flex items-center justify-between px-4 border-b border-gray-200">
