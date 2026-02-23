@@ -17,6 +17,7 @@ use App\Models\Order;
 use Stevebauman\Location\Facades\Location;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Rakibhstu\Banglanumber\NumberToBangla;
 
 class AppServiceProvider extends ServiceProvider
@@ -38,6 +39,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         view()->composer('*', function ($view) {
             $numto = new NumberToBangla();
             $view->with('numto', $numto);
