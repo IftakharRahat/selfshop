@@ -2,48 +2,34 @@
 
 @section('maincontent')
     @section('title')
-        {{ env('APP_NAME') }}- Users
+        {{ env('APP_NAME') }}- Active Users Import
     @endsection
-<style>
-    div#roleinfo_length {
-        color: red;
-    }
-    div#roleinfo_filter {
-        color: red;
-    }
-    div#roleinfo_info {
-        color: red;
-    }
-</style>
 
 <div class="container-fluid pt-4 px-4">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between"  style="width: 50%;float:left;">
-                    <h6 class="mb-0">Active Users Import</h6>
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Active Users Import</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">Active Users Import</h6>
+        </div>
+        <div class="admin-card-body">
+            <form action="{{ route('activeimport') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="mb-3">
+                    <label style="font-size: 13px; font-weight: 500; margin-bottom: 5px; display: block;">Choose file</label>
+                    <input type="file" name="file" class="form-control" id="customFile">
                 </div>
-            </div>
+                <button type="submit" class="btn" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 8px; padding: 8px 24px; font-weight: 600;">Import File</button>
+            </form>
         </div>
-
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <form action="{{ route('activeimport') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="form-group mb-4">
-                        <div class="custom-file text-left">
-                            <label class="" for="customFile">Choose file</label>
-                            <input type="file" name="file" class="form-control" id="customFile">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary">Import File</button>
-                </form>
-            </div>
-        </div>
-
-
     </div>
 </div>
-
 
 @endsection

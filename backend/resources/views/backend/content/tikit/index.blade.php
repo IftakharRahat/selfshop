@@ -5,115 +5,69 @@
 @section('title')
     {{ env('APP_NAME') }}-Admin Support Tickets
 @endsection
-<style>
-    a {
-        color: black;
-        text-decoration: none;
-    }
 
-    span.select2.select2-container.select2-container--default {
-        width: 80px !important;
-    }
+<div class="container-fluid pt-4 px-4">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Support Tickets</li>
+            </ol>
+        </nav>
+    </div>
 
-    #titlename {
-        text-align: center;
-        padding: 10px;
-        text-transform: uppercase;
-        background: gray;
-        color: white;
-        border-radius: 3px;
-    }
-
-    div {
-        color: black;
-    }
-
-    #accountbtn {
-        width: 50%;
-        padding: 10px;
-        font-size: 22px;
-    }
-
-    #pb30 {
-        padding-bottom: 50px;
-    }
-
-    .ptlg {
-        padding-top: 74px;
-    }
-
-    @media only screen and (max-width: 600px) {
-        #accountbtn {
-            width: 100%;
-            padding: 10px;
-            font-size: 22px;
-        }
-
-        .ptlg {
-            padding-top: 0px;
-        }
-    }
-</style>
-
-<div class="container-fluid pt-4">
-    <div class="row g-4">
-        <div class="col-12 col-lg-12 m-auto" id="pb30">
-            <div class="" style="display: flex;justify-content: space-between;">
-                <h4 id="titlename">Ticket Lists</h4>
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">Ticket Lists</h6>
+        </div>
+        <div class="admin-card-body p-0">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Last Update</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($tikits as $tikit)
+                            <tr>
+                                <td>
+                                    <a href="{{ route('supporttikits.show', $tikit->id) }}" style="color: inherit; text-decoration: none; font-weight: 500;">
+                                        {{ $tikit->department }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ route('supporttikits.show', $tikit->id) }}" style="color: inherit; text-decoration: none;">
+                                        <span style="color: var(--admin-primary, #2d2a5d); font-weight: 600;">#000{{ $tikit->id }}</span>
+                                        <br>{{ $tikit->subject }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="{{ route('supporttikits.show', $tikit->id) }}">
+                                        <span class="badge" style="background: #e8e6f0; color: var(--admin-primary, #2d2a5d); padding: 5px 12px; border-radius: 20px; font-weight: 500;">{{ $tikit->status }}</span>
+                                    </a>
+                                </td>
+                                <td style="color: #6c757d; font-size: 13px;">
+                                    {{ $tikit->updated_at }}
+                                </td>
+                                <td>
+                                    <a class="btn btn-sm" style="background: #e8e6f0; color: var(--admin-primary, #2d2a5d); border-radius: 6px; font-weight: 500;" href="{{ url('admin/supporttikit/edit/' . $tikit->id) }}">
+                                        <i class="bi bi-pencil-square me-1"></i>Edit
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center py-4" style="color: #6c757d;">No tickets found</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-            <div class="row">
-                <div class="col-12 col-md-12">
-                    <div class="card p-4">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr class="text-center">
-                                    <th scope="col">Department</th>
-                                    <th scope="col">Subject</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Last Update</th>
-                                    <th scope="col">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-center">
-                                @forelse ($tikits as $tikit)
-                                    <tr>
-                                        <th scope="row">
-                                            <a href="{{ route('supporttikits.show', $tikit->id) }}">
-                                                {{ $tikit->department }}
-                                            </a>
-                                        </th>
-                                        <td>
-                                            <a href="{{ route('supporttikits.show', $tikit->id) }}">
-                                                <span
-                                                    style="float: left;color: green;font-weight: bold;">#000{{ $tikit->id }}</span>
-                                                <br>{{ $tikit->subject }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('supporttikits.show', $tikit->id) }}">
-                                                <button class="btn btn-secondary">{{ $tikit->status }}</button>
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('supporttikits.show', $tikit->id) }}">
-                                                {{ $tikit->updated_at }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <a class="btn btn-info"
-                                                href="{{ url('admin/supporttikit/edit/' . $tikit->id) }}">
-                                                Edit
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>

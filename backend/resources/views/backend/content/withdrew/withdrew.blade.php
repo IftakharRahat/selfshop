@@ -17,17 +17,16 @@
         opacity: 1; /* Firefox */
     }
 </style>
-<div class="px-4 pt-4 container-fluid">
+<div class="container-fluid pt-4 px-4">
     <div class="row">
         <div class="col-sm-12 col-md-12 col-xl-12">
     {{-- edit payment icon --}}
     <div class="modal fade" id="editmainFrd" tabindex="-1">
         <div class="modal-dialog">
-            <div class="rounded modal-content bg-secondary h-100">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" style="color: red;">Edit Withdrew Request </h5>
-                    <button type="button" class="btn-dark btn-close" data-bs-dismiss="modal"
-                        aria-label="Close" style="background-color: red !important;color: white !important;opacity: 1;"></button>
+                    <h5 class="modal-title" style="font-weight: 600;">Edit Withdrew Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
 
@@ -58,7 +57,7 @@
                                 </div>
                                 <input type="text" name="withdrew_id" id="withdrew_id" hidden>
                                 <div class="mt-3 form-group">
-                                    <label for="" class="m-0">একাউন্ট নাম্বার মিলিয়ে নিন</label>
+                                    <label for="" class="m-0">একাউন্ট নাম্বার মিলিয়ে নিন</label>
                                     <div class="d-flex justify-content-between">
                                         <button id="account" style="padding: 0px 10px;border: 2px solid #FAE2FE !important;font-weight: bold;margin-left: -8px;border-radius: 6px;background: #FAE2FE;margin-right:30px;"></button>
                                         <input type="text" style="background: #E2136E !important;border:none;border-radius: 6px;color: white;" class="form-control" name="to_account_number" id="to_account_number" placeholder="এখানে নম্বর লিখুন" required>
@@ -67,7 +66,7 @@
                                 <br>
                                 <div class="form-group">
                                     <label for=""> Choose Status</label>
-                                    <select name="status" id="status" class="form-control">
+                                    <select name="status" id="status" class="form-select">
                                         <option value="Pending">Pending</option>
                                         <option value="Paid">Paid</option>
                                         <option value="Cancel">Cancel</option>
@@ -97,28 +96,32 @@
         <div class="row">
             <div class="col-lg-12">
 
-                <div class="card">
-                    <div class="pt-4 card-body" style="text-align: center;">
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title">Withdrew List Of User</h6>
+                        <div class="admin-card-actions">
+                            <div class="buttonsec d-flex gap-1 flex-wrap">
+                                <a href="{{ url('withdrew/All') }}" class="btn btn-sm" style="background:#2A74B8;color:#fff;">All</a>
+                                <a href="{{ url('withdrew/Pending') }}" class="btn btn-sm" style="background:#EB762A;color:#fff;">Pending</a>
+                                <a href="{{ url('withdrew/Paid') }}" class="btn btn-sm" style="background:#14BF7D;color:#fff;">Paid</a>
+                                <a href="{{ url('withdrew/Cancel') }}" class="btn btn-sm" style="background:#613EEA;color:#fff;">Cancel</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-card-body p-0">
                         @if (\Session::has('success'))
-                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
                                 <i class="bi bi-check-circle me-1"></i>
                                 {{ \Session::get('success') }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"
                                     aria-label="Close"></button>
                             </div>
                         @endif
-                        <h4>Withdrew List Of User</h4>
-                        <div class="buttonsec">
-                            <a href="{{ url('withdrew/All') }}" class="text-white btn btn-sm" style="background:#2A74B8;border:1px solid #2A74B8;">All</a>
-                            <a href="{{ url('withdrew/Pending') }}" class="text-white btn btn-sm" style="background:#EB762A;border:1px solid #EB762A;">Pending</a>
-                            <a href="{{ url('withdrew/Paid') }}" class="text-white btn btn-sm" style="background:#14BF7D;border:1px solid #14BF7D;">Paid</a>
-                            <a href="{{ url('withdrew/Cancel') }}" class="text-white btn btn-sm" style="background:#613EEA;border:1px solid #613EEA;">Cancel</a>
-                        </div>
                         <!-- Table with stripped rows -->
                         <div class="table-responsive">
-                            <table class="table mb-0 table-centered table-borderless table-hover" id="productrqinfo"
+                            <table class="table admin-table mb-0 table-centered table-borderless table-hover" id="productrqinfo"
                                 width="100%">
-                                <thead class="thead-light">
+                                <thead>
                                     <tr>
                                         <th></th>
                                         <th>User</th>
@@ -133,7 +136,6 @@
                             </table>
                         </div>
                         <!-- End Table with stripped rows -->
-
                     </div>
                 </div>
 

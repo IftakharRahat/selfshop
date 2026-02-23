@@ -5,39 +5,47 @@
 @endsection
 
 @section('maincontent')
-<div class="px-4 pt-4 container-fluid">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="p-4 pb-0 rounded h-100 bg-secondary">
-                <h6 class="mb-0">Vendor Products</h6>
-                <p class="text-muted small mb-0">Products added by vendors. Verify and approve to make them visible on the storefront. You can edit any product from here.</p>
-            </div>
+<div class="container-fluid pt-4 px-4">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Vendor Products</li>
+            </ol>
+        </nav>
+    </div>
+
+    @if(session('message'))
+    <div class="alert alert-success">{{ session('message') }}</div>
+    @endif
+
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">Vendor Products</h6>
+            <p class="mb-0" style="font-size: 12px; color: #64748b;">Products added by vendors. Verify and approve to make them visible on the storefront.</p>
         </div>
-        @if(session('message'))
-        <div class="col-12">
-            <div class="alert alert-success">{{ session('message') }}</div>
+        <div class="admin-card-body">
+            <form method="get" class="row g-2 mb-0">
+                <div class="col-auto">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Product name or SKU" value="{{ request('search') }}">
+                </div>
+                <div class="col-auto">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All approval status</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
+                        <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">Filter</button>
+                </div>
+            </form>
         </div>
-        @endif
-        <div class="col-sm-12 col-md-12 col-xl-12 mt-2">
-            <div class="p-4 rounded bg-secondary h-100">
-                <form method="get" class="mb-3 row g-2">
-                    <div class="col-auto">
-                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Product name or SKU" value="{{ request('search') }}">
-                    </div>
-                    <div class="col-auto">
-                        <select name="status" class="form-select form-select-sm">
-                            <option value="">All approval status</option>
-                            <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                            <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
-                            <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
-                    </div>
-                </form>
-                <table class="table table-dark" width="100%">
-                    <thead class="thead-light">
+        <div class="admin-card-body p-0" style="border-top: 1px solid var(--admin-border, #f1f5f9);">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0" width="100%">
+                    <thead>
                         <tr>
                             <th>#</th>
                             <th>Image</th>
@@ -57,7 +65,7 @@
                             <td>{{ $p->id }}</td>
                             <td>
                                 @if($p->ViewProductImage)
-                                    <img src="../{{ $p->ViewProductImage }}" alt="" height="40" style="object-fit:cover;">
+                                    <img src="../{{ $p->ViewProductImage }}" alt="" height="40" style="object-fit:cover; border-radius: 6px;">
                                 @else
                                     -
                                 @endif
@@ -69,9 +77,7 @@
                                     @if($p->vendor->user)
                                         <br><small class="text-muted">{{ $p->vendor->user->email }}</small>
                                     @endif
-                                @else
-                                    -
-                                @endif
+                                @else - @endif
                             </td>
                             <td>{{ $p->categories->category_name ?? '-' }}</td>
                             <td>{{ $p->ProductSku }}</td>
@@ -95,7 +101,7 @@
                             </td>
                             <td>{{ $p->created_at->format('Y-m-d H:i') }}</td>
                             <td>
-                                <a href="{{ url('admin/products/'.$p->id.'/edit') }}" class="btn btn-sm btn-primary mb-1">Edit</a>
+                                <a href="{{ url('admin/products/'.$p->id.'/edit') }}" class="btn btn-sm btn-outline-primary mb-1">Edit</a>
                                 @if($p->vendor_approval_status !== 'approved')
                                     <form action="{{ url('admin/vendor-products/'.$p->id.'/approve') }}" method="post" class="d-inline">
                                         @csrf
@@ -111,15 +117,13 @@
                             </td>
                         </tr>
                         @empty
-                        <tr>
-                            <td colspan="10" class="text-center">No vendor products yet.</td>
-                        </tr>
+                        <tr><td colspan="10" class="text-center text-muted py-4">No vendor products yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
-                <div class="d-flex justify-content-center">{{ $products->withQueryString()->links() }}</div>
             </div>
         </div>
+        <div class="admin-card-body d-flex justify-content-center">{{ $products->withQueryString()->links() }}</div>
     </div>
 </div>
 @endsection

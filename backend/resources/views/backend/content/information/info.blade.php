@@ -6,29 +6,29 @@
 @endsection
 
 <div class="container-fluid pt-4 px-4">
-    <div class="row">
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">{{ $title }} Page Info</li>
+            </ol>
+        </nav>
+    </div>
 
-        <div class="col-sm-12 col-md-12 col-xl-12 mb-4">
-            <div class="bg-secondary rounded h-100 p-4">
-
-                <h2 class="mb-4" style="text-align: center;color:#0a296f">{{ $title }} Page Info</h2>
-                <form action="{{ url('/admin/information/update', $slug) }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <input type="text" name="key" value="{{ $slug }}" hidden>
-                    <div class="row">
-                        <div class="col-sm-12">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control ckeditor" name="value" id="value" style="height: 150px;">{{ $value->value }}</textarea>
-                            </div>
-                        </div>
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary btn-lg w-100">Update</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">{{ $title }} Page Info</h6>
         </div>
-
+        <div class="admin-card-body">
+            <form action="{{ url('/admin/information/update', $slug) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="text" name="key" value="{{ $slug }}" hidden>
+                <div class="mb-3">
+                    <textarea class="form-control ckeditor" name="value" id="value" style="height: 150px;">{{ $value->value }}</textarea>
+                </div>
+                <button type="submit" class="btn w-100" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 8px; padding: 10px 16px; font-weight: 600;">Update</button>
+            </form>
+        </div>
     </div>
 </div>
 
