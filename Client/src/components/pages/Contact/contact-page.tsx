@@ -70,9 +70,9 @@ export default function ContactPage() {
 								Contact Us
 							</h1>
 							<p className="text-gray-600 mb-8 leading-relaxed">
-								Lorem ipsum dolor sit amet consectetur. Dignissim erat odio
-								dictum curabitur donec at consequat arcu cursus. Eget quis cum
-								amet iaculis orci non.
+								Have a question, feedback, or need help with your account?
+								We&apos;re here to assist you. Fill out the form below and our
+								support team will get back to you within 24 hours.
 							</p>
 
 							{submitSuccess && (
@@ -98,9 +98,8 @@ export default function ContactPage() {
 											type="text"
 											id="name"
 											placeholder="Enter customer name"
-											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
-												errors.name ? "border-red-300" : "border-gray-300"
-											}`}
+											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.name ? "border-red-300" : "border-gray-300"
+												}`}
 										/>
 										{errors.name && (
 											<p className="mt-1 text-sm text-red-600">
@@ -121,9 +120,8 @@ export default function ContactPage() {
 											type="email"
 											id="email"
 											placeholder="Enter email address"
-											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
-												errors.email ? "border-red-300" : "border-gray-300"
-											}`}
+											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.email ? "border-red-300" : "border-gray-300"
+												}`}
 										/>
 										{errors.email && (
 											<p className="mt-1 text-sm text-red-600">
@@ -146,9 +144,8 @@ export default function ContactPage() {
 										type="text"
 										id="title"
 										placeholder="Enter title"
-										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${
-											errors.title ? "border-red-300" : "border-gray-300"
-										}`}
+										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.title ? "border-red-300" : "border-gray-300"
+											}`}
 									/>
 									{errors.title && (
 										<p className="mt-1 text-sm text-red-600">
@@ -170,9 +167,8 @@ export default function ContactPage() {
 										id="message"
 										rows={6}
 										placeholder="Enter your message"
-										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors resize-none ${
-											errors.message ? "border-red-300" : "border-gray-300"
-										}`}
+										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors resize-none ${errors.message ? "border-red-300" : "border-gray-300"
+											}`}
 									/>
 									{errors.message && (
 										<p className="mt-1 text-sm text-red-600">

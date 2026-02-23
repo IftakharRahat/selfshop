@@ -71,8 +71,8 @@ export default function VendorCategoryDiscountPage() {
 
 	const filtered = search
 		? categories.filter((c) =>
-				c.category_name.toLowerCase().includes(search.toLowerCase())
-			)
+			c.category_name.toLowerCase().includes(search.toLowerCase())
+		)
 		: categories;
 
 	return (
@@ -104,19 +104,19 @@ export default function VendorCategoryDiscountPage() {
 						<p className="text-center text-gray-500 py-10 text-sm">No categories found.</p>
 					) : (
 						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm">
+							<table className="w-full table-fixed text-sm border-collapse">
 								<thead>
-									<tr className="border-b border-gray-100 bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
-										<th className="px-6 py-3 text-left font-semibold w-12">#</th>
-										<th className="px-6 py-3 text-left font-semibold w-[72px]">Icon</th>
-										<th className="px-6 py-3 text-left font-semibold">Name</th>
-										<th className="px-6 py-3 text-center font-semibold" colSpan={2}>
+									<tr className="border-b border-gray-100 bg-gray-50 text-gray-600 text-[10px] sm:text-xs uppercase tracking-wider">
+										<th className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3 text-left font-semibold w-12 shrink-0">#</th>
+										<th className="px-1 sm:px-6 py-2 sm:py-3 text-left font-semibold w-[32%] truncate">Category</th>
+										<th className="px-1 py-4 sm:py-3 text-center font-semibold w-[18%] truncate" colSpan={2}>
 											Discount
 										</th>
-										<th className="px-6 py-3 text-left font-semibold">
-											Discount Date Range
+										<th className="px-1 sm:px-6 py-4 sm:py-3 text-center font-semibold w-[35%] truncate">
+											<span className="hidden sm:inline">Discount Date Range</span>
+											<span className="sm:hidden">Dates</span>
 										</th>
-										<th className="px-6 py-3 text-center font-semibold w-28">
+										<th className="px-1 sm:px-6 py-4 sm:py-3 text-center font-semibold w-[15%] truncate">
 											Action
 										</th>
 									</tr>
@@ -127,36 +127,40 @@ export default function VendorCategoryDiscountPage() {
 										return (
 											<tr
 												key={cat.id}
-												className="border-b border-gray-50 hover:bg-gray-50/50 align-top"
+												className="border-b border-gray-50 hover:bg-gray-50/50 align-top text-[10px] sm:text-sm"
 											>
-												<td className="px-6 py-4 text-gray-700 align-middle">{idx + 1}</td>
-												<td className="px-6 py-4 align-middle w-[72px]">
-													<div className="w-10 h-10 flex items-center justify-center rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
-														{cat.category_icon ? (
-															isImagePath(cat.category_icon) ? (
-																<img
-																	src={getImageUrl(cat.category_icon)}
-																	alt=""
-																	className="w-full h-full object-contain"
-																	onError={(ev) => {
-																		(ev.target as HTMLImageElement).style.display = "none";
-																	}}
-																/>
+												<td className="hidden sm:table-cell px-2 sm:px-6 py-3 sm:py-4 text-gray-700 align-middle truncate">{idx + 1}</td>
+												<td className="px-1 sm:px-6 py-3 sm:py-4 align-middle">
+													<div className="flex items-center gap-2">
+														<div className="w-8 h-8 sm:w-10 sm:h-10 flex flex-col items-center justify-center rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+															{cat.category_icon ? (
+																isImagePath(cat.category_icon) ? (
+																	<img
+																		src={getImageUrl(cat.category_icon)}
+																		alt=""
+																		className="w-full h-full object-contain"
+																		onError={(ev) => {
+																			(ev.target as HTMLImageElement).style.display = "none";
+																		}}
+																	/>
+																) : (
+																	<span
+																		className="text-sm sm:text-lg text-gray-600 [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-6 sm:[&>svg]:h-6"
+																		dangerouslySetInnerHTML={{
+																			__html: cat.category_icon,
+																		}}
+																	/>
+																)
 															) : (
-																<span
-																	className="text-lg text-gray-600 [&>svg]:w-6 [&>svg]:h-6"
-																	dangerouslySetInnerHTML={{
-																		__html: cat.category_icon,
-																	}}
-																/>
-															)
-														) : (
-															<span className="text-gray-400 text-xs">--</span>
-														)}
+																<span className="text-gray-400 text-[10px] sm:text-xs">--</span>
+															)}
+														</div>
+														<span className="font-medium text-gray-900 truncate overflow-hidden" title={cat.category_name}>
+															{cat.category_name}
+														</span>
 													</div>
 												</td>
-												<td className="px-6 py-4 font-medium text-gray-900 align-middle">{cat.category_name}</td>
-												<td className="px-2 py-4 text-center align-middle">
+												<td className="px-0 sm:px-2 py-3 sm:py-4 text-center align-middle">
 													<input
 														type="number"
 														min={0}
@@ -166,39 +170,39 @@ export default function VendorCategoryDiscountPage() {
 														onChange={(ev) =>
 															updateEdit(cat.id, "discount_percent", ev.target.value)
 														}
-														className="w-20 rounded-md border border-gray-300 px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+														className="w-[85%] sm:w-20 mx-auto rounded-md border border-gray-300 px-1 sm:px-2 py-2 sm:py-1.5 text-[10px] sm:text-sm text-center focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
 													/>
 												</td>
-												<td className="px-1 py-4 text-gray-500 font-medium align-middle">%</td>
-												<td className="px-6 py-4 align-middle">
-													<div className="flex flex-wrap items-center gap-2">
+												<td className="pr-1 pl-0 py-3 sm:py-4 text-gray-500 font-medium align-middle text-left">%</td>
+												<td className="px-1 sm:px-6 py-3 sm:py-4 align-middle">
+													<div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
 														<input
 															type="date"
 															value={e.start_date}
 															onChange={(ev) =>
 																updateEdit(cat.id, "start_date", ev.target.value)
 															}
-															className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
+															className="w-full rounded-md border border-gray-300 px-1 sm:px-2 py-1.5 sm:py-1.5 text-[9px] sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
 														/>
-														<span className="text-gray-400 shrink-0">-</span>
+														<span className="hidden sm:inline text-gray-400 shrink-0">-</span>
 														<input
 															type="date"
 															value={e.end_date}
 															onChange={(ev) =>
 																updateEdit(cat.id, "end_date", ev.target.value)
 															}
-															className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
+															className="w-full rounded-md border border-gray-300 px-1 sm:px-2 py-1.5 sm:py-1.5 text-[9px] sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
 														/>
 													</div>
 												</td>
-												<td className="px-6 py-4 text-center align-middle">
+												<td className="px-1 sm:px-6 py-3 sm:py-4 text-center align-middle">
 													<button
 														type="button"
 														onClick={() => handleSet(cat.id)}
 														disabled={savingId === cat.id}
-														className="inline-flex items-center justify-center min-w-[60px] px-4 py-1.5 rounded-md bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 disabled:opacity-60 transition-colors"
+														className="w-full inline-flex items-center justify-center min-w-0 px-1 sm:px-4 py-2 sm:py-1.5 rounded-md bg-indigo-600 text-white text-[10px] sm:text-xs font-medium hover:bg-indigo-700 disabled:opacity-60 transition-colors"
 													>
-														{savingId === cat.id ? "Saving..." : "Set"}
+														{savingId === cat.id ? "..." : "Set"}
 													</button>
 												</td>
 											</tr>

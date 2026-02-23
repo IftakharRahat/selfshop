@@ -52,10 +52,10 @@ const VendorLoginPage = () => {
 			<div className="w-full max-w-md rounded-2xl bg-white shadow-sm border border-gray-100 p-8 space-y-6">
 				<div className="space-y-1 text-center">
 					<h1 className="text-2xl font-bold text-gray-900">
-						Vendor portal login
+						Supplier portal login
 					</h1>
 					<p className="text-sm text-gray-600">
-						Sign in with your SelfShop vendor account to manage products and
+						Sign in with your SelfShop Supplier account to manage products and
 						orders.
 					</p>
 				</div>
@@ -91,12 +91,12 @@ const VendorLoginPage = () => {
 				</form>
 
 				<p className="text-xs text-gray-600 text-center">
-					New to SelfShop vendor?{" "}
+					New to SelfShop Supplier?{" "}
 					<Link
 						href="/vendor/register"
 						className="font-medium text-[#2d2a5d] hover:underline"
 					>
-						Create vendor account
+						Create supplier account
 					</Link>
 				</p>
 			</div>

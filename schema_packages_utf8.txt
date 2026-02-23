@@ -1,0 +1,7 @@
+﻿Field	Type	Null	Key	Default	Extra
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment
+package_name	varchar(255)	NO		NULL	
+price	int(11)	NO		NULL	
+status	varchar(255)	NO		Active	
+created_at	timestamp	YES		NULL	
+updated_at	timestamp	YES		NULL	
