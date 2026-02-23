@@ -108,12 +108,11 @@ export default function VendorCategoryDiscountPage() {
 								<thead>
 									<tr className="border-b border-gray-100 bg-gray-50 text-gray-600 text-[10px] sm:text-xs uppercase tracking-wider">
 										<th className="hidden sm:table-cell px-2 sm:px-6 py-2 sm:py-3 text-left font-semibold w-12 shrink-0">#</th>
-										<th className="px-1 sm:px-6 py-2 sm:py-3 text-center sm:text-left font-semibold w-8 sm:w-[72px] shrink-0">Icon</th>
-										<th className="px-1 sm:px-6 py-2 sm:py-3 text-left font-semibold w-[22%] truncate">Name</th>
-										<th className="px-1 py-4 sm:py-3 text-center font-semibold w-[20%] truncate" colSpan={2}>
+										<th className="px-1 sm:px-6 py-2 sm:py-3 text-left font-semibold w-[32%] truncate">Category</th>
+										<th className="px-1 py-4 sm:py-3 text-center font-semibold w-[18%] truncate" colSpan={2}>
 											Discount
 										</th>
-										<th className="px-1 sm:px-6 py-4 sm:py-3 text-center sm:text-left font-semibold w-[35%] truncate">
+										<th className="px-1 sm:px-6 py-4 sm:py-3 text-center font-semibold w-[35%] truncate">
 											<span className="hidden sm:inline">Discount Date Range</span>
 											<span className="sm:hidden">Dates</span>
 										</th>
@@ -132,31 +131,35 @@ export default function VendorCategoryDiscountPage() {
 											>
 												<td className="hidden sm:table-cell px-2 sm:px-6 py-3 sm:py-4 text-gray-700 align-middle truncate">{idx + 1}</td>
 												<td className="px-1 sm:px-6 py-3 sm:py-4 align-middle">
-													<div className="w-6 h-6 sm:w-10 sm:h-10 mx-auto sm:mx-0 flex flex-col items-center justify-center rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
-														{cat.category_icon ? (
-															isImagePath(cat.category_icon) ? (
-																<img
-																	src={getImageUrl(cat.category_icon)}
-																	alt=""
-																	className="w-full h-full object-contain"
-																	onError={(ev) => {
-																		(ev.target as HTMLImageElement).style.display = "none";
-																	}}
-																/>
+													<div className="flex items-center gap-2">
+														<div className="w-8 h-8 sm:w-10 sm:h-10 flex flex-col items-center justify-center rounded-md bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+															{cat.category_icon ? (
+																isImagePath(cat.category_icon) ? (
+																	<img
+																		src={getImageUrl(cat.category_icon)}
+																		alt=""
+																		className="w-full h-full object-contain"
+																		onError={(ev) => {
+																			(ev.target as HTMLImageElement).style.display = "none";
+																		}}
+																	/>
+																) : (
+																	<span
+																		className="text-sm sm:text-lg text-gray-600 [&>svg]:w-5 [&>svg]:h-5 sm:[&>svg]:w-6 sm:[&>svg]:h-6"
+																		dangerouslySetInnerHTML={{
+																			__html: cat.category_icon,
+																		}}
+																	/>
+																)
 															) : (
-																<span
-																	className="text-sm sm:text-lg text-gray-600 [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-6 sm:[&>svg]:h-6"
-																	dangerouslySetInnerHTML={{
-																		__html: cat.category_icon,
-																	}}
-																/>
-															)
-														) : (
-															<span className="text-gray-400 text-[9px] sm:text-xs">--</span>
-														)}
+																<span className="text-gray-400 text-[10px] sm:text-xs">--</span>
+															)}
+														</div>
+														<span className="font-medium text-gray-900 truncate overflow-hidden" title={cat.category_name}>
+															{cat.category_name}
+														</span>
 													</div>
 												</td>
-												<td className="px-1 sm:px-6 py-3 sm:py-4 font-medium text-gray-900 align-middle truncate overflow-hidden" title={cat.category_name}>{cat.category_name}</td>
 												<td className="px-0 sm:px-2 py-3 sm:py-4 text-center align-middle">
 													<input
 														type="number"
@@ -167,10 +170,10 @@ export default function VendorCategoryDiscountPage() {
 														onChange={(ev) =>
 															updateEdit(cat.id, "discount_percent", ev.target.value)
 														}
-														className="w-full sm:w-20 rounded-md border border-gray-300 px-1 sm:px-2 py-2 sm:py-1.5 text-[10px] sm:text-sm text-center focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
+														className="w-[85%] sm:w-20 mx-auto rounded-md border border-gray-300 px-1 sm:px-2 py-2 sm:py-1.5 text-[10px] sm:text-sm text-center focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 min-w-0"
 													/>
 												</td>
-												<td className="pr-1 pl-0 py-3 sm:py-4 text-gray-500 font-medium align-middle">%</td>
+												<td className="pr-1 pl-0 py-3 sm:py-4 text-gray-500 font-medium align-middle text-left">%</td>
 												<td className="px-1 sm:px-6 py-3 sm:py-4 align-middle">
 													<div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2">
 														<input
