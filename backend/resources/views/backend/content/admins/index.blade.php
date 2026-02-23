@@ -2,82 +2,74 @@
 
 @section('maincontent')
     @section('title')
-        {{ env('APP_NAME') }}- Admins
+        {{ env('APP_NAME') }}- Shops
     @endsection
-<style>
-    div#roleinfo_length {
-        color: red;
-    }
-    div#roleinfo_filter {
-        color: red;
-    }
-    div#roleinfo_info {
-        color: red;
-    }
-</style>
 
 <div class="container-fluid pt-4 px-4">
-    <div class="row">
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="h-100 bg-secondary rounded p-4 pb-0">
-                <div class="d-flex align-items-center justify-content-between"  style="width: 50%;float:left;">
-                    <h6 class="mb-0">Admins List</h6>
-                </div>
-                <div class="" style="width: 50%;float:left;">
-                    <a href="{{ route('admin.admins.create') }}" class="btn btn-dark" style="color:red;float: right"> + Create Admin</a>
-                </div>
+    <div class="pagetitle mb-3">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Shops</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="admin-content-card">
+        <div class="admin-card-header">
+            <h6 class="admin-card-title">Shops List</h6>
+            <div class="admin-card-actions">
+                <a href="{{ route('admin.admins.create') }}" class="btn btn-sm" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">
+                    <i class="bi bi-plus-lg me-1"></i> Create Shop
+                </a>
             </div>
         </div>
-
-        <div class="col-sm-12 col-md-12 col-xl-12">
-            <div class="bg-secondary rounded h-100 p-4">
-                <div class="data-tables">
-                    <table class="table table-dark" id="roleinfo" width="100%"  style="text-align: center;">
-                        <thead class="thead-light">
+        <div class="admin-card-body p-0">
+            <div class="table-responsive">
+                <table class="table admin-table mb-0" id="roleinfo" width="100%">
+                    <thead>
+                        <tr>
+                            <th>SL</th>
+                            <th>Admin</th>
+                            <th>Email</th>
+                            <th>Roles</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($admins as $admin)
                             <tr>
-                                <th>SL</th>
-                                <th>Admin</th>
-                                <th>Email</th>
-                                <th>Roles</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($admins as $admin)
-                                <tr class="">
-                                    <td>{{ $admin->id }}</td>
-                                    <td>{{ $admin->name }}</td>
-                                    <td>{{ $admin->email }}</td>
-                                    <td style="width:600px">
-                                        @forelse ($admin->roles as $role)
-                                            <span class="badge badge-info mr-2" style="    background: #790707;">
-                                                {{  $role->name }}
-                                            </span>
-                                        @empty
-
-                                        @endforelse
-                                    </td>
-                                    <td>
-                                        <a href="{{ url('admin/profile',$admin->id) }}" type="button" class="btn btn-primary btn-sm mt-2"><i class="bi bi-eye"></i></a>
-                                        <a href="{{ route('admin.admins.edit',$admin->id) }}" type="button" class="btn btn-primary btn-sm mt-2"><i class="bi bi-pencil-square"></i></a>
-                                        <a href="{{ route('admin.admins.destroy',$admin->id) }}" onclick="event.preventDefault(); document.getElementById('delete-admin-{{ $admin->id }}').submit(); " class="btn btn-primary btn-sm mt-2"><i class="bi bi-archive"></i></a>
+                                <td>{{ $admin->id }}</td>
+                                <td><strong>{{ $admin->name }}</strong></td>
+                                <td>{{ $admin->email }}</td>
+                                <td>
+                                    @forelse ($admin->roles as $role)
+                                        <span class="badge mb-1" style="background: var(--admin-primary-lighter, #eef0ff); color: var(--admin-primary, #2d2a5d); font-size: 11px; font-weight: 500;">
+                                            {{  $role->name }}
+                                        </span>
+                                    @empty
+                                        <span class="text-muted" style="font-size: 12px;">No roles</span>
+                                    @endforelse
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ url('admin/profile',$admin->id) }}" class="btn btn-sm btn-outline-info" title="View"><i class="bi bi-eye"></i></a>
+                                        <a href="{{ route('admin.admins.edit',$admin->id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                                        <a href="{{ route('admin.admins.destroy',$admin->id) }}" onclick="event.preventDefault(); document.getElementById('delete-admin-{{ $admin->id }}').submit(); " class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
 
                                         <form id="delete-admin-{{ $admin->id }}" action="{{ route('admin.admins.destroy',$admin->id) }}" method="post">
                                             @method('delete')
                                             @csrf
                                         </form>
-                                    </td>
-                                </tr>
-                            @empty
-
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
-
-
     </div>
 </div>
 
