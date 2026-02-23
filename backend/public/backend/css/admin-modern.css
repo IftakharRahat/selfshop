@@ -714,6 +714,8 @@ a {
 /* Top bar (length + filter/search) */
 .admin-content-card .dataTables_wrapper {
     padding: 0;
+    position: relative;
+    overflow: hidden;
 }
 
 .admin-content-card .dataTables_length,
