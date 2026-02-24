@@ -99,6 +99,10 @@ export default function VendorProductsPage() {
 						<p className="text-sm text-gray-500 py-4">Loading products...</p>
 					) : error ? (
 						<p className="text-sm text-red-600 py-4">Failed to load products.</p>
+					) : products.length === 0 ? (
+						<div className="py-12 text-center">
+							<p className="text-gray-500 text-sm">No products yet. Add your first product above.</p>
+						</div>
 					) : (
 						<div className="overflow-x-auto">
 							<table className="min-w-full text-sm">
@@ -126,94 +130,86 @@ export default function VendorProductsPage() {
 									</tr>
 								</thead>
 								<tbody className="divide-y divide-gray-100">
-									{products.length === 0 ? (
-										<tr>
-											<td colSpan={7} className="px-3 py-6 text-center text-gray-500">
-												No products yet. Add your first product above.
+									{products.map((p) => (
+										<tr key={p.id} className="hover:bg-gray-50">
+											<td className="px-3 py-2 align-middle text-gray-900">
+												{p.ProductName}
+											</td>
+											<td className="px-3 py-2 align-middle text-center">
+												<span
+													className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${p.vendor_approval_status === "approved"
+														? "bg-green-100 text-green-800"
+														: p.vendor_approval_status === "rejected"
+															? "bg-red-100 text-red-800"
+															: "bg-amber-100 text-amber-800"
+														}`}
+												>
+													{p.vendor_approval_status === "approved"
+														? "Approved"
+														: p.vendor_approval_status === "rejected"
+															? "Rejected"
+															: "Pending"}
+												</span>
+											</td>
+											<td className="px-3 py-2 align-middle text-right text-gray-700">
+												{p.qty ?? 0}
+											</td>
+											<td className="px-3 py-2 align-middle text-right text-gray-700">
+												{p.ProductResellerPrice ?? 0}
+											</td>
+											<td className="px-3 py-2 align-middle text-center">
+												<button
+													type="button"
+													disabled={updatingStatus}
+													onClick={() => handleToggleStatus(p.id, p.status ?? "Inactive")}
+													className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.status === "Active"
+														? "bg-emerald-500 border-emerald-500"
+														: "bg-gray-200 border-gray-300"
+														}`}
+												>
+													<span
+														className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.status === "Active" ? "translate-x-5" : "translate-x-1"
+															}`}
+													/>
+												</button>
+											</td>
+											<td className="px-3 py-2 align-middle text-center">
+												<button
+													type="button"
+													disabled={updatingStockStatus}
+													onClick={() => handleToggleStock(p.id, p.frature as number | undefined)}
+													className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.frature ? "bg-emerald-500 border-emerald-500" : "bg-red-500 border-red-500"
+														}`}
+												>
+													<span
+														className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.frature ? "translate-x-5" : "translate-x-1"
+															}`}
+													/>
+												</button>
+												<p className={`text-[10px] mt-0.5 font-bold ${p.frature ? "text-emerald-600" : "text-red-600"}`}>
+													{p.frature ? "IN STOCK" : "STOCK OUT"}
+												</p>
+											</td>
+											<td className="px-3 py-2 align-middle text-center">
+												<div className="inline-flex items-center gap-2">
+													<Link
+														href={`/vendor/products/${p.id}/edit`}
+														className="text-xs font-medium text-blue-600 hover:underline"
+													>
+														Edit
+													</Link>
+													<button
+														type="button"
+														disabled={deleting}
+														onClick={() => handleDelete(p.id, p.ProductName)}
+														className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+													>
+														Delete
+													</button>
+												</div>
 											</td>
 										</tr>
-									) : (
-										products.map((p) => (
-											<tr key={p.id} className="hover:bg-gray-50">
-												<td className="px-3 py-2 align-middle text-gray-900">
-													{p.ProductName}
-												</td>
-												<td className="px-3 py-2 align-middle text-center">
-													<span
-														className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${p.vendor_approval_status === "approved"
-																? "bg-green-100 text-green-800"
-																: p.vendor_approval_status === "rejected"
-																	? "bg-red-100 text-red-800"
-																	: "bg-amber-100 text-amber-800"
-															}`}
-													>
-														{p.vendor_approval_status === "approved"
-															? "Approved"
-															: p.vendor_approval_status === "rejected"
-																? "Rejected"
-																: "Pending"}
-													</span>
-												</td>
-												<td className="px-3 py-2 align-middle text-right text-gray-700">
-													{p.qty ?? 0}
-												</td>
-												<td className="px-3 py-2 align-middle text-right text-gray-700">
-													{p.ProductResellerPrice ?? 0}
-												</td>
-												<td className="px-3 py-2 align-middle text-center">
-													<button
-														type="button"
-														disabled={updatingStatus}
-														onClick={() => handleToggleStatus(p.id, p.status ?? "Inactive")}
-														className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.status === "Active"
-																? "bg-emerald-500 border-emerald-500"
-																: "bg-gray-200 border-gray-300"
-															}`}
-													>
-														<span
-															className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.status === "Active" ? "translate-x-5" : "translate-x-1"
-																}`}
-														/>
-													</button>
-												</td>
-												<td className="px-3 py-2 align-middle text-center">
-													<button
-														type="button"
-														disabled={updatingStockStatus}
-														onClick={() => handleToggleStock(p.id, p.frature as number | undefined)}
-														className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.frature ? "bg-emerald-500 border-emerald-500" : "bg-red-500 border-red-500"
-															}`}
-													>
-														<span
-															className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.frature ? "translate-x-5" : "translate-x-1"
-																}`}
-														/>
-													</button>
-													<p className={`text-[10px] mt-0.5 font-bold ${p.frature ? "text-emerald-600" : "text-red-600"}`}>
-														{p.frature ? "IN STOCK" : "STOCK OUT"}
-													</p>
-												</td>
-												<td className="px-3 py-2 align-middle text-center">
-													<div className="inline-flex items-center gap-2">
-														<Link
-															href={`/vendor/products/${p.id}/edit`}
-															className="text-xs font-medium text-blue-600 hover:underline"
-														>
-															Edit
-														</Link>
-														<button
-															type="button"
-															disabled={deleting}
-															onClick={() => handleDelete(p.id, p.ProductName)}
-															className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
-														>
-															Delete
-														</button>
-													</div>
-												</td>
-											</tr>
-										))
-									)}
+									))}
 								</tbody>
 							</table>
 						</div>

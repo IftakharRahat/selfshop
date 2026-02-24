@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import MyContextProvider from "@/lib/MyContextProvider";
 import SessionProviderForNextAuth from "@/nextAuth/SessionProviderForNextAuth";
 import ReduxStoreProvider from "@/redux/ReduxStoreProvider";
+import StyledComponentsRegistry from "@/lib/AntdRegistry";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -13,7 +14,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-	title: "Self Shop",
+	title: "SelfShop",
 	description: "Your one-stop online shop for all your needs.",
 };
 
@@ -31,8 +32,10 @@ export default function RootLayout({
 				<MyContextProvider>
 					<SessionProviderForNextAuth>
 						<ReduxStoreProvider>
-							<Toaster />
-							{children}
+							<StyledComponentsRegistry>
+								<Toaster />
+								{children}
+							</StyledComponentsRegistry>
 						</ReduxStoreProvider>
 					</SessionProviderForNextAuth>
 				</MyContextProvider>

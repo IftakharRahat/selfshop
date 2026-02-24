@@ -205,7 +205,17 @@ class UserController extends Controller
         $user->shop_name = $request->shop_name;
         $user->membership_status = $request->membership_status;
         $user->status = $request->status;
-        if ($request->expire_date) {
+
+    // Auto-set active_date & expire_date when admin activates a user
+    if ($request->status === 'Active' && empty($user->active_date)) {
+        $today = date('Y-m-d');
+        $user->active_date = $today;
+        if (empty($request->expire_date)) {
+            $user->expire_date = date('Y-m-d', strtotime('+1 year', strtotime($today)));
+        }
+    }
+
+    if ($request->expire_date) {
             $user->expire_date = $request->expire_date;
         } else {
             $user->expire_date = '';

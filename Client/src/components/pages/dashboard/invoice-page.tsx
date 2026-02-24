@@ -134,7 +134,7 @@ export function InvoicePage() {
 			<div className="rounded-2xl border border-pink-100 bg-white p-5 sm:p-6 shadow-sm">
 				<p className="text-gray-600 text-sm sm:text-base leading-7">
 					Thanks for selecting your package. We generated an invoice for you.
-					Copy the invoice ID and continue with online payment. Your account will
+					Choose any gateway to payment. Your account will
 					activate automatically after successful payment confirmation.
 				</p>
 

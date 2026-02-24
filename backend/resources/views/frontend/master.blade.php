@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/x-icon" href="{{ url(App\Models\Basicinfo::first()->first()->fav_icon) }}">
+    <link rel="icon" type="image/x-icon" href="{{ url(App\Models\Basicinfo::first()->fav_icon) }}">
     
     
     <script type="text/javascript">
@@ -316,7 +316,7 @@
 
     <!-- PWA  -->
     <meta name="theme-color" content="#6777ef" />
-    <link rel="apple-touch-icon" href="{{ url(App\Models\Basicinfo::first()->first()->fav_icon) }}">
+    <link rel="apple-touch-icon" href="{{ url(App\Models\Basicinfo::first()->fav_icon) }}">
     <link rel="manifest" href="{{ asset('public/manifest.json') }}">
 
 

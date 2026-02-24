@@ -10,7 +10,7 @@ export default function ContactMethodsSection() {
 			id: 1,
 			title: "Call Center",
 			description:
-				"Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.",
+				"Need immediate assistance? Our dedicated support team is available to help you with any inquiries regarding your orders, account, or services.",
 			image: contactImage1,
 			imageAlt: "Call center representative with headset",
 			buttonText: "Contact now",
@@ -20,7 +20,7 @@ export default function ContactMethodsSection() {
 			id: 2,
 			title: "Mail Us",
 			description:
-				"Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.",
+				"Prefer to write? Send us a detailed message and our team will respond within 24 hours. We're happy to help with any questions or concerns.",
 			image: contactImage,
 			imageAlt: "Hands holding envelope icon",
 			buttonText: "Contact now",
@@ -30,7 +30,7 @@ export default function ContactMethodsSection() {
 			id: 3,
 			title: "Our Page",
 			description:
-				"Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.",
+				"Stay updated with the latest news, offers, and announcements. Follow our official page for real-time updates and community engagement.",
 			image: contactImage,
 			imageAlt: "Hands holding envelope icon",
 			buttonText: "Contact now",
@@ -40,7 +40,7 @@ export default function ContactMethodsSection() {
 			id: 4,
 			title: "Facebook Group",
 			description:
-				"Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.",
+				"Join our growing community on Facebook! Connect with fellow resellers, share tips, get exclusive updates, and participate in group discussions.",
 			image: contactImageFb,
 			imageAlt: "Team holding Facebook icons",
 			buttonText: "Contact now",
@@ -54,11 +54,10 @@ export default function ContactMethodsSection() {
 				{contactMethods.map((method) => (
 					<div
 						key={method.id}
-						className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center ${
-							method.layout === "image-right"
-								? "lg:[&>*:first-child]:order-2"
-								: ""
-						}`}
+						className={`grid grid-cols-1 lg:grid-cols-2 gap-8 items-center ${method.layout === "image-right"
+							? "lg:[&>*:first-child]:order-2"
+							: ""
+							}`}
 					>
 						{/* Image */}
 						<div className="relative w-full h-56 lg:h-80 rounded-xl overflow-hidden">
