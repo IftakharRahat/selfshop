@@ -14,19 +14,21 @@ const requestProductListApi = baseApi.injectEndpoints({
 			providesTags: ["dashboardApi"],
 		}),
 		participateSalesTarget: builder.mutation({
-			query: () => {
+			query: (salesTargetId: number) => {
 				return {
 					url: `/sales-targets/participate`,
 					method: "POST",
+					body: { sales_target_id: salesTargetId },
 				};
 			},
 			invalidatesTags: ["dashboardApi"],
 		}),
 		claimSalesTargetReward: builder.mutation({
-			query: () => {
+			query: (salesTargetId: number) => {
 				return {
 					url: `/sales-targets/claim-reward`,
 					method: "POST",
+					body: { sales_target_id: salesTargetId },
 				};
 			},
 			invalidatesTags: ["dashboardApi"],

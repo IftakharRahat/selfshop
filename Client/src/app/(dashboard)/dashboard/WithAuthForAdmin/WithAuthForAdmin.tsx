@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { type ReactNode, useEffect, useState } from "react";
 // import { logout } from '@/redux/features/auth/authSlice';
 import Swal from "sweetalert2";
+import logo from "@/assets/icons/NavLogo.png";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { useGetPricingQuery } from "@/redux/features/pricingApi";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
@@ -87,7 +89,42 @@ const WithAuthForAdmin = ({ children }: { children: ReactNode }) => {
 	]);
 
 	if (loading) {
-		return <p>Loading...</p>;
+		return (
+			<div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm">
+				<div className="flex flex-col items-center gap-6">
+					{/* Logo with pulse */}
+					<div className="animate-pulse">
+						<Image
+							src={logo}
+							alt="SelfShop"
+							width={180}
+							height={50}
+							priority
+							className="h-auto w-44"
+						/>
+					</div>
+
+					{/* Spinner ring */}
+					<div className="relative h-10 w-10">
+						<div
+							className="absolute inset-0 rounded-full border-[3px] border-gray-200"
+						/>
+						<div
+							className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent"
+							style={{
+								borderTopColor: "#ec4899",
+								borderRightColor: "#a855f7",
+							}}
+						/>
+					</div>
+
+					{/* Loading text */}
+					<p className="text-sm font-medium text-gray-400 tracking-wide">
+						Loading your dashboard…
+					</p>
+				</div>
+			</div>
+		);
 	}
 
 	return children;

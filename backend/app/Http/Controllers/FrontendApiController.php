@@ -2058,20 +2058,27 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
-    public function participateSalesTarget()
+    public function participateSalesTarget(Request $request)
     {
         $userId = (int) Auth::id();
+        $targetId = $request->input('sales_target_id');
+
+        if (!$targetId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'sales_target_id is required.',
+            ], 422);
+        }
 
         $activeSalesTarget = SalesTarget::query()
             ->activeNow()
-            ->orderByDesc('priority')
-            ->orderByDesc('id')
+            ->where('id', $targetId)
             ->first();
 
         if (!$activeSalesTarget) {
             return response()->json([
                 'status' => false,
-                'message' => 'No active challenge is available right now.',
+                'message' => 'No active challenge found with the given ID.',
             ], 404);
         }
 
@@ -2115,20 +2122,27 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
-    public function claimSalesTargetReward()
+    public function claimSalesTargetReward(Request $request)
     {
         $userId = (int) Auth::id();
+        $targetId = $request->input('sales_target_id');
+
+        if (!$targetId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'sales_target_id is required.',
+            ], 422);
+        }
 
         $activeSalesTarget = SalesTarget::query()
             ->activeNow()
-            ->orderByDesc('priority')
-            ->orderByDesc('id')
+            ->where('id', $targetId)
             ->first();
 
         if (!$activeSalesTarget) {
             return response()->json([
                 'status' => false,
-                'message' => 'No active challenge found to claim reward.',
+                'message' => 'No active challenge found with the given ID.',
             ], 404);
         }
 
@@ -2199,33 +2213,36 @@ class FrontendApiController extends Controller
             );
         }
 
-        $activeSalesTarget = SalesTarget::query()
+        $activeSalesTargets = SalesTarget::query()
             ->activeNow()
             ->orderByDesc('priority')
             ->orderByDesc('id')
-            ->first();
+            ->get();
 
-        $salesTargetProgress = null;
-        $salesTargetParticipation = null;
-
-        if ($activeSalesTarget) {
-            $salesTargetProgress = $activeSalesTarget->getProgressForUser($id);
+        $salesTargetsData = $activeSalesTargets->map(function ($target) use ($id) {
+            $progress = $target->getProgressForUser($id);
 
             $participant = SalesTargetParticipant::query()
-                ->where('sales_target_id', $activeSalesTarget->id)
+                ->where('sales_target_id', $target->id)
                 ->where('user_id', $id)
                 ->first();
 
-            $salesTargetParticipation = [
+            $participation = [
                 'joined' => !is_null($participant),
                 'joined_at' => optional($participant)->joined_at,
                 'reward_claimed' => !is_null(optional($participant)->reward_claimed_at),
                 'reward_claimed_at' => optional($participant)->reward_claimed_at,
                 'can_claim' => !is_null($participant)
                     && empty(optional($participant)->reward_claimed_at)
-                    && !empty($salesTargetProgress['completed']),
+                    && !empty($progress['completed']),
             ];
-        }
+
+            return [
+                'target' => $target,
+                'progress' => $progress,
+                'participation' => $participation,
+            ];
+        })->values();
 
         return response()->json([
             'status' => true,
@@ -2238,9 +2255,7 @@ class FrontendApiController extends Controller
                 'shop_products' => Shopproduct::where('user_id', $id)->get()->count(),
                 'total_orders' => Order::where('user_id', $id)->get()->count(),
                 'sales' => $sales,
-                'active_sales_target' => $activeSalesTarget,
-                'sales_target_progress' => $salesTargetProgress,
-                'sales_target_participation' => $salesTargetParticipation,
+                'active_sales_targets' => $salesTargetsData,
             ],
         ], 200);
     }
