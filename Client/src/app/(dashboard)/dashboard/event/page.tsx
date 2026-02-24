@@ -9,8 +9,11 @@ import {
 	Gift,
 	HandCoins,
 	Rocket,
+	Sparkles,
+	Star,
 	Target,
 	Trophy,
+	Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,6 +22,7 @@ import {
 	useParticipateSalesTargetMutation,
 } from "@/redux/features/dashboardApi";
 
+/* ── Types ── */
 interface ActiveSalesTarget {
 	id: number;
 	title: string;
@@ -59,6 +63,7 @@ interface DashboardPayload {
 	active_sales_targets?: SalesTargetWithMeta[] | null;
 }
 
+/* ── Helpers ── */
 const formatDate = (raw?: string | null): string => {
 	if (!raw) return "Not set";
 	const dt = new Date(raw);
@@ -72,14 +77,9 @@ const formatTargetValue = (
 ): string => {
 	const parsed = Number(value ?? 0);
 	if (type === "amount") {
-		return `Tk ${parsed.toLocaleString(undefined, {
-			minimumFractionDigits: 2,
-			maximumFractionDigits: 2,
-		})}`;
+		return `Tk ${parsed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 	}
-	return `${parsed.toLocaleString(undefined, {
-		maximumFractionDigits: 0,
-	})} Qty`;
+	return `${parsed.toLocaleString(undefined, { maximumFractionDigits: 0 })} Qty`;
 };
 
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
@@ -87,7 +87,57 @@ const getApiErrorMessage = (error: unknown, fallback: string): string => {
 	return maybe?.data?.message || maybe?.message || fallback;
 };
 
-/* ── Participating card — shows progress, details toggle, claim button ── */
+/* ── Inline keyframes (injected once) ── */
+const AnimationStyles = () => (
+	<style jsx global>{`
+		@keyframes shimmer {
+			0% { background-position: -200% 0; }
+			100% { background-position: 200% 0; }
+		}
+		@keyframes pulse-glow {
+			0%, 100% { box-shadow: 0 0 8px rgba(229, 0, 95, 0.3); }
+			50% { box-shadow: 0 0 20px rgba(229, 0, 95, 0.6); }
+		}
+		@keyframes pulse-glow-green {
+			0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+			50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+		}
+		@keyframes float {
+			0%, 100% { transform: translateY(0); }
+			50% { transform: translateY(-4px); }
+		}
+		@keyframes gradient-shift {
+			0% { background-position: 0% 50%; }
+			50% { background-position: 100% 50%; }
+			100% { background-position: 0% 50%; }
+		}
+		@keyframes progress-glow {
+			0%, 100% { filter: brightness(1); }
+			50% { filter: brightness(1.3); }
+		}
+		@keyframes celebrate {
+			0% { transform: scale(1); }
+			50% { transform: scale(1.05); }
+			100% { transform: scale(1); }
+		}
+		.animate-shimmer {
+			background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.4) 50%, transparent 75%);
+			background-size: 200% 100%;
+			animation: shimmer 2s infinite;
+		}
+		.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+		.animate-pulse-glow-green { animation: pulse-glow-green 2s ease-in-out infinite; }
+		.animate-float { animation: float 3s ease-in-out infinite; }
+		.animate-gradient { 
+			background-size: 200% 200%;
+			animation: gradient-shift 4s ease infinite; 
+		}
+		.animate-progress-glow { animation: progress-glow 2s ease-in-out infinite; }
+		.animate-celebrate { animation: celebrate 0.6s ease-in-out; }
+	`}</style>
+);
+
+/* ── Participating card ── */
 function ParticipatingCard({
 	item,
 	onClaim,
@@ -104,37 +154,60 @@ function ParticipatingCard({
 
 	const rewardClaimed = Boolean(participation?.reward_claimed);
 	const completed = Boolean(progress?.completed);
-	const progressPercent = Math.max(
-		0,
-		Math.min(100, Number(progress?.progress_percent ?? 0)),
-	);
+	const progressPercent = Math.max(0, Math.min(100, Number(progress?.progress_percent ?? 0)));
 	const canClaim = completed && !rewardClaimed;
 	const isThisClaiming = isClaiming && claimingId === t.id;
 
 	return (
-		<div className="rounded-xl border border-gray-200 overflow-hidden">
-			<div className="p-4 space-y-3">
-				{/* Top row: title + status */}
+		<div
+			className={`rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${rewardClaimed
+				? "bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200"
+				: completed
+					? "bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300"
+					: "bg-gradient-to-r from-pink-50/50 to-orange-50/50 border-2 border-pink-200"
+				}`}
+		>
+			<div className="p-4 sm:p-5 space-y-3">
+				{/* Top row */}
 				<div className="flex items-start justify-between gap-3">
-					<div className="flex-1 min-w-0">
-						<h3 className="text-sm font-semibold text-gray-900 truncate">
-							{t.title || "Sales Target"}
-						</h3>
-						<p className="text-xs text-gray-500 mt-0.5">
-							{formatDate(t.start_date)} – {formatDate(t.end_date)}
-						</p>
+					<div className="flex items-center gap-3 flex-1 min-w-0">
+						<div
+							className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${rewardClaimed
+								? "bg-emerald-500 text-white"
+								: completed
+									? "bg-blue-500 text-white animate-celebrate"
+									: "bg-gradient-to-br from-[#E5005F] to-pink-400 text-white"
+								}`}
+						>
+							{rewardClaimed ? (
+								<CheckCircle2 className="w-5 h-5" />
+							) : completed ? (
+								<Trophy className="w-5 h-5" />
+							) : (
+								<Zap className="w-5 h-5" />
+							)}
+						</div>
+						<div className="min-w-0">
+							<h3 className="text-sm font-bold text-gray-900 truncate">
+								{t.title || "Sales Target"}
+							</h3>
+							<p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+								<CalendarDays className="w-3 h-3" />
+								{formatDate(t.start_date)} – {formatDate(t.end_date)}
+							</p>
+						</div>
 					</div>
 					<div className="flex items-center gap-2 flex-shrink-0">
 						{rewardClaimed ? (
-							<span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">
-								Reward Grabbed
+							<span className="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-500 text-white flex items-center gap-1">
+								<Star className="w-3 h-3" /> Claimed
 							</span>
 						) : completed ? (
-							<span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">
-								Completed
+							<span className="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-500 text-white flex items-center gap-1">
+								<Trophy className="w-3 h-3" /> Completed!
 							</span>
 						) : (
-							<span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+							<span className="text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 text-white">
 								In Progress
 							</span>
 						)}
@@ -143,56 +216,53 @@ function ParticipatingCard({
 
 				{/* Progress bar */}
 				<div>
-					<div className="flex items-center justify-between mb-1">
-						<span className="text-xs text-gray-500">
-							{progress?.achieved ?? 0} / {progress?.target ?? 0}
+					<div className="flex items-center justify-between mb-1.5">
+						<span className="text-xs font-medium text-gray-600">
+							{formatTargetValue(progress?.achieved, String(t.target_type ?? ""))} / {formatTargetValue(progress?.target, String(t.target_type ?? ""))}
 						</span>
-						<span className="text-xs font-medium text-gray-700">
+						<span className="text-xs font-bold text-gray-800">
 							{progressPercent.toFixed(1)}%
 						</span>
 					</div>
-					<div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+					<div className="w-full h-3 rounded-full bg-white/80 overflow-hidden shadow-inner">
 						<div
-							className="h-full bg-gradient-to-r from-[#E5005F] to-pink-400 rounded-full transition-all duration-500"
+							className={`h-full rounded-full transition-all duration-1000 ease-out ${completed
+								? "bg-gradient-to-r from-emerald-400 to-emerald-500"
+								: "bg-gradient-to-r from-[#E5005F] via-pink-400 to-orange-400 animate-progress-glow"
+								}`}
 							style={{ width: `${progressPercent}%` }}
 						/>
 					</div>
 				</div>
 
 				{/* Action row */}
-				<div className="flex items-center gap-2">
+				<div className="flex items-center gap-2 flex-wrap">
 					{canClaim && (
 						<button
 							type="button"
 							onClick={() => onClaim(t.id)}
 							disabled={isThisClaiming}
-							className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+							className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-glow-green hover:scale-105 transition-transform"
 						>
-							<HandCoins className="w-3.5 h-3.5" />
-							{isThisClaiming ? "Claiming..." : "Grab Reward"}
+							<HandCoins className="w-4 h-4" />
+							{isThisClaiming ? "Claiming..." : "🎉 Grab Reward"}
 						</button>
 					)}
 					<button
 						type="button"
 						onClick={() => setExpanded((v) => !v)}
-						className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+						className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-all"
 					>
 						{expanded ? "Hide Details" : "View Details"}
-						{expanded ? (
-							<ChevronUp className="w-3.5 h-3.5" />
-						) : (
-							<ChevronDown className="w-3.5 h-3.5" />
-						)}
+						{expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
 					</button>
 				</div>
 			</div>
 
 			{/* Expanded details */}
 			{expanded && (
-				<div className="border-t border-gray-100 bg-gray-50/50 p-4 space-y-3">
-					{t.description && (
-						<p className="text-sm text-gray-600">{t.description}</p>
-					)}
+				<div className="border-t border-gray-200/50 bg-white/60 backdrop-blur-sm p-4 sm:p-5 space-y-3">
+					{t.description && <p className="text-sm text-gray-600">{t.description}</p>}
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 						<InfoBlock icon={Target} label="Type" value={String(t.target_type ?? "-")} capitalize />
 						<InfoBlock icon={Trophy} label="Target" value={formatTargetValue(t.target_value, String(t.target_type ?? ""))} />
@@ -200,20 +270,17 @@ function ParticipatingCard({
 						<InfoBlock icon={CalendarDays} label="Window" value={`${formatDate(t.start_date)} – ${formatDate(t.end_date)}`} />
 					</div>
 					<div className="grid grid-cols-3 gap-2 text-sm text-gray-700">
-						<p><span className="font-medium">Achieved:</span> {progress?.achieved ?? 0}</p>
-						<p><span className="font-medium">Remaining:</span> {progress?.remaining ?? 0}</p>
+						<p><span className="font-medium">Achieved:</span> {formatTargetValue(progress?.achieved, String(t.target_type ?? ""))}</p>
+						<p><span className="font-medium">Remaining:</span> {formatTargetValue(progress?.remaining, String(t.target_type ?? ""))}</p>
 						<p><span className="font-medium">Completion:</span> {progressPercent.toFixed(2)}%</p>
 					</div>
 					{completed && !rewardClaimed && (
-						<p className="text-sm text-emerald-700 font-medium">
-							<CheckCircle2 className="w-4 h-4 inline-block mr-1" />
-							Target completed. You can now grab the reward.
+						<p className="text-sm text-emerald-700 font-bold flex items-center gap-1">
+							<CheckCircle2 className="w-4 h-4" /> Target completed! Grab your reward now.
 						</p>
 					)}
 					{rewardClaimed && (
-						<p className="text-sm text-emerald-700 font-medium">
-							Reward has been successfully claimed.
-						</p>
+						<p className="text-sm text-emerald-700 font-medium">✅ Reward successfully claimed.</p>
 					)}
 				</div>
 			)}
@@ -221,7 +288,7 @@ function ParticipatingCard({
 	);
 }
 
-/* ── Available (not joined) card — simpler, emphasizes "Participate" ── */
+/* ── Available card — eye-catching to drive participation ── */
 function AvailableCard({
 	item,
 	onParticipate,
@@ -238,67 +305,80 @@ function AvailableCard({
 	const isThisParticipating = isParticipating && participatingId === t.id;
 
 	return (
-		<div className="rounded-xl border border-dashed border-gray-300 overflow-hidden">
-			<div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4">
-				{/* Left: title + date + reward teaser */}
-				<div className="flex-1 min-w-0">
-					<h3 className="text-sm font-semibold text-gray-900 truncate">
-						{t.title || "Sales Target"}
-					</h3>
-					<p className="text-xs text-gray-500 mt-0.5">
-						{formatDate(t.start_date)} – {formatDate(t.end_date)}
-						{t.reward_type && (
-							<>
-								{" · "}
-								<span className="text-pink-600 font-medium capitalize">
-									{t.reward_type}
-									{t.reward_value ? ` (${Number(t.reward_value).toLocaleString()})` : ""}
-								</span>
-							</>
-						)}
-					</p>
-				</div>
-
-				{/* Right: participate + details */}
-				<div className="flex items-center gap-2 flex-shrink-0">
-					<button
-						type="button"
-						onClick={() => onParticipate(t.id)}
-						disabled={isThisParticipating}
-						className="inline-flex items-center gap-1.5 rounded-lg bg-[#E5005F] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						<Rocket className="w-3.5 h-3.5" />
-						{isThisParticipating ? "Joining..." : "Participate"}
-					</button>
-					<button
-						type="button"
-						onClick={() => setExpanded((v) => !v)}
-						className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-					>
-						{expanded ? "Hide" : "Details"}
-						{expanded ? (
-							<ChevronUp className="w-3.5 h-3.5" />
-						) : (
-							<ChevronDown className="w-3.5 h-3.5" />
-						)}
-					</button>
-				</div>
-			</div>
-
-			{/* Expanded details */}
-			{expanded && (
-				<div className="border-t border-gray-200 bg-gray-50/50 p-4 space-y-3">
-					{t.description && (
-						<p className="text-sm text-gray-600">{t.description}</p>
+		<div className="relative rounded-2xl overflow-hidden group">
+			{/* Gradient border effect */}
+			<div className="absolute inset-0 bg-gradient-to-r from-[#E5005F] via-purple-500 to-pink-400 rounded-2xl animate-gradient" />
+			<div className="relative m-[2px] bg-white rounded-[14px] overflow-hidden">
+				{/* Top banner */}
+				<div className="bg-gradient-to-r from-[#E5005F] via-pink-500 to-purple-600 px-4 sm:px-5 py-2.5 flex items-center justify-between animate-gradient">
+					<div className="flex items-center gap-2">
+						<Sparkles className="w-4 h-4 text-yellow-300 animate-float" />
+						<span className="text-xs font-bold text-white uppercase tracking-wider">
+							New Challenge
+						</span>
+					</div>
+					{t.reward_type && (
+						<span className="text-xs font-bold text-yellow-200 flex items-center gap-1">
+							<Gift className="w-3.5 h-3.5" />
+							{String(t.reward_type).charAt(0).toUpperCase() + String(t.reward_type).slice(1)}
+							{t.reward_value ? ` worth ${Number(t.reward_value).toLocaleString()}` : ""}
+						</span>
 					)}
-					<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-						<InfoBlock icon={Target} label="Type" value={String(t.target_type ?? "-")} capitalize />
-						<InfoBlock icon={Trophy} label="Target" value={formatTargetValue(t.target_value, String(t.target_type ?? ""))} />
-						<InfoBlock icon={Gift} label="Reward" value={`${String(t.reward_type ?? "-")}${t.reward_value ? ` (${Number(t.reward_value).toLocaleString()})` : ""}`} capitalize />
-						<InfoBlock icon={CalendarDays} label="Window" value={`${formatDate(t.start_date)} – ${formatDate(t.end_date)}`} />
+				</div>
+
+				{/* Content */}
+				<div className="p-4 sm:p-5">
+					<div className="flex flex-col sm:flex-row sm:items-center gap-3">
+						<div className="flex items-center gap-3 flex-1 min-w-0">
+							<div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E5005F] to-purple-600 text-white flex items-center justify-center flex-shrink-0 animate-float">
+								<Rocket className="w-5 h-5" />
+							</div>
+							<div className="min-w-0">
+								<h3 className="text-sm font-bold text-gray-900 truncate">
+									{t.title || "Sales Target"}
+								</h3>
+								<p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+									<CalendarDays className="w-3 h-3" />
+									{formatDate(t.start_date)} – {formatDate(t.end_date)}
+								</p>
+							</div>
+						</div>
+
+						<div className="flex items-center gap-2 flex-shrink-0">
+							<button
+								type="button"
+								onClick={() => onParticipate(t.id)}
+								disabled={isThisParticipating}
+								className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#E5005F] to-purple-600 px-5 py-2.5 text-xs font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-glow hover:scale-105 transition-transform shadow-lg"
+							>
+								<Rocket className="w-4 h-4" />
+								{isThisParticipating ? "Joining..." : "🚀 Join Now"}
+							</button>
+							<button
+								type="button"
+								onClick={() => setExpanded((v) => !v)}
+								className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-all"
+							>
+								{expanded ? "Hide" : "Details"}
+								{expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+							</button>
+						</div>
 					</div>
 				</div>
-			)}
+
+				{/* Expanded details */}
+				{expanded && (
+					<div className="border-t border-gray-100 bg-gray-50/50 p-4 sm:p-5 space-y-3">
+						{t.description && <p className="text-sm text-gray-600">{t.description}</p>}
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+							<InfoBlock icon={Target} label="Type" value={String(t.target_type ?? "-")} capitalize />
+							<InfoBlock icon={Trophy} label="Target" value={formatTargetValue(t.target_value, String(t.target_type ?? ""))} />
+							<InfoBlock icon={Gift} label="Reward" value={`${String(t.reward_type ?? "-")}${t.reward_value ? ` (${Number(t.reward_value).toLocaleString()})` : ""}`} capitalize />
+							<InfoBlock icon={CalendarDays} label="Window" value={`${formatDate(t.start_date)} – ${formatDate(t.end_date)}`} />
+						</div>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -316,7 +396,7 @@ function InfoBlock({
 	capitalize?: boolean;
 }) {
 	return (
-		<div className="rounded-lg border border-gray-200 bg-white p-3">
+		<div className="rounded-xl border border-gray-200 bg-white p-3">
 			<div className="flex items-center gap-1.5 text-gray-500 text-xs mb-1">
 				<Icon className="w-3.5 h-3.5" />
 				{label}
@@ -333,22 +413,20 @@ function SectionHeader({
 	icon: Icon,
 	title,
 	count,
-	color,
+	gradient,
 }: {
 	icon: typeof Rocket;
 	title: string;
 	count: number;
-	color: string;
+	gradient: string;
 }) {
 	return (
-		<div className="flex items-center gap-2 mb-3">
-			<div
-				className={`w-7 h-7 rounded-full flex items-center justify-center ${color}`}
-			>
-				<Icon className="w-3.5 h-3.5" />
+		<div className="flex items-center gap-3 mb-4">
+			<div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white ${gradient}`}>
+				<Icon className="w-4 h-4" />
 			</div>
-			<h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-			<span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+			<h2 className="text-base font-bold text-gray-900">{title}</h2>
+			<span className="text-xs font-bold text-white bg-gradient-to-r from-[#E5005F] to-pink-400 px-2.5 py-0.5 rounded-full">
 				{count}
 			</span>
 		</div>
@@ -378,9 +456,7 @@ export default function DashboardEventPage() {
 	const handleParticipate = async (targetId: number) => {
 		try {
 			setParticipatingId(targetId);
-			const res = (await participateSalesTarget(targetId).unwrap()) as {
-				message?: string;
-			};
+			const res = (await participateSalesTarget(targetId).unwrap()) as { message?: string };
 			toast.success(res?.message || "Challenge participation successful.");
 			refetch();
 		} catch (error: unknown) {
@@ -393,9 +469,7 @@ export default function DashboardEventPage() {
 	const handleClaimReward = async (targetId: number) => {
 		try {
 			setClaimingId(targetId);
-			const res = (await claimSalesTargetReward(targetId).unwrap()) as {
-				message?: string;
-			};
+			const res = (await claimSalesTargetReward(targetId).unwrap()) as { message?: string };
 			toast.success(res?.message || "Reward claimed successfully.");
 			refetch();
 		} catch (error: unknown) {
@@ -407,32 +481,46 @@ export default function DashboardEventPage() {
 
 	return (
 		<main className="flex-1 p-3 sm:p-5 lg:p-6 pb-24">
-			<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6">
-				{/* Header */}
-				<div className="flex items-center gap-3 mb-6">
-					<div className="w-10 h-10 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center">
-						<CalendarDays className="w-5 h-5" />
+			<AnimationStyles />
+
+			{/* Header */}
+			<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-6">
+				<div className="flex items-center gap-3">
+					<div className="w-10 h-10 rounded-full bg-pink-100 text-[#E5005F] flex items-center justify-center">
+						<Trophy className="w-5 h-5" />
 					</div>
 					<div>
-						<h1 className="text-lg sm:text-xl font-semibold text-gray-900">
+						<h1 className="text-lg font-semibold text-gray-900">
 							Event Challenges
 						</h1>
 						<p className="text-sm text-gray-500">
-							Participate, complete the challenges, and grab your rewards.
+							Participate in challenges and earn rewards
 						</p>
 					</div>
 				</div>
+			</div>
 
+			{/* Content */}
+			<div className="space-y-8">
 				{isLoading || isFetching ? (
-					<p className="text-sm text-gray-600">Loading event data...</p>
+					<div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+						<div className="w-10 h-10 border-4 border-pink-200 border-t-[#E5005F] rounded-full animate-spin mx-auto mb-3" />
+						<p className="text-sm text-gray-600">Loading challenges...</p>
+					</div>
 				) : allTargets.length === 0 ? (
-					<div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-5">
-						<p className="text-sm text-gray-600">
-							No active event is available right now.
+					<div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center">
+						<div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+							<CalendarDays className="w-6 h-6 text-gray-400" />
+						</div>
+						<p className="text-sm text-gray-600 font-medium">
+							No active challenges right now
+						</p>
+						<p className="text-xs text-gray-400 mt-1">
+							Check back soon for new exciting challenges!
 						</p>
 					</div>
 				) : (
-					<div className="space-y-8">
+					<>
 						{/* ── My Challenges ── */}
 						{participating.length > 0 && (
 							<section>
@@ -440,7 +528,7 @@ export default function DashboardEventPage() {
 									icon={Trophy}
 									title="My Challenges"
 									count={participating.length}
-									color="bg-amber-100 text-amber-600"
+									gradient="bg-gradient-to-br from-amber-400 to-orange-500"
 								/>
 								<div className="space-y-3">
 									{participating.map((item) => (
@@ -463,7 +551,7 @@ export default function DashboardEventPage() {
 									icon={Rocket}
 									title="Available Challenges"
 									count={available.length}
-									color="bg-pink-100 text-pink-600"
+									gradient="bg-gradient-to-br from-[#E5005F] to-purple-600"
 								/>
 								<div className="space-y-3">
 									{available.map((item) => (
@@ -478,7 +566,7 @@ export default function DashboardEventPage() {
 								</div>
 							</section>
 						)}
-					</div>
+					</>
 				)}
 			</div>
 		</main>
