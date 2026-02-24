@@ -35,6 +35,11 @@ class SalesTarget extends Model
         'priority' => 'integer',
     ];
 
+    public function participants()
+    {
+        return $this->hasMany(SalesTargetParticipant::class, 'sales_target_id');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'Active');

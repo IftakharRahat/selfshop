@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRegisterVendorMutation } from "@/redux/api/vendorApi";
@@ -141,6 +142,14 @@ const VendorRegisterPage = () => {
 					After approval, you can sign in from the vendor login page using the
 					same email and password.
 				</p>
+				<div className="text-center">
+					<Link
+						href="/vendor/login"
+						className="inline-flex items-center justify-center text-sm font-semibold text-indigo-700 hover:text-indigo-900"
+					>
+						Back to vendor login
+					</Link>
+				</div>
 			</div>
 		</div>
 	);

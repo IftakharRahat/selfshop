@@ -359,15 +359,20 @@ class VendorProductController extends Controller
             'title' => 'required|string|max:255',
             'qty' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
+            'color_name' => 'nullable|string|max:100',
+            'color_code' => ['nullable', 'string', 'regex:/^#?[A-Fa-f0-9]{3}([A-Fa-f0-9]{3})?$/'],
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
+        $data = $validator->validated();
         $variant = new Varient();
         $variant->product_id = $product->id;
-        $variant->title = $request->title;
-        $variant->qty = (int) $request->qty;
-        $variant->price = (int) round($request->price);
+        $variant->title = trim((string) $data['title']);
+        $variant->qty = (int) $data['qty'];
+        $variant->price = (float) $data['price'];
+        $variant->color_name = $this->normalizeColorName($data['color_name'] ?? null);
+        $variant->color_code = $this->normalizeColorCode($data['color_code'] ?? null);
         $variant->status = $request->input('status', 'Active');
         $variant->save();
         return response()->json(['status' => true, 'message' => 'Variant added', 'data' => ['variant' => $variant]], 201);
@@ -387,14 +392,23 @@ class VendorProductController extends Controller
             'qty' => 'sometimes|integer|min:0',
             'price' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:Active,Inactive',
+            'color_name' => 'nullable|string|max:100',
+            'color_code' => ['nullable', 'string', 'regex:/^#?[A-Fa-f0-9]{3}([A-Fa-f0-9]{3})?$/'],
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
-        if ($request->has('title')) $variant->title = $request->title;
-        if ($request->has('qty')) $variant->qty = (int) $request->qty;
-        if ($request->has('price')) $variant->price = (int) round($request->price);
-        if ($request->has('status')) $variant->status = $request->status;
+        $data = $validator->validated();
+        if (array_key_exists('title', $data)) $variant->title = trim((string) $data['title']);
+        if (array_key_exists('qty', $data)) $variant->qty = (int) $data['qty'];
+        if (array_key_exists('price', $data)) $variant->price = (float) $data['price'];
+        if (array_key_exists('status', $data)) $variant->status = $data['status'];
+        if (array_key_exists('color_name', $data)) {
+            $variant->color_name = $this->normalizeColorName($data['color_name']);
+        }
+        if (array_key_exists('color_code', $data)) {
+            $variant->color_code = $this->normalizeColorCode($data['color_code']);
+        }
         $variant->save();
         return response()->json(['status' => true, 'message' => 'Variant updated', 'data' => ['variant' => $variant]]);
     }
@@ -568,6 +582,30 @@ class VendorProductController extends Controller
         }
 
         return null;
+    }
+
+    private function normalizeColorCode(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $clean = strtoupper(ltrim(trim($value), '#'));
+        if ($clean === '') {
+            return null;
+        }
+
+        return '#' . $clean;
+    }
+
+    private function normalizeColorName(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $clean = trim($value);
+        return $clean === '' ? null : $clean;
     }
 
     /** GET /api/vendor/products/{id}/price-tiers */

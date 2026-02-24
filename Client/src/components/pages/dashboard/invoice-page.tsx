@@ -1,12 +1,16 @@
 "use client";
 
-import { Check, Copy, Headset } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { Check, Copy, Headset, LogOut } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import Swal from "sweetalert2";
 import {
 	useGetPricingQuery,
 	useInitiatePackagePaymentMutation,
 } from "@/redux/features/pricingApi";
+import { setUser } from "@/redux/features/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 const normalizeNumber = (value: unknown): number => {
@@ -19,6 +23,9 @@ const normalizeNumber = (value: unknown): number => {
 };
 
 export function InvoicePage() {
+	const router = useRouter();
+	const dispatch = useAppDispatch();
+	const token = useAppSelector((state) => state.auth.access_token);
 	const searchParams = useSearchParams();
 	const { data: pricingData } = useGetPricingQuery();
 	const [initiatePayment] = useInitiatePackagePaymentMutation();
@@ -84,6 +91,23 @@ export function InvoicePage() {
 		}
 	};
 
+	const handleLogout = async () => {
+		const result = await Swal.fire({
+			title: "Are you sure?",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#3085d6",
+			cancelButtonColor: "#d33",
+			confirmButtonText: "Yes, Log out",
+		});
+
+		if (!result.isConfirmed) return;
+
+		await dispatch(setUser({ access_token: null }));
+		localStorage.removeItem("access_token");
+		router.replace("/");
+	};
+
 	if (!currentInvoice) {
 		return (
 			<div className="max-w-3xl mx-auto mt-8 rounded-2xl border border-pink-100 bg-white p-8 text-center text-gray-500">
@@ -94,6 +118,19 @@ export function InvoicePage() {
 
 	return (
 		<div className="w-full max-w-3xl mx-auto py-6">
+			{token ? (
+				<div className="mb-4 flex justify-end">
+					<button
+						type="button"
+						onClick={handleLogout}
+						className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+					>
+						<LogOut className="h-4 w-4" />
+						Logout
+					</button>
+				</div>
+			) : null}
+
 			<div className="rounded-2xl border border-pink-100 bg-white p-5 sm:p-6 shadow-sm">
 				<p className="text-gray-600 text-sm sm:text-base leading-7">
 					Thanks for selecting your package. We generated an invoice for you.
@@ -134,7 +171,7 @@ export function InvoicePage() {
 				<button
 					type="button"
 					onClick={handlePayment}
-					className="mt-5 w-full rounded-xl bg-[#FF8A00] py-3.5 text-white text-lg font-bold hover:bg-[#f07e00] transition-colors"
+					className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-white text-lg font-bold hover:bg-emerald-700 transition-colors"
 				>
 					Pay Now with Online (bKash, Nagad, Rocket etc)
 				</button>
@@ -145,10 +182,13 @@ export function InvoicePage() {
 					<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
 						Need help with package payment? Contact our team now.
 					</div>
-					<div className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2">
+					<Link
+						href="/support"
+						className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+					>
 						<Headset className="h-5 w-5" />
 						<span>Support</span>
-					</div>
+					</Link>
 				</div>
 			</div>
 		</div>

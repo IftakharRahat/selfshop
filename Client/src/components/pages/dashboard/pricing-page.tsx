@@ -1,14 +1,18 @@
 "use client";
 
-import { CheckCircle2, Headset, XCircle } from "lucide-react";
+import { CheckCircle2, Headset, LogOut, XCircle } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import Swal from "sweetalert2";
 import {
 	type PackageInvoice,
 	type PackagePlan,
 	useCreatePurchaseMutation,
 	useGetPricingQuery,
 } from "@/redux/features/pricingApi";
+import { setUser } from "@/redux/features/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
 type PricingFeature = {
@@ -77,6 +81,8 @@ const buildInvoiceUrl = (invoice: PackageInvoice): string => {
 
 export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 	const router = useRouter();
+	const dispatch = useAppDispatch();
+	const token = useAppSelector((state) => state.auth.access_token);
 	const { data: pricingData, isLoading } = useGetPricingQuery();
 	const [createPurchase] = useCreatePurchaseMutation();
 	const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
@@ -122,6 +128,23 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 		router.push(buildInvoiceUrl(invoice));
 	};
 
+	const handleLogout = async () => {
+		const result = await Swal.fire({
+			title: "Are you sure?",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#3085d6",
+			cancelButtonColor: "#d33",
+			confirmButtonText: "Yes, Log out",
+		});
+
+		if (!result.isConfirmed) return;
+
+		await dispatch(setUser({ access_token: null }));
+		localStorage.removeItem("access_token");
+		router.replace("/");
+	};
+
 	if (isLoading) {
 		return (
 			<div className="w-full max-w-3xl mx-auto rounded-2xl border border-pink-100 bg-white p-8 text-center text-gray-500">
@@ -146,6 +169,19 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 
 	return (
 		<div className="w-full max-w-3xl mx-auto">
+			{token ? (
+				<div className="mb-4 flex justify-end">
+					<button
+						type="button"
+						onClick={handleLogout}
+						className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+					>
+						<LogOut className="h-4 w-4" />
+						Logout
+					</button>
+				</div>
+			) : null}
+
 			<p className="text-center text-sm sm:text-base text-gray-600 mb-5">
 				Thanks for completing registration. Select your reseller package and continue payment.
 			</p>
@@ -221,10 +257,13 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 					<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
 						Need help with package payment? Contact our team now.
 					</div>
-					<div className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2">
+					<Link
+						href="/support"
+						className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+					>
 						<Headset className="h-5 w-5" />
 						<span>Support</span>
-					</div>
+					</Link>
 				</div>
 			</div>
 		</div>

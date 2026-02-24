@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAppSelector } from "@/redux/hooks";
 import VendorNotificationCenter from "@/components/vendor/VendorNotificationCenter";
+import { useGetVendorProfileQuery } from "@/redux/api/vendorApi";
 
 type NavItem = {
 	label: string;
@@ -97,12 +98,52 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
  * Auth is handled per-page so that /vendor/login stays accessible.
  */
 export default function VendorLayout({ children }: { children: ReactNode }) {
+	const router = useRouter();
 	const pathname = usePathname();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 	const isAuthPage =
 		pathname === "/vendor/login" || pathname === "/vendor/register";
-	const notificationDisabled = isAuthPage || !token;
+	const isVendorProfilePage = pathname === "/vendor/profile";
+	const shouldLoadVendorProfile = !isAuthPage && Boolean(token);
+	const {
+		data: vendorProfileResponse,
+		isLoading: isVendorProfileLoading,
+		isFetching: isVendorProfileFetching,
+		isError: isVendorProfileError,
+	} = useGetVendorProfileQuery(undefined, {
+		skip: !shouldLoadVendorProfile,
+	});
+	const hasVendorProfile = Boolean(vendorProfileResponse?.data?.vendor);
+	const isVendorProfileResolved =
+		!shouldLoadVendorProfile ||
+		(!isVendorProfileLoading && !isVendorProfileFetching);
+	const notificationDisabled = isAuthPage || !token || !hasVendorProfile;
+
+	useEffect(() => {
+		if (isAuthPage) return;
+
+		if (!token) {
+			router.replace("/vendor/login");
+			return;
+		}
+
+		if (!isVendorProfileResolved || isVendorProfileError) {
+			return;
+		}
+
+		if (!hasVendorProfile && !isVendorProfilePage) {
+			router.replace("/vendor/profile");
+		}
+	}, [
+		hasVendorProfile,
+		isAuthPage,
+		isVendorProfileError,
+		isVendorProfilePage,
+		isVendorProfileResolved,
+		router,
+		token,
+	]);
 
 	useEffect(() => {
 		setMobileNavOpen(false);
@@ -167,6 +208,21 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 			))}
 		</nav>
 	);
+
+	const shouldBlockVendorChildren =
+		!isAuthPage &&
+		(!token ||
+			!isVendorProfileResolved ||
+			isVendorProfileError ||
+			(!hasVendorProfile && !isVendorProfilePage));
+
+	const guardMessage = !token
+		? "Redirecting to vendor login..."
+		: !isVendorProfileResolved
+			? "Checking vendor access..."
+			: isVendorProfileError
+				? "Unable to verify vendor access. Please refresh the page."
+			: "Redirecting to vendor profile setup...";
 
 	return (
 		<div className="min-h-screen bg-gray-50 flex">
@@ -262,7 +318,13 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 				</header>
 
 				<main className="min-w-0 px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
-					{children}
+					{shouldBlockVendorChildren ? (
+						<div className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+							{guardMessage}
+						</div>
+					) : (
+						children
+					)}
 				</main>
 			</div>
 		</div>

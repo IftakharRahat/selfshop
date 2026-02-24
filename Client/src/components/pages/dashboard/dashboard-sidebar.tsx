@@ -3,6 +3,7 @@
 import {
 	ArrowUpDown,
 	BarChart3,
+	CalendarDays,
 	CreditCard,
 	DollarSign,
 	Download,
@@ -40,6 +41,7 @@ function getInitials(name: string | undefined): string {
 const menuItems = [
 	{ icon: Home, label: "Home", href: "/" },
 	{ icon: BarChart3, label: "Dashboard", href: "/dashboard" },
+	{ icon: CalendarDays, label: "Bonus", href: "/dashboard/event" },
 	{ icon: ShoppingBag, label: "My orders", href: "/dashboard/orders" },
 	{
 		icon: DollarSign,

@@ -18,6 +18,13 @@ class VerifyCsrfToken extends Middleware
         '/cancel',
         '/fail',
         '/ipn',
+        '/sslcommerz/fail',
+        '/sslcommerz/cancel',
+        '/sslcommerz/ipn',
+        '/sslcommerz/package/success',
+        '/sslcommerz/package/fail',
+        '/sslcommerz/package/cancel',
+        '/sslcommerz/package/ipn',
         'admin/login', // avoid 419 when session cookie not sent (e.g. 127.0.0.1 vs localhost)
     ];
 }

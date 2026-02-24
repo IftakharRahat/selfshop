@@ -571,19 +571,34 @@ public function packagePaymentFail(Request $request)
     Log::info('SSLCommerz Package Payment Fail Callback:', $request->all());
     
     $tran_id = $request->input('tran_id');
+    $invoice = null;
     
     if ($tran_id) {
         // Update invoice status to Failed
         $invoice = \App\Models\Resellerinvoice::where('payment_id', $tran_id)->first();
-        if ($invoice) {
+    }
+
+    if (!$invoice && $request->filled('value_b')) {
+        $invoice = \App\Models\Resellerinvoice::find((int) $request->input('value_b'));
+    }
+
+    if ($invoice && strcasecmp((string) $invoice->status, 'Paid') !== 0) {
             $invoice->status = 'Failed';
             $invoice->save();
             Log::info('Invoice marked as failed:', ['invoice_id' => $invoice->id]);
-        }
     }
     
     Session::forget('sslcommerz_package_payment');
-    
+
+    if ($invoice) {
+        return redirect()->away($this->frontendUrl('/invoice', [
+            'invoice_id' => $invoice->id,
+            'invoiceID' => $invoice->invoiceID,
+            'package_id' => $invoice->package_id,
+            'payment' => 'failed',
+        ]));
+    }
+
     return redirect()->away($this->frontendUrl('/pricing', [
         'payment' => 'failed',
     ]));
@@ -597,19 +612,34 @@ public function packagePaymentCancel(Request $request)
     Log::info('SSLCommerz Package Payment Cancel Callback:', $request->all());
     
     $tran_id = $request->input('tran_id');
+    $invoice = null;
     
     if ($tran_id) {
         // Update invoice status to Canceled
         $invoice = \App\Models\Resellerinvoice::where('payment_id', $tran_id)->first();
-        if ($invoice) {
+    }
+
+    if (!$invoice && $request->filled('value_b')) {
+        $invoice = \App\Models\Resellerinvoice::find((int) $request->input('value_b'));
+    }
+
+    if ($invoice && strcasecmp((string) $invoice->status, 'Paid') !== 0) {
             $invoice->status = 'Canceled';
             $invoice->save();
             Log::info('Invoice marked as canceled:', ['invoice_id' => $invoice->id]);
-        }
     }
     
     Session::forget('sslcommerz_package_payment');
-    
+
+    if ($invoice) {
+        return redirect()->away($this->frontendUrl('/invoice', [
+            'invoice_id' => $invoice->id,
+            'invoiceID' => $invoice->invoiceID,
+            'package_id' => $invoice->package_id,
+            'payment' => 'canceled',
+        ]));
+    }
+
     return redirect()->away($this->frontendUrl('/pricing', [
         'payment' => 'canceled',
     ]));

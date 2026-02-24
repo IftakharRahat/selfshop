@@ -18,6 +18,8 @@ type ProductApi = {
 	varients?: Array<{
 		id: number;
 		title?: string;
+		color_name?: string;
+		color_code?: string;
 		price?: string;
 		sizes?: string[];
 		qty?: number;
@@ -38,8 +40,9 @@ function buildVariantsFromProduct(p: ProductApi): MatrixVariant[] {
 				sizes.forEach((s: string) => {
 					variants.push({
 						id: `v-${v.id}-${s}`,
-						label: `${v.title || `Variant ${i + 1}`} / ${s}`,
+						label: `${v.color_name || v.title || `Variant ${i + 1}`} / ${s}`,
 						size: s,
+						color: v.color_code,
 						price,
 						stock: v.qty,
 					});
@@ -47,7 +50,8 @@ function buildVariantsFromProduct(p: ProductApi): MatrixVariant[] {
 			} else {
 				variants.push({
 					id: v.id,
-					label: v.title || `Variant ${i + 1}`,
+					label: v.color_name || v.title || `Variant ${i + 1}`,
+					color: v.color_code,
 					price,
 					stock: v.qty,
 				});

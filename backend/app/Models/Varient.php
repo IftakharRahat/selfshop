@@ -9,11 +9,21 @@ class Varient extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['product_id', 'title', 'qty', 'price', 'status'];
+    protected $fillable = [
+        'product_id',
+        'title',
+        'qty',
+        'price',
+        'status',
+        'extra_delivery_charge',
+        'color_name',
+        'color_code',
+    ];
 
     protected $casts = [
         'qty' => 'integer',
-        'price' => 'integer',
+        'price' => 'float',
+        'extra_delivery_charge' => 'float',
     ];
 
     public function product()

@@ -91,6 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/invbkash/create-payment', [App\Http\Controllers\BkashTokenizePaymentController::class, 'invcreatePayment'])->name('invbkash-create-payment');
 
     Route::get('dashboard-data', [FrontendApiController::class, 'dashboarddata']);
+    Route::post('sales-targets/participate', [FrontendApiController::class, 'participateSalesTarget']);
+    Route::post('sales-targets/claim-reward', [FrontendApiController::class, 'claimSalesTargetReward']);
     Route::post('logout', [FrontendApiController::class, 'userLogout'])->name('api.user.logout');
     Route::post('/confirm-password', [FrontendApiController::class, 'userConfirmPassword'])->name('api.user.confirm-password');
     //Profile

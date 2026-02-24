@@ -125,7 +125,16 @@ export default function BulkOrderMatrix({
 								key={String(v.id)}
 								className="flex items-center justify-between px-4 py-3"
 							>
-								<span className="text-gray-900">{v.label}</span>
+								<div className="flex items-center gap-2">
+									{v.color && (
+										<span
+											className="inline-block h-3.5 w-3.5 rounded-full border border-gray-300"
+											style={{ backgroundColor: v.color }}
+											title={v.color}
+										/>
+									)}
+									<span className="text-gray-900">{v.label}</span>
+								</div>
 								<div className="flex items-center gap-2">
 									<button
 										type="button"

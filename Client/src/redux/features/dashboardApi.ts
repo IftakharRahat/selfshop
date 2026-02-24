@@ -11,6 +11,25 @@ const requestProductListApi = baseApi.injectEndpoints({
 					method: "GET",
 				};
 			},
+			providesTags: ["dashboardApi"],
+		}),
+		participateSalesTarget: builder.mutation({
+			query: () => {
+				return {
+					url: `/sales-targets/participate`,
+					method: "POST",
+				};
+			},
+			invalidatesTags: ["dashboardApi"],
+		}),
+		claimSalesTargetReward: builder.mutation({
+			query: () => {
+				return {
+					url: `/sales-targets/claim-reward`,
+					method: "POST",
+				};
+			},
+			invalidatesTags: ["dashboardApi"],
 		}),
 		getAllFAQs: builder.query({
 			query: () => {
@@ -78,6 +97,8 @@ const requestProductListApi = baseApi.injectEndpoints({
 
 export const {
 	useGetAllDashboardDataQuery,
+	useParticipateSalesTargetMutation,
+	useClaimSalesTargetRewardMutation,
 	useGetAllFAQsQuery,
 	useGetAllReferralDataQuery,
 	useGetSingleOrderQuery,

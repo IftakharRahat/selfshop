@@ -222,8 +222,13 @@ class SslCommerzNotification extends AbstractSslCommerz
         }
     }
 
-    protected function setSuccessUrl()
+    protected function setSuccessUrl(?string $url = null)
     {
+        if (!empty($url)) {
+            $this->successUrl = $url;
+            return;
+        }
+
         $this->successUrl = rtrim(env('APP_URL'), '/') . $this->config['success_url'];
     }
 
@@ -232,8 +237,13 @@ class SslCommerzNotification extends AbstractSslCommerz
         return $this->successUrl;
     }
 
-    protected function setFailedUrl()
+    protected function setFailedUrl(?string $url = null)
     {
+        if (!empty($url)) {
+            $this->failedUrl = $url;
+            return;
+        }
+
         $this->failedUrl = rtrim(env('APP_URL'), '/') . $this->config['failed_url'];
     }
 
@@ -242,8 +252,13 @@ class SslCommerzNotification extends AbstractSslCommerz
         return $this->failedUrl;
     }
 
-    protected function setCancelUrl()
+    protected function setCancelUrl(?string $url = null)
     {
+        if (!empty($url)) {
+            $this->cancelUrl = $url;
+            return;
+        }
+
         $this->cancelUrl = rtrim(env('APP_URL'), '/') . $this->config['cancel_url'];
     }
 
@@ -252,8 +267,13 @@ class SslCommerzNotification extends AbstractSslCommerz
         return $this->cancelUrl;
     }
 
-    protected function setIPNUrl()
+    protected function setIPNUrl(?string $url = null)
     {
+        if (!empty($url)) {
+            $this->ipnUrl = $url;
+            return;
+        }
+
         $this->ipnUrl = rtrim(env('APP_URL'), '/') . $this->config['ipn_url'];
     }
 
@@ -295,11 +315,15 @@ class SslCommerzNotification extends AbstractSslCommerz
         $this->data['tran_id'] = $info['tran_id']; // string (30)	Mandatory - Unique transaction ID to identify your order in both your end and SSLCommerz
         $this->data['product_category'] = $info['product_category']; // string (50)	Mandatory - Mention the product category. It is a open field. Example - clothing,shoes,watches,gift,healthcare, jewellery,top up,toys,baby care,pants,laptop,donation,etc
 
-        // Set the SUCCESS, FAIL, CANCEL Redirect URL before setting the other parameters
-        $this->setSuccessUrl();
-        $this->setFailedUrl();
-        $this->setCancelUrl();
-        $this->setIPNUrl();
+        // Set callback URLs (allow per-transaction override when provided)
+        $this->setSuccessUrl(isset($info['success_url']) ? (string) $info['success_url'] : null);
+        $this->setFailedUrl(
+            isset($info['fail_url'])
+                ? (string) $info['fail_url']
+                : (isset($info['failed_url']) ? (string) $info['failed_url'] : null)
+        );
+        $this->setCancelUrl(isset($info['cancel_url']) ? (string) $info['cancel_url'] : null);
+        $this->setIPNUrl(isset($info['ipn_url']) ? (string) $info['ipn_url'] : null);
 
         $this->data['success_url'] = $this->getSuccessUrl(); // string (255)	Mandatory - It is the callback URL of your website where user will redirect after successful payment (Length: 255)
         $this->data['fail_url'] = $this->getFailedUrl(); // string (255)	Mandatory - It is the callback URL of your website where user will redirect after any failure occure during payment (Length: 255)

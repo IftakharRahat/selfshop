@@ -207,6 +207,43 @@
         .text-muted {
             color: #000 !important;
         }
+
+        /* Toastr cleanup: remove repeated patterned success background and use consistent cards */
+        #toast-container > .toast {
+            width: 360px;
+            max-width: calc(100vw - 24px);
+            border-radius: 10px;
+            border: 0;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+            padding: 14px 16px;
+            background-image: none !important;
+            font-size: 15px;
+            line-height: 1.45;
+        }
+
+        #toast-container > .toast-success {
+            background-color: #16a34a !important;
+            color: #ffffff !important;
+        }
+
+        #toast-container > .toast-error {
+            background-color: #dc2626 !important;
+            color: #ffffff !important;
+        }
+
+        #toast-container > .toast-info {
+            background-color: #0284c7 !important;
+            color: #ffffff !important;
+        }
+
+        #toast-container > .toast-warning {
+            background-color: #d97706 !important;
+            color: #ffffff !important;
+        }
+
+        #toast-container .toast-progress {
+            opacity: 0.35;
+        }
     </style>
 </head>
 
@@ -245,36 +282,30 @@
     @yield('subjs')
 
     <script>
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "newestOnTop": true,
+            "preventDuplicates": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "3500",
+            "extendedTimeOut": "1200"
+        };
+
         @if (Session::has('message'))
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true
-            }
-            toastr.success("{{ session('message') }}");
+            toastr.success(@json(session('message')));
         @endif
 
         @if (Session::has('error'))
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true
-            }
-            toastr.error("{{ session('error') }}");
+            toastr.error(@json(session('error')));
         @endif
 
         @if (Session::has('info'))
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true
-            }
-            toastr.info("{{ session('info') }}");
+            toastr.info(@json(session('info')));
         @endif
 
         @if (Session::has('warning'))
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true
-            }
-            toastr.warning("{{ session('warning') }}");
+            toastr.warning(@json(session('warning')));
         @endif
     </script>
 </body>

@@ -459,15 +459,48 @@ export const vendorApi = baseApi.injectEndpoints({
 
 		// ── Variants ──
 		getVendorProductVariants: build.query<
-			{ status: boolean; data?: { variants: { id: number; product_id: number; title: string; qty: number; price: number; status: string }[] } },
+			{
+				status: boolean;
+				data?: {
+					variants: {
+						id: number;
+						product_id: number;
+						title: string;
+						color_name?: string | null;
+						color_code?: string | null;
+						qty: number;
+						price: number;
+						status: string;
+					}[];
+				};
+			},
 			number
 		>({
 			query: (id) => ({ url: `/vendor/products/${id}/variants` }),
 			providesTags: (_r, _e, id) => [{ type: "vendorProducts", id }],
 		}),
 		createVendorProductVariant: build.mutation<
-			{ status: boolean; data?: { variant: { id: number; title: string; qty: number; price: number } } },
-			{ id: number; title: string; qty: number; price: number }
+			{
+				status: boolean;
+				data?: {
+					variant: {
+						id: number;
+						title: string;
+						color_name?: string | null;
+						color_code?: string | null;
+						qty: number;
+						price: number;
+					};
+				};
+			},
+			{
+				id: number;
+				title: string;
+				color_name?: string | null;
+				color_code?: string | null;
+				qty: number;
+				price: number;
+			}
 		>({
 			query: ({ id, ...body }) => ({
 				url: `/vendor/products/${id}/variants`,
@@ -478,7 +511,16 @@ export const vendorApi = baseApi.injectEndpoints({
 		}),
 		updateVendorProductVariant: build.mutation<
 			{ status: boolean; data?: { variant: unknown } },
-			{ id: number; variantId: number; title?: string; qty?: number; price?: number; status?: string }
+			{
+				id: number;
+				variantId: number;
+				title?: string;
+				color_name?: string | null;
+				color_code?: string | null;
+				qty?: number;
+				price?: number;
+				status?: string;
+			}
 		>({
 			query: ({ id, variantId, ...body }) => ({
 				url: `/vendor/products/${id}/variants/${variantId}`,

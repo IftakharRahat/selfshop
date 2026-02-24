@@ -255,7 +255,10 @@ export default function ProductDetailPage({ product }: any) {
 		for (const [vid, sizes] of Object.entries(variantQuantities)) {
 			const v = variants.find((vr: any) => vr.id === Number(vid));
 			for (const [size, qty] of Object.entries(sizes)) {
-				if (qty > 0) items.push({ variantId: Number(vid), variantTitle: v?.title || '', size, qty });
+				if (qty > 0) {
+					const variantLabel = v?.color_name || v?.title || "";
+					items.push({ variantId: Number(vid), variantTitle: variantLabel, size, qty });
+				}
 			}
 		}
 		return items;
@@ -501,7 +504,11 @@ export default function ProductDetailPage({ product }: any) {
 									<div className="flex gap-3 overflow-x-auto p-1">
 										{variants.map((v: any, idx: number) => {
 											const isActive = idx === activeVariantIdx;
-											const varQty = v.qty ?? 0;
+											const variantStock = Number(v.qty ?? 0);
+											const selectedVarQty = Object.values(
+												variantQuantities[Number(v.id)] ?? {},
+											).reduce((sum, qty) => sum + Number(qty || 0), 0);
+											const colorCode = typeof v.color_code === "string" ? v.color_code : "";
 											return (
 												<button
 													key={v.id}
@@ -511,8 +518,11 @@ export default function ProductDetailPage({ product }: any) {
 														: "hover:ring-1 hover:ring-gray-300"
 														}`}
 												>
-													<span className={`absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${isActive ? 'bg-pink-500 text-white' : 'bg-gray-400 text-white'}`}>
-														{varQty}
+													<span
+														className={`absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center ${selectedVarQty > 0 ? 'bg-pink-500 text-white' : 'bg-gray-400 text-white'}`}
+														title={`Selected: ${selectedVarQty}`}
+													>
+														{selectedVarQty}
 													</span>
 													{productData.images.main[idx] ? (
 														<Image
@@ -527,6 +537,16 @@ export default function ProductDetailPage({ product }: any) {
 															{(v.title || '?')[0]}
 														</div>
 													)}
+													{colorCode && (
+														<span
+															className="mt-1 inline-block h-2.5 w-2.5 rounded-full border border-gray-300"
+															style={{ backgroundColor: colorCode }}
+															title={v.color_name || colorCode}
+														/>
+													)}
+													<span className="mt-1 text-[10px] leading-none text-gray-500">
+														Stock {variantStock}
+													</span>
 												</button>
 											);
 										})}

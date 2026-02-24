@@ -84,6 +84,8 @@ export default function VendorEditProductPage() {
 	// Unified Bulk Pricing Variant-Wise
 	const [newBulkRow, setNewBulkRow] = useState({
 		variant_title: "",
+		color_name: "",
+		color_code: "",
 		min_qty: "1",
 		max_qty: "",
 		price: "",
@@ -149,11 +151,19 @@ export default function VendorEditProductPage() {
 			// 1. If title exists, ensure variant exists in 'varients' table (if new title)
 			if (newBulkRow.variant_title.trim()) {
 				const title = newBulkRow.variant_title.trim();
-				const exists = variants.some((v: any) => v.title === title);
+				const colorName = newBulkRow.color_name.trim();
+				const colorCode = newBulkRow.color_code.trim().toLowerCase();
+				const exists = variants.some((v: any) =>
+					v.title === title &&
+					(v.color_name ?? "").toLowerCase() === colorName.toLowerCase() &&
+					(v.color_code ?? "").toLowerCase() === colorCode
+				);
 				if (!exists) {
 					await createVariant({
 						id,
 						title,
+						color_name: colorName || undefined,
+						color_code: colorCode || undefined,
 						qty: parseInt(newBulkRow.max_qty, 10) || 0,
 						price: parseFloat(newBulkRow.price) || 0,
 					}).unwrap();
@@ -174,6 +184,8 @@ export default function VendorEditProductPage() {
 			toast.success("Bulk pricing added");
 			setNewBulkRow({
 				variant_title: "",
+				color_name: "",
+				color_code: "",
 				min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty, 10) + 1).toString(),
 				max_qty: "",
 				price: "",
@@ -514,11 +526,13 @@ export default function VendorEditProductPage() {
 							<table className="min-w-full text-sm">
 								<thead>
 									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 font-semibold w-[25%] text-indigo-900">Variant (Optional)</th>
-										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Min Qty</th>
-										<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Max Qty</th>
-										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Price</th>
-										<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Deliv. Charge</th>
+										<th className="py-2 pr-3 font-semibold w-[20%] text-indigo-900">Variant (Optional)</th>
+										<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Color Name</th>
+										<th className="py-2 pr-2 font-semibold w-[8%] text-indigo-900 text-center">Color</th>
+										<th className="py-2 pr-2 font-semibold w-[10%] text-indigo-900 text-center">Min Qty</th>
+										<th className="py-2 pr-2 font-semibold w-[10%] text-indigo-900 text-center">Max Qty</th>
+										<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Price</th>
+										<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Deliv. Charge</th>
 										<th className="py-2 w-[10%]"></th>
 									</tr>
 								</thead>
@@ -526,6 +540,23 @@ export default function VendorEditProductPage() {
 									{priceTiers.map((t: any) => (
 										<tr key={t.id} className="hover:bg-white/50 transition-colors">
 											<td className="py-3 pr-3 text-gray-700 italic">{t.variant_title || "Base Product"}</td>
+											<td className="py-3 pr-2 text-gray-700">
+												{variants.find((v: any) => v.title === t.variant_title)?.color_name || "-"}
+											</td>
+											<td className="py-3 pr-2 text-center">
+												{(() => {
+													const color = variants.find((v: any) => v.title === t.variant_title)?.color_code;
+													return color ? (
+														<span
+															className="inline-block h-5 w-5 rounded-full border border-gray-300"
+															style={{ backgroundColor: color }}
+															title={color}
+														/>
+													) : (
+														<span className="text-gray-400">-</span>
+													);
+												})()}
+											</td>
 											<td className="py-3 pr-2 text-center font-medium text-gray-900">{t.min_qty}</td>
 											<td className="py-3 pr-2 text-center font-medium text-gray-900">{t.max_qty || "∞"}</td>
 											<td className="py-3 pr-2 font-bold text-gray-900">৳{t.unit_price}</td>
@@ -548,6 +579,23 @@ export default function VendorEditProductPage() {
 												value={newBulkRow.variant_title}
 												onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
 												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+											/>
+										</td>
+										<td className="py-3 pr-2">
+											<input
+												placeholder="e.g. Red"
+												value={newBulkRow.color_name}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, color_name: e.target.value }))}
+												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+											/>
+										</td>
+										<td className="py-3 pr-2">
+											<input
+												type="color"
+												value={newBulkRow.color_code || "#000000"}
+												onChange={(e) => setNewBulkRow(p => ({ ...p, color_code: e.target.value }))}
+												className="h-9 w-full rounded-lg border border-gray-300 p-1"
+												title="Pick variant color"
 											/>
 										</td>
 										<td className="py-3 pr-2">

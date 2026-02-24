@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import WithVendorAuth from "../../WithVendorAuth";
 import { toast } from "sonner";
@@ -22,12 +22,29 @@ export default function VendorNewProductPage() {
 	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
 	const { data: brandData } = useGetAllBrandsQuery(undefined);
 	const { data: commissionData } = useGetVendorCategoryCommissionsQuery();
-	type CatItem = { id: number; category_name: string; subcategories?: { id: number; sub_category_name: string; category_id: number }[] };
+	type MiniCategoryItem = {
+		id: number;
+		mini_category_name: string;
+		subcategory_id: number;
+	};
+	type SubCategoryItem = {
+		id: number;
+		sub_category_name: string;
+		category_id: number;
+		minicategories?: MiniCategoryItem[];
+	};
+	type CatItem = {
+		id: number;
+		category_name: string;
+		subcategories?: SubCategoryItem[];
+	};
 	const categories = (catData as { data?: CatItem[] })?.data ?? [];
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
 	const commissionRows = commissionData?.data?.categories ?? [];
 
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
+	const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
+	const [selectedMinicategoryId, setSelectedMinicategoryId] = useState<string>("");
 	const selectedCategoryCommission = selectedCategoryId
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
 			?.commission_percent
@@ -38,6 +55,8 @@ export default function VendorNewProductPage() {
 	// Unified Bulk Pricing Variant-Wise
 	type BulkPricingRow = {
 		variant_title: string;
+		color_name: string;
+		color_code: string;
 		min_qty: string;
 		max_qty: string;
 		price: string;
@@ -46,6 +65,8 @@ export default function VendorNewProductPage() {
 	const [bulkPricing, setBulkPricing] = useState<BulkPricingRow[]>([]);
 	const [newBulkRow, setNewBulkRow] = useState<BulkPricingRow>({
 		variant_title: "",
+		color_name: "",
+		color_code: "",
 		min_qty: "1",
 		max_qty: "",
 		price: "",
@@ -58,6 +79,23 @@ export default function VendorNewProductPage() {
 		return cat?.subcategories ?? [];
 	}, [categories, selectedCategoryId]);
 
+	const miniCategories = useMemo(() => {
+		if (!selectedSubcategoryId) return [];
+		const sub = subcategories.find(
+			(item) => item.id === Number(selectedSubcategoryId),
+		);
+		return sub?.minicategories ?? [];
+	}, [selectedSubcategoryId, subcategories]);
+
+	useEffect(() => {
+		setSelectedSubcategoryId("");
+		setSelectedMinicategoryId("");
+	}, [selectedCategoryId]);
+
+	useEffect(() => {
+		setSelectedMinicategoryId("");
+	}, [selectedSubcategoryId]);
+
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
 
 	const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -68,6 +106,10 @@ export default function VendorNewProductPage() {
 		formData.append("ProductName", (form.querySelector('[name="name"]') as HTMLInputElement).value);
 		formData.append("category_id", (form.querySelector('[name="category_id"]') as HTMLSelectElement).value);
 		formData.append("subcategory_id", (form.querySelector('[name="subcategory_id"]') as HTMLSelectElement).value);
+		const minicategoryId = (form.querySelector('[name="minicategory_id"]') as HTMLSelectElement | null)?.value;
+		if (minicategoryId) {
+			formData.append("minicategory_id", minicategoryId);
+		}
 		formData.append("brand_id", (form.querySelector('[name="brand_id"]') as HTMLSelectElement).value);
 		const brief = (form.querySelector('[name="short_description"]') as HTMLTextAreaElement).value;
 		const details = (form.querySelector('[name="description"]') as HTMLTextAreaElement).value;
@@ -107,15 +149,33 @@ export default function VendorNewProductPage() {
 			const productId = res?.data?.product?.id;
 			if (productId != null) {
 				// 1. Collect unique variant titles and their max qty/price if needed
-				const uniqueVariants = new Map<string, { title: string; qty: number; price: number }>();
+				const uniqueVariants = new Map<
+					string,
+					{
+						title: string;
+						color_name?: string;
+						color_code?: string;
+						qty: number;
+						price: number;
+					}
+				>();
 				bulkPricing.forEach(row => {
 					const title = row.variant_title.trim();
 					if (title) {
-						const currentMax = uniqueVariants.get(title)?.qty ?? 0;
+						const colorName = row.color_name.trim();
+						const colorCode = row.color_code.trim();
+						const variantKey = `${title.toLowerCase()}|${colorName.toLowerCase()}|${colorCode.toLowerCase()}`;
+						const currentMax = uniqueVariants.get(variantKey)?.qty ?? 0;
 						const rowMax = parseInt(row.max_qty, 10) || 0;
 						const rowPrice = parseFloat(row.price) || 0;
-						if (rowMax > currentMax || !uniqueVariants.has(title)) {
-							uniqueVariants.set(title, { title, qty: rowMax, price: rowPrice });
+						if (rowMax > currentMax || !uniqueVariants.has(variantKey)) {
+							uniqueVariants.set(variantKey, {
+								title,
+								color_name: colorName || undefined,
+								color_code: colorCode || undefined,
+								qty: rowMax,
+								price: rowPrice,
+							});
 						}
 					}
 				});
@@ -126,6 +186,8 @@ export default function VendorNewProductPage() {
 						await createVariant({
 							id: productId,
 							title: v.title,
+							color_name: v.color_name,
+							color_code: v.color_code,
 							qty: v.qty,
 							price: v.price,
 						}).unwrap();
@@ -348,11 +410,37 @@ export default function VendorNewProductPage() {
 									<select
 										name="subcategory_id"
 										required
+										value={selectedSubcategoryId}
+										onChange={(e) => setSelectedSubcategoryId(e.target.value)}
 										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									>
 										<option value="">Select subcategory</option>
 										{subcategories.map((s) => (
 											<option key={s.id} value={s.id}>{s.sub_category_name}</option>
+										))}
+									</select>
+								</label>
+								<label className="flex flex-col text-xs font-medium text-gray-700">
+									Child category
+									<select
+										name="minicategory_id"
+										value={selectedMinicategoryId}
+										onChange={(e) => setSelectedMinicategoryId(e.target.value)}
+										required={miniCategories.length > 0}
+										disabled={!selectedSubcategoryId}
+										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
+									>
+										<option value="">
+											{!selectedSubcategoryId
+												? "Select subcategory first"
+												: miniCategories.length > 0
+													? "Select child category"
+													: "No child category"}
+										</option>
+										{miniCategories.map((m) => (
+											<option key={m.id} value={m.id}>
+												{m.mini_category_name}
+											</option>
 										))}
 									</select>
 								</label>
@@ -500,11 +588,13 @@ export default function VendorNewProductPage() {
 								<table className="min-w-full text-sm">
 									<thead>
 										<tr className="text-left text-gray-600 border-b border-gray-200">
-											<th className="py-2 pr-3 font-semibold w-[25%] text-indigo-900">Variant (Optional)</th>
-											<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Min Qty</th>
-											<th className="py-2 pr-2 font-semibold w-[12%] text-indigo-900 text-center">Max Qty</th>
-											<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Price</th>
-											<th className="py-2 pr-2 font-semibold w-[15%] text-indigo-900">Deliv. Charge</th>
+											<th className="py-2 pr-3 font-semibold w-[20%] text-indigo-900">Variant (Optional)</th>
+											<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Color Name</th>
+											<th className="py-2 pr-2 font-semibold w-[8%] text-indigo-900 text-center">Color</th>
+											<th className="py-2 pr-2 font-semibold w-[10%] text-indigo-900 text-center">Min Qty</th>
+											<th className="py-2 pr-2 font-semibold w-[10%] text-indigo-900 text-center">Max Qty</th>
+											<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Price</th>
+											<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Deliv. Charge</th>
 											<th className="py-2 w-[10%]"></th>
 										</tr>
 									</thead>
@@ -512,6 +602,18 @@ export default function VendorNewProductPage() {
 										{bulkPricing.map((row, i) => (
 											<tr key={i} className="hover:bg-white/50 transition-colors">
 												<td className="py-3 pr-3 text-gray-700 italic">{row.variant_title || "Base Product"}</td>
+												<td className="py-3 pr-2 text-gray-700">{row.color_name || "-"}</td>
+												<td className="py-3 pr-2 text-center">
+													{row.color_code ? (
+														<span
+															className="inline-block h-5 w-5 rounded-full border border-gray-300"
+															style={{ backgroundColor: row.color_code }}
+															title={row.color_code}
+														/>
+													) : (
+														<span className="text-gray-400">-</span>
+													)}
+												</td>
 												<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.min_qty}</td>
 												<td className="py-3 pr-2 text-center font-medium text-gray-900">{row.max_qty || "∞"}</td>
 												<td className="py-3 pr-2 font-bold text-gray-900">৳{row.price}</td>
@@ -534,6 +636,23 @@ export default function VendorNewProductPage() {
 													value={newBulkRow.variant_title}
 													onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
 													className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3 pr-2">
+												<input
+													placeholder="e.g. Red"
+													value={newBulkRow.color_name}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, color_name: e.target.value }))}
+													className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
+												/>
+											</td>
+											<td className="py-3 pr-2">
+												<input
+													type="color"
+													value={newBulkRow.color_code || "#000000"}
+													onChange={(e) => setNewBulkRow(p => ({ ...p, color_code: e.target.value }))}
+													className="h-9 w-full rounded-lg border border-gray-300 p-1"
+													title="Pick variant color"
 												/>
 											</td>
 											<td className="py-3 pr-2">
@@ -579,6 +698,8 @@ export default function VendorNewProductPage() {
 															setBulkPricing(prev => [...prev, { ...newBulkRow }]);
 															setNewBulkRow({
 																variant_title: "",
+																color_name: "",
+																color_code: "",
 																min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty) + 1).toString(),
 																max_qty: "",
 																price: "",

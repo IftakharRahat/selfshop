@@ -31,6 +31,8 @@
                         <tr>
                             <th>SL</th>
                             <th>Title</th>
+                            <th>Color Name</th>
+                            <th>Color</th>
                             <th>Quantity</th>
                             <th>1/Price</th>
                             <th>Status</th>
@@ -42,6 +44,17 @@
                             <tr>
                                 <td>{{$ind+1}}</td>
                                 <td>{{$varient->title}}</td>
+                                <td>{{ $varient->color_name ?? '-' }}</td>
+                                <td>
+                                    @if(!empty($varient->color_code))
+                                        <span
+                                            style="display:inline-block;width:20px;height:20px;border-radius:999px;border:1px solid #cbd5e1;background:{{ $varient->color_code }};"
+                                            title="{{ $varient->color_code }}"
+                                        ></span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 <td>{{$varient->qty}}</td>
                                 <td>{{$varient->price}}</td>
                                 <td>
@@ -58,7 +71,7 @@
                             </tr>
                         @empty
                            <tr>
-                                <td colspan="6" class="text-center py-4">No data found</td>
+                                <td colspan="8" class="text-center py-4">No data found</td>
                            </tr>
                         @endforelse
                     </tbody>
@@ -85,6 +98,21 @@
                         <div class="mb-3 form-floating">
                             <input type="number" class="form-control" name="qty" id="qty" placeholder="Quantity" required>
                             <label for="floatingInput">Quantity</label>
+                        </div>
+                        <div class="mb-3 form-floating">
+                            <input type="text" class="form-control" name="color_name" id="color_name" placeholder="Color Name">
+                            <label for="floatingInput">Color Name (Optional)</label>
+                        </div>
+                        <div class="mb-3 form-floating">
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="color_code"
+                                id="color_code"
+                                placeholder="#FF0000"
+                                pattern="^#?[A-Fa-f0-9]{3}([A-Fa-f0-9]{3})?$"
+                            >
+                            <label for="color_code">Color Code (Optional, e.g. #FF0000)</label>
                         </div>
                         <div class="mb-3 form-floating">
                             <input type="number" class="form-control" name="price" id="price" placeholder="Price" required>
@@ -123,6 +151,21 @@
                         <div class="mb-3 form-floating">
                             <input type="number" class="form-control" name="qty" id="qty" placeholder="Quantity" required>
                             <label for="floatingInput">Quantity</label>
+                        </div>
+                        <div class="mb-3 form-floating">
+                            <input type="text" class="form-control" name="color_name" id="color_name" placeholder="Color Name">
+                            <label for="floatingInput">Color Name (Optional)</label>
+                        </div>
+                        <div class="mb-3 form-floating">
+                            <input
+                                type="text"
+                                class="form-control"
+                                name="color_code"
+                                id="color_code"
+                                placeholder="#FF0000"
+                                pattern="^#?[A-Fa-f0-9]{3}([A-Fa-f0-9]{3})?$"
+                            >
+                            <label for="color_code">Color Code (Optional, e.g. #FF0000)</label>
                         </div>
                         <div class="mb-3 form-floating">
                             <input type="number" class="form-control" name="price" id="price" placeholder="Price" required>
@@ -195,6 +238,8 @@
                 success: function(data) {
                     $('#EditCategory').find('#title').val(data.title);
                     $('#EditCategory').find('#qty').val(data.qty);
+                    $('#EditCategory').find('#color_name').val(data.color_name || '');
+                    $('#EditCategory').find('#color_code').val(data.color_code || '');
                     $('#EditCategory').find('#price').val(data.price);
                     $('#EditCategory').find('#extra_delivery_charge').val(data.extra_delivery_charge);
                     $('#EditCategory').find('#status').val(data.status);
