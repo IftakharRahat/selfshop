@@ -19,6 +19,9 @@ cmds = [
 ]
 
 # Explicitly use PHP-FPM + Nginx start (not node)
+# route:clear runs at startup to remove any corrupt route cache left by
+# Coolify's built-in optimize step (route:cache fails due to duplicate
+# bkash-refund route name from two packages).
 [start]
-cmd = "([ -e /app/storage ] && chmod -R ugo+w /app/storage); perl /assets/transform-config.pl /assets/nginx.template /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
+cmd = "php artisan route:clear; ([ -e /app/storage ] && chmod -R ugo+w /app/storage); perl /assets/transform-config.pl /assets/nginx.template /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
 
