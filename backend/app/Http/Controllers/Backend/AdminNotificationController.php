@@ -9,7 +9,9 @@ use App\Notifications\AdminBroadcastNotification;
 use App\Services\OneSignalPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Schema;
 
 class AdminNotificationController extends Controller
 {
@@ -146,137 +148,162 @@ class AdminNotificationController extends Controller
             'supplier_ids.*' => ['integer', 'exists:vendors,id'],
         ]);
 
-        $admin = Auth::guard('admin')->user();
-        $targetType = (string) $validated['target_type'];
-        $audienceType = $this->mapTargetType($targetType);
+        // Ensure the notifications table exists before attempting to write
+        if (!Schema::hasTable('notifications')) {
+            Log::error('AdminNotificationController@send: notifications table does not exist. Run: php artisan migrate');
 
-        $meta = [
-            'admin_id' => $admin?->id,
-            'admin_name' => $admin?->name,
-            'target_type' => $audienceType,
-        ];
-
-        $pushData = array_filter([
-            'type' => 'admin_broadcast',
-            'audience_type' => $audienceType,
-            'image_url' => $validated['image_url'] ?? null,
-            'action_url' => $validated['link'] ?? null,
-            'meta' => $meta,
-        ], fn($value) => $value !== null);
-
-        $sendNotificationBatch = function ($users) use ($validated, $audienceType, $meta) {
-            if ($users->isEmpty()) {
-                return;
-            }
-
-            Notification::send($users, new AdminBroadcastNotification(
-                $validated['title'],
-                $validated['message'],
-                $validated['image_url'] ?? null,
-                $validated['link'] ?? null,
-                $audienceType,
-                $meta
-            ));
-        };
-
-        $sentCount = 0;
-
-        if ($targetType === '1') {
-            $sentCount = User::query()->whereDoesntHave('vendor')->count();
-            User::query()
-                ->whereDoesntHave('vendor')
-                ->select('id')
-                ->orderBy('id')
-                ->chunkById(300, function ($users) use ($sendNotificationBatch) {
-                    $sendNotificationBatch($users);
-                });
-
-            $this->oneSignalPushService->sendToPanel(
-                'user',
-                $validated['title'],
-                $validated['message'],
-                $validated['link'] ?? null,
-                $pushData
-            );
-        } elseif ($targetType === '2') {
-            $recipientUserIds = collect($validated['user_ids'] ?? [])
-                ->map(fn($id) => (int) $id)
-                ->filter()
-                ->unique()
-                ->values();
-
-            $sentCount = User::query()
-                ->whereDoesntHave('vendor')
-                ->whereIn('id', $recipientUserIds)
-                ->count();
-
-            if ($sentCount > 0) {
-                User::query()
-                    ->whereDoesntHave('vendor')
-                    ->whereIn('id', $recipientUserIds)
-                    ->select('id')
-                    ->orderBy('id')
-                    ->chunkById(300, function ($users) use ($sendNotificationBatch) {
-                        $sendNotificationBatch($users);
-                    });
-
-                $this->oneSignalPushService->sendToPanelUsers(
-                    'user',
-                    $recipientUserIds->all(),
-                    $validated['title'],
-                    $validated['message'],
-                    $validated['link'] ?? null,
-                    $pushData
-                );
-            }
-        } else {
-            $supplierIds = collect($validated['supplier_ids'] ?? [])
-                ->map(fn($id) => (int) $id)
-                ->filter()
-                ->unique()
-                ->values();
-
-            $recipientUserIds = Vendor::query()
-                ->whereIn('id', $supplierIds)
-                ->whereNotNull('user_id')
-                ->pluck('user_id')
-                ->map(fn($id) => (int) $id)
-                ->filter()
-                ->unique()
-                ->values();
-
-            $sentCount = $recipientUserIds->count();
-
-            if ($sentCount > 0) {
-                User::query()
-                    ->whereIn('id', $recipientUserIds)
-                    ->select('id')
-                    ->orderBy('id')
-                    ->chunkById(300, function ($users) use ($sendNotificationBatch) {
-                        $sendNotificationBatch($users);
-                    });
-
-                $this->oneSignalPushService->sendToPanelUsers(
-                    'supplier',
-                    $recipientUserIds->all(),
-                    $validated['title'],
-                    $validated['message'],
-                    $validated['link'] ?? null,
-                    $pushData
-                );
-            }
-        }
-
-        if ($sentCount < 1) {
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'No valid recipients found for this notification.');
+                ->with('error', 'Notifications table not found. Please run database migrations first.');
         }
 
-        return redirect()
-            ->route('admin.notifications.index')
-            ->with('message', 'Notification sent successfully to ' . number_format($sentCount) . ' recipient(s).');
+        try {
+            $admin = Auth::guard('admin')->user();
+            $targetType = (string) $validated['target_type'];
+            $audienceType = $this->mapTargetType($targetType);
+
+            $meta = [
+                'admin_id' => $admin?->id,
+                'admin_name' => $admin?->name,
+                'target_type' => $audienceType,
+            ];
+
+            $pushData = array_filter([
+                'type' => 'admin_broadcast',
+                'audience_type' => $audienceType,
+                'image_url' => $validated['image_url'] ?? null,
+                'action_url' => $validated['link'] ?? null,
+                'meta' => $meta,
+            ], fn($value) => $value !== null);
+
+            $sendNotificationBatch = function ($users) use ($validated, $audienceType, $meta) {
+                if ($users->isEmpty()) {
+                    return;
+                }
+
+                Notification::send($users, new AdminBroadcastNotification(
+                    $validated['title'],
+                    $validated['message'],
+                    $validated['image_url'] ?? null,
+                    $validated['link'] ?? null,
+                    $audienceType,
+                    $meta
+                ));
+            };
+
+            $sentCount = 0;
+
+            if ($targetType === '1') {
+                $sentCount = User::query()->whereDoesntHave('vendor')->count();
+                User::query()
+                    ->whereDoesntHave('vendor')
+                    ->select('id')
+                    ->orderBy('id')
+                    ->chunkById(300, function ($users) use ($sendNotificationBatch) {
+                        $sendNotificationBatch($users);
+                    });
+
+                $this->oneSignalPushService->sendToPanel(
+                    'user',
+                    $validated['title'],
+                    $validated['message'],
+                    $validated['link'] ?? null,
+                    $pushData
+                );
+            } elseif ($targetType === '2') {
+                $recipientUserIds = collect($validated['user_ids'] ?? [])
+                    ->map(fn($id) => (int) $id)
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $sentCount = User::query()
+                    ->whereDoesntHave('vendor')
+                    ->whereIn('id', $recipientUserIds)
+                    ->count();
+
+                if ($sentCount > 0) {
+                    User::query()
+                        ->whereDoesntHave('vendor')
+                        ->whereIn('id', $recipientUserIds)
+                        ->select('id')
+                        ->orderBy('id')
+                        ->chunkById(300, function ($users) use ($sendNotificationBatch) {
+                            $sendNotificationBatch($users);
+                        });
+
+                    $this->oneSignalPushService->sendToPanelUsers(
+                        'user',
+                        $recipientUserIds->all(),
+                        $validated['title'],
+                        $validated['message'],
+                        $validated['link'] ?? null,
+                        $pushData
+                    );
+                }
+            } else {
+                $supplierIds = collect($validated['supplier_ids'] ?? [])
+                    ->map(fn($id) => (int) $id)
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $recipientUserIds = Vendor::query()
+                    ->whereIn('id', $supplierIds)
+                    ->whereNotNull('user_id')
+                    ->pluck('user_id')
+                    ->map(fn($id) => (int) $id)
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $sentCount = $recipientUserIds->count();
+
+                if ($sentCount > 0) {
+                    User::query()
+                        ->whereIn('id', $recipientUserIds)
+                        ->select('id')
+                        ->orderBy('id')
+                        ->chunkById(300, function ($users) use ($sendNotificationBatch) {
+                            $sendNotificationBatch($users);
+                        });
+
+                    $this->oneSignalPushService->sendToPanelUsers(
+                        'supplier',
+                        $recipientUserIds->all(),
+                        $validated['title'],
+                        $validated['message'],
+                        $validated['link'] ?? null,
+                        $pushData
+                    );
+                }
+            }
+
+            if ($sentCount < 1) {
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'No valid recipients found for this notification.');
+            }
+
+            return redirect()
+                ->route('admin.notifications.index')
+                ->with('message', 'Notification sent successfully to ' . number_format($sentCount) . ' recipient(s).');
+
+        } catch (\Throwable $e) {
+            Log::error('AdminNotificationController@send failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Failed to send notification: ' . $e->getMessage());
+        }
     }
 
     private function mapTargetType(string $targetType): string
