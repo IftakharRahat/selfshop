@@ -1,0 +1,28 @@
+﻿Field	Type	Null	Key	Default	Extra
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment
+user_id	bigint(20) unsigned	NO	MUL	NULL	
+company_name	varchar(255)	NO		NULL	
+slug	varchar(255)	NO	UNI	NULL	
+business_type	varchar(255)	YES		NULL	
+logo_path	varchar(255)	YES		NULL	
+banner_path	varchar(255)	YES		NULL	
+contact_name	varchar(255)	YES		NULL	
+contact_email	varchar(255)	YES		NULL	
+contact_phone	varchar(255)	YES		NULL	
+country	varchar(255)	YES		NULL	
+state	varchar(255)	YES		NULL	
+city	varchar(255)	YES		NULL	
+postcode	varchar(255)	YES		NULL	
+address_line_1	varchar(255)	YES		NULL	
+address_line_2	varchar(255)	YES		NULL	
+pickup_location_label	varchar(255)	YES		NULL	
+status	enum('pending','approved','rejected','suspended')	NO	MUL	pending	
+is_verified_badge	tinyint(1)	NO	MUL	0	
+verified_badge_at	timestamp	YES		NULL	
+verified_badge_by	bigint(20) unsigned	YES		NULL	
+approved_at	timestamp	YES		NULL	
+rejected_at	timestamp	YES		NULL	
+suspended_at	timestamp	YES		NULL	
+notes	text	YES		NULL	
+created_at	timestamp	YES		NULL	
+updated_at	timestamp	YES		NULL	

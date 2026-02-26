@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, Headset, XCircle } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
@@ -158,11 +159,10 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 							key={plan.id}
 							type="button"
 							onClick={() => handleSelectPlan(plan.id)}
-							className={`min-w-[140px] rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-								isSelected
-									? "bg-white text-gray-900 shadow"
-									: "bg-transparent text-emerald-50 hover:bg-emerald-600"
-							}`}
+							className={`min-w-[140px] rounded-full px-4 py-2 text-sm font-semibold transition-colors ${isSelected
+								? "bg-white text-gray-900 shadow"
+								: "bg-transparent text-emerald-50 hover:bg-emerald-600"
+								}`}
 						>
 							{plan.package_name}
 						</button>
@@ -216,7 +216,10 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 				</div>
 			</div>
 
-			<div className="mt-6 overflow-hidden rounded-2xl border border-emerald-300">
+			<Link
+				href="/contact"
+				className="mt-6 block overflow-hidden rounded-2xl border border-emerald-300 hover:border-emerald-400 transition-colors"
+			>
 				<div className="grid grid-cols-3">
 					<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
 						Need help with package payment? Contact our team now.
@@ -226,7 +229,7 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 						<span>Support</span>
 					</div>
 				</div>
-			</div>
+			</Link>
 		</div>
 	);
 }

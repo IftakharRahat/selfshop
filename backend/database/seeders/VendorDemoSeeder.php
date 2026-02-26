@@ -25,7 +25,8 @@ class VendorDemoSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'phone' => '01000000001',
                 'status' => 'Active',
-                'country' => 'BD',
+                'my_referral_code' => 'V1REF',
+                'refer_by' => 'admin',
             ]
         );
 
@@ -52,7 +53,8 @@ class VendorDemoSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'phone' => '01000000002',
                 'status' => 'Active',
-                'country' => 'BD',
+                'my_referral_code' => 'V2REF',
+                'refer_by' => 'admin',
             ]
         );
 

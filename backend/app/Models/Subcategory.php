@@ -12,6 +12,8 @@ class Subcategory extends Model
     use HasSlug;
     use HasFactory;
 
+    protected $guarded = [];
+
     public function categories()
     {
         return $this->belongsTo(Category::class, 'category_id');
@@ -19,7 +21,7 @@ class Subcategory extends Model
 
     public function products()
     {
-        return $this->hasMany(Subcategory::class, 'subcategory_id');
+        return $this->hasMany(Product::class, 'subcategory_id');
     }
 
     public function minicategories()
