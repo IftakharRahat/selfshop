@@ -1,7 +1,7 @@
 @extends('backend.master')
 
 @section('title')
-    {{ env('APP_NAME') }} - Vendor Details
+    {{ env('APP_NAME') }} - Supplier Details
 @endsection
 
 @section('maincontent')
@@ -9,8 +9,8 @@
     <div class="pagetitle mb-3">
         <nav>
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('admin.vendors.index') }}">Vendor Requests</a></li>
+                <li class="breadcrumb-item"><a href="{{ url('/admin/dashboard') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.vendors.index') }}">Supplier Requests</a></li>
                 <li class="breadcrumb-item active">{{ $vendor->company_name }}</li>
             </ol>
         </nav>
@@ -23,7 +23,7 @@
                 <div class="admin-card-body">
                     <h5 class="mb-1" style="font-weight: 700;">{{ $vendor->company_name }}</h5>
                     <p class="mb-1 small text-muted">
-                        Vendor ID: #{{ $vendor->id }} &middot;
+                        Supplier ID: #{{ $vendor->id }} &middot;
                         User ID: #{{ $vendor->user->id ?? '-' }}
                     </p>
                     <p class="mb-1 small text-muted">
@@ -101,15 +101,16 @@
                     <h6 class="admin-card-title">Admin Actions</h6>
                 </div>
                 <div class="admin-card-body">
+                    <a href="{{ route('admin.vendors.edit', $vendor->id) }}" class="btn btn-sm btn-primary w-100 mb-2">Edit supplier account</a>
                     @if($vendor->status === 'pending')
                         <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="mb-2">
                             @csrf
-                            <button type="submit" class="btn btn-sm btn-success w-100">Approve vendor</button>
+                            <button type="submit" class="btn btn-sm btn-success w-100">Approve supplier</button>
                         </form>
                         <form action="{{ route('admin.vendors.reject', $vendor->id) }}" method="post">
                             @csrf
                             <input type="text" name="reason" placeholder="Reason (optional)" class="form-control form-control-sm mb-2">
-                            <button type="submit" class="btn btn-sm btn-danger w-100">Reject vendor</button>
+                            <button type="submit" class="btn btn-sm btn-danger w-100">Reject supplier</button>
                         </form>
                     @elseif($vendor->status === 'approved')
                         @if($vendor->is_verified_badge)
@@ -127,7 +128,7 @@
                             </form>
                         @endif
                     @else
-                        <p class="small mb-0 text-muted">Badge actions are unavailable while vendor status is rejected.</p>
+                        <p class="small mb-0 text-muted">Badge actions are unavailable while supplier status is rejected.</p>
                     @endif
                 </div>
             </div>

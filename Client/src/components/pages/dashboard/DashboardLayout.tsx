@@ -5,14 +5,23 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import logo from "@/assets/icons/NavLogo.png";
 import ResponsiveLayout from "@/components/pages/dashboard/responsive-layout";
+import UserNotificationCenter from "@/components/pages/dashboard/UserNotificationCenter";
+import OneSignalInitializer from "@/components/shared/notifications/OneSignalInitializer";
 import FooterNavbar from "@/components/shared/FooterNavbar/FooterNavbar";
 import { getImageUrl } from "@/lib/utils";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
 	const { data } = useGetMeQuery(undefined);
+	const userId = data?.data?.profile?.id as number | undefined;
 	return (
 		<div className="h-screen bg-gray-50  overflow-hidden">
+			<OneSignalInitializer
+				panel="user"
+				userId={userId ?? null}
+				enabled={Boolean(userId)}
+			/>
+
 			{/* Desktop Header - hidden on mobile */}
 			<header className="hidden lg:block bg-white border-b border-gray-200 px-6 py-3">
 				<div className="flex items-center justify-between">
@@ -29,7 +38,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 							</p>
 						</div>
 					</div>
-					<div className="flex items-center gap-6">
+					<div className="flex items-center gap-3">
+						<UserNotificationCenter />
 						<div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50">
 							{data?.data?.profile?.profile ? (
 								<Image

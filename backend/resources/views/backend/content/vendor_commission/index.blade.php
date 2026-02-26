@@ -1,7 +1,7 @@
 @extends('backend.master')
 
 @section('title')
-    {{ env('APP_NAME') }} - Vendor Category Commission
+    {{ env('APP_NAME') }} - Supplier Category Commission
 @endsection
 
 @section('maincontent')
@@ -10,7 +10,7 @@
         <nav>
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Vendor Category Commission</li>
+                <li class="breadcrumb-item active">Supplier Category Commission</li>
             </ol>
         </nav>
     </div>
@@ -21,7 +21,7 @@
 
     <div class="admin-content-card">
         <div class="admin-card-header">
-            <h6 class="admin-card-title">Vendor Category Commission</h6>
+            <h6 class="admin-card-title">Supplier Category Commission</h6>
             <p class="mb-0" style="font-size: 12px; color: #64748b;">
                 Set global commission per category. Default: {{ number_format($globalDefault, 2) }}%.
             </p>

@@ -1,0 +1,61 @@
+
+> self-shop@0.1.0 dev C:\Users\Rahat\OneDrive\Documents\backup\Client
+> next dev --turbopack
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.101:3000
+- Environments: .env
+
+✓ Starting...
+✓ Ready in 1592ms
+ GET / 500 in 835ms (compile: 586ms, proxy.ts: 79ms, render: 169ms)
+✓ Compiled in 4.1s
+ GET / 200 in 5.0s (compile: 4.3s, proxy.ts: 11ms, render: 633ms)
+ GET /api/auth/session 200 in 1143ms (compile: 1106ms, render: 37ms)
+ GET / 200 in 59ms (compile: 7ms, proxy.ts: 9ms, render: 43ms)
+○ Compiling /dashboard/settings ...
+ GET /dashboard/settings 200 in 3.6s (compile: 3.3s, proxy.ts: 31ms, render: 241ms)
+ GET /dashboard/event 200 in 3.2s (compile: 3.0s, proxy.ts: 77ms, render: 182ms)
+ GET /vendor 200 in 3.5s (compile: 2.5s, proxy.ts: 91ms, render: 891ms)
+ GET /api/auth/session 200 in 45ms (compile: 25ms, render: 20ms)
+ GET /api/auth/session 200 in 32ms (compile: 10ms, render: 22ms)
+ GET / 200 in 255ms (compile: 68ms, proxy.ts: 19ms, render: 169ms)
+ GET / 200 in 233ms (compile: 16ms, proxy.ts: 27ms, render: 191ms)
+ GET /api/auth/session 200 in 56ms (compile: 38ms, render: 19ms)
+ GET /api/auth/session 200 in 86ms (compile: 56ms, render: 31ms)
+ GET /dashboard/settings 200 in 224ms (compile: 57ms, proxy.ts: 20ms, render: 146ms)
+✓ Compiled in 901ms
+✓ Compiled in 245ms
+ GET /dashboard/settings 200 in 1873ms (compile: 318ms, proxy.ts: 5ms, render: 1550ms)
+✓ Compiled in 120ms
+ GET /vendor 200 in 231ms (compile: 105ms, proxy.ts: 7ms, render: 119ms)
+ GET /vendor 200 in 66ms (compile: 11ms, proxy.ts: 6ms, render: 50ms)
+ GET /api/auth/session 200 in 35ms (compile: 21ms, render: 15ms)
+ GET /api/auth/session 200 in 21ms (compile: 7ms, render: 14ms)
+✓ Compiled in 118ms
+ GET /vendor 200 in 4.1s (compile: 84ms, proxy.ts: 151ms, render: 3.9s)
+ GET /api/auth/session 200 in 148ms (compile: 114ms, render: 33ms)
+ GET /api/auth/session 200 in 74ms (compile: 25ms, render: 49ms)
+✓ Finished filesystem cache database compaction in 14.8s
+✓ Compiled in 8.4s
+ GET /vendor 200 in 4.5s (compile: 960ms, proxy.ts: 22ms, render: 3.5s)
+ GET /vendor 200 in 1944ms (compile: 49ms, proxy.ts: 149ms, render: 1746ms)
+ GET /vendor 200 in 3.3s (compile: 52ms, proxy.ts: 53ms, render: 3.2s)
+ GET /dashboard/settings 200 in 3.5s (compile: 1068ms, proxy.ts: 45ms, render: 2.4s)
+ GET /vendor 200 in 2.3s (compile: 76ms, proxy.ts: 123ms, render: 2.1s)
+ GET /dashboard/settings 200 in 561ms (compile: 34ms, proxy.ts: 45ms, render: 482ms)
+ GET /dashboard/settings 200 in 2.0s (compile: 23ms, proxy.ts: 18ms, render: 1992ms)
+ GET /dashboard/settings 200 in 2.2s (compile: 25ms, proxy.ts: 18ms, render: 2.2s)
+ GET /dashboard/settings 200 in 2.2s (compile: 14ms, proxy.ts: 42ms, render: 2.1s)
+ GET /api/auth/session 200 in 113ms (compile: 83ms, render: 30ms)
+✓ Compiled in 2.9s
+ GET /vendor 200 in 479ms (compile: 50ms, proxy.ts: 83ms, render: 347ms)
+✓ Compiled in 1028ms
+ GET /vendor 200 in 1727ms (compile: 905ms, proxy.ts: 16ms, render: 806ms)
+ GET /api/auth/session 200 in 52ms (compile: 32ms, render: 21ms)
+✓ Compiled in 688ms
+ GET /api/auth/session 200 in 60ms (compile: 35ms, render: 25ms)
+ GET /api/auth/session 200 in 31ms (compile: 7ms, render: 24ms)
+✓ Compiled in 976ms
+✓ Compiled in 217ms

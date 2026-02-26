@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class VendorController extends Controller
 {
@@ -21,9 +22,34 @@ class VendorController extends Controller
      */
     public function index(Request $request)
     {
-        $vendors = Vendor::with('user')
-            ->orderByDesc('created_at')
-            ->paginate(30);
+        $status = strtolower((string) $request->input('status', ''));
+        $search = trim((string) $request->input('search', ''));
+
+        $vendorsQuery = Vendor::with('user')
+            ->when(in_array($status, ['pending', 'approved', 'rejected', 'suspended'], true), function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('company_name', 'like', '%' . $search . '%')
+                        ->orWhere('contact_name', 'like', '%' . $search . '%')
+                        ->orWhere('contact_email', 'like', '%' . $search . '%')
+                        ->orWhereHas('user', function ($uq) use ($search) {
+                            $uq->where('email', 'like', '%' . $search . '%');
+                        });
+                });
+            })
+            ->orderByDesc('created_at');
+
+        $vendors = $vendorsQuery->paginate(30)->withQueryString();
+
+        $summary = [
+            'all' => Vendor::count(),
+            'approved' => Vendor::where('status', 'approved')->count(),
+            'pending' => Vendor::where('status', 'pending')->count(),
+            'rejected' => Vendor::where('status', 'rejected')->count(),
+            'suspended' => Vendor::where('status', 'suspended')->count(),
+        ];
 
         if ($request->wantsJson() || $request->get('format') === 'json') {
             return response()->json([
@@ -32,7 +58,7 @@ class VendorController extends Controller
             ]);
         }
 
-        return view('backend.content.vendors.index', compact('vendors'));
+        return view('backend.content.vendors.index', compact('vendors', 'summary', 'status', 'search'));
     }
 
     /**
@@ -44,6 +70,98 @@ class VendorController extends Controller
         $vendor->load(['user', 'kycDocuments', 'warehouses', 'payoutAccounts']);
 
         return view('backend.content.vendors.show', compact('vendor'));
+    }
+
+    /**
+     * Edit supplier account details.
+     * GET /admin/vendors/{vendor}/edit
+     */
+    public function edit(Vendor $vendor)
+    {
+        $vendor->load('user');
+
+        return view('backend.content.vendors.edit', compact('vendor'));
+    }
+
+    /**
+     * Update supplier account details.
+     * PUT /admin/vendors/{vendor}
+     */
+    public function update(Request $request, Vendor $vendor)
+    {
+        $validated = $request->validate([
+            'company_name' => ['required', 'string', 'max:255'],
+            'business_type' => ['nullable', 'string', 'max:255'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'contact_email' => ['nullable', 'email', 'max:255'],
+            'contact_phone' => ['nullable', 'string', 'max:32'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'address_line_1' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'suspended'])],
+            'is_verified_badge' => ['nullable', 'boolean'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'user_status' => ['nullable', Rule::in(['Active', 'Inactive', 'Block'])],
+            'membership_status' => ['nullable', Rule::in(['Paid', 'Unpaid'])],
+        ]);
+
+        $vendor->company_name = $validated['company_name'];
+        $vendor->business_type = $validated['business_type'] ?? null;
+        $vendor->contact_name = $validated['contact_name'] ?? null;
+        $vendor->contact_email = $validated['contact_email'] ?? null;
+        $vendor->contact_phone = $validated['contact_phone'] ?? null;
+        $vendor->country = $validated['country'] ?? null;
+        $vendor->city = $validated['city'] ?? null;
+        $vendor->address_line_1 = $validated['address_line_1'] ?? null;
+        $vendor->status = $validated['status'];
+        $vendor->is_verified_badge = $request->boolean('is_verified_badge');
+        $vendor->notes = $validated['notes'] ?? null;
+
+        if ($validated['status'] === 'approved') {
+            $vendor->approved_at = $vendor->approved_at ?? now();
+            $vendor->rejected_at = null;
+        } elseif ($validated['status'] === 'rejected') {
+            $vendor->rejected_at = now();
+            $vendor->approved_at = null;
+            $vendor->is_verified_badge = false;
+            $vendor->verified_badge_at = null;
+            $vendor->verified_badge_by = null;
+        } elseif ($validated['status'] === 'pending') {
+            $vendor->approved_at = null;
+            $vendor->rejected_at = null;
+            $vendor->is_verified_badge = false;
+            $vendor->verified_badge_at = null;
+            $vendor->verified_badge_by = null;
+        } else {
+            $vendor->is_verified_badge = false;
+            $vendor->verified_badge_at = null;
+            $vendor->verified_badge_by = null;
+        }
+
+        if ($vendor->is_verified_badge) {
+            $vendor->verified_badge_at = $vendor->verified_badge_at ?? now();
+            $vendor->verified_badge_by = $vendor->verified_badge_by ?? Auth::guard('admin')->id();
+        } else {
+            $vendor->verified_badge_at = null;
+            $vendor->verified_badge_by = null;
+        }
+
+        $vendor->save();
+
+        $user = $vendor->user;
+        if ($user) {
+            if (isset($validated['user_status'])) {
+                $user->status = $validated['user_status'];
+            }
+            if (isset($validated['membership_status'])) {
+                $user->membership_status = $validated['membership_status'];
+            }
+
+            $user->is_verified_wholesaler = $vendor->status === 'approved';
+            $user->save();
+        }
+
+        return redirect()->route('admin.vendors.index')->with('message', 'Supplier account updated.');
     }
 
     /**
@@ -66,17 +184,17 @@ class VendorController extends Controller
 
         $this->vendorNotificationService->notifyVendor(
             $vendor,
-            'Vendor account approved',
-            'Your vendor account has been approved by admin. You can now manage your products and orders.',
+            'Supplier account approved',
+            'Your supplier account has been approved by admin. You can now manage your products and orders.',
             'success',
             ['event' => 'vendor_account_approved', 'vendor_id' => $vendor->id],
             '/vendor/profile'
         );
 
         if (request()->wantsJson()) {
-            return response()->json(['status' => true, 'message' => 'Vendor approved']);
+            return response()->json(['status' => true, 'message' => 'Supplier approved']);
         }
-        return redirect()->route('admin.vendors.index')->with('message', 'Vendor approved.');
+        return redirect()->route('admin.vendors.index')->with('message', 'Supplier approved.');
     }
 
     /**
@@ -101,17 +219,17 @@ class VendorController extends Controller
 
         $this->vendorNotificationService->notifyVendor(
             $vendor,
-            'Vendor account rejected',
-            'Your vendor account was rejected by admin.' . ($vendor->notes ? ' Reason: ' . $vendor->notes : ''),
+            'Supplier account rejected',
+            'Your supplier account was rejected by admin.' . ($vendor->notes ? ' Reason: ' . $vendor->notes : ''),
             'warning',
             ['event' => 'vendor_account_rejected', 'vendor_id' => $vendor->id, 'reason' => $vendor->notes],
             '/vendor/profile'
         );
 
         if (request()->wantsJson()) {
-            return response()->json(['status' => true, 'message' => 'Vendor rejected']);
+            return response()->json(['status' => true, 'message' => 'Supplier rejected']);
         }
-        return redirect()->route('admin.vendors.index')->with('message', 'Vendor rejected.');
+        return redirect()->route('admin.vendors.index')->with('message', 'Supplier rejected.');
     }
 
     /**
@@ -121,7 +239,7 @@ class VendorController extends Controller
     public function verifyBadge(Vendor $vendor)
     {
         if ($vendor->status !== 'approved') {
-            $message = 'Only approved vendors can receive a verified badge.';
+            $message = 'Only approved suppliers can receive a verified badge.';
             if (request()->wantsJson()) {
                 return response()->json(['status' => false, 'message' => $message], 422);
             }
@@ -136,7 +254,7 @@ class VendorController extends Controller
         $this->vendorNotificationService->notifyVendor(
             $vendor,
             'Verified badge granted',
-            'Admin granted your vendor account a verified badge.',
+            'Admin granted your supplier account a verified badge.',
             'success',
             ['event' => 'vendor_badge_granted', 'vendor_id' => $vendor->id],
             '/vendor/profile'
@@ -162,7 +280,7 @@ class VendorController extends Controller
         $this->vendorNotificationService->notifyVendor(
             $vendor,
             'Verified badge removed',
-            'Admin removed the verified badge from your vendor account.',
+            'Admin removed the verified badge from your supplier account.',
             'warning',
             ['event' => 'vendor_badge_removed', 'vendor_id' => $vendor->id],
             '/vendor/profile'

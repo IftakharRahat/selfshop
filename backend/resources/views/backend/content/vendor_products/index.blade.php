@@ -1,7 +1,7 @@
 @extends('backend.master')
 
 @section('title')
-    {{ env('APP_NAME') }} - Vendor Products
+    {{ env('APP_NAME') }} - Supplier Products
 @endsection
 
 @section('maincontent')
@@ -10,7 +10,7 @@
         <nav>
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Vendor Products</li>
+                <li class="breadcrumb-item active">Supplier Products</li>
             </ol>
         </nav>
     </div>
@@ -21,8 +21,8 @@
 
     <div class="admin-content-card">
         <div class="admin-card-header">
-            <h6 class="admin-card-title">Vendor Products</h6>
-            <p class="mb-0" style="font-size: 12px; color: #64748b;">Products added by vendors. Verify and approve to make them visible on the storefront.</p>
+            <h6 class="admin-card-title">Supplier Products</h6>
+            <p class="mb-0" style="font-size: 12px; color: #64748b;">Products added by suppliers. Verify and approve to make them visible on the storefront.</p>
         </div>
         <div class="admin-card-body">
             <form method="get" class="row g-2 mb-0">
@@ -50,7 +50,7 @@
                             <th>#</th>
                             <th>Image</th>
                             <th>Product</th>
-                            <th>Vendor</th>
+                            <th>Supplier</th>
                             <th>Category</th>
                             <th>SKU</th>
                             <th>Type</th>
@@ -117,7 +117,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="10" class="text-center text-muted py-4">No vendor products yet.</td></tr>
+                        <tr><td colspan="10" class="text-center text-muted py-4">No supplier products yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

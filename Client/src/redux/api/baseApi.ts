@@ -65,6 +65,7 @@ export const baseApi = createApi({
 		"balanceTransferlistsApi",
 		"requestProductListApi",
 		"dashboardApi",
+		"userNotifications",
 		"productDetailsApi",
 		"cartApi",
 		"categories",

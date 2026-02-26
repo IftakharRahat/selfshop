@@ -31,12 +31,23 @@ class UserController extends Controller
         // Base query with vendor relation so we can distinguish vendor users
         $users = User::with('vendor');
 
+        $statusFilter = trim((string) $request->input('status_filter', $request->input('status', '')));
+        $membershipFilter = trim((string) $request->input('membership_filter', $request->input('membership', '')));
+
         if ($request['phone'] != '') {
             $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
         }
 
         if ($request['startDate'] != '' && $request['endDate'] != '') {
             $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+        }
+
+        if ($statusFilter !== '') {
+            $users->where('users.status', $statusFilter);
+        }
+
+        if ($membershipFilter !== '') {
+            $users->whereRaw("LOWER(COALESCE(users.membership_status, '')) = ?", [strtolower($membershipFilter)]);
         }
 
         return Datatables::of($users)

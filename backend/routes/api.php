@@ -164,6 +164,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //Notification
     Route::get('/user-notification', [FrontendApiController::class, 'userNotification'])->name('api.user.notification');
+    Route::post('/user-notification/read-all', [FrontendApiController::class, 'markAllUserNotificationsRead'])->name('api.user.notification.read-all');
+    Route::post('/user-notification/{id}/read', [FrontendApiController::class, 'markUserNotificationRead'])->name('api.user.notification.read');
 
     //Coupons
     Route::get('check-coupon', [FrontendApiController::class, 'couponCheck']);

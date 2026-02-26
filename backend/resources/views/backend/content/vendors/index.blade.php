@@ -1,7 +1,7 @@
 @extends('backend.master')
 
 @section('title')
-    {{ env('APP_NAME') }} - Vendor Requests
+    {{ env('APP_NAME') }} - Supplier Requests
 @endsection
 
 @section('maincontent')
@@ -9,8 +9,8 @@
     <div class="pagetitle mb-3">
         <nav>
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Vendor Requests</li>
+                <li class="breadcrumb-item"><a href="{{ url('/admin/dashboard') }}">Home</a></li>
+                <li class="breadcrumb-item active">Supplier Requests</li>
             </ol>
         </nav>
     </div>
@@ -19,10 +19,85 @@
     <div class="alert alert-success">{{ session('message') }}</div>
     @endif
 
+    <div class="row g-3 mb-3">
+        <div class="col-md-2">
+            <a href="{{ route('admin.vendors.index') }}" class="text-decoration-none">
+                <div class="admin-content-card">
+                    <div class="admin-card-body text-center">
+                        <div class="small text-muted">All</div>
+                        <div style="font-size: 20px; font-weight: 700;">{{ number_format($summary['all'] ?? 0) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2">
+            <a href="{{ route('admin.vendors.index', ['status' => 'approved']) }}" class="text-decoration-none">
+                <div class="admin-content-card">
+                    <div class="admin-card-body text-center">
+                        <div class="small text-muted">Active</div>
+                        <div style="font-size: 20px; font-weight: 700;">{{ number_format($summary['approved'] ?? 0) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2">
+            <a href="{{ route('admin.vendors.index', ['status' => 'pending']) }}" class="text-decoration-none">
+                <div class="admin-content-card">
+                    <div class="admin-card-body text-center">
+                        <div class="small text-muted">Pending</div>
+                        <div style="font-size: 20px; font-weight: 700;">{{ number_format($summary['pending'] ?? 0) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2">
+            <a href="{{ route('admin.vendors.index', ['status' => 'rejected']) }}" class="text-decoration-none">
+                <div class="admin-content-card">
+                    <div class="admin-card-body text-center">
+                        <div class="small text-muted">Rejected</div>
+                        <div style="font-size: 20px; font-weight: 700;">{{ number_format($summary['rejected'] ?? 0) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-2">
+            <a href="{{ route('admin.vendors.index', ['status' => 'suspended']) }}" class="text-decoration-none">
+                <div class="admin-content-card">
+                    <div class="admin-card-body text-center">
+                        <div class="small text-muted">Suspended</div>
+                        <div style="font-size: 20px; font-weight: 700;">{{ number_format($summary['suspended'] ?? 0) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <div class="admin-content-card">
         <div class="admin-card-header">
-            <h6 class="admin-card-title">Vendor Requests</h6>
-            <p class="mb-0" style="font-size: 12px; color: #64748b;">Approve or reject vendor registrations. Approved vendors can sign in at the vendor portal.</p>
+            <h6 class="admin-card-title">Supplier Requests</h6>
+            <p class="mb-0" style="font-size: 12px; color: #64748b;">Approve or reject supplier registrations. Approved suppliers can sign in at the supplier portal.</p>
+        </div>
+        <div class="admin-card-body">
+            <form method="get" class="row g-2 mb-0">
+                <div class="col-md-3">
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All status</option>
+                        <option value="approved" @selected($status === 'approved')>Approved</option>
+                        <option value="pending" @selected($status === 'pending')>Pending</option>
+                        <option value="rejected" @selected($status === 'rejected')>Rejected</option>
+                        <option value="suspended" @selected($status === 'suspended')>Suspended</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search company, contact or email" value="{{ $search }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm w-100" style="background: var(--admin-primary, #2d2a5d); color: #fff;">Filter</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ route('admin.vendors.index') }}" class="btn btn-sm btn-outline-secondary w-100">Reset</a>
+                </div>
+            </form>
         </div>
         <div class="admin-card-body p-0">
             <div class="table-responsive">
@@ -51,6 +126,8 @@
                                     <span class="badge bg-warning text-dark">Pending</span>
                                 @elseif($vendor->status === 'approved')
                                     <span class="badge bg-success">Approved</span>
+                                @elseif($vendor->status === 'suspended')
+                                    <span class="badge bg-secondary">Suspended</span>
                                 @else
                                     <span class="badge bg-danger">Rejected</span>
                                 @endif
@@ -65,6 +142,7 @@
                             <td>{{ $vendor->created_at->format('Y-m-d H:i') }}</td>
                             <td>
                                 <a href="{{ route('admin.vendors.show', $vendor->id) }}" class="btn btn-sm btn-outline-primary mb-1">View</a>
+                                <a href="{{ route('admin.vendors.edit', $vendor->id) }}" class="btn btn-sm btn-primary mb-1">Edit</a>
                                 @if($vendor->status === 'pending')
                                     <form action="{{ url('admin/vendors/'.$vendor->id.'/approve') }}" method="post" class="d-inline">
                                         @csrf
@@ -92,7 +170,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No vendor registrations yet.</td>
+                            <td colspan="8" class="text-center text-muted py-4">No supplier registrations yet.</td>
                         </tr>
                         @endforelse
                     </tbody>

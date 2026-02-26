@@ -1,7 +1,7 @@
 @extends('backend.master')
 
 @section('title')
-    {{ env('APP_NAME') }} - Vendor Category Discounts
+    {{ env('APP_NAME') }} - Supplier Category Discounts
 @endsection
 
 @section('maincontent')
@@ -10,20 +10,20 @@
         <nav>
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Vendor Category Discounts</li>
+                <li class="breadcrumb-item active">Supplier Category Discounts</li>
             </ol>
         </nav>
     </div>
 
     <div class="admin-content-card">
         <div class="admin-card-header">
-            <h6 class="admin-card-title">Vendor Category Discounts</h6>
-            <p class="mb-0" style="font-size: 12px; color: #64748b;">Discounts set by vendors per category. Vendors manage these from their portal.</p>
+            <h6 class="admin-card-title">Supplier Category Discounts</h6>
+            <p class="mb-0" style="font-size: 12px; color: #64748b;">Discounts set by suppliers per category. Suppliers manage these from their portal.</p>
         </div>
         <div class="admin-card-body">
             <form method="get" class="row g-2 mb-0">
                 <div class="col-auto">
-                    <input type="number" name="vendor_id" class="form-control form-control-sm" placeholder="Vendor ID" value="{{ request('vendor_id') }}">
+                    <input type="number" name="vendor_id" class="form-control form-control-sm" placeholder="Supplier ID" value="{{ request('vendor_id') }}">
                 </div>
                 <div class="col-auto">
                     <input type="number" name="category_id" class="form-control form-control-sm" placeholder="Category ID" value="{{ request('category_id') }}">
@@ -39,7 +39,7 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Vendor</th>
+                            <th>Supplier</th>
                             <th>Category</th>
                             <th>Discount %</th>
                             <th>Start date</th>
@@ -52,7 +52,7 @@
                         <tr>
                             <td>{{ $d->id }}</td>
                             <td>
-                                {{ $d->vendor->company_name ?? 'Vendor #'.$d->vendor_id }}
+                                {{ $d->vendor->company_name ?? 'Supplier #'.$d->vendor_id }}
                                 @if($d->vendor && $d->vendor->user)
                                     <br><small class="text-muted">{{ $d->vendor->user->email }}</small>
                                 @endif
@@ -64,7 +64,7 @@
                             <td>{{ $d->updated_at->format('Y-m-d H:i') }}</td>
                         </tr>
                         @empty
-                        <tr><td colspan="7" class="text-center text-muted py-4">No vendor category discounts set yet.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-4">No supplier category discounts set yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

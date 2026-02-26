@@ -7,6 +7,7 @@ import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
 import logo from "@/assets/icons/NavLogo.png";
+import UserNotificationCenter from "@/components/pages/dashboard/UserNotificationCenter";
 import { getImageUrl } from "@/lib/utils";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import DashboardSidebar from "./dashboard-sidebar";
@@ -65,9 +66,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 							<img src={logo.src} alt="SelfShop Logo" className="w-44 " />
 						</Link>
 						<div className="flex items-center gap-2">
-							{/* <button className="h-8 w-8 hover:bg-gray-100">
-                <Bell className="w-4 h-4 text-gray-600" />
-              </button> */}
+							<UserNotificationCenter />
 							<div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50">
 								{data?.data?.profile?.profile ? (
 									<Image

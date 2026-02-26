@@ -56,7 +56,7 @@
                         <tr>
                             <th>#</th>
                             <th>Product</th>
-                            <th>Vendor</th>
+                            <th>Supplier</th>
                             <th>Customer</th>
                             <th>Rating</th>
                             <th>Message</th>

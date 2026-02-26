@@ -55,6 +55,9 @@ use App\Http\Controllers\Backend\AdminVendorReportController;
 use App\Http\Controllers\Backend\AdminVendorCommissionController;
 use App\Http\Controllers\Backend\FlashSaleController;
 use App\Http\Controllers\Backend\SalesTargetController;
+use App\Http\Controllers\Backend\CrmDashboardController;
+use App\Http\Controllers\Backend\AdminNotificationController;
+use App\Http\Controllers\Backend\AdminActivityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,7 +95,15 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::post('withdraw-update/{id}', [VencommentController::class, 'withdrawupdate']);
 
 
-    Route::get('/dashboard', [AuthenticatedSessionController::class, 'dashboard']);
+    Route::get('/dashboard', [AuthenticatedSessionController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/crm-dashboard', [CrmDashboardController::class, 'index'])->name('admin.crm.dashboard');
+    Route::get('/crm/users', [CrmDashboardController::class, 'users'])->name('admin.crm.users');
+    Route::get('/crm/suppliers', [CrmDashboardController::class, 'suppliers'])->name('admin.crm.suppliers');
+    Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::post('/notifications/send', [AdminNotificationController::class, 'send'])->name('admin.notifications.send');
+    Route::get('/notifications/search-users', [AdminNotificationController::class, 'searchUsers'])->name('admin.notifications.search-users');
+    Route::get('/notifications/search-suppliers', [AdminNotificationController::class, 'searchSuppliers'])->name('admin.notifications.search-suppliers');
+    Route::get('/activity-feed', [AdminActivityController::class, 'feed'])->name('admin.activity-feed');
     Route::get('profile', [AdminController::class, 'profile']);
     Route::get('profile/{id}', [AdminController::class, 'profilebyid']);
     Route::post('update/profile', [AdminController::class, 'updateprofile']);
@@ -269,6 +280,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
 
     // Vendors (supplier portal)
     Route::get('vendors', [VendorController::class, 'index'])->name('admin.vendors.index');
+    Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('admin.vendors.edit');
+    Route::put('vendors/{vendor}', [VendorController::class, 'update'])->name('admin.vendors.update');
     Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show');
     Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');

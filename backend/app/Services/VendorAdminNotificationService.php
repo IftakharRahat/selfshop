@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Auth;
 
 class VendorAdminNotificationService
 {
+    public function __construct(
+        protected OneSignalPushService $oneSignalPushService
+    ) {}
+
     public function notifyVendor(
         Vendor $vendor,
         string $title,
@@ -29,6 +33,20 @@ class VendorAdminNotificationService
             $this->enrichMeta($meta),
             $actionUrl
         ));
+
+        $this->oneSignalPushService->sendToPanelUser(
+            'supplier',
+            (int) $vendor->user->id,
+            $title,
+            $message,
+            $actionUrl,
+            [
+                'type' => $type,
+                'audience_type' => 'supplier',
+                'meta' => $this->enrichMeta($meta),
+                'action_url' => $actionUrl,
+            ]
+        );
     }
 
     public function notifyVendorById(
@@ -51,6 +69,20 @@ class VendorAdminNotificationService
             $this->enrichMeta($meta),
             $actionUrl
         ));
+
+        $this->oneSignalPushService->sendToPanelUser(
+            'supplier',
+            (int) $vendor->user->id,
+            $title,
+            $message,
+            $actionUrl,
+            [
+                'type' => $type,
+                'audience_type' => 'supplier',
+                'meta' => $this->enrichMeta($meta),
+                'action_url' => $actionUrl,
+            ]
+        );
     }
 
     public function notifyAllVendors(
@@ -74,6 +106,20 @@ class VendorAdminNotificationService
                 $actionUrl
             ));
         }
+
+        $this->oneSignalPushService->sendToPanelUsers(
+            'supplier',
+            $users->pluck('id')->all(),
+            $title,
+            $message,
+            $actionUrl,
+            [
+                'type' => $type,
+                'audience_type' => 'supplier',
+                'meta' => $this->enrichMeta($meta),
+                'action_url' => $actionUrl,
+            ]
+        );
     }
 
     private function enrichMeta(array $meta): array

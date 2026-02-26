@@ -1,0 +1,24 @@
+⨯ ./src/lib/AntdRegistry.tsx:7:1
+Module not found: Can't resolve '@ant-design/v5-patch-for-react-19'
+[0m [90m  5 |[39m [36mimport[39m type [33mEntity[39m [36mfrom[39m [32m"@ant-design/cssinjs/es/Cache"[39m[33m;[39m
+ [90m  6 |[39m [36mimport[39m { useServerInsertedHTML } [36mfrom[39m [32m"next/navigation"[39m[33m;[39m
+[31m[1m>[22m[39m[90m  7 |[39m [36mimport[39m [32m"@ant-design/v5-patch-for-react-19"[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m  8 |[39m
+ [90m  9 |[39m [36mconst[39m [33mStyledComponentsRegistry[39m [33m=[39m ({ children }[33m:[39m [33mReact[39m[33m.[39m[33mPropsWithChildren[39m) [33m=>[39m {
+ [90m 10 |[39m     [36mconst[39m cache [33m=[39m [33mReact[39m[33m.[39museMemo[33m<[39m[33mEntity[39m[33m>[39m(() [33m=>[39m createCache()[33m,[39m [])[33m;[39m[0m
+
+
+
+Import trace:
+  Server Component:
+    ./src/lib/AntdRegistry.tsx
+    ./src/app/layout.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[next-auth][warn][NEXTAUTH_URL] 
+https://next-auth.js.org/warnings#nextauth_url
+[next-auth][warn][NO_SECRET] 
+https://next-auth.js.org/warnings#no_secret

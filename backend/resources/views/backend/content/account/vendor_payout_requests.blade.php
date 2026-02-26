@@ -2,7 +2,7 @@
 
 @section('maincontent')
 @section('title')
-    {{ env('APP_NAME') }} - Vendor Payout Requests
+    {{ env('APP_NAME') }} - Supplier Payout Requests
 @endsection
 
 <div class="container-fluid pt-4 px-4">
@@ -10,7 +10,7 @@
         <nav>
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                <li class="breadcrumb-item active">Vendor Payout Requests</li>
+                <li class="breadcrumb-item active">Supplier Payout Requests</li>
             </ol>
         </nav>
     </div>
@@ -69,7 +69,7 @@
                         <tr>
                             <th>SL</th>
                             <th>Date</th>
-                            <th>Vendor</th>
+                            <th>Supplier</th>
                             <th>Account</th>
                             <th>Amount</th>
                             <th>Status</th>

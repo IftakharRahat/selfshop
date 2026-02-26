@@ -20,6 +20,9 @@
 </div>
 
 <div class="pt-2 container-fluid" style="    background-color: #FDF0F6;    border-radius: 0px 0px 6px 6px;">
+    @php
+        $headerUnreadCount = Auth::id() ? Auth::user()->unreadNotifications()->count() : 0;
+    @endphp
     <div class="container pt-2" style="    background-color: #FDF0F6;    border-radius: 0px 0px 6px 6px;">
         <div class="row align-items-center">
             <div class="col-lg-3 d-none d-lg-block">
@@ -63,6 +66,14 @@
                     &nbsp;
                     &nbsp;
                     &nbsp;
+                @if(Auth::id())
+                    <a href="{{ route('user.notifications') }}" class="text-dark position-relative" style="margin-right: 14px;">
+                        <i class="fa fa-bell" style="font-size: 19px;"></i>
+                        @if($headerUnreadCount > 0)
+                            <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: 10px;">{{ $headerUnreadCount }}</span>
+                        @endif
+                    </a>
+                @endif
                 <a href="{{url('checkout')}}" class="text-dark" >
                     <img src="{{ asset('public/icon/crt.png') }}" alt="" style="width:20px;">&nbsp;Cart
                 </a>
@@ -109,6 +120,16 @@
                     @endif
                         &nbsp;
                         &nbsp;
+                    @if(Auth::id())
+                        <a href="{{ route('user.notifications') }}" class="text-dark position-relative">
+                            <i class="fa fa-bell" style="font-size: 19px;"></i>
+                            @if($headerUnreadCount > 0)
+                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="font-size: 10px;">{{ $headerUnreadCount }}</span>
+                            @endif
+                        </a>
+                        &nbsp;
+                        &nbsp;
+                    @endif
                     <a href="{{url('checkout')}}" class="text-dark" >
                         <img src="{{ asset('public/icon/crt.png') }}" alt="" style="width:20px;">
                     </a>

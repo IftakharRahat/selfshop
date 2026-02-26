@@ -31,6 +31,19 @@
             <a href="{{ url('admin/dashboard') }}" class="nav-item nav-link {{ request()->is('admin/dashboard') ? 'active-nav' : '' }}">
                 <i class="bi bi-grid-1x2"></i> Dashboard
             </a>
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle {{ request()->is('admin/crm-dashboard') || request()->is('admin/crm/*') ? 'active-nav' : '' }}" data-bs-toggle="dropdown">
+                    <i class="bi bi-bar-chart-line"></i> CRM
+                </a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    <a href="{{ route('admin.crm.dashboard') }}" class="dropdown-item">Dashboard</a>
+                    <a href="{{ route('admin.crm.users') }}" class="dropdown-item">Users</a>
+                    <a href="{{ route('admin.crm.suppliers') }}" class="dropdown-item">Suppliers</a>
+                </div>
+            </div>
+            <a href="{{ route('admin.notifications.index') }}" class="nav-item nav-link {{ request()->is('admin/notifications*') ? 'active-nav' : '' }}">
+                <i class="bi bi-bell"></i> Send Notification
+            </a>
 
             @if($isFullAdmin)
             {{-- ═══ CATALOG ═══ --}}
@@ -122,11 +135,20 @@
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
                     <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
-                    <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">Vendor Requests</a>
-                    <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Vendor Products</a>
+                </div>
+            </div>
+
+            {{-- ═══ SUPPLIERS ═══ --}}
+            <small class="nav-section-title">Suppliers</small>
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-truck"></i> Suppliers</a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">Supplier Requests</a>
+                    <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Supplier Products</a>
                     <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
-                    <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Vendor Category Discounts</a>
-                    <a href="{{ route('admin.vendor-category-commissions.index') }}" class="dropdown-item">Vendor Category Commissions</a>
+                    <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Supplier Category Discounts</a>
+                    <a href="{{ route('admin.vendor-category-commissions.index') }}" class="dropdown-item">Supplier Category Commissions</a>
+                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier Payout Requests</a>
                 </div>
             </div>
 
@@ -210,7 +232,6 @@
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Withdrew</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
-                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Vendor</a>
                 </div>
             </div>
             <div class="nav-item dropdown">

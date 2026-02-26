@@ -4,12 +4,16 @@
     @section('title')
         {{ env('APP_NAME') }}- Users
     @endsection
+@php
+    $statusFilter = request('status', '');
+    $membershipFilter = request('membership', '');
+@endphp
 
 <div class="container-fluid pt-4 px-4">
     <div class="pagetitle mb-3">
         <nav>
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url('/admin/dashboard') }}">Home</a></li>
                 <li class="breadcrumb-item active">All Users</li>
             </ol>
         </nav>
@@ -39,6 +43,22 @@
                     <label style="font-size: 12px; font-weight: 500; margin-bottom: 4px; display: block;">Enter Phone</label>
                     <input type="text" name="phone" id="phone" class="form-control form-control-sm" placeholder="Search by phone...">
                 </div>
+                <div class="col-md-3">
+                    <label style="font-size: 12px; font-weight: 500; margin-bottom: 4px; display: block;">Active Filter</label>
+                    <div class="d-flex align-items-center gap-2">
+                        @if($statusFilter !== '' || $membershipFilter !== '')
+                            <span class="badge bg-info">
+                                {{ $statusFilter !== '' ? 'Status: '.$statusFilter : '' }}
+                                {{ $membershipFilter !== '' ? ' Membership: '.$membershipFilter : '' }}
+                            </span>
+                            <a href="{{ route('admin.users.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                        @else
+                            <span class="text-muted small">No quick filter</span>
+                        @endif
+                    </div>
+                </div>
+                <input type="hidden" id="statusFilter" value="{{ $statusFilter }}">
+                <input type="hidden" id="membershipFilter" value="{{ $membershipFilter }}">
             </div>
         </div>
         <div class="admin-card-body p-0" style="border-top: 1px solid var(--admin-border, #f1f5f9);">
@@ -78,7 +98,9 @@ $(document).ready(function() {
             data: {
                 startDate: function() { return $('#startDate').val() },
                 endDate: function() { return $('#endDate').val() },
-                phone: function() { return $('#phone').val() }
+                phone: function() { return $('#phone').val() },
+                status_filter: function() { return $('#statusFilter').val() },
+                membership_filter: function() { return $('#membershipFilter').val() }
             }
         },
         columns: [

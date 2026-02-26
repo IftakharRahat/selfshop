@@ -480,6 +480,15 @@
                             <path fill-rule="evenodd" clip-rule="evenodd" d="M17.6139 5.8028L10.4168 9.37405V18.2574C11.6693 17.6728 17.3897 15.0032 17.3989 14.9982C17.4598 14.9646 17.5112 14.9162 17.5484 14.8574C17.5861 14.7989 17.6082 14.7318 17.6126 14.6624C17.6134 14.652 17.6139 7.3478 17.6139 5.8028ZM9.58344 9.37405L2.38635 5.8028C2.38635 7.3478 2.38677 14.652 2.3876 14.6624C2.392 14.7318 2.41409 14.7989 2.45177 14.8574C2.48895 14.9162 2.54041 14.9646 2.60135 14.9982C2.61052 15.0032 8.33094 17.6728 9.58344 18.2574V9.37405ZM13.8289 3.48613L7.07677 7.20363L10.0001 8.65614L17.2201 5.06863L13.8289 3.48613ZM2.7801 5.06863L6.17052 6.75322L12.8959 3.0503L10.1764 1.78114C10.1212 1.7554 10.061 1.74207 10.0001 1.74207C9.9392 1.74207 9.87905 1.7554 9.82385 1.78114L2.7801 5.06863Z" fill="black"/>
                             </svg> My Orders
                         </a>
+                        <a href="{{ route('user.notifications') }}" class="nav-item nav-link @if(Request::url() == env('APP_URL').'/user/notifications') activebtn @endif" style="color: black;font-size:16px;font-weight: 500;">
+                            <i class="fa fa-bell" style="width: 20px;"></i> Notifications
+                            @php
+                                $sidebarUnreadCount = Auth::guard('web')->user()->unreadNotifications()->count();
+                            @endphp
+                            @if ($sidebarUnreadCount > 0)
+                                <span class="badge bg-danger ms-1">{{ $sidebarUnreadCount }}</span>
+                            @endif
+                        </a>
                         <a href="{{ url('/referral/income') }}" class="nav-item nav-link @if(Request::url() == env('APP_URL').'/referral/income') activebtn @endif" style="color: black;font-size:16px;font-weight: 500;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
                                 <path d="M14.1426 14.3571C14.1426 14.5276 14.2104 14.6911 14.3309 14.8117C14.4515 14.9322 14.615 14.9999 14.7855 14.9999H17.9998V13.7142H14.7855C14.615 13.7142 14.4515 13.782 14.3309 13.9025C14.2104 14.0231 14.1426 14.1866 14.1426 14.3571Z" fill="black"/>

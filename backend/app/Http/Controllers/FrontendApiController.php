@@ -39,6 +39,7 @@ use App\Models\User;
 use App\Models\Varient;
 use App\Models\Vendor;
 use App\Models\Withdrew;
+use App\Notifications\AdminBroadcastNotification;
 use App\Services\SteadfastOrderStatusService;
 use App\Services\VendorAdminNotificationService;
 use Carbon\Carbon;
@@ -51,6 +52,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Notifications\DatabaseNotification;
 use Str;
 
 class FrontendApiController extends Controller
@@ -2883,6 +2885,141 @@ class FrontendApiController extends Controller
         }
 
         return 'SS00' . $orderID;
+    }
+
+    public function userNotification(Request $request)
+    {
+        $user = Auth::user();
+        $perPage = min(max((int) $request->input('per_page', 20), 5), 100);
+        $unreadOnly = $request->boolean('unread_only', false);
+        $page = max((int) $request->input('page', 1), 1);
+
+        // Only user-facing notifications should appear in the user dashboard.
+        // Vendor panel notifications are handled by the vendor notification API.
+        $allUserNotifications = $user->notifications()
+            ->where('type', AdminBroadcastNotification::class)
+            ->orderByDesc('created_at')
+            ->get()
+            ->filter(fn(DatabaseNotification $notification) => $this->isUserAudienceNotification($notification))
+            ->values();
+
+        if ($unreadOnly) {
+            $allUserNotifications = $allUserNotifications
+                ->filter(fn(DatabaseNotification $notification) => $notification->read_at === null)
+                ->values();
+        }
+
+        $total = $allUserNotifications->count();
+        $lastPage = (int) max(1, ceil($total / $perPage));
+        $items = $allUserNotifications->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $notifications = $items
+            ->map(fn(DatabaseNotification $notification) => $this->transformUserNotification($notification))
+            ->values();
+
+        return response()->json([
+            'status' => true,
+            'message' => $notifications->isEmpty() ? 'Notification Empty' : 'Notification Found',
+            'data' => $notifications,
+            'unread_count' => $this->countUnreadUserAudienceNotifications($user),
+            'pagination' => [
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
+            ],
+        ], 200);
+    }
+
+    public function markUserNotificationRead(string $id)
+    {
+        $user = Auth::user();
+        $notification = $user->notifications()
+            ->where('type', AdminBroadcastNotification::class)
+            ->where('id', $id)
+            ->first();
+
+        if (!$notification) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Notification not found',
+            ], 404);
+        }
+
+        if (!$this->isUserAudienceNotification($notification)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Notification not found',
+            ], 404);
+        }
+
+        if ($notification->read_at === null) {
+            $notification->markAsRead();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Notification marked as read',
+            'unread_count' => $this->countUnreadUserAudienceNotifications($user->fresh()),
+        ], 200);
+    }
+
+    public function markAllUserNotificationsRead()
+    {
+        $user = Auth::user();
+        $user->unreadNotifications()
+            ->where('type', AdminBroadcastNotification::class)
+            ->get()
+            ->filter(fn(DatabaseNotification $notification) => $this->isUserAudienceNotification($notification))
+            ->each(fn(DatabaseNotification $notification) => $notification->markAsRead());
+
+        return response()->json([
+            'status' => true,
+            'message' => 'All notifications marked as read',
+            'unread_count' => $this->countUnreadUserAudienceNotifications($user->fresh()),
+        ], 200);
+    }
+
+    private function transformUserNotification(DatabaseNotification $notification): array
+    {
+        $data = is_array($notification->data) ? $notification->data : [];
+        $title = $data['title'] ?? 'Notification';
+        $message = $data['message'] ?? ($data['description'] ?? '');
+        $link = $data['action_url'] ?? ($data['link'] ?? ($data['url'] ?? null));
+        $image = $data['image_url'] ?? ($data['image'] ?? null);
+
+        return [
+            'id' => $notification->id,
+            'title' => $title,
+            'description' => $message,
+            'message' => $message,
+            'image' => $image,
+            'image_url' => $image,
+            'link' => $link,
+            'url' => $link,
+            'type' => $data['type'] ?? 'notification',
+            'is_read' => $notification->read_at !== null,
+            'read_at' => $notification->read_at?->toIso8601String(),
+            'created_at' => $notification->created_at?->toIso8601String(),
+            'meta' => $data['meta'] ?? [],
+        ];
+    }
+
+    private function isUserAudienceNotification(DatabaseNotification $notification): bool
+    {
+        $data = is_array($notification->data) ? $notification->data : [];
+        $audienceType = (string) ($data['audience_type'] ?? '');
+
+        return $audienceType !== 'supplier';
+    }
+
+    private function countUnreadUserAudienceNotifications(User $user): int
+    {
+        return $user->unreadNotifications()
+            ->where('type', AdminBroadcastNotification::class)
+            ->get()
+            ->filter(fn(DatabaseNotification $notification) => $this->isUserAudienceNotification($notification))
+            ->count();
     }
 
     /**

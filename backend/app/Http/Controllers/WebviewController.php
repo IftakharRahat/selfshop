@@ -198,6 +198,48 @@ class WebviewController extends Controller
         return view('auth.orderhistory', ['orders' => $orders]);
     }
 
+    public function notifications(Request $request)
+    {
+        $user = Auth::guard('web')->user();
+
+        $notifications = $user->notifications()
+            ->when($request->input('filter') === 'unread', function ($query) {
+                $query->whereNull('read_at');
+            })
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('auth.notifications', [
+            'notifications' => $notifications,
+            'unreadCount' => $user->unreadNotifications()->count(),
+        ]);
+    }
+
+    public function markNotificationRead(Request $request, string $id)
+    {
+        $user = Auth::guard('web')->user();
+        $notification = $user->notifications()->where('id', $id)->first();
+
+        if (!$notification) {
+            return redirect()->back()->with('error', 'Notification not found.');
+        }
+
+        if ($notification->read_at === null) {
+            $notification->markAsRead();
+        }
+
+        return redirect()->back()->with('message', 'Notification marked as read.');
+    }
+
+    public function markAllNotificationsRead()
+    {
+        $user = Auth::guard('web')->user();
+        $user->unreadNotifications->markAsRead();
+
+        return redirect()->back()->with('message', 'All notifications marked as read.');
+    }
+
     public function packages(Request $request)
     {
         $invoice = Resellerinvoice::where('user_id', Auth::user()->id)->first();
