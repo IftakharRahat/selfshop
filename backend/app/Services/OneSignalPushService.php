@@ -59,23 +59,50 @@ class OneSignalPushService
             return;
         }
 
-        $externalIds = collect($userIds)
+        $normalizedUserIds = collect($userIds)
             ->map(fn($id) => trim((string) $id))
             ->filter()
-            ->map(fn($id) => $panel . ':' . $id)
             ->unique()
             ->values();
 
-        if ($externalIds->isEmpty()) {
+        if ($normalizedUserIds->isEmpty()) {
             return;
         }
 
-        foreach ($externalIds->chunk(200) as $chunk) {
+        foreach ($normalizedUserIds->chunk(200) as $chunk) {
+            $chunkUserIds = $chunk->values();
+            $externalIds = $chunkUserIds
+                ->map(fn($id) => $panel . ':' . $id)
+                ->all();
+
             $payload = $this->buildPayload($title, $message, $url, $data);
             $payload['include_aliases'] = [
-                'external_id' => $chunk->all(),
+                'external_id' => $externalIds,
             ];
-            $this->dispatch($panel, $payload);
+
+            $dispatchResult = $this->dispatch($panel, $payload);
+            $recipientCount = $dispatchResult['recipients'] ?? null;
+            $shouldFallbackToTags = in_array($dispatchResult['status'], ['failed', 'error'], true)
+                || ($dispatchResult['status'] === 'ok' && $recipientCount === 0);
+
+            if (!$shouldFallbackToTags) {
+                continue;
+            }
+
+            // Fallback for cases where external_id alias mapping is missing/stale.
+            // This uses panel + user_id tags that the client sets on login.
+            $fallbackPayload = $this->buildPayload($title, $message, $url, $data);
+            $fallbackPayload['filters'] = $this->buildPanelUserFilters($panel, $chunkUserIds->all());
+
+            $fallbackResult = $this->dispatch($panel, $fallbackPayload);
+            Log::info('OneSignal push fallback via tags executed', [
+                'panel' => $panel,
+                'initial_status' => $dispatchResult['status'] ?? null,
+                'initial_recipients' => $recipientCount,
+                'fallback_status' => $fallbackResult['status'] ?? null,
+                'fallback_recipients' => $fallbackResult['recipients'] ?? null,
+                'target_user_count' => $chunkUserIds->count(),
+            ]);
         }
     }
 
@@ -106,7 +133,7 @@ class OneSignalPushService
         return $payload;
     }
 
-    private function dispatch(string $panel, array $payload): void
+    private function dispatch(string $panel, array $payload): array
     {
         $credentials = $this->resolveCredentials($panel);
         if (!$this->hasCredentials($credentials)) {
@@ -114,7 +141,10 @@ class OneSignalPushService
                 'panel' => $credentials['panel'],
             ]);
 
-            return;
+            return [
+                'status' => 'failed',
+                'recipients' => null,
+            ];
         }
 
         $requestPayload = array_merge($payload, [
@@ -125,6 +155,8 @@ class OneSignalPushService
             $request = $this->makeApiRequest($credentials['rest_api_key']);
             $apiBase = rtrim((string) config('onesignal.api_base', 'https://api.onesignal.com'), '/');
             $response = $request->post($apiBase . '/notifications', $requestPayload);
+            $responseBody = $response->json();
+            $recipientCount = $this->extractRecipientCount(is_array($responseBody) ? $responseBody : null);
 
             if ($response->failed()) {
                 Log::warning('OneSignal push dispatch failed', [
@@ -133,14 +165,69 @@ class OneSignalPushService
                     'response' => $response->body(),
                     'payload' => $requestPayload,
                 ]);
+
+                return [
+                    'status' => 'failed',
+                    'recipients' => $recipientCount,
+                ];
             }
+
+            Log::info('OneSignal push dispatched', [
+                'panel' => $credentials['panel'],
+                'status' => $response->status(),
+                'recipients' => $recipientCount,
+            ]);
+
+            return [
+                'status' => 'ok',
+                'recipients' => $recipientCount,
+            ];
         } catch (\Throwable $exception) {
             Log::warning('OneSignal push dispatch failed', [
                 'panel' => $credentials['panel'],
                 'error' => $exception->getMessage(),
                 'payload' => $requestPayload,
             ]);
+
+            return [
+                'status' => 'error',
+                'recipients' => null,
+            ];
         }
+    }
+
+    private function buildPanelUserFilters(string $panel, array $userIds): array
+    {
+        $filters = [];
+
+        foreach ($userIds as $index => $userId) {
+            if ($index > 0) {
+                $filters[] = ['operator' => 'OR'];
+            }
+
+            $filters[] = ['field' => 'tag', 'key' => 'panel', 'relation' => '=', 'value' => $panel];
+            $filters[] = ['operator' => 'AND'];
+            $filters[] = ['field' => 'tag', 'key' => 'user_id', 'relation' => '=', 'value' => trim((string) $userId)];
+        }
+
+        return $filters;
+    }
+
+    private function extractRecipientCount(?array $responseBody): ?int
+    {
+        if (!is_array($responseBody)) {
+            return null;
+        }
+
+        if (isset($responseBody['recipients']) && is_numeric($responseBody['recipients'])) {
+            return (int) $responseBody['recipients'];
+        }
+
+        if (isset($responseBody['total_recipients']) && is_numeric($responseBody['total_recipients'])) {
+            return (int) $responseBody['total_recipients'];
+        }
+
+        return null;
     }
 
     private function makeApiRequest(string $restApiKey): PendingRequest
