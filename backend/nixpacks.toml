@@ -16,12 +16,12 @@ cmds = [
     "php artisan config:cache || true",
     "php artisan view:cache || true",
     "php artisan route:clear",
+    "chmod +x /app/docker/start.sh",
 ]
 
-# Explicitly use PHP-FPM + Nginx start (not node)
-# route:clear runs at startup to remove any corrupt route cache left by
-# Coolify's built-in optimize step (route:cache fails due to duplicate
-# bkash-refund route name from two packages).
+# Use docker/start.sh for a clean, maintainable startup sequence:
+# 1. Clears corrupt route cache
+# 2. Ensures storage + logs are writable by PHP-FPM
+# 3. Starts PHP-FPM + Nginx
 [start]
-cmd = "php artisan route:clear; ([ -e /app/storage ] && chmod -R ugo+w /app/storage); perl /assets/transform-config.pl /assets/nginx.template /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
-
+cmd = "bash /app/docker/start.sh"
