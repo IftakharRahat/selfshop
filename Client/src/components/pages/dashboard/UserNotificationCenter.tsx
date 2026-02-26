@@ -81,11 +81,10 @@ export default function UserNotificationCenter({ disabled = false }: Props) {
 			<button
 				type="button"
 				onClick={() => !isDisabled && setOpen((v) => !v)}
-				className={`relative inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 ${
-					isDisabled
+				className={`relative inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 ${isDisabled
 						? "bg-gray-50 text-gray-400 cursor-not-allowed"
 						: "bg-white text-gray-700 hover:bg-gray-50"
-				}`}
+					}`}
 				aria-label="User notifications"
 				disabled={isDisabled}
 			>
@@ -126,12 +125,18 @@ export default function UserNotificationCenter({ disabled = false }: Props) {
 								{notifications.map((item) => {
 									const bodyText = item.message || item.description || "";
 									const actionUrl = item.link || item.url || null;
+									const isReviewPrompt =
+										item.meta?.type === "review_prompt" ||
+										item.title === "Rate Your Product";
 									return (
 										<li
 											key={item.id}
-											className={`px-3 py-2 transition ${
-												item.is_read ? "bg-white" : "bg-indigo-50"
-											}`}
+											className={`px-3 py-2.5 transition ${item.is_read
+													? "bg-white"
+													: isReviewPrompt
+														? "bg-amber-50/70"
+														: "bg-indigo-50"
+												}`}
 										>
 											<button
 												type="button"
@@ -143,21 +148,44 @@ export default function UserNotificationCenter({ disabled = false }: Props) {
 													)
 												}
 												disabled={markingRead}
-												className="w-full text-left"
+												className="w-full text-left group"
 											>
-												<p className="text-sm font-medium text-gray-900">
-													{item.title}
-												</p>
-												{bodyText && (
-													<p className="text-xs text-gray-600 mt-0.5 line-clamp-2">
-														{bodyText}
-													</p>
-												)}
-												<p className="text-[11px] text-gray-400 mt-1">
-													{item.created_at
-														? new Date(item.created_at).toLocaleString()
-														: ""}
-												</p>
+												<div className="flex items-start gap-2.5">
+													{isReviewPrompt && (
+														<span className="mt-0.5 flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 shrink-0">
+															<svg className="w-3.5 h-3.5 text-amber-500 fill-amber-500" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+														</span>
+													)}
+													<div className="flex-1 min-w-0">
+														<p className={`text-sm font-medium ${isReviewPrompt ? "text-amber-900" : "text-gray-900"}`}>
+															{item.title}
+														</p>
+														{bodyText && (
+															<p className={`text-xs mt-0.5 line-clamp-2 ${isReviewPrompt ? "text-amber-700/80" : "text-gray-600"}`}>
+																{bodyText}
+															</p>
+														)}
+														<div className="flex items-center justify-between mt-1.5">
+															<p className="text-[11px] text-gray-400">
+																{item.created_at
+																	? new Date(item.created_at).toLocaleString()
+																	: ""}
+															</p>
+															{isReviewPrompt && actionUrl && (
+																<span className="text-[11px] font-semibold text-amber-600 group-hover:text-amber-700 flex items-center gap-0.5">
+																	Rate Now
+																	<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+																</span>
+															)}
+															{!isReviewPrompt && actionUrl && (
+																<span className="text-[11px] text-indigo-500 group-hover:text-indigo-600 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+																	View
+																	<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+																</span>
+															)}
+														</div>
+													</div>
+												</div>
 											</button>
 										</li>
 									);

@@ -39,6 +39,7 @@ use App\Models\User;
 use App\Models\Varient;
 use App\Models\Vendor;
 use App\Models\Withdrew;
+use App\Models\Review;
 use App\Notifications\AdminBroadcastNotification;
 use App\Services\SteadfastOrderStatusService;
 use App\Services\VendorAdminNotificationService;
@@ -626,7 +627,7 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
-    public function productbycategory($slug)
+    public function productbycategory(Request $request, $slug)
     {
         $category = Category::where('slug', $slug)->first();
         if (!$category) {
@@ -637,25 +638,43 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        $categoryproducts = Product::visibleOnStorefront()->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
+        $products = Product::visibleOnStorefront()->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at')->get();
+
+        // Attach avg_rating and review_count to each product
+        foreach ($products as $product) {
+            $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
+            $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
+            $product->review_count = $reviews->count();
+        }
+
+        // Sort
+        $sort = $request->input('sort', 'rating');
+        $sorted = $this->sortProducts($products, $sort);
 
         return response()->json([
             'status' => true,
             'message' => 'Products found with this category successfully',
-            'data' => $categoryproducts
+            'data' => $sorted->values()
         ], 200);
     }
 
-    public function productbysubcategory($slug)
+    public function productbysubcategory(Request $request, $slug)
     {
-        $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage'];
+        $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at'];
 
         if (empty($slug)) {
-            $subcategoryproducts = Product::visibleOnStorefront()->select(...$selects)->latest()->get();
+            $products = Product::visibleOnStorefront()->select(...$selects)->latest()->get();
+            foreach ($products as $product) {
+                $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
+                $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
+                $product->review_count = $reviews->count();
+            }
+            $sort = $request->input('sort', 'rating');
+            $sorted = $this->sortProducts($products, $sort);
             return response()->json([
                 'status' => true,
                 'message' => 'All products',
-                'data' => $subcategoryproducts
+                'data' => $sorted->values()
             ], 200);
         }
 
@@ -668,13 +687,38 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        $subcategoryproducts = Product::visibleOnStorefront()->where('subcategory_id', $subcategory->id)->select(...$selects)->get();
+        $products = Product::visibleOnStorefront()->where('subcategory_id', $subcategory->id)->select(...$selects)->get();
+        foreach ($products as $product) {
+            $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
+            $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
+            $product->review_count = $reviews->count();
+        }
+        $sort = $request->input('sort', 'rating');
+        $sorted = $this->sortProducts($products, $sort);
 
         return response()->json([
             'status' => true,
             'message' => 'Products found with this sub-category successfully',
-            'data' => $subcategoryproducts
+            'data' => $sorted->values()
         ], 200);
+    }
+
+    protected function sortProducts($products, $sort)
+    {
+        switch ($sort) {
+            case 'rating':
+                return $products->sortByDesc('avg_rating');
+            case 'newest':
+                return $products->sortByDesc('created_at');
+            case 'oldest':
+                return $products->sortBy('created_at');
+            case 'price_asc':
+                return $products->sortBy('ProductSalePrice');
+            case 'price_desc':
+                return $products->sortByDesc('ProductSalePrice');
+            default:
+                return $products->sortByDesc('avg_rating'); // Default sort
+        }
     }
 
     public function productbybrand($slug)
@@ -3023,32 +3067,42 @@ class FrontendApiController extends Controller
     }
 
     /**
-     * Return approved vendors ordered by product count ("popular suppliers").
-     */
-    public function popularVendors()
-    {
-        $vendors = Vendor::where('status', 'approved')
-            ->withCount('products')
-            ->orderByDesc('products_count')
-            ->limit(12)
-            ->get([
-                'id',
-                'user_id',
-                'company_name',
-                'slug',
-                'logo_path',
-                'banner_path',
-                'business_type',
-                'city',
-                'is_verified_badge',
-            ]);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Popular vendors',
-            'data'   => $vendors,
+ * Return approved vendors ordered by average product rating (from reviews).
+ */
+public function popularVendors()
+{
+    $vendors = Vendor::where('status', 'approved')
+        ->withCount('products')
+        ->get([
+            'id',
+            'user_id',
+            'company_name',
+            'slug',
+            'logo_path',
+            'banner_path',
+            'business_type',
+            'city',
+            'is_verified_badge',
         ]);
+
+    // Compute average rating across all products for each vendor
+    foreach ($vendors as $vendor) {
+        $productIds = Product::where('vendor_id', $vendor->id)->pluck('id');
+        $reviews = Review::whereIn('product_id', $productIds)
+            ->where('status', 'Active');
+        $vendor->avg_product_rating = round($reviews->avg('rating') ?? 0, 1);
+        $vendor->review_count = $reviews->count();
     }
+
+    // Sort by average rating descending, then by product count
+    $sorted = $vendors->sortByDesc('avg_product_rating')->values();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Popular vendors',
+        'data'   => $sorted,
+    ]);
+}
 
     /**
      * Return a single approved vendor's profile + their paginated products.
@@ -3100,6 +3154,12 @@ class FrontendApiController extends Controller
         }
 
         $products = $productsQuery->latest()->paginate(12);
+
+        // Compute vendor average product rating
+        $allProductIds = Product::where('vendor_id', $vendor->id)->pluck('id');
+        $vendorReviews = Review::whereIn('product_id', $allProductIds)->where('status', 'Active');
+        $vendor->avg_product_rating = round($vendorReviews->avg('rating') ?? 0, 1);
+        $vendor->review_count = $vendorReviews->count();
 
         return response()->json([
             'status'  => true,
@@ -3161,5 +3221,221 @@ class FrontendApiController extends Controller
                 'products' => $products,
             ],
         ]);
+    }
+
+    // ── Product Review System ──
+
+    /**
+     * Store a product review. Only allowed if the user has a delivered order
+     * containing the product and has not already reviewed it.
+     */
+    public function reviewStore(Request $request)
+    {
+        $userId = Auth::id();
+        $productId = $request->input('product_id');
+
+        // Check if user already reviewed this product
+        $existing = Review::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have already submitted a review for this product',
+            ], 422);
+        }
+
+        // Verify user has a delivered order with this product
+        $deliveredOrder = Order::where('user_id', $userId)
+            ->where('status', 'Delivered')
+            ->whereHas('orderproducts', function ($q) use ($productId) {
+                $q->where('product_id', $productId);
+            })
+            ->first();
+
+        if (!$deliveredOrder) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You can only review products from delivered orders',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'required|integer|exists:products,id',
+            'rating'     => 'required|numeric|min:1|max:5',
+            'messages'   => 'nullable|string|max:1000',
+            'file'       => 'nullable|image|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $review = new Review();
+        $review->user_id = $userId;
+        $review->product_id = $productId;
+        $review->order_id = $deliveredOrder->id;
+        $review->messages = $request->messages;
+        $review->rating = $request->rating;
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $name = time() . '_' . $file->getClientOriginalName();
+            $uploadPath = 'public/images/admin/profile/';
+            $file->move($uploadPath, $name);
+            $review->file = $uploadPath . $name;
+        }
+
+        $review->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Review submitted successfully',
+            'data' => $review,
+        ], 200);
+    }
+
+    /**
+     * Return products from delivered orders that the user hasn't yet reviewed.
+     */
+    public function reviewableProducts()
+    {
+        $userId = Auth::id();
+
+        // Get all product IDs the user has already reviewed
+        $reviewedProductIds = Review::where('user_id', $userId)->pluck('product_id')->toArray();
+
+        // Get delivered orders with their products
+        $deliveredOrders = Order::where('user_id', $userId)
+            ->where('status', 'Delivered')
+            ->with(['orderproducts.product:id,ProductName,ProductSlug,ViewProductImage'])
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $reviewable = [];
+        $seenProducts = [];
+
+        foreach ($deliveredOrders as $order) {
+            foreach ($order->orderproducts as $op) {
+                $pid = $op->product_id;
+                if (in_array($pid, $reviewedProductIds) || in_array($pid, $seenProducts)) {
+                    continue;
+                }
+                $seenProducts[] = $pid;
+                $reviewable[] = [
+                    'product_id'    => $pid,
+                    'product_name'  => $op->product->ProductName ?? $op->productName,
+                    'product_slug'  => $op->product->ProductSlug ?? null,
+                    'product_image' => $op->product->ViewProductImage ?? null,
+                    'order_id'      => $order->id,
+                    'invoice_id'    => $order->invoiceID,
+                    'delivery_date' => $order->deliveryDate,
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => count($reviewable) > 0 ? 'Reviewable products found' : 'No products to review',
+            'data' => $reviewable,
+        ], 200);
+    }
+
+    /**
+     * Check if the current user has already reviewed a product.
+     */
+    public function checkUserReview($productId)
+    {
+        $userId = Auth::id();
+
+        $review = Review::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->first();
+
+        // Also check if the user is eligible to review (has a delivered order)
+        $canReview = Order::where('user_id', $userId)
+            ->where('status', 'Delivered')
+            ->whereHas('orderproducts', function ($q) use ($productId) {
+                $q->where('product_id', $productId);
+            })
+            ->exists();
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'has_reviewed' => $review !== null,
+                'can_review'   => $canReview && $review === null,
+                'review'       => $review,
+            ],
+        ], 200);
+    }
+
+    /**
+     * Get all active reviews for a product (public).
+     */
+    public function getProductReviews($productId)
+    {
+        $reviews = Review::where('status', 'Active')
+            ->where('product_id', $productId)
+            ->with(['user:id,name,email,profile'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $avgRating = $reviews->avg('rating') ?? 0;
+
+        return response()->json([
+            'status' => true,
+            'message' => $reviews->count() > 0 ? 'Reviews found' : 'No reviews yet',
+            'data' => [
+                'reviews' => $reviews,
+                'review_count' => $reviews->count(),
+                'average_rating' => round($avgRating, 1),
+            ],
+        ], 200);
+    }
+
+    /**
+     * Update an existing review (only the owner can update).
+     */
+    public function updateReview(Request $request, $reviewId)
+    {
+        $userId = Auth::id();
+
+        $review = Review::where('id', $reviewId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$review) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Review not found or you are not authorized to edit it',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'rating'   => 'required|numeric|min:1|max:5',
+            'messages' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $review->rating = $request->rating;
+        $review->messages = $request->messages;
+        $review->save();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Review updated successfully',
+            'data' => $review,
+        ], 200);
     }
 }

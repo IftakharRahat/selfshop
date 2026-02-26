@@ -2,12 +2,14 @@
 "use client";
 
 import { Spin } from "antd";
-import { Package } from "lucide-react";
+import { Package, Star } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getImageUrl } from "@/lib/utils";
 import { useOrderDataByStatusQuery } from "@/redux/features/orderApi";
+import { useGetReviewableProductsQuery } from "@/redux/features/dashboardApi";
+import ReviewModal from "./ReviewModal";
 
 const statusColors: Record<string, string> = {
 	Pending: "bg-amber-50 text-amber-700 border-amber-200",
@@ -36,14 +38,41 @@ function invoiceViewHref(invoiceId: string | null | undefined): string {
 
 export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 	const [page, setPage] = useState(1);
+	const [reviewModal, setReviewModal] = useState<{
+		open: boolean;
+		productId: number;
+		productName: string;
+	}>({ open: false, productId: 0, productName: "" });
 
 	useEffect(() => {
 		setPage(1);
 	}, [status]);
 
 	const { data, isLoading } = useOrderDataByStatusQuery({ status, page });
+	const { data: reviewableData } = useGetReviewableProductsQuery();
 	const orders = data?.data?.data || [];
 	const pagination = data?.data;
+
+	// Build a set of product IDs that are reviewable (delivered + not yet reviewed)
+	const reviewableProductIds = new Set(
+		(reviewableData?.data ?? []).map((r) => r.product_id),
+	);
+
+	const getFirstProductId = (order: any): number | null => {
+		const products = order.products || order.orderproducts || [];
+		if (products.length > 0) {
+			return products[0].product_id ?? products[0].id ?? null;
+		}
+		return null;
+	};
+
+	const getFirstProductName = (order: any): string => {
+		const products = order.products || order.orderproducts || [];
+		if (products.length > 0) {
+			return products[0].productName || products[0].ProductName || "Product";
+		}
+		return "Product";
+	};
 
 	if (isLoading) {
 		return (
@@ -55,9 +84,31 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 
 	return (
 		<div>
+			{/* Review Modal */}
+			<ReviewModal
+				isOpen={reviewModal.open}
+				onClose={() =>
+					setReviewModal({ open: false, productId: 0, productName: "" })
+				}
+				productId={reviewModal.productId}
+				productName={reviewModal.productName}
+			/>
+
+			{/* Mobile view */}
 			<div className="md:hidden space-y-3">
 				{orders.map((order: any) => {
-					const displayStatus = order.customer_status ?? order.display_status ?? order.status;
+					const displayStatus =
+						order.customer_status ?? order.display_status ?? order.status;
+					const isDelivered = displayStatus === "Delivered";
+					const firstProductId = getFirstProductId(order);
+					const canReview =
+						isDelivered &&
+						firstProductId &&
+						reviewableProductIds.has(firstProductId);
+					const hasReviewed =
+						isDelivered &&
+						firstProductId &&
+						!reviewableProductIds.has(firstProductId);
 
 					return (
 						<div
@@ -86,7 +137,9 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 										{order.customers?.customerName ?? "-"}
 									</p>
 								</div>
-								<span className={`border px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${statusColors[displayStatus] || "bg-amber-50 text-amber-700 border-amber-200"}`}>
+								<span
+									className={`border px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${statusColors[displayStatus] || "bg-amber-50 text-amber-700 border-amber-200"}`}
+								>
 									{displayStatus}
 								</span>
 							</div>
@@ -94,7 +147,9 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 							<div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2.5">
 								<div>
 									<span className="text-gray-400">Phone</span>
-									<p className="text-gray-700 truncate">{order.customers?.customerPhone ?? "-"}</p>
+									<p className="text-gray-700 truncate">
+										{order.customers?.customerPhone ?? "-"}
+									</p>
 								</div>
 								<div>
 									<span className="text-gray-400">Date</span>
@@ -102,16 +157,41 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 								</div>
 								<div className="col-span-2">
 									<span className="text-gray-400">Address</span>
-									<p className="text-gray-700 truncate">{order.customers?.customerAddress ?? "-"}</p>
+									<p className="text-gray-700 truncate">
+										{order.customers?.customerAddress ?? "-"}
+									</p>
 								</div>
 							</div>
 
-							<Link
-								href={invoiceViewHref(order.invoiceID)}
-								className="inline-block w-full text-center text-xs font-medium py-2 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
-							>
-								View Order
-							</Link>
+							<div className="flex gap-2">
+								<Link
+									href={invoiceViewHref(order.invoiceID)}
+									className="flex-1 text-center text-xs font-medium py-2 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
+								>
+									View Order
+								</Link>
+								{canReview && (
+									<button
+										onClick={() =>
+											setReviewModal({
+												open: true,
+												productId: firstProductId!,
+												productName: getFirstProductName(order),
+											})
+										}
+										className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+									>
+										<Star className="w-3.5 h-3.5" />
+										Review
+									</button>
+								)}
+								{hasReviewed && (
+									<span className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-green-600 bg-green-50 border border-green-200 rounded-lg">
+										<Star className="w-3.5 h-3.5 fill-green-500" />
+										Reviewed
+									</span>
+								)}
+							</div>
 						</div>
 					);
 				})}
@@ -123,6 +203,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 				)}
 			</div>
 
+			{/* Desktop view */}
 			<div className="hidden md:block overflow-x-auto">
 				<table className="w-full">
 					<thead>
@@ -156,7 +237,20 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 
 					<tbody>
 						{orders.map((order: any) => {
-							const displayStatus = order.customer_status ?? order.display_status ?? order.status;
+							const displayStatus =
+								order.customer_status ??
+								order.display_status ??
+								order.status;
+							const isDelivered = displayStatus === "Delivered";
+							const firstProductId = getFirstProductId(order);
+							const canReview =
+								isDelivered &&
+								firstProductId &&
+								reviewableProductIds.has(firstProductId);
+							const hasReviewed =
+								isDelivered &&
+								firstProductId &&
+								!reviewableProductIds.has(firstProductId);
 
 							return (
 								<tr
@@ -166,7 +260,9 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 									<td className="p-4">
 										{order.products?.[0]?.ViewProductImage ? (
 											<Image
-												src={getImageUrl(order.products[0].ViewProductImage)}
+												src={getImageUrl(
+													order.products[0].ViewProductImage,
+												)}
 												alt="Product"
 												width={36}
 												height={36}
@@ -179,7 +275,9 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 										)}
 									</td>
 
-									<td className="p-4 text-sm font-medium text-gray-900">{order.invoiceID}</td>
+									<td className="p-4 text-sm font-medium text-gray-900">
+										{order.invoiceID}
+									</td>
 
 									<td className="p-4 text-sm text-gray-700">
 										{order.customers?.customerName ?? "-"}
@@ -193,21 +291,49 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 										{order.customers?.customerPhone ?? "-"}
 									</td>
 
-									<td className="p-4 text-sm text-gray-500">{order.orderDate}</td>
+									<td className="p-4 text-sm text-gray-500">
+										{order.orderDate}
+									</td>
 
 									<td className="p-4">
-										<span className={`border px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[displayStatus] || "bg-gray-50 text-gray-700 border-gray-200"}`}>
+										<span
+											className={`border px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[displayStatus] || "bg-gray-50 text-gray-700 border-gray-200"}`}
+										>
 											{displayStatus}
 										</span>
 									</td>
 
 									<td className="p-4">
-										<Link
-											href={invoiceViewHref(order.invoiceID)}
-											className="inline-block text-xs font-medium px-3 py-1.5 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
-										>
-											View
-										</Link>
+										<div className="flex items-center gap-2">
+											<Link
+												href={invoiceViewHref(order.invoiceID)}
+												className="inline-block text-xs font-medium px-3 py-1.5 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
+											>
+												View
+											</Link>
+											{canReview && (
+												<button
+													onClick={() =>
+														setReviewModal({
+															open: true,
+															productId: firstProductId!,
+															productName:
+																getFirstProductName(order),
+														})
+													}
+													className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 text-amber-600 hover:bg-amber-50 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+												>
+													<Star className="w-3 h-3" />
+													Review
+												</button>
+											)}
+											{hasReviewed && (
+												<span className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 text-green-600 bg-green-50 border border-green-200 rounded-lg">
+													<Star className="w-3 h-3 fill-green-500" />
+													Reviewed
+												</span>
+											)}
+										</div>
 									</td>
 								</tr>
 							);
@@ -215,7 +341,10 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 
 						{orders.length === 0 && (
 							<tr>
-								<td colSpan={8} className="py-12 text-center text-gray-400 text-sm">
+								<td
+									colSpan={8}
+									className="py-12 text-center text-gray-400 text-sm"
+								>
 									No orders found.
 								</td>
 							</tr>
@@ -224,6 +353,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 				</table>
 			</div>
 
+			{/* Pagination */}
 			{pagination && pagination.last_page > 1 && (
 				<div className="flex justify-center items-center gap-3 py-4 border-t border-gray-100 mt-2">
 					<button

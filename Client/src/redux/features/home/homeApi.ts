@@ -132,16 +132,18 @@ const homeApi = baseApi.injectEndpoints({
 		}),
 
 		getCategoryProducts: builder.query({
-			query: (slug) => ({
+			query: ({ slug, sort }: { slug: string; sort?: string }) => ({
 				url: `/products/${slug}`,
 				method: "GET",
+				params: sort ? { sort } : undefined,
 			}),
 			providesTags: ["categories"],
 		}),
 		getSubcategoryProducts: builder.query({
-			query: (slug) => ({
+			query: ({ slug, sort }: { slug: string; sort?: string }) => ({
 				url: `/subcategory-products/${slug}`,
 				method: "GET",
+				params: sort ? { sort } : undefined,
 			}),
 			providesTags: ["categories"],
 		}),

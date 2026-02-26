@@ -127,6 +127,107 @@ const requestProductListApi = baseApi.injectEndpoints({
 			invalidatesTags: ["userNotifications"],
 		}),
 
+		// ── Product Reviews ──
+		submitReview: builder.mutation<
+			{ status: boolean; message: string; data?: unknown },
+			FormData
+		>({
+			query: (formData) => ({
+				url: "/review/store",
+				method: "POST",
+				body: formData,
+			}),
+			invalidatesTags: ["reviews", "orderApi"],
+		}),
+		getReviewableProducts: builder.query<
+			{
+				status: boolean;
+				message: string;
+				data: Array<{
+					product_id: number;
+					product_name: string;
+					product_slug: string | null;
+					product_image: string | null;
+					order_id: number;
+					invoice_id: string;
+					delivery_date: string | null;
+				}>;
+			},
+			void
+		>({
+			query: () => ({
+				url: "/reviewable-products",
+				method: "GET",
+			}),
+			providesTags: ["reviews"],
+		}),
+		checkUserReview: builder.query<
+			{
+				status: boolean;
+				data: {
+					has_reviewed: boolean;
+					can_review: boolean;
+					review: {
+						id: number;
+						rating: number;
+						messages: string | null;
+						created_at: string;
+					} | null;
+				};
+			},
+			number
+		>({
+			query: (productId) => ({
+				url: `/review/check/${productId}`,
+				method: "GET",
+			}),
+			providesTags: (_r, _e, id) => [{ type: "reviews", id }],
+		}),
+		getProductReviews: builder.query<
+			{
+				status: boolean;
+				message: string;
+				data: {
+					reviews: Array<{
+						id: number;
+						product_id: number;
+						user_id: number;
+						rating: number;
+						messages: string | null;
+						file: string | null;
+						status: string;
+						created_at: string;
+						user?: {
+							id: number;
+							name: string;
+							email: string;
+							profile: string | null;
+						};
+					}>;
+					review_count: number;
+					average_rating: number;
+				};
+			},
+			number
+		>({
+			query: (productId) => ({
+				url: `/review/product/${productId}`,
+				method: "GET",
+			}),
+			providesTags: (_r, _e, id) => [{ type: "reviews", id }],
+		}),
+		updateReview: builder.mutation<
+			{ status: boolean; message: string; data?: unknown },
+			{ reviewId: number; rating: number; messages?: string | null }
+		>({
+			query: ({ reviewId, ...body }) => ({
+				url: `/review/update/${reviewId}`,
+				method: "POST",
+				body,
+			}),
+			invalidatesTags: ["reviews"],
+		}),
+
 		// createRequestProduct: builder.mutation({
 		//   query: (data) => {
 		//     return {
@@ -171,4 +272,10 @@ export const {
 	useGetUserNotificationsQuery,
 	useMarkUserNotificationReadMutation,
 	useMarkAllUserNotificationsReadMutation,
+	useSubmitReviewMutation,
+	useGetReviewableProductsQuery,
+	useCheckUserReviewQuery,
+	useGetProductReviewsQuery,
+	useUpdateReviewMutation,
 } = requestProductListApi;
+
