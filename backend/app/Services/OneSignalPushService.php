@@ -176,6 +176,7 @@ class OneSignalPushService
                 'panel' => $credentials['panel'],
                 'status' => $response->status(),
                 'recipients' => $recipientCount,
+                'response_body' => $responseBody,
             ]);
 
             return [
