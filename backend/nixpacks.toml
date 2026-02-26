@@ -5,16 +5,13 @@ providers = ["php"]
 [phases.install]
 cmds = ["composer install --ignore-platform-reqs"]
 
-# Clear all caches, then only cache config + views (NOT routes).
-# Route caching is skipped because karim007/laravel-bkash and
-# karim007/laravel-bkash-tokenize both register a route named
-# "bkash-refund", which causes route:cache to fail and can leave
-# a corrupt cache file that breaks ALL routes with 500 errors.
+# Build phase: clear caches and prepare start script.
+# IMPORTANT: Do NOT run config:cache or view:cache here because
+# Coolify injects runtime env vars (DB_HOST, APP_KEY, etc.) only
+# at container start, NOT during the build.
 [phases.build]
 cmds = [
     "php artisan optimize:clear || true",
-    "php artisan config:cache || true",
-    "php artisan view:cache || true",
     "php artisan route:clear",
     "sed -i 's/\\r$//' /app/docker/start.sh && chmod +x /app/docker/start.sh",
 ]
