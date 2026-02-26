@@ -5,10 +5,20 @@ providers = ["php"]
 [phases.install]
 cmds = ["composer install --ignore-platform-reqs"]
 
-# Only run Laravel optimize — skip pnpm build
+# Clear all caches, then only cache config + views (NOT routes).
+# Route caching is skipped because karim007/laravel-bkash and
+# karim007/laravel-bkash-tokenize both register a route named
+# "bkash-refund", which causes route:cache to fail and can leave
+# a corrupt cache file that breaks ALL routes with 500 errors.
 [phases.build]
-cmds = ["php artisan optimize:clear || true"]
+cmds = [
+    "php artisan optimize:clear || true",
+    "php artisan config:cache || true",
+    "php artisan view:cache || true",
+    "php artisan route:clear",
+]
 
 # Explicitly use PHP-FPM + Nginx start (not node)
 [start]
 cmd = "([ -e /app/storage ] && chmod -R ugo+w /app/storage); perl /assets/transform-config.pl /assets/nginx.template /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)"
+
