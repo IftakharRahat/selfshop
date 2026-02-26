@@ -16,7 +16,7 @@ cmds = [
     "php artisan config:cache || true",
     "php artisan view:cache || true",
     "php artisan route:clear",
-    "chmod +x /app/docker/start.sh",
+    "sed -i 's/\\r$//' /app/docker/start.sh && chmod +x /app/docker/start.sh",
 ]
 
 # Use docker/start.sh for a clean, maintainable startup sequence:
