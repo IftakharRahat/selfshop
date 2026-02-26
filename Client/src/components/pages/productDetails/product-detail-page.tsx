@@ -25,6 +25,7 @@ import { z } from "zod";
 import { cn, getImageUrl } from "@/lib/utils";
 import { useAppSelector } from "@/redux/hooks";
 import OrderNowModal from "./OrderNowModal";
+import ProductReviewsSection from "./ProductReviewsSection";
 
 type ColorOption = {
 	id: string | number;
@@ -58,6 +59,62 @@ function SupplierMiniLogo({ logo, name }: { logo: string | null; name: string })
 			className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-gray-200"
 			onError={() => setErrored(true)}
 		/>
+	);
+}
+
+function DesktopTabs({
+	description,
+	productId,
+}: {
+	description: string;
+	productId: number;
+}) {
+	const [activeTab, setActiveTab] = useState<"description" | "reviews">(
+		"description",
+	);
+
+	return (
+		<div>
+			{/* Tab Headers */}
+			<div className="flex border-b border-gray-200">
+				<button
+					onClick={() => setActiveTab("description")}
+					className={`px-6 py-3 text-sm font-semibold transition-colors relative cursor-pointer ${activeTab === "description"
+							? "text-pink-600"
+							: "text-gray-500 hover:text-gray-700"
+						}`}
+				>
+					Description
+					{activeTab === "description" && (
+						<span className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600 rounded-t" />
+					)}
+				</button>
+				<button
+					onClick={() => setActiveTab("reviews")}
+					className={`px-6 py-3 text-sm font-semibold transition-colors relative cursor-pointer ${activeTab === "reviews"
+							? "text-pink-600"
+							: "text-gray-500 hover:text-gray-700"
+						}`}
+				>
+					Reviews
+					{activeTab === "reviews" && (
+						<span className="absolute bottom-0 left-0 right-0 h-0.5 bg-pink-600 rounded-t" />
+					)}
+				</button>
+			</div>
+
+			{/* Tab Content */}
+			<div className="pt-6">
+				{activeTab === "description" ? (
+					<div
+						dangerouslySetInnerHTML={{ __html: description }}
+						className="text-gray-700 leading-relaxed w-full overflow-hidden"
+					/>
+				) : (
+					<ProductReviewsSection productId={productId} />
+				)}
+			</div>
+		</div>
 	);
 }
 
@@ -696,16 +753,29 @@ export default function ProductDetailPage({ product }: any) {
 					</div>
 				</div>
 
-				{/* Description */}
+				{/* Description & Reviews — Tabs on desktop, stacked on mobile (reviews first) */}
 				<div className="mt-12">
-					<h2 className="text-xl font-semibold text-pink-600 border-b w-fit">
-						Description
-					</h2>
-					{/* <div className=" h-0.5 bg-pink-600 mb-4"></div> */}
-					<div
-						dangerouslySetInnerHTML={{ __html: productData.description }}
-						className="text-gray-700 leading-relaxed w-full overflow-hidden"
-					/>
+					{/* Mobile: stacked, reviews first */}
+					<div className="md:hidden space-y-8">
+						<ProductReviewsSection productId={product.id} />
+						<div>
+							<h2 className="text-xl font-semibold text-pink-600 border-b w-fit mb-4">
+								Description
+							</h2>
+							<div
+								dangerouslySetInnerHTML={{ __html: productData.description }}
+								className="text-gray-700 leading-relaxed w-full overflow-hidden"
+							/>
+						</div>
+					</div>
+
+					{/* Desktop: tabs */}
+					<div className="hidden md:block">
+						<DesktopTabs
+							description={productData.description}
+							productId={product.id}
+						/>
+					</div>
 				</div>
 			</div>
 

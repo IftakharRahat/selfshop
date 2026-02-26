@@ -60,6 +60,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/brand-products/{slug}', [FrontendApiController::class, 'productbybrand'])->name('api.user.productbybrand');
     Route::get('/search', [FrontendApiController::class, 'search'])->name('api.user.search');
     Route::get('/product-details/{slug}', [FrontendApiController::class, 'productdetails'])->name('api.user.productdetails');
+    Route::get('/review/product/{product_id}', [FrontendApiController::class, 'getProductReviews'])->name('api.review.product');
 
     Route::post('/register', [FrontendApiController::class, 'userRegister'])->name('api.user.register');
     Route::post('/login', [FrontendApiController::class, 'userLogin'])->name('api.user.login');
@@ -151,6 +152,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //Review store
     Route::post('/review/store', [FrontendApiController::class, 'reviewStore'])->name('api.review.store');
+    Route::get('/reviewable-products', [FrontendApiController::class, 'reviewableProducts'])->name('api.reviewable-products');
+    Route::get('/review/check/{product_id}', [FrontendApiController::class, 'checkUserReview'])->name('api.review.check');
+    Route::post('/review/update/{review_id}', [FrontendApiController::class, 'updateReview'])->name('api.review.update');
 
     //Cart
     Route::post('/user-add-to-cart', [FrontendApiController::class, 'userAddToCart'])->name('api.user-add-to-cart.store');

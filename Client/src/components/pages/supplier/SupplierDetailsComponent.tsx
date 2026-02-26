@@ -12,6 +12,7 @@ import {
 	ChevronRight,
 	Search,
 	UserPlus,
+	Star,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { getImageUrl } from "@/lib/utils";
@@ -178,6 +179,19 @@ export default function SupplierDetailsComponent({
 								{vendor.products_count}{" "}
 								{vendor.products_count === 1 ? "Product" : "Products"}
 							</span>
+							{vendor.avg_product_rating > 0 && (
+								<>
+									<span className="text-gray-300">|</span>
+									<span className="flex items-center gap-1">
+										<Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+										{vendor.avg_product_rating}
+										<span className="text-gray-400">
+											({vendor.review_count}{" "}
+											{vendor.review_count === 1 ? "review" : "reviews"})
+										</span>
+									</span>
+								</>
+							)}
 							{vendor.business_type && (
 								<>
 									<span className="text-gray-300">|</span>

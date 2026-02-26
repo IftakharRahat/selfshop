@@ -22,6 +22,7 @@ use App\Models\Zone;
 use App\Models\User;
 use App\Models\Income;
 use App\Models\Vencomment;
+use App\Notifications\AdminBroadcastNotification;
 use App\Services\SteadfastOrderStatusService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -1399,6 +1400,22 @@ class OrderController extends Controller
                 $user->update();
                 $this->recordOrderIncomePaid($order);
                 $order->deliveryDate = date('Y-m-d');
+
+                // Send review notification for each product in the order
+                $orderProducts = Orderproduct::where('order_id', $order->id)->get();
+                foreach ($orderProducts as $op) {
+                    $product = Product::find($op->product_id);
+                    if ($product) {
+                        $user->notify(new AdminBroadcastNotification(
+                            'Rate Your Product',
+                            'Your order has been delivered! Please rate "' . $product->ProductName . '".',
+                            $product->ViewProductImage ?? null,
+                            '/product/' . $product->ProductSlug,
+                            'all_user',
+                            ['type' => 'review_prompt', 'product_id' => $product->id, 'order_id' => $order->id]
+                        ));
+                    }
+                }
 
                 $opds = Orderproduct::where('order_id', $order->id)->get();
                 $wholesale = 0;

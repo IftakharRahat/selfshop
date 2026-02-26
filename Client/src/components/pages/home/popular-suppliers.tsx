@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode } from "swiper/modules";
-import { MapPin, BadgeCheck } from "lucide-react";
+import { MapPin, BadgeCheck, Star } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 import { useGetPopularSuppliersQuery } from "@/redux/features/home/homeApi";
 import "swiper/css";
@@ -21,6 +21,8 @@ interface SupplierItem {
     city: string | null;
     is_verified_badge: boolean;
     products_count: number;
+    avg_product_rating?: number;
+    review_count?: number;
 }
 
 /** Logo with fallback initials */
@@ -83,6 +85,19 @@ function SupplierCard({ supplier }: { supplier: SupplierItem }) {
                     <div className="flex items-center gap-1 text-gray-400">
                         <MapPin className="w-3 h-3" />
                         <span className="text-[10px] sm:text-xs">{supplier.city}</span>
+                    </div>
+                )}
+
+                {/* Rating */}
+                {(supplier.avg_product_rating ?? 0) > 0 && (
+                    <div className="flex items-center gap-1 text-amber-500">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span className="text-[10px] sm:text-xs font-semibold">
+                            {supplier.avg_product_rating}
+                        </span>
+                        <span className="text-[10px] sm:text-xs text-gray-400 font-normal">
+                            ({supplier.review_count})
+                        </span>
                     </div>
                 )}
 
