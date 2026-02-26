@@ -6,6 +6,7 @@ declare global {
 		allowLocalhostAsSecureOrigin?: boolean;
 		notifyButton?: { enable?: boolean };
 		serviceWorkerPath?: string;
+		serviceWorkerUpdaterPath?: string;
 		serviceWorkerParam?: { scope?: string };
 		safari_web_id?: string;
 	}

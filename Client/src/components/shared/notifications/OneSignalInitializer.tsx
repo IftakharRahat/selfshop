@@ -88,6 +88,8 @@ async function ensureOneSignalInitialized(
 			allowLocalhostAsSecureOrigin: true,
 			notifyButton: { enable: false },
 			serviceWorkerPath: "/OneSignalSDKWorker.js",
+			serviceWorkerUpdaterPath: "/OneSignalSDKUpdaterWorker.js",
+			serviceWorkerParam: { scope: "/" },
 		};
 
 		if (ONE_SIGNAL_SAFARI_WEB_ID) {
