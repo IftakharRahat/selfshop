@@ -134,7 +134,7 @@ class AdminNotificationController extends Controller
     public function send(Request $request)
     {
         try {
-            Log::info('AdminNotificationController@send start', [
+            $this->safeLog('info', 'AdminNotificationController@send start', [
                 'target_type' => $request->input('target_type'),
             ]);
 
@@ -156,7 +156,7 @@ class AdminNotificationController extends Controller
 
             // Ensure the notifications table exists before attempting to write
             if (!Schema::hasTable('notifications')) {
-                Log::error('AdminNotificationController@send: notifications table does not exist. Run: php artisan migrate');
+                $this->safeLog('error', 'AdminNotificationController@send: notifications table does not exist. Run: php artisan migrate');
 
                 return redirect()
                     ->back()
@@ -210,14 +210,14 @@ class AdminNotificationController extends Controller
                             $meta
                         );
 
-                        Log::info('Admin notification sent', [
+                        $this->safeLog('info', 'Admin notification sent', [
                             'target_type' => $audienceType,
                             'sent_count' => $asyncSentCount,
                             'mode' => 'after_response',
                             'duration_ms' => (int) ((microtime(true) - $startedAt) * 1000),
                         ]);
                     } catch (\Throwable $exception) {
-                        Log::error('AdminNotificationController@send async all-user failed', [
+                        $this->safeLog('error', 'AdminNotificationController@send async all-user failed', [
                             'error' => $exception->getMessage(),
                             'file' => $exception->getFile(),
                             'line' => $exception->getLine(),
@@ -280,7 +280,7 @@ class AdminNotificationController extends Controller
                     ->with('error', 'No valid recipients found for this notification.');
             }
 
-            Log::info('Admin notification sent', [
+            $this->safeLog('info', 'Admin notification sent', [
                 'target_type' => $audienceType,
                 'sent_count' => $sentCount,
                 'duration_ms' => (int) ((microtime(true) - $startedAt) * 1000),
@@ -292,7 +292,7 @@ class AdminNotificationController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            Log::error('AdminNotificationController@send failed', [
+            $this->safeLog('error', 'AdminNotificationController@send failed', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -314,6 +314,18 @@ class AdminNotificationController extends Controller
             '3' => 'supplier',
             default => 'all_user',
         };
+    }
+
+    /**
+     * Prevent logging backend failures from breaking the request flow.
+     */
+    private function safeLog(string $level, string $message, array $context = []): void
+    {
+        try {
+            Log::{$level}($message, $context);
+        } catch (\Throwable $exception) {
+            // Intentionally ignore logging transport/permission failures.
+        }
     }
 
     private function storeDatabaseNotificationsForUsers(
@@ -416,7 +428,7 @@ SQL;
                 $timestamp,
             ]);
         } catch (\Throwable $exception) {
-            Log::warning('All-user bulk insert-select failed, falling back to chunked inserts', [
+            $this->safeLog('warning', 'All-user bulk insert-select failed, falling back to chunked inserts', [
                 'error' => $exception->getMessage(),
             ]);
         }
