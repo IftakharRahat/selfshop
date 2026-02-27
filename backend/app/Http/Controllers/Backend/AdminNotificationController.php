@@ -203,13 +203,14 @@ class AdminNotificationController extends Controller
             $sentCount = 0;
 
             if ($targetType === '1') {
-                User::query()
-                    ->whereDoesntHave('vendor')
-                    ->select('id')
-                    ->orderBy('id')
-                    ->chunkById(300, function ($users) use ($sendNotificationBatch, &$sentCount) {
-                        $sentCount += $sendNotificationBatch($users);
-                    });
+                $sentCount = $this->storeDatabaseNotificationsForAllUsers(
+                    $validated['title'],
+                    $validated['message'],
+                    $validated['image_url'] ?? null,
+                    $validated['link'] ?? null,
+                    $audienceType,
+                    $meta
+                );
 
                 if ($sentCount > 0) {
                     $this->oneSignalPushService->sendToPanel(
@@ -381,5 +382,49 @@ class AdminNotificationController extends Controller
         DB::table('notifications')->insert($rows);
 
         return $normalizedUserIds->count();
+    }
+
+    private function storeDatabaseNotificationsForAllUsers(
+        string $title,
+        string $message,
+        ?string $imageUrl = null,
+        ?string $actionUrl = null,
+        string $audienceType = 'all_user',
+        array $meta = []
+    ): int {
+        $timestamp = now();
+        $payload = [
+            'title' => $title,
+            'message' => $message,
+            'type' => 'admin_broadcast',
+            'image_url' => $imageUrl,
+            'action_url' => $actionUrl,
+            'link' => $actionUrl,
+            'audience_type' => $audienceType,
+            'meta' => $meta,
+            'created_at' => $timestamp->toIso8601String(),
+        ];
+
+        $encodedPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if (!is_string($encodedPayload)) {
+            throw new \RuntimeException('Failed to encode notification payload.');
+        }
+
+        $insertSql = <<<'SQL'
+INSERT INTO notifications (id, type, notifiable_type, notifiable_id, data, read_at, created_at, updated_at)
+SELECT UUID(), ?, ?, users.id, ?, NULL, ?, ?
+FROM users
+LEFT JOIN vendors ON vendors.user_id = users.id
+WHERE vendors.id IS NULL
+SQL;
+
+        return (int) DB::affectingStatement($insertSql, [
+            AdminBroadcastNotification::class,
+            User::class,
+            $encodedPayload,
+            $timestamp,
+            $timestamp,
+        ]);
     }
 }
