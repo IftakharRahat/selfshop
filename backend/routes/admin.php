@@ -207,6 +207,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     //varients
     Route::resource('varients', VarientController::class, ['names' => 'admin.varients']);
     Route::post('varient/{id}', [VarientController::class, 'update']);
+    Route::get('varients/{id}/sizes', [VarientController::class, 'sizes']);
+    Route::post('varients/{id}/sizes', [VarientController::class, 'storeSize']);
+    Route::put('varients/{id}/sizes/{sizeId}', [VarientController::class, 'updateSize']);
+    Route::delete('varients/{id}/sizes/{sizeId}', [VarientController::class, 'destroySize']);
 
     //category
     Route::resource('categorys', CategoryController::class, ['names' => 'admin.categorys']);

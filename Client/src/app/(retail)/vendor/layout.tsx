@@ -6,6 +6,7 @@ import {
 	BarChart3,
 	CreditCard,
 	Home,
+	LogOut,
 	MapPin,
 	Menu,
 	Package,
@@ -22,10 +23,12 @@ import {
 import type { ComponentType, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAppSelector } from "@/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import VendorNotificationCenter from "@/components/vendor/VendorNotificationCenter";
 import OneSignalInitializer from "@/components/shared/notifications/OneSignalInitializer";
 import { useGetVendorProfileQuery } from "@/redux/api/vendorApi";
+import { logout } from "@/redux/features/auth/authSlice";
+import Swal from "sweetalert2";
 
 type NavItem = {
 	label: string;
@@ -100,6 +103,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
  */
 export default function VendorLayout({ children }: { children: ReactNode }) {
 	const router = useRouter();
+	const dispatch = useAppDispatch();
 	const pathname = usePathname();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
@@ -122,8 +126,8 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 	const notificationDisabled = isAuthPage || !token || !hasVendorProfile;
 	const vendorUserId = (
 		vendorProfileResponse?.data as
-			| { user?: { id?: number | string | null } }
-			| undefined
+		| { user?: { id?: number | string | null } }
+		| undefined
 	)?.user?.id;
 
 	useEffect(() => {
@@ -180,38 +184,73 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 			: "text-gray-700 hover:bg-indigo-50 hover:text-[#2d2a5d]"
 		}`;
 
+	const handleLogout = async () => {
+		const result = await Swal.fire({
+			title: "Are you sure?",
+			text: "You will be logged out of your supplier account.",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#2d2a5d",
+			cancelButtonColor: "#d33",
+			confirmButtonText: "Yes, logout!",
+			customClass: {
+				container: 'z-[9999]'
+			}
+		});
+
+		if (result.isConfirmed) {
+			dispatch(logout());
+			router.replace("/vendor/login");
+		}
+	};
+
 	const renderNavigation = (onItemClick?: () => void) => (
-		<nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-4 space-y-6 text-sm">
-			{navSections.map((section) => (
-				<div key={section.title}>
-					<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-						{section.title}
-					</p>
-					<ul className="space-y-1">
-						{section.items.map((item) => {
-							const active = item.href === activeHref;
-							const Icon = item.icon;
-							return (
-								<li key={item.href}>
-									<Link
-										href={item.href}
-										onClick={onItemClick}
-										className={navItemClass(active)}
-									>
-										<Icon
-											className={`h-4 w-4 shrink-0 ${active
-												? "text-white"
-												: "text-gray-500 group-hover:text-[#2d2a5d]"
-												}`}
-										/>
-										<span className="truncate">{item.label}</span>
-									</Link>
-								</li>
-							);
-						})}
-					</ul>
-				</div>
-			))}
+		<nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-4 space-y-6 text-sm flex flex-col">
+			<div className="flex-1 space-y-6">
+				{navSections.map((section) => (
+					<div key={section.title}>
+						<p className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+							{section.title}
+						</p>
+						<ul className="space-y-1">
+							{section.items.map((item) => {
+								const active = item.href === activeHref;
+								const Icon = item.icon;
+								return (
+									<li key={item.href}>
+										<Link
+											href={item.href}
+											onClick={onItemClick}
+											className={navItemClass(active)}
+										>
+											<Icon
+												className={`h-4 w-4 shrink-0 ${active
+													? "text-white"
+													: "text-gray-500 group-hover:text-[#2d2a5d]"
+													}`}
+											/>
+											<span className="truncate">{item.label}</span>
+										</Link>
+									</li>
+								);
+							})}
+						</ul>
+					</div>
+				))}
+			</div>
+
+			<div className="pt-4 border-t border-gray-100 mt-auto">
+				<button
+					onClick={() => {
+						onItemClick?.();
+						handleLogout();
+					}}
+					className="group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+				>
+					<LogOut className="h-4 w-4 shrink-0 text-red-500 group-hover:text-red-600" />
+					<span className="truncate font-medium">Logout</span>
+				</button>
+			</div>
 		</nav>
 	);
 
@@ -228,7 +267,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 			? "Checking vendor access..."
 			: isVendorProfileError
 				? "Unable to verify vendor access. Please refresh the page."
-			: "Redirecting to vendor profile setup...";
+				: "Redirecting to vendor profile setup...";
 
 	return (
 		<div className="min-h-screen bg-gray-50 flex">

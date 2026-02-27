@@ -471,6 +471,22 @@ export const vendorApi = baseApi.injectEndpoints({
 						qty: number;
 						price: number;
 						status: string;
+						image?: string | null;
+						sizes: {
+							id: number;
+							varient_id: number;
+							size_name: string;
+							qty: number;
+							price: number | null;
+							status: string;
+							bulk_prices?: {
+								id: number;
+								variant_size_id: number;
+								min_qty: number;
+								max_qty: number | null;
+								bulk_price: number;
+							}[];
+						}[];
 					}[];
 				};
 			},
@@ -493,20 +509,24 @@ export const vendorApi = baseApi.injectEndpoints({
 					};
 				};
 			},
-			{
+			{ id: number; body: FormData } | {
 				id: number;
-				title: string;
+				title?: string;
 				color_name?: string | null;
 				color_code?: string | null;
 				qty: number;
 				price: number;
 			}
 		>({
-			query: ({ id, ...body }) => ({
-				url: `/vendor/products/${id}/variants`,
-				method: "POST",
-				body,
-			}),
+			query: (arg) => {
+				const { id } = arg;
+				const body = "body" in arg ? arg.body : (({ id: _id, ...rest }) => rest)(arg as any);
+				return {
+					url: `/vendor/products/${id}/variants`,
+					method: "POST",
+					body,
+				};
+			},
 			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
 		}),
 		updateVendorProductVariant: build.mutation<
@@ -535,6 +555,84 @@ export const vendorApi = baseApi.injectEndpoints({
 		>({
 			query: ({ id, variantId }) => ({
 				url: `/vendor/products/${id}/variants/${variantId}`,
+				method: "DELETE",
+			}),
+			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
+		}),
+
+		// ── Variant Sizes ──
+		createVendorProductVariantSize: build.mutation<
+			{ status: boolean; data?: { size: unknown } },
+			{
+				id: number;
+				variantId: number;
+				size_name: string;
+				qty: number;
+				price?: number | null;
+				status?: string;
+			}
+		>({
+			query: ({ id, variantId, ...body }) => ({
+				url: `/vendor/products/${id}/variants/${variantId}/sizes`,
+				method: "POST",
+				body,
+			}),
+			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
+		}),
+		updateVendorProductVariantSize: build.mutation<
+			{ status: boolean; data?: { size: unknown } },
+			{
+				id: number;
+				variantId: number;
+				sizeId: number;
+				size_name?: string;
+				qty?: number;
+				price?: number | null;
+				status?: string;
+			}
+		>({
+			query: ({ id, variantId, sizeId, ...body }) => ({
+				url: `/vendor/products/${id}/variants/${variantId}/sizes/${sizeId}`,
+				method: "PUT",
+				body,
+			}),
+			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
+		}),
+		deleteVendorProductVariantSize: build.mutation<
+			{ status: boolean },
+			{ id: number; variantId: number; sizeId: number }
+		>({
+			query: ({ id, variantId, sizeId }) => ({
+				url: `/vendor/products/${id}/variants/${variantId}/sizes/${sizeId}`,
+				method: "DELETE",
+			}),
+			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
+		}),
+
+		createVendorProductVariantSizeBulkPrice: build.mutation<
+			{ status: boolean; data?: { bulk_price: unknown } },
+			{
+				id: number;
+				variantId: number;
+				sizeId: number;
+				min_qty: number;
+				max_qty?: number | null;
+				bulk_price: number;
+			}
+		>({
+			query: ({ id, variantId, sizeId, ...body }) => ({
+				url: `/vendor/products/${id}/variants/${variantId}/sizes/${sizeId}/bulk-prices`,
+				method: "POST",
+				body,
+			}),
+			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
+		}),
+		deleteVendorProductVariantSizeBulkPrice: build.mutation<
+			{ status: boolean },
+			{ id: number; variantId: number; sizeId: number; bulkId: number }
+		>({
+			query: ({ id, variantId, sizeId, bulkId }) => ({
+				url: `/vendor/products/${id}/variants/${variantId}/sizes/${sizeId}/bulk-prices/${bulkId}`,
 				method: "DELETE",
 			}),
 			invalidatesTags: (_r, _e, { id }) => [{ type: "vendorProducts", id }],
@@ -1173,4 +1271,9 @@ export const {
 	useGetVendorNotificationsQuery,
 	useMarkVendorNotificationReadMutation,
 	useMarkAllVendorNotificationsReadMutation,
+	useCreateVendorProductVariantSizeMutation,
+	useUpdateVendorProductVariantSizeMutation,
+	useDeleteVendorProductVariantSizeMutation,
+	useCreateVendorProductVariantSizeBulkPriceMutation,
+	useDeleteVendorProductVariantSizeBulkPriceMutation,
 } = vendorApi;

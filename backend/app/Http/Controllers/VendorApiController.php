@@ -21,7 +21,7 @@ class VendorApiController extends Controller
      */
     public function productDetails(Request $request, string $slug)
     {
-        $product = Product::with(['varients', 'priceTiers'])
+        $product = Product::with(['varients.sizes.bulkPrices', 'priceTiers'])
             ->where('ProductSlug', $slug)
             ->first();
 

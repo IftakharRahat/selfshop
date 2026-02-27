@@ -18,6 +18,7 @@ class Varient extends Model
         'extra_delivery_charge',
         'color_name',
         'color_code',
+        'image',
     ];
 
     protected $casts = [
@@ -29,5 +30,10 @@ class Varient extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function sizes()
+    {
+        return $this->hasMany(VariantSize::class, 'varient_id');
     }
 }

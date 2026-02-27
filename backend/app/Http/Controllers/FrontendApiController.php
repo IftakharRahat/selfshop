@@ -761,7 +761,7 @@ class FrontendApiController extends Controller
     public function productdetails($slug)
     {
         $product = Product::with([
-            'varients',
+            'varients.sizes.bulkPrices',
             'priceTiers',
             'vendor:id,user_id,company_name,slug,is_verified_badge',
         ])->where('ProductSlug', $slug)->first();
@@ -2484,6 +2484,17 @@ class FrontendApiController extends Controller
         $cartProduct = Product::where('id', $pid)->first();
         if (!$cartProduct) {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
+        }
+
+        // Server-side Price Validation
+        $submittedPrice = (float) $request->price;
+        $minAllowedPrice = (float) $cartProduct->ProductResellerPrice;
+
+        if ($submittedPrice < $minAllowedPrice) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Selling price (' . number_format($submittedPrice, 2) . ') cannot be lower than the product price (' . number_format($minAllowedPrice, 2) . ').'
+            ], 422);
         }
 
         $cart = Cart::updateOrCreate(

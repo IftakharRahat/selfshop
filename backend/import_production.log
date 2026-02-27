@@ -1,0 +1,9 @@
+Fetching categories from production API...
+Fetching brands from production API...
+Clearing existing categories, subcategories, minicategories, brands...
+
+=== IMPORT COMPLETE ===
+Categories:      13
+Subcategories:   86
+Minicategories:  7
+Brands:          10

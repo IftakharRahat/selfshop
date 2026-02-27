@@ -24,17 +24,17 @@ const authSlice = createSlice({
 			state.access_token = access_token;
 			state.refresh_token = refresh_token;
 		},
-		// logout: (state) => {
-		//   // state.user = null;
-		//   // state.access_token = null;
-		//   // state.refresh_token = null;
-		// },
+		logout: (state) => {
+			state.user = null;
+			state.access_token = null;
+			state.refresh_token = null;
+		},
 	},
 });
 
 export const {
 	setUser,
-	// logout
+	logout,
 } = authSlice.actions;
 
 export default authSlice.reducer;

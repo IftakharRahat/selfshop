@@ -12,6 +12,8 @@ class Product extends Model
     use HasSlug;
     use HasFactory;
 
+    protected $guarded = [];
+
     public function categories()
     {
         return $this->belongsTo(Category::class, 'category_id');

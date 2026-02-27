@@ -1,0 +1,17 @@
+Running CategorySeeder...
+CategorySeeder Success!
+Running BrandSeeder...
+BrandSeeder Success!
+Running ProductSeeder...
+ERROR: Add [category_id] to fillable property to allow mass assignment on [App\Models\Product].
+FILE: D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:433
+#0 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php(212): Illuminate\Database\Eloquent\Model->fill(Array)
+#1 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php(496): Illuminate\Database\Eloquent\Model->__construct(Array)
+#2 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php(1342): Illuminate\Database\Eloquent\Model->newInstance(Array)
+#3 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php(895): Illuminate\Database\Eloquent\Builder->newModelInstance(Array)
+#4 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Support\Traits\ForwardsCalls.php(23): Illuminate\Database\Eloquent\Builder->create(Array)
+#5 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php(2132): Illuminate\Database\Eloquent\Model->forwardCallTo(Object(Illuminate\Database\Eloquent\Builder), 'create', Array)
+#6 D:\selfshop\backend\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php(2144): Illuminate\Database\Eloquent\Model->__call('create', Array)
+#7 D:\selfshop\backend\database\seeders\ProductSeeder.php(74): Illuminate\Database\Eloquent\Model::__callStatic('create', Array)
+#8 D:\selfshop\backend\debug_seed.php(22): Database\Seeders\ProductSeeder->run()
+#9 {main}

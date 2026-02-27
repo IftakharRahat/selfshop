@@ -65,6 +65,7 @@
                                     @endif
                                 </td>
                                 <td>
+                                    <a href="#" type="button" onclick="manageSizes('{{$varient->id}}', '{{$varient->title}}')" class="btn btn-info btn-sm text-white" title="Manage Sizes" data-bs-toggle="tooltip"><i class="bi bi-list-nested"></i> Sizes</a>
                                     <a href="#" type="button" id="editCategoryBtn" data-id="{{$varient->id}}" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainCategory"><i class="bi bi-pencil-square"></i></a>
                                     <a href="#" type="button" id="deleteCategoryBtn" data-id="{{$varient->id}}" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>
                                 </td>
@@ -193,6 +194,66 @@
             </div>
         </div>
     </div><!-- End popup Modal-->
+
+    {{-- manage sizes modal --}}
+    <div class="modal fade" id="manageSizesModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" style="font-weight: 600;">Manage Sizes for <span id="sizesVariantTitle" class="text-primary"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <!-- Add Size Form -->
+                    <div class="card mb-3 shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted mb-3">Add New Size</h6>
+                            <form id="AddSizeForm" class="row g-2 align-items-center">
+                                <input type="hidden" id="manage_variant_id" name="variant_id">
+                                <div class="col-md-3">
+                                    <input type="text" class="form-control form-control-sm" id="new_size_name" name="size_name" placeholder="Size (e.g. XL, 42)" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control form-control-sm" id="new_size_price" name="price" step="0.01" placeholder="Price (Optional)">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control form-control-sm" id="new_size_qty" name="qty" placeholder="Quantity" value="0" required>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <button type="submit" class="btn btn-sm w-100" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">Add Size</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Sizes List -->
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="bg-gray-50 border-bottom">
+                                        <tr>
+                                            <th>Size</th>
+                                            <th>Overridden Price</th>
+                                            <th>Stock Qty</th>
+                                            <th>Status</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sizesTableBody">
+                                        <tr><td colspan="5" class="text-center py-3 text-muted">Loading sizes...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div><!-- End manage sizes modal-->
     <input type="hidden" name="_token" value="{{ csrf_token() }}" />
 </div>
 
@@ -388,7 +449,130 @@
             });
         });
 
+        // Add size form submit
+        $('#AddSizeForm').submit(function(e) {
+            e.preventDefault();
+            let variantId = $('#manage_variant_id').val();
+            let data = {
+                size_name: $('#new_size_name').val(),
+                price: $('#new_size_price').val() || null,
+                qty: $('#new_size_qty').val(),
+                status: 'Active',
+                _token: token
+            };
+
+            $.ajax({
+                type: 'POST',
+                url: "{{url('admin/varients')}}/" + variantId + "/sizes",
+                data: data,
+                success: function(res) {
+                    $('#new_size_name').val('');
+                    $('#new_size_price').val('');
+                    $('#new_size_qty').val('0');
+                    loadSizes(variantId);
+                },
+                error: function(error) {
+                    console.log('error', error);
+                    swal("Error", "Could not add size", "error");
+                }
+            });
+        });
     });
+
+    function manageSizes(variantId, title) {
+        $('#sizesVariantTitle').text(title);
+        $('#manage_variant_id').val(variantId);
+        $('#manageSizesModal').modal('show');
+        loadSizes(variantId);
+    }
+
+    function loadSizes(variantId) {
+        $('#sizesTableBody').html('<tr><td colspan="5" class="text-center py-3 text-muted spinner-border mx-auto block"></td></tr>');
+        $.ajax({
+            type: 'GET',
+            url: "{{url('admin/varients')}}/" + variantId + "/sizes",
+            success: function(data) {
+                let html = '';
+                if(data.length === 0) {
+                    html = '<tr><td colspan="5" class="text-center py-3 text-muted">No sizes found for this variant.</td></tr>';
+                } else {
+                    data.forEach(function(size) {
+                        html += `
+                            <tr>
+                                <td class="align-middle fw-medium">${size.size_name}</td>
+                                <td class="align-middle">${size.price ? '৳' + size.price : '<span class="text-muted text-sm">Takes var price</span>'}</td>
+                                <td class="align-middle px-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input type="number" class="form-control form-control-sm text-center" style="width: 70px" value="${size.qty}" id="update_qty_${size.id}">
+                                        <button class="btn btn-sm btn-outline-success py-1 px-2" onclick="updateSizeQty(${variantId}, ${size.id}, '${size.size_name}', ${size.price || null}, '${size.status}')"><i class="bi bi-check2"></i></button>
+                                    </div>
+                                </td>
+                                <td class="align-middle"><span class="badge ${size.status == 'Active' ? 'bg-success' : 'bg-warning'}">${size.status}</span></td>
+                                <td class="align-middle text-end">
+                                    <button class="btn btn-sm btn-danger py-1" onclick="deleteSize(${variantId}, ${size.id})"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                $('#sizesTableBody').html(html);
+            },
+            error: function(error) {
+                $('#sizesTableBody').html('<tr><td colspan="5" class="text-center py-3 text-danger">Error loading sizes.</td></tr>');
+            }
+        });
+    }
+
+    function updateSizeQty(variantId, sizeId, sizeName, price, status) {
+        let newQty = $('#update_qty_' + sizeId).val();
+        $.ajax({
+            type: 'PUT',
+            url: "{{url('admin/varients')}}/" + variantId + "/sizes/" + sizeId,
+            data: {
+                size_name: sizeName,
+                price: price,
+                qty: newQty,
+                status: status,
+                _token: $("input[name='_token']").val()
+            },
+            success: function(res) {
+                // Flash success briefly
+                let btn = $('#update_qty_' + sizeId).next('button');
+                btn.removeClass('btn-outline-success').addClass('btn-success text-white');
+                setTimeout(() => btn.removeClass('btn-success text-white').addClass('btn-outline-success'), 1000);
+            },
+            error: function(error) {
+                swal("Error", "Could not update quantity", "error");
+            }
+        });
+    }
+
+    function deleteSize(variantId, sizeId) {
+        swal({
+            title: "Are you sure?",
+            text: "Delete this size?",
+            icon: "warning",
+            buttons: true,
+            dangerMode: true,
+        })
+        .then((willDelete) => {
+            if (willDelete) {
+                $.ajax({
+                    type: 'DELETE',
+                    url: "{{url('admin/varients')}}/" + variantId + "/sizes/" + sizeId,
+                    data: {
+                        _token: $("input[name='_token']").val()
+                    },
+                    success: function(res) {
+                        loadSizes(variantId);
+                    },
+                    error: function(error) {
+                        swal("Error", "Could not delete size", "error");
+                    }
+                });
+            }
+        });
+    }
 </script>
 
 @endsection

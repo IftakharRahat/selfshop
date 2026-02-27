@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
 use App\Models\Varient;
+use App\Models\VariantSize;
+use App\Models\Product;
 use App\Models\ProductPriceTier;
 use App\Models\Category;
 use App\Models\Subcategory;
@@ -114,7 +115,9 @@ class VendorProductController extends Controller
         $product->category_id = $data['category_id'];
         $product->subcategory_id = $data['subcategory_id'];
         $product->brand_id = $data['brand_id'];
-        $product->minicategory_id = $request->input('minicategory_id');
+        if (Schema::hasColumn('products', 'minicategory_id')) {
+            $product->minicategory_id = $request->input('minicategory_id');
+        }
         $product->ProductName = $data['ProductName'];
         $product->ProductSlug = $slug;
         $product->ProductSku = $sku;
@@ -162,6 +165,7 @@ class VendorProductController extends Controller
         }
 
         $product->save();
+        $this->refreshProductAggregation($product);
 
         Stock::create(['product_id' => $product->id, 'purchase' => 0, 'stock' => $product->qty]);
         Purchase::create([
@@ -290,6 +294,7 @@ class VendorProductController extends Controller
             $product->PostImage = json_encode($imageData);
         }
         $product->save();
+        $this->refreshProductAggregation($product);
 
         return response()->json(['status' => true, 'message' => 'Product updated', 'data' => ['product' => $product]]);
     }
@@ -343,7 +348,7 @@ class VendorProductController extends Controller
             return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
         }
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
-        $variants = Varient::where('product_id', $product->id)->orderBy('id')->get();
+        $variants = Varient::with(['sizes.bulkPrices'])->where('product_id', $product->id)->orderBy('id')->get();
         return response()->json(['status' => true, 'data' => ['variants' => $variants]]);
     }
 
@@ -356,11 +361,12 @@ class VendorProductController extends Controller
         }
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'qty' => 'required|integer|min:0',
             'price' => 'required|numeric|min:0',
             'color_name' => 'nullable|string|max:100',
             'color_code' => ['nullable', 'string', 'regex:/^#?[A-Fa-f0-9]{3}([A-Fa-f0-9]{3})?$/'],
+            'image' => 'nullable|image|max:5120',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
@@ -368,13 +374,20 @@ class VendorProductController extends Controller
         $data = $validator->validated();
         $variant = new Varient();
         $variant->product_id = $product->id;
-        $variant->title = trim((string) $data['title']);
+        $variant->title = trim((string) ($data['title'] ?? $data['color_name'] ?? 'Variant'));
         $variant->qty = (int) $data['qty'];
         $variant->price = (float) $data['price'];
         $variant->color_name = $this->normalizeColorName($data['color_name'] ?? null);
         $variant->color_code = $this->normalizeColorCode($data['color_code'] ?? null);
         $variant->status = $request->input('status', 'Active');
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products/variants', 'public');
+            $variant->image = 'storage/' . $path;
+        }
         $variant->save();
+
+        $this->refreshProductAggregation($product);
+
         return response()->json(['status' => true, 'message' => 'Variant added', 'data' => ['variant' => $variant]], 201);
     }
 
@@ -388,18 +401,21 @@ class VendorProductController extends Controller
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
         $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
         $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|string|max:255',
+            'title' => 'nullable|string|max:255',
             'qty' => 'sometimes|integer|min:0',
             'price' => 'sometimes|numeric|min:0',
             'status' => 'sometimes|in:Active,Inactive',
             'color_name' => 'nullable|string|max:100',
             'color_code' => ['nullable', 'string', 'regex:/^#?[A-Fa-f0-9]{3}([A-Fa-f0-9]{3})?$/'],
+            'image' => 'nullable|image|max:5120',
         ]);
         if ($validator->fails()) {
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
         $data = $validator->validated();
-        if (array_key_exists('title', $data)) $variant->title = trim((string) $data['title']);
+        if (array_key_exists('title', $data)) {
+            $variant->title = trim((string) ($data['title'] ?? $data['color_name'] ?? $variant->title));
+        }
         if (array_key_exists('qty', $data)) $variant->qty = (int) $data['qty'];
         if (array_key_exists('price', $data)) $variant->price = (float) $data['price'];
         if (array_key_exists('status', $data)) $variant->status = $data['status'];
@@ -409,7 +425,14 @@ class VendorProductController extends Controller
         if (array_key_exists('color_code', $data)) {
             $variant->color_code = $this->normalizeColorCode($data['color_code']);
         }
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('products/variants', 'public');
+            $variant->image = 'storage/' . $path;
+        }
         $variant->save();
+
+        $this->refreshProductAggregation($product);
+
         return response()->json(['status' => true, 'message' => 'Variant updated', 'data' => ['variant' => $variant]]);
     }
 
@@ -423,7 +446,155 @@ class VendorProductController extends Controller
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
         $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
         $variant->delete();
+
+        $this->refreshProductAggregation($product);
+
         return response()->json(['status' => true, 'message' => 'Variant deleted']);
+    }
+
+    /** GET /api/vendor/products/{id}/variants/{variantId}/sizes */
+    public function sizes($id, $variantId)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) {
+            return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        }
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
+        $sizes = VariantSize::where('varient_id', $variant->id)->orderBy('id')->get();
+        return response()->json(['status' => true, 'data' => ['sizes' => $sizes]]);
+    }
+
+    /** POST /api/vendor/products/{id}/variants/{variantId}/sizes */
+    public function storeSize(Request $request, $id, $variantId)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) {
+            return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        }
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
+        $validator = Validator::make($request->all(), [
+            'size_name' => 'required|string|max:50',
+            'qty' => 'required|integer|min:0',
+            'price' => 'nullable|numeric|min:0',
+            'status' => 'nullable|in:Active,Inactive',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        $data = $validator->validated();
+        $size = new VariantSize();
+        $size->varient_id = $variant->id;
+        $size->size_name = trim($data['size_name']);
+        $size->qty = (int) $data['qty'];
+        $size->price = array_key_exists('price', $data) && $data['price'] !== null ? (float) $data['price'] : null;
+        $size->status = $request->input('status', 'Active');
+        $size->save();
+
+        $this->refreshProductAggregation($product);
+
+        return response()->json(['status' => true, 'message' => 'Size added', 'data' => ['size' => $size]], 201);
+    }
+
+    /** PUT /api/vendor/products/{id}/variants/{variantId}/sizes/{sizeId} */
+    public function updateSize(Request $request, $id, $variantId, $sizeId)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) {
+            return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        }
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
+        $size = VariantSize::where('varient_id', $variant->id)->findOrFail($sizeId);
+        $validator = Validator::make($request->all(), [
+            'size_name' => 'sometimes|string|max:50',
+            'qty' => 'sometimes|integer|min:0',
+            'price' => 'nullable|numeric|min:0',
+            'status' => 'sometimes|in:Active,Inactive',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        $data = $validator->validated();
+        if (array_key_exists('size_name', $data)) $size->size_name = trim($data['size_name']);
+        if (array_key_exists('qty', $data)) $size->qty = (int) $data['qty'];
+        if (array_key_exists('price', $data)) {
+            $size->price = $data['price'] !== null ? (float) $data['price'] : null;
+        }
+        if (array_key_exists('status', $data)) $size->status = $data['status'];
+        $size->save();
+
+        $this->refreshProductAggregation($product);
+
+        return response()->json(['status' => true, 'message' => 'Size updated', 'data' => ['size' => $size]]);
+    }
+
+    /** DELETE /api/vendor/products/{id}/variants/{variantId}/sizes/{sizeId} */
+    public function destroySize($id, $variantId, $sizeId)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) {
+            return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        }
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
+        $size = VariantSize::where('varient_id', $variant->id)->findOrFail($sizeId);
+        $size->delete();
+
+        $this->refreshProductAggregation($product);
+
+        return response()->json(['status' => true, 'message' => 'Size deleted']);
+    }
+
+    /** POST /api/vendor/products/{id}/variants/{variantId}/sizes/{sizeId}/bulk-prices */
+    public function storeSizeBulkPrice(Request $request, $id, $variantId, $sizeId)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
+        $size = VariantSize::where('varient_id', $variant->id)->findOrFail($sizeId);
+
+        $validator = Validator::make($request->all(), [
+            'min_qty' => 'required|integer|min:1',
+            'max_qty' => 'nullable|integer|min:1',
+            'bulk_price' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $bulk = new \App\Models\VariantSizeBulkPrice();
+        $bulk->variant_size_id = $size->id;
+        $bulk->min_qty = (int)$request->min_qty;
+        $bulk->max_qty = $request->max_qty ? (int)$request->max_qty : null;
+        $bulk->bulk_price = (float)$request->bulk_price;
+        $bulk->save();
+
+        $this->refreshProductAggregation($product);
+
+        return response()->json(['status' => true, 'message' => 'Bulk price added', 'data' => ['bulk_price' => $bulk]], 201);
+    }
+
+    /** DELETE /api/vendor/products/{id}/variants/{variantId}/sizes/{sizeId}/bulk-prices/{bulkId} */
+    public function destroySizeBulkPrice($id, $variantId, $sizeId, $bulkId)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        $variant = Varient::where('product_id', $product->id)->findOrFail($variantId);
+        $size = VariantSize::where('varient_id', $variant->id)->findOrFail($sizeId);
+        
+        $bulk = \App\Models\VariantSizeBulkPrice::where('variant_size_id', $size->id)->findOrFail($bulkId);
+        $bulk->delete();
+
+        $this->refreshProductAggregation($product);
+
+        return response()->json(['status' => true, 'message' => 'Bulk price deleted']);
     }
 
     /** GET /api/vendor/products/bulk-template - CSV template download */
@@ -692,5 +863,115 @@ class VendorProductController extends Controller
         $tier = ProductPriceTier::where('product_id', $product->id)->findOrFail($tierId);
         $tier->delete();
         return response()->json(['status' => true, 'message' => 'Price tier deleted']);
+    }
+
+    /** POST /api/vendor/products/{id}/refresh-aggregation */
+    public function refreshAggregation($id)
+    {
+        $vendor = $this->getVendor();
+        if (!$vendor) {
+            return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
+        }
+        $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+        
+        $this->refreshProductAggregation($product);
+        
+        return response()->json([
+            'status' => true, 
+            'message' => 'Product aggregation refreshed successfully',
+            'data' => [
+                'qty' => $product->qty,
+                'price' => $product->ProductResellerPrice
+            ]
+        ]);
+    }
+
+    private function refreshProductAggregation(Product $product)
+    {
+        $variants = $product->varients()->with(['sizes.bulkPrices'])->get();
+        if ($variants->isEmpty()) {
+            return;
+        }
+
+        $totalQty = 0;
+        $minPrice = null;
+        $firstSizePrice = null;
+
+        foreach ($variants as $index => $variant) {
+            // Determine first size price for the default card display
+            if ($index === 0) {
+                if ($variant->sizes->isEmpty()) {
+                    $vPrice = (float) ($variant->price ?: 0);
+                    if ($vPrice > 0) {
+                        $firstSizePrice = $vPrice;
+                    }
+                } else {
+                    $firstSize = $variant->sizes->first();
+                    if ($firstSize) {
+                        $sPrice = (float) ($firstSize->price ?: 0);
+                        $bP = 0;
+                        if ($firstSize->bulkPrices && $firstSize->bulkPrices->isNotEmpty()) {
+                            $bP = (float) ($firstSize->bulkPrices->first()->bulk_price ?: 0);
+                        }
+                        if ($sPrice > 0) {
+                            $firstSizePrice = $sPrice;
+                        } elseif ($bP > 0) {
+                            $firstSizePrice = $bP;
+                        }
+                    }
+                }
+            }
+
+            if ($variant->sizes->isEmpty()) {
+                $totalQty += (int) $variant->qty;
+                $vPrice = (float) ($variant->price ?: 0);
+                if ($vPrice > 0 && ($minPrice === null || $vPrice < $minPrice)) {
+                    $minPrice = $vPrice;
+                }
+            } else {
+                foreach ($variant->sizes as $size) {
+                    $totalQty += (int) $size->qty;
+
+                    // Get the best price for this size (base or bulk)
+                    $pricesToCompare = [];
+                    $sPrice = (float) ($size->price ?: 0);
+                    if ($sPrice > 0) {
+                        $pricesToCompare[] = $sPrice;
+                    }
+
+                    // Check bulk prices as well
+                    if ($size->bulkPrices && $size->bulkPrices->isNotEmpty()) {
+                        foreach ($size->bulkPrices as $bp) {
+                            $bpPrice = (float) ($bp->bulk_price ?: 0);
+                            if ($bpPrice > 0) {
+                                $pricesToCompare[] = $bpPrice;
+                            }
+                        }
+                    }
+
+                    if (!empty($pricesToCompare)) {
+                        $bestSizePrice = min($pricesToCompare);
+                        if ($minPrice === null || $bestSizePrice < $minPrice) {
+                            $minPrice = $bestSizePrice;
+                        }
+                    }
+                }
+            }
+        }
+
+        $product->qty = $totalQty;
+        if ($minPrice !== null && $minPrice > 0) {
+            $product->ProductResellerPrice = $minPrice;
+        }
+        
+        // Sync the first selectable price to ProductRegularPrice for the frontend cards
+        if ($firstSizePrice !== null && $firstSizePrice > 0) {
+            $product->ProductRegularPrice = $firstSizePrice;
+        } elseif ($minPrice !== null && $minPrice > 0) {
+            // Fallback to minPrice if first size price couldn't be determined
+            $product->ProductRegularPrice = $minPrice;
+        }
+
+        $product->save();
     }
 }

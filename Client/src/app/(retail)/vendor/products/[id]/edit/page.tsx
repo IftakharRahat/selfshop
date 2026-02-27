@@ -17,6 +17,11 @@ import {
 	useCreateVendorProductPriceTierMutation,
 	useDeleteVendorProductPriceTierMutation,
 	useGetVendorCategoryCommissionsQuery,
+	useCreateVendorProductVariantSizeMutation,
+	useUpdateVendorProductVariantSizeMutation,
+	useDeleteVendorProductVariantSizeMutation,
+	useCreateVendorProductVariantSizeBulkPriceMutation,
+	useDeleteVendorProductVariantSizeBulkPriceMutation,
 } from "@/redux/api/vendorApi";
 import {
 	useGetAllNavbarCategoryDropdownOptionsQuery,
@@ -64,8 +69,8 @@ export default function VendorEditProductPage() {
 		category_id: "",
 		subcategory_id: "",
 		brand_id: "",
-		allow_dropship: false as boolean,
 	});
+	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
 	const selectedCategoryCommission = f.category_id
 		? commissionRows.find((row) => row.category_id === Number(f.category_id))
 			?.commission_percent
@@ -77,20 +82,25 @@ export default function VendorEditProductPage() {
 	const { data: tiersData } = useGetVendorProductPriceTiersQuery(id, { skip: !id || isNaN(id) });
 	const [createVariant, { isLoading: addingVariant }] = useCreateVendorProductVariantMutation();
 	const [deleteVariant] = useDeleteVendorProductVariantMutation();
-	const [createTier, { isLoading: addingTier }] = useCreateVendorProductPriceTierMutation();
-	const [deleteTier] = useDeleteVendorProductPriceTierMutation();
+	const [createVariantSize] = useCreateVendorProductVariantSizeMutation();
+	const [updateVariantSize] = useUpdateVendorProductVariantSizeMutation();
+	const [deleteVariantSize] = useDeleteVendorProductVariantSizeMutation();
+	const [createBulkPrice] = useCreateVendorProductVariantSizeBulkPriceMutation();
+	const [deleteBulkPrice] = useDeleteVendorProductVariantSizeBulkPriceMutation();
+
 	const variants = variantsData?.data?.variants ?? [];
 	const priceTiers = tiersData?.data?.price_tiers ?? [];
-	// Unified Bulk Pricing Variant-Wise
-	const [newBulkRow, setNewBulkRow] = useState({
-		variant_title: "",
+
+	const [newVariant, setNewVariant] = useState({
+		title: "",
 		color_name: "",
-		color_code: "",
-		min_qty: "1",
-		max_qty: "",
-		price: "",
-		delivery_charge: "",
+		color_code: "#000000",
+		imageFile: undefined as File | undefined,
+		imagePreview: undefined as string | undefined,
 	});
+
+	// For inline add-size forms per variant
+	const [newSizeState, setNewSizeState] = useState<Record<number, { size_name: string; price: string; qty: string }>>({});
 
 	// Populate state once product arrives
 	useEffect(() => {
@@ -116,8 +126,15 @@ export default function VendorEditProductPage() {
 				category_id: String(p.category_id ?? ""),
 				subcategory_id: String(p.subcategory_id ?? ""),
 				brand_id: String(p.brand_id ?? ""),
-				allow_dropship: Boolean((p as { allow_dropship?: boolean }).allow_dropship),
 			});
+
+			const hasBulk = Boolean((p as { is_wholesale?: boolean | number }).is_wholesale);
+			const hasDropship = Boolean((p as { allow_dropship?: boolean | number }).allow_dropship);
+
+			if (hasBulk && hasDropship) setSellingType('both');
+			else if (hasDropship) setSellingType('dropshipping');
+			else setSellingType('wholesale');
+
 			setInitialized(true);
 		}
 	}, [product, initialized]);
@@ -141,66 +158,55 @@ export default function VendorEditProductPage() {
 			toast.error("Failed to delete");
 		}
 	};
-	const handleAddBulkRow = async () => {
-		if (!newBulkRow.price) {
-			toast.error("Price is required");
-			return;
-		}
-
+	const handleAddVariant = async () => {
+		if (!newVariant.color_name) return toast.error("Color name is required.");
 		try {
-			// 1. If title exists, ensure variant exists in 'varients' table (if new title)
-			if (newBulkRow.variant_title.trim()) {
-				const title = newBulkRow.variant_title.trim();
-				const colorName = newBulkRow.color_name.trim();
-				const colorCode = newBulkRow.color_code.trim().toLowerCase();
-				const exists = variants.some((v: any) =>
-					v.title === title &&
-					(v.color_name ?? "").toLowerCase() === colorName.toLowerCase() &&
-					(v.color_code ?? "").toLowerCase() === colorCode
-				);
-				if (!exists) {
-					await createVariant({
-						id,
-						title,
-						color_name: colorName || undefined,
-						color_code: colorCode || undefined,
-						qty: parseInt(newBulkRow.max_qty, 10) || 0,
-						price: parseFloat(newBulkRow.price) || 0,
-					}).unwrap();
-				}
-			}
+			const varFormData = new FormData();
+			const title = newVariant.title || newVariant.color_name || "Variant";
+			varFormData.append("title", title);
+			if (newVariant.color_name) varFormData.append("color_name", newVariant.color_name);
+			if (newVariant.color_code) varFormData.append("color_code", newVariant.color_code);
+			varFormData.append("qty", "0");
+			varFormData.append("price", "0");
+			if (newVariant.imageFile) varFormData.append("image", newVariant.imageFile);
 
-			// 2. Add to price tiers
-			await createTier({
-				id,
-				min_qty: parseInt(newBulkRow.min_qty, 10) || 0,
-				max_qty: parseInt(newBulkRow.max_qty, 10) || null,
-				unit_price: parseFloat(newBulkRow.price) || 0,
-				delivery_charge: newBulkRow.delivery_charge ? parseFloat(newBulkRow.delivery_charge) : null,
-				tier_label: newBulkRow.variant_title || "Bulk",
-				variant_title: newBulkRow.variant_title || null,
-			}).unwrap();
+			// Instead of manual fetch, try using the RTK mutation which handles tokens/headers
+			await createVariant({ id, body: varFormData }).unwrap();
 
-			toast.success("Bulk pricing added");
-			setNewBulkRow({
-				variant_title: "",
-				color_name: "",
-				color_code: "",
-				min_qty: (parseInt(newBulkRow.max_qty || newBulkRow.min_qty, 10) + 1).toString(),
-				max_qty: "",
-				price: "",
-				delivery_charge: ""
-			});
-		} catch {
-			toast.error("Failed to add bulk pricing");
+			toast.success("Variant added");
+			setNewVariant({ title: "", color_name: "", color_code: "#000000", imageFile: undefined, imagePreview: undefined });
+		} catch (err: any) {
+			console.error("Add variant error:", err);
+			const msg = err?.data?.message || err?.message || "Failed to add variant";
+			toast.error(msg);
 		}
 	};
-	const handleRemoveTier = async (tierId: number) => {
+
+	const handleAddSize = async (variantId: number) => {
+		const sz = newSizeState[variantId];
+		if (!sz || !sz.size_name.trim()) return toast.error("Size name required");
 		try {
-			await deleteTier({ id, tierId }).unwrap();
-			toast.success("Tier removed");
+			await createVariantSize({
+				id,
+				variantId,
+				size_name: sz.size_name.trim(),
+				qty: parseInt(sz.qty, 10) || 0,
+				price: sz.price ? parseFloat(sz.price) : null,
+				status: "Active"
+			}).unwrap();
+			toast.success("Size added");
+			setNewSizeState(prev => ({ ...prev, [variantId]: { size_name: "", price: "", qty: "0" } }));
 		} catch {
-			toast.error("Failed to delete");
+			toast.error("Failed to add size");
+		}
+	};
+
+	const handleRemoveSize = async (variantId: number, sizeId: number) => {
+		try {
+			await deleteVariantSize({ id, variantId, sizeId }).unwrap();
+			toast.success("Size removed");
+		} catch {
+			toast.error("Failed to delete size");
 		}
 	};
 
@@ -228,7 +234,8 @@ export default function VendorEditProductPage() {
 		if (f.unit) formData.append("unit", f.unit);
 		if (f.tags) formData.append("MetaKey", f.tags);
 		formData.append("Discount", f.discount || "0");
-		formData.append("allow_dropship", f.allow_dropship ? "1" : "0");
+		formData.append("selling_type", sellingType);
+		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
 		formData.append("_method", "PUT");
 
 		const form = e.currentTarget;
@@ -291,6 +298,61 @@ export default function VendorEditProductPage() {
 							{/* Basic info */}
 							<div className="space-y-3">
 								<h2 className="text-sm font-semibold text-gray-900">Basic information</h2>
+
+								<div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+									<label className={`flex items-center gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${sellingType === 'wholesale'
+										? 'border-green-500 bg-green-50 shadow-sm'
+										: 'border-gray-200 hover:border-gray-300 bg-white'
+										}`}>
+										<input
+											type="radio"
+											name="selling_type_radio"
+											value="wholesale"
+											checked={sellingType === 'wholesale'}
+											onChange={() => setSellingType('wholesale')}
+											className="w-4 h-4 accent-green-600"
+										/>
+										<div className="flex flex-col">
+											<span className="text-sm font-bold text-gray-900">🏭 Wholesale</span>
+											<span className="text-[10px] text-gray-500 leading-tight mt-0.5">Bulk pricing tiers</span>
+										</div>
+									</label>
+									<label className={`flex items-center gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${sellingType === 'dropshipping'
+										? 'border-blue-500 bg-blue-50 shadow-sm'
+										: 'border-gray-200 hover:border-gray-300 bg-white'
+										}`}>
+										<input
+											type="radio"
+											name="selling_type_radio"
+											value="dropshipping"
+											checked={sellingType === 'dropshipping'}
+											onChange={() => setSellingType('dropshipping')}
+											className="w-4 h-4 accent-blue-600"
+										/>
+										<div className="flex flex-col">
+											<span className="text-sm font-bold text-gray-900">🚀 Dropshipping</span>
+											<span className="text-[10px] text-gray-500 leading-tight mt-0.5">Single price & stock</span>
+										</div>
+									</label>
+									<label className={`flex items-center gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${sellingType === 'both'
+										? 'border-amber-500 bg-amber-50 shadow-sm'
+										: 'border-gray-200 hover:border-gray-300 bg-white'
+										}`}>
+										<input
+											type="radio"
+											name="selling_type_radio"
+											value="both"
+											checked={sellingType === 'both'}
+											onChange={() => setSellingType('both')}
+											className="w-4 h-4 accent-amber-600"
+										/>
+										<div className="flex flex-col">
+											<span className="text-sm font-bold text-gray-900">🔄 Both</span>
+											<span className="text-[10px] text-gray-500 leading-tight mt-0.5">Wholesale + Dropship</span>
+										</div>
+									</label>
+								</div>
+
 								<label className="flex flex-col text-sm font-medium text-gray-700">
 									Product name
 									<input required value={f.name} onChange={set("name")} className={inputCls} />
@@ -298,7 +360,7 @@ export default function VendorEditProductPage() {
 							</div>
 
 							{/* Price & stock */}
-							{f.allow_dropship && (
+							{(sellingType === 'dropshipping' || sellingType === 'both') && (
 								<div className="space-y-3">
 									<h2 className="text-sm font-semibold text-gray-900">Product price &amp; stock</h2>
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -506,146 +568,233 @@ export default function VendorEditProductPage() {
 									Gallery images (optional, replaces existing)
 									<input name="gallery_images" type="file" multiple accept="image/*" className="mt-1 block w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-900 file:text-white hover:file:bg-black" />
 								</label>
-								<label className="flex items-center gap-2 text-xs font-medium text-gray-700">
-									<input type="checkbox" checked={f.allow_dropship} onChange={set("allow_dropship")} className="rounded border-gray-300" />
-									Allow dropship
-								</label>
 							</div>
 						</div>
 					</div>
 
-					{/* Bulk Pricing Variant-Wise */}
+					{/* Product Variants (Colors & Sizes) */}
 					<div className="rounded-xl bg-indigo-50/30 p-4 sm:p-6 shadow-sm border border-indigo-100">
 						<h2 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
-							📦 Bulk Pricing Variant-Wise
+							🎨 Product Variants (Colors & Sizes)
 						</h2>
 						<p className="text-xs text-indigo-700 mb-4">
-							Quantity-based pricing. Variant is optional. Deleting a row removes that specific pricing rule.
+							Manage color variants and their available sizes.
 						</p>
-						<div className="overflow-x-auto">
-							<table className="min-w-full text-sm">
-								<thead>
-									<tr className="text-left text-gray-600 border-b border-gray-200">
-										<th className="py-2 pr-3 font-semibold w-[20%] text-indigo-900">Variant (Optional)</th>
-										<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Color Name</th>
-										<th className="py-2 pr-2 font-semibold w-[8%] text-indigo-900 text-center">Color</th>
-										<th className="py-2 pr-2 font-semibold w-[10%] text-indigo-900 text-center">Min Qty</th>
-										<th className="py-2 pr-2 font-semibold w-[10%] text-indigo-900 text-center">Max Qty</th>
-										<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Price</th>
-										<th className="py-2 pr-2 font-semibold w-[14%] text-indigo-900">Deliv. Charge</th>
-										<th className="py-2 w-[10%]"></th>
-									</tr>
-								</thead>
-								<tbody className="divide-y divide-gray-100">
-									{priceTiers.map((t: any) => (
-										<tr key={t.id} className="hover:bg-white/50 transition-colors">
-											<td className="py-3 pr-3 text-gray-700 italic">{t.variant_title || "Base Product"}</td>
-											<td className="py-3 pr-2 text-gray-700">
-												{variants.find((v: any) => v.title === t.variant_title)?.color_name || "-"}
-											</td>
-											<td className="py-3 pr-2 text-center">
-												{(() => {
-													const color = variants.find((v: any) => v.title === t.variant_title)?.color_code;
-													return color ? (
-														<span
-															className="inline-block h-5 w-5 rounded-full border border-gray-300"
-															style={{ backgroundColor: color }}
-															title={color}
+
+						{/* New Variant (Color) Form */}
+						<div className="bg-white p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
+							<div className="flex-1 min-w-[150px]">
+								<label className="block text-xs font-semibold text-gray-700 mb-1">Color Name *</label>
+								<input
+									placeholder="e.g. Red"
+									value={newVariant.color_name}
+									onChange={(e) => setNewVariant({ ...newVariant, color_name: e.target.value })}
+									className="w-full rounded-md border-gray-300 text-sm py-1.5 focus:ring-indigo-500 focus:border-indigo-500"
+								/>
+							</div>
+							<div className="w-[80px]">
+								<label className="block text-xs font-semibold text-gray-700 mb-1">Color Picker</label>
+								<input
+									type="color"
+									value={newVariant.color_code}
+									onChange={(e) => setNewVariant({ ...newVariant, color_code: e.target.value })}
+									className="h-8 w-full rounded-md border border-gray-300 p-0.5 cursor-pointer"
+								/>
+							</div>
+							<div className="flex-1 min-w-[200px]">
+								<label className="block text-xs font-semibold text-gray-700 mb-1">Variant Title (Optional)</label>
+								<input
+									placeholder="defaults to color name"
+									value={newVariant.title}
+									onChange={(e) => setNewVariant({ ...newVariant, title: e.target.value })}
+									className="w-full rounded-md border-gray-300 text-sm py-1.5 focus:ring-indigo-500 focus:border-indigo-500"
+								/>
+							</div>
+							<div className="flex-1 min-w-[180px]">
+								<label className="block text-xs font-semibold text-gray-700 mb-1">Color Image (Optional)</label>
+								<input
+									type="file"
+									accept="image/*"
+									onChange={(e) => {
+										const file = e.target.files?.[0];
+										if (file) {
+											setNewVariant({ ...newVariant, imageFile: file, imagePreview: URL.createObjectURL(file) });
+										}
+									}}
+									className="w-full text-xs text-gray-600 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700"
+								/>
+							</div>
+							<div>
+								<button
+									type="button"
+									onClick={handleAddVariant}
+									disabled={addingVariant}
+									className="h-8 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md transition-colors disabled:opacity-50"
+								>
+									{addingVariant ? 'Adding...' : 'Add Color'}
+								</button>
+							</div>
+						</div>
+
+						{/* Variants List */}
+						<div className="space-y-6">
+							{variants.map((v: any) => (
+								<div key={v.id} className="bg-white border border-gray-200 rounded-lg p-5 relative shadow-sm">
+									<button
+										type="button"
+										onClick={() => handleRemoveVariant(v.id)}
+										className="absolute top-4 right-4 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-md p-1.5 transition-colors"
+										title="Remove variant"
+									>
+										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+									</button>
+
+									<div className="flex gap-5 items-start pr-12">
+										<div className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0 flex items-center justify-center">
+											{v.image ? (
+												<img src={getImageUrl(v.image)} alt="Preview" className="w-full h-full object-cover" />
+											) : (
+												<div className="w-10 h-10 rounded-full border border-gray-300 shadow-inner" style={{ backgroundColor: v.color_code || '#fff' }} />
+											)}
+										</div>
+										<div className="flex-1">
+											<h3 className="text-lg font-bold text-gray-900 leading-tight">
+												{v.color_name || 'No Color Name'} <span className="text-sm font-normal text-gray-500 ml-2">({v.title})</span>
+											</h3>
+											<p className="text-xs text-gray-500 mb-4 mt-1">Manage sizes and bulk pricing tiers for this color.</p>
+
+											{/* Sizes Section */}
+											<div className="space-y-4">
+												{v.sizes && v.sizes.map((sz: any) => (
+													<div key={sz.id} className="bg-gray-50 border border-gray-100 rounded-lg p-3">
+														<div className="flex items-center gap-4 mb-3">
+															<div className="flex-1 grid grid-cols-3 gap-3">
+																<div>
+																	<label className="text-[10px] font-bold text-gray-500 uppercase">Size Name</label>
+																	<div className="font-semibold text-gray-800">{sz.size_name}</div>
+																</div>
+																<div>
+																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
+																	<div className="font-semibold text-indigo-600">৳{sz.price || 'Inherited'}</div>
+																</div>
+																<div>
+																	<label className="text-[10px] font-bold text-gray-500 uppercase">Qty</label>
+																	<div className="font-semibold text-gray-800">{sz.qty}</div>
+																</div>
+															</div>
+															<button
+																type="button"
+																onClick={() => handleRemoveSize(v.id, sz.id)}
+																className="text-red-500 hover:text-red-700 bg-white border border-red-100 p-1 rounded transition-colors"
+															>
+																<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+															</button>
+														</div>
+
+														{/* Bulk Tiers for this size */}
+														<div className="pl-4 border-l-2 border-indigo-100 space-y-2">
+															<h4 className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-1">Bulk Pricing Tiers</h4>
+															{sz.bulk_prices && sz.bulk_prices.map((bt: any) => (
+																<div key={bt.id} className="flex items-center gap-3 text-xs bg-white p-1.5 rounded border border-indigo-50">
+																	<span className="flex-1 font-medium">Qty: {bt.min_qty} - {bt.max_qty || '∞'}</span>
+																	<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																	<button
+																		type="button"
+																		onClick={async () => {
+																			try {
+																				await deleteBulkPrice({ id, variantId: v.id, sizeId: sz.id, bulkId: bt.id }).unwrap();
+																				toast.success("Tier removed");
+																			} catch { toast.error("Failed to remove tier"); }
+																		}}
+																		className="text-red-400 hover:text-red-600 transition-colors"
+																	>
+																		<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+																	</button>
+																</div>
+															))}
+															{/* Add Bulk Tier Inline */}
+															<div className="flex gap-2 items-end pt-1">
+																<div className="w-16">
+																	<input id={`bt_min_${sz.id}`} type="number" placeholder="Min" className="w-full text-[10px] p-1 border rounded" />
+																</div>
+																<div className="w-16">
+																	<input id={`bt_max_${sz.id}`} type="number" placeholder="Max" className="w-full text-[10px] p-1 border rounded" />
+																</div>
+																<div className="w-20">
+																	<input id={`bt_price_${sz.id}`} type="number" step="0.01" placeholder="Price" className="w-full text-[10px] p-1 border rounded" />
+																</div>
+																<button
+																	type="button"
+																	onClick={async () => {
+																		const minEl = document.getElementById(`bt_min_${sz.id}`) as HTMLInputElement;
+																		const maxEl = document.getElementById(`bt_max_${sz.id}`) as HTMLInputElement;
+																		const prEl = document.getElementById(`bt_price_${sz.id}`) as HTMLInputElement;
+																		if (!minEl.value || !prEl.value) return toast.error("Min qty and price required");
+																		try {
+																			await createBulkPrice({
+																				id, variantId: v.id, sizeId: sz.id,
+																				min_qty: parseInt(minEl.value, 10),
+																				max_qty: maxEl.value ? parseInt(maxEl.value, 10) : null,
+																				bulk_price: parseFloat(prEl.value)
+																			}).unwrap();
+																			toast.success("Tier added");
+																			minEl.value = ""; maxEl.value = ""; prEl.value = "";
+																		} catch { toast.error("Failed to add tier"); }
+																	}}
+																	className="bg-indigo-600 text-white text-[10px] px-2 py-1 rounded font-bold uppercase hover:bg-indigo-700 transition-colors"
+																>
+																	Add Tier
+																</button>
+															</div>
+														</div>
+													</div>
+												))}
+
+												{/* Add Size Form (Inline) */}
+												<div className="flex gap-3 items-end bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 mt-4">
+													<div className="flex-1">
+														<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Size Name</label>
+														<input
+															type="text" placeholder="e.g. S, 40, Free"
+															value={newSizeState[v.id]?.size_name || ""}
+															onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { price: "", qty: "0" }), size_name: e.target.value } }))}
+															className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
 														/>
-													) : (
-														<span className="text-gray-400">-</span>
-													);
-												})()}
-											</td>
-											<td className="py-3 pr-2 text-center font-medium text-gray-900">{t.min_qty}</td>
-											<td className="py-3 pr-2 text-center font-medium text-gray-900">{t.max_qty || "∞"}</td>
-											<td className="py-3 pr-2 font-bold text-gray-900">৳{t.unit_price}</td>
-											<td className="py-3 pr-2 text-gray-600">{t.delivery_charge ? `৳${t.delivery_charge}` : "Default"}</td>
-											<td className="py-3 text-right">
-												<button
-													type="button"
-													onClick={() => handleRemoveTier(t.id)}
-													className="text-xs text-red-600 hover:text-red-800 font-medium underline"
-												>
-													Remove
-												</button>
-											</td>
-										</tr>
-									))}
-									<tr className="bg-white/70">
-										<td className="py-3 pr-3">
-											<input
-												placeholder="e.g. Red / S"
-												value={newBulkRow.variant_title}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, variant_title: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												placeholder="e.g. Red"
-												value={newBulkRow.color_name}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, color_name: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="color"
-												value={newBulkRow.color_code || "#000000"}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, color_code: e.target.value }))}
-												className="h-9 w-full rounded-lg border border-gray-300 p-1"
-												title="Pick variant color"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={1}
-												value={newBulkRow.min_qty}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, min_qty: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={1}
-												placeholder="Max"
-												value={newBulkRow.max_qty}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, max_qty: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-2 py-2 text-xs text-center focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={0}
-												placeholder="Price"
-												value={newBulkRow.price}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, price: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3 pr-2">
-											<input
-												type="number" min={0}
-												placeholder="Optional"
-												value={newBulkRow.delivery_charge}
-												onChange={(e) => setNewBulkRow(p => ({ ...p, delivery_charge: e.target.value }))}
-												className="w-full rounded-lg border-gray-300 px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500"
-											/>
-										</td>
-										<td className="py-3">
-											<button
-												type="button"
-												disabled={addingTier}
-												onClick={handleAddBulkRow}
-												className="w-full rounded-lg bg-indigo-600 text-white px-3 py-2 text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50"
-											>
-												+ Add
-											</button>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+													</div>
+													<div className="w-24">
+														<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Price</label>
+														<input
+															type="number" step="0.01" placeholder="Price"
+															value={newSizeState[v.id]?.price || ""}
+															onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { size_name: "", qty: "0" }), price: e.target.value } }))}
+															className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
+														/>
+													</div>
+													<div className="w-20">
+														<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Qty</label>
+														<input
+															type="number" placeholder="Qty"
+															value={newSizeState[v.id]?.qty || "0"}
+															onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { size_name: "", price: "" }), qty: e.target.value } }))}
+															className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
+														/>
+													</div>
+													<button
+														type="button"
+														onClick={() => handleAddSize(v.id)}
+														className="bg-indigo-600 text-white h-[32px] px-4 rounded font-bold text-xs uppercase hover:bg-indigo-700 transition-all shadow-sm"
+													>
+														Add Size
+													</button>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							))}
+							{variants.length === 0 && (
+								<p className="text-sm text-gray-500 text-center py-4 bg-white rounded border border-gray-100">No variants defined yet.</p>
+							)}
 						</div>
 					</div>
 
@@ -658,9 +807,9 @@ export default function VendorEditProductPage() {
 							{saving ? "Saving..." : "Save changes"}
 						</button>
 					</div>
-				</form >
-			</div >
-		</WithVendorAuth >
+				</form>
+			</div>
+		</WithVendorAuth>
 	);
 }
 
