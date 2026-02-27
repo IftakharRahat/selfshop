@@ -115,6 +115,12 @@ RUN cat > /app/start.sh <<'EOF'
 #!/bin/bash
 set -e
 
+echo "Clearing old caches..."
+php artisan config:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
+php artisan cache:clear || true
+
 echo "Running database migrations..."
 php artisan migrate --force
 
