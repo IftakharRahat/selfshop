@@ -13,6 +13,10 @@ class AddShopIdToProductsTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasColumn('products', 'shop_id')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
             $table->unsignedBigInteger('shop_id')->nullable()->after('brand_id');
         });
