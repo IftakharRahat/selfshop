@@ -1406,14 +1406,22 @@ class OrderController extends Controller
                 foreach ($orderProducts as $op) {
                     $product = Product::find($op->product_id);
                     if ($product) {
-                        $user->notify(new AdminBroadcastNotification(
-                            'Rate Your Product',
-                            'Your order has been delivered! Please rate "' . $product->ProductName . '".',
-                            $product->ViewProductImage ?? null,
-                            '/product/' . $product->ProductSlug,
-                            'all_user',
-                            ['type' => 'review_prompt', 'product_id' => $product->id, 'order_id' => $order->id]
-                        ));
+                        try {
+                            $user->notify(new AdminBroadcastNotification(
+                                'Rate Your Product',
+                                'Your order has been delivered! Please rate "' . $product->ProductName . '".',
+                                $product->ViewProductImage ?? null,
+                                '/product/' . $product->ProductSlug,
+                                'all_user',
+                                ['type' => 'review_prompt', 'product_id' => $product->id, 'order_id' => $order->id]
+                            ));
+                        } catch (\Throwable $e) {
+                            \Log::warning('OrderController: Failed to send review notification', [
+                                'order_id' => $order->id,
+                                'product_id' => $product->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                 }
 

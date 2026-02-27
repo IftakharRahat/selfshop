@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\VendorPanelNotification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class VendorAdminNotificationService
 {
@@ -26,27 +27,41 @@ class VendorAdminNotificationService
             return;
         }
 
-        $vendor->user->notify(new VendorPanelNotification(
-            $title,
-            $message,
-            $type,
-            $this->enrichMeta($meta),
-            $actionUrl
-        ));
+        try {
+            $vendor->user->notify(new VendorPanelNotification(
+                $title,
+                $message,
+                $type,
+                $this->enrichMeta($meta),
+                $actionUrl
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('VendorAdminNotificationService: Failed to store DB notification', [
+                'vendor_id' => $vendor->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
-        $this->oneSignalPushService->sendToPanelUser(
-            'supplier',
-            (int) $vendor->user->id,
-            $title,
-            $message,
-            $actionUrl,
-            [
-                'type' => $type,
-                'audience_type' => 'supplier',
-                'meta' => $this->enrichMeta($meta),
-                'action_url' => $actionUrl,
-            ]
-        );
+        try {
+            $this->oneSignalPushService->sendToPanelUser(
+                'supplier',
+                (int) $vendor->user->id,
+                $title,
+                $message,
+                $actionUrl,
+                [
+                    'type' => $type,
+                    'audience_type' => 'supplier',
+                    'meta' => $this->enrichMeta($meta),
+                    'action_url' => $actionUrl,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('VendorAdminNotificationService: Failed to send push notification', [
+                'vendor_id' => $vendor->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function notifyVendorById(
@@ -62,27 +77,41 @@ class VendorAdminNotificationService
             return;
         }
 
-        $vendor->user->notify(new VendorPanelNotification(
-            $title,
-            $message,
-            $type,
-            $this->enrichMeta($meta),
-            $actionUrl
-        ));
+        try {
+            $vendor->user->notify(new VendorPanelNotification(
+                $title,
+                $message,
+                $type,
+                $this->enrichMeta($meta),
+                $actionUrl
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('VendorAdminNotificationService: Failed to store DB notification', [
+                'vendor_id' => $vendorId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
-        $this->oneSignalPushService->sendToPanelUser(
-            'supplier',
-            (int) $vendor->user->id,
-            $title,
-            $message,
-            $actionUrl,
-            [
-                'type' => $type,
-                'audience_type' => 'supplier',
-                'meta' => $this->enrichMeta($meta),
-                'action_url' => $actionUrl,
-            ]
-        );
+        try {
+            $this->oneSignalPushService->sendToPanelUser(
+                'supplier',
+                (int) $vendor->user->id,
+                $title,
+                $message,
+                $actionUrl,
+                [
+                    'type' => $type,
+                    'audience_type' => 'supplier',
+                    'meta' => $this->enrichMeta($meta),
+                    'action_url' => $actionUrl,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('VendorAdminNotificationService: Failed to send push notification', [
+                'vendor_id' => $vendorId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function notifyAllVendors(
@@ -98,28 +127,41 @@ class VendorAdminNotificationService
         }
 
         foreach ($users as $user) {
-            $user->notify(new VendorPanelNotification(
-                $title,
-                $message,
-                $type,
-                $this->enrichMeta($meta),
-                $actionUrl
-            ));
+            try {
+                $user->notify(new VendorPanelNotification(
+                    $title,
+                    $message,
+                    $type,
+                    $this->enrichMeta($meta),
+                    $actionUrl
+                ));
+            } catch (\Throwable $e) {
+                Log::warning('VendorAdminNotificationService: Failed to store DB notification for user', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
-        $this->oneSignalPushService->sendToPanelUsers(
-            'supplier',
-            $users->pluck('id')->all(),
-            $title,
-            $message,
-            $actionUrl,
-            [
-                'type' => $type,
-                'audience_type' => 'supplier',
-                'meta' => $this->enrichMeta($meta),
-                'action_url' => $actionUrl,
-            ]
-        );
+        try {
+            $this->oneSignalPushService->sendToPanelUsers(
+                'supplier',
+                $users->pluck('id')->all(),
+                $title,
+                $message,
+                $actionUrl,
+                [
+                    'type' => $type,
+                    'audience_type' => 'supplier',
+                    'meta' => $this->enrichMeta($meta),
+                    'action_url' => $actionUrl,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('VendorAdminNotificationService: Failed to send push notifications', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function enrichMeta(array $meta): array
