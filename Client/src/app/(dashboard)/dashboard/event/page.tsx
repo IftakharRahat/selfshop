@@ -444,8 +444,11 @@ export default function DashboardEventPage() {
 	const [claimSalesTargetReward, { isLoading: isClaiming }] =
 		useClaimSalesTargetRewardMutation();
 
+
 	const payload = (data?.data ?? null) as DashboardPayload | null;
 	const allTargets = payload?.active_sales_targets ?? [];
+
+	console.log(payload)
 
 	const participating = allTargets.filter((i) => i.participation?.joined);
 	const available = allTargets.filter((i) => !i.participation?.joined);
@@ -457,9 +460,11 @@ export default function DashboardEventPage() {
 		try {
 			setParticipatingId(targetId);
 			const res = (await participateSalesTarget(targetId).unwrap()) as { message?: string };
+			console.log(res)
 			toast.success(res?.message || "Challenge participation successful.");
 			refetch();
 		} catch (error: unknown) {
+			console.log(error)
 			toast.error(getApiErrorMessage(error, "Could not join challenge."));
 		} finally {
 			setParticipatingId(null);
