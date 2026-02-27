@@ -194,14 +194,40 @@ class AdminNotificationController extends Controller
             $sentCount = 0;
 
             if ($targetType === '1') {
-                $sentCount = $this->storeDatabaseNotificationsForAllUsers(
-                    $validated['title'],
-                    $validated['message'],
-                    $validated['image_url'] ?? null,
-                    $validated['link'] ?? null,
-                    $audienceType,
-                    $meta
-                );
+                $title = $validated['title'];
+                $message = $validated['message'];
+                $imageUrl = $validated['image_url'] ?? null;
+                $link = $validated['link'] ?? null;
+
+                app()->terminating(function () use ($title, $message, $imageUrl, $link, $audienceType, $meta, $startedAt) {
+                    try {
+                        $asyncSentCount = $this->storeDatabaseNotificationsForAllUsers(
+                            $title,
+                            $message,
+                            $imageUrl,
+                            $link,
+                            $audienceType,
+                            $meta
+                        );
+
+                        Log::info('Admin notification sent', [
+                            'target_type' => $audienceType,
+                            'sent_count' => $asyncSentCount,
+                            'mode' => 'after_response',
+                            'duration_ms' => (int) ((microtime(true) - $startedAt) * 1000),
+                        ]);
+                    } catch (\Throwable $exception) {
+                        Log::error('AdminNotificationController@send async all-user failed', [
+                            'error' => $exception->getMessage(),
+                            'file' => $exception->getFile(),
+                            'line' => $exception->getLine(),
+                        ]);
+                    }
+                });
+
+                return redirect()
+                    ->route('admin.notifications.index')
+                    ->with('message', 'All-user notification queued and is being processed in background.');
 
             } elseif ($targetType === '2') {
                 $recipientUserIds = collect($validated['user_ids'] ?? [])
@@ -381,13 +407,38 @@ LEFT JOIN vendors ON vendors.user_id = users.id
 WHERE vendors.id IS NULL
 SQL;
 
-        return (int) DB::affectingStatement($insertSql, [
-            AdminBroadcastNotification::class,
-            User::class,
-            $encodedPayload,
-            $timestamp,
-            $timestamp,
-        ]);
+        try {
+            return (int) DB::affectingStatement($insertSql, [
+                AdminBroadcastNotification::class,
+                User::class,
+                $encodedPayload,
+                $timestamp,
+                $timestamp,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('All-user bulk insert-select failed, falling back to chunked inserts', [
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        $sentCount = 0;
+        User::query()
+            ->whereDoesntHave('vendor')
+            ->select('id')
+            ->orderBy('id')
+            ->chunkById(1000, function ($users) use (&$sentCount, $title, $message, $imageUrl, $actionUrl, $audienceType, $meta) {
+                $sentCount += $this->storeDatabaseNotificationsForUsers(
+                    $users->pluck('id')->all(),
+                    $title,
+                    $message,
+                    $imageUrl,
+                    $actionUrl,
+                    $audienceType,
+                    $meta
+                );
+            });
+
+        return $sentCount;
     }
 
 }
