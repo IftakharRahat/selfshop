@@ -100,6 +100,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('/crm/users', [CrmDashboardController::class, 'users'])->name('admin.crm.users');
     Route::get('/crm/suppliers', [CrmDashboardController::class, 'suppliers'])->name('admin.crm.suppliers');
     Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
+    Route::get('/notifications/send', function () {
+        return redirect()->route('admin.notifications.index');
+    });
     Route::post('/notifications/send', [AdminNotificationController::class, 'send'])->name('admin.notifications.send');
     Route::get('/notifications/search-users', [AdminNotificationController::class, 'searchUsers'])->name('admin.notifications.search-users');
     Route::get('/notifications/search-suppliers', [AdminNotificationController::class, 'searchSuppliers'])->name('admin.notifications.search-suppliers');
