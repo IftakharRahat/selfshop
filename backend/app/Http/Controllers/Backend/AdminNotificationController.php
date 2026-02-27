@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class AdminNotificationController extends Controller
 {
@@ -136,29 +137,33 @@ class AdminNotificationController extends Controller
      */
     public function send(Request $request)
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:190'],
-            'message' => ['required', 'string', 'max:2000'],
-            'image_url' => ['nullable', 'string', 'max:2048'],
-            'link' => ['nullable', 'string', 'max:2048'],
-            'target_type' => ['required', 'in:1,2,3'],
-            'user_ids' => ['required_if:target_type,2', 'array', 'min:1'],
-            'user_ids.*' => ['integer', 'exists:users,id'],
-            'supplier_ids' => ['required_if:target_type,3', 'array', 'min:1'],
-            'supplier_ids.*' => ['integer', 'exists:vendors,id'],
-        ]);
-
-        // Ensure the notifications table exists before attempting to write
-        if (!Schema::hasTable('notifications')) {
-            Log::error('AdminNotificationController@send: notifications table does not exist. Run: php artisan migrate');
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Notifications table not found. Please run database migrations first.');
-        }
-
         try {
+            if (function_exists('set_time_limit')) {
+                @set_time_limit(120);
+            }
+
+            $validated = $request->validate([
+                'title' => ['required', 'string', 'max:190'],
+                'message' => ['required', 'string', 'max:2000'],
+                'image_url' => ['nullable', 'string', 'max:2048'],
+                'link' => ['nullable', 'string', 'max:2048'],
+                'target_type' => ['required', 'in:1,2,3'],
+                'user_ids' => ['required_if:target_type,2', 'array', 'min:1'],
+                'user_ids.*' => ['integer', 'exists:users,id'],
+                'supplier_ids' => ['required_if:target_type,3', 'array', 'min:1'],
+                'supplier_ids.*' => ['integer', 'exists:vendors,id'],
+            ]);
+
+            // Ensure the notifications table exists before attempting to write
+            if (!Schema::hasTable('notifications')) {
+                Log::error('AdminNotificationController@send: notifications table does not exist. Run: php artisan migrate');
+
+                return redirect()
+                    ->back()
+                    ->withInput()
+                    ->with('error', 'Notifications table not found. Please run database migrations first.');
+            }
+
             $admin = Auth::guard('admin')->user();
             $targetType = (string) $validated['target_type'];
             $audienceType = $this->mapTargetType($targetType);
@@ -290,7 +295,8 @@ class AdminNotificationController extends Controller
             return redirect()
                 ->route('admin.notifications.index')
                 ->with('message', 'Notification sent successfully to ' . number_format($sentCount) . ' recipient(s).');
-
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             Log::error('AdminNotificationController@send failed', [
                 'error' => $e->getMessage(),
