@@ -25,7 +25,6 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import VendorNotificationCenter from "@/components/vendor/VendorNotificationCenter";
-import OneSignalInitializer from "@/components/shared/notifications/OneSignalInitializer";
 import { useGetVendorProfileQuery } from "@/redux/api/vendorApi";
 import { logout } from "@/redux/features/auth/authSlice";
 import Swal from "sweetalert2";
@@ -124,11 +123,6 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 		!shouldLoadVendorProfile ||
 		(!isVendorProfileLoading && !isVendorProfileFetching);
 	const notificationDisabled = isAuthPage || !token || !hasVendorProfile;
-	const vendorUserId = (
-		vendorProfileResponse?.data as
-		| { user?: { id?: number | string | null } }
-		| undefined
-	)?.user?.id;
 
 	useEffect(() => {
 		if (isAuthPage) return;
@@ -271,12 +265,6 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<div className="min-h-screen bg-gray-50 flex">
-			<OneSignalInitializer
-				panel="supplier"
-				userId={vendorUserId ?? null}
-				enabled={!isAuthPage && Boolean(token) && Boolean(vendorUserId)}
-			/>
-
 			{!isAuthPage && (
 				<aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
 					<div className="h-14 flex items-center px-5 border-b border-gray-200">

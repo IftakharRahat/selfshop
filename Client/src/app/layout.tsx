@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
-import Script from "next/script";
 import { Toaster } from "sonner";
 import MyContextProvider from "@/lib/MyContextProvider";
 import SessionProviderForNextAuth from "@/nextAuth/SessionProviderForNextAuth";
@@ -30,13 +29,6 @@ export default function RootLayout({
 				suppressHydrationWarning={true}
 				className={`${poppins.variable} antialiased font-poppins`}
 			>
-				<Script id="onesignal-deferred" strategy="afterInteractive">
-					{`window.OneSignalDeferred = window.OneSignalDeferred || [];`}
-				</Script>
-				<Script
-					src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-					strategy="afterInteractive"
-				/>
 				<MyContextProvider>
 					<SessionProviderForNextAuth>
 						<ReduxStoreProvider>
