@@ -10,10 +10,6 @@ use Illuminate\Support\Facades\Log;
 
 class VendorAdminNotificationService
 {
-    public function __construct(
-        protected OneSignalPushService $oneSignalPushService
-    ) {}
-
     public function notifyVendor(
         Vendor $vendor,
         string $title,
@@ -42,26 +38,6 @@ class VendorAdminNotificationService
             ]);
         }
 
-        try {
-            $this->oneSignalPushService->sendToPanelUser(
-                'supplier',
-                (int) $vendor->user->id,
-                $title,
-                $message,
-                $actionUrl,
-                [
-                    'type' => $type,
-                    'audience_type' => 'supplier',
-                    'meta' => $this->enrichMeta($meta),
-                    'action_url' => $actionUrl,
-                ]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('VendorAdminNotificationService: Failed to send push notification', [
-                'vendor_id' => $vendor->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     public function notifyVendorById(
@@ -92,26 +68,6 @@ class VendorAdminNotificationService
             ]);
         }
 
-        try {
-            $this->oneSignalPushService->sendToPanelUser(
-                'supplier',
-                (int) $vendor->user->id,
-                $title,
-                $message,
-                $actionUrl,
-                [
-                    'type' => $type,
-                    'audience_type' => 'supplier',
-                    'meta' => $this->enrichMeta($meta),
-                    'action_url' => $actionUrl,
-                ]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('VendorAdminNotificationService: Failed to send push notification', [
-                'vendor_id' => $vendorId,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     public function notifyAllVendors(
@@ -143,25 +99,6 @@ class VendorAdminNotificationService
             }
         }
 
-        try {
-            $this->oneSignalPushService->sendToPanelUsers(
-                'supplier',
-                $users->pluck('id')->all(),
-                $title,
-                $message,
-                $actionUrl,
-                [
-                    'type' => $type,
-                    'audience_type' => 'supplier',
-                    'meta' => $this->enrichMeta($meta),
-                    'action_url' => $actionUrl,
-                ]
-            );
-        } catch (\Throwable $e) {
-            Log::warning('VendorAdminNotificationService: Failed to send push notifications', [
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     private function enrichMeta(array $meta): array

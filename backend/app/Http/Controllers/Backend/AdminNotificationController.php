@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\AdminBroadcastNotification;
-use App\Services\OneSignalPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +16,6 @@ use Illuminate\Validation\ValidationException;
 
 class AdminNotificationController extends Controller
 {
-    public function __construct(
-        protected OneSignalPushService $oneSignalPushService
-    ) {}
-
     /**
      * Notification compose page.
      */
@@ -180,14 +175,6 @@ class AdminNotificationController extends Controller
             ];
             $startedAt = microtime(true);
 
-            $pushData = array_filter([
-                'type' => 'admin_broadcast',
-                'audience_type' => $audienceType,
-                'image_url' => $validated['image_url'] ?? null,
-                'action_url' => $validated['link'] ?? null,
-                'meta' => $meta,
-            ], fn($value) => $value !== null);
-
             $sendNotificationBatch = function ($users) use ($validated, $audienceType, $meta) {
                 if ($users->isEmpty()) {
                     return 0;
@@ -216,17 +203,6 @@ class AdminNotificationController extends Controller
                     $meta
                 );
 
-                if ($sentCount > 0) {
-                    $this->dispatchPushAfterResponse(function () use ($validated, $pushData) {
-                        $this->oneSignalPushService->sendToPanel(
-                            'user',
-                            $validated['title'],
-                            $validated['message'],
-                            $validated['link'] ?? null,
-                            $pushData
-                        );
-                    });
-                }
             } elseif ($targetType === '2') {
                 $recipientUserIds = collect($validated['user_ids'] ?? [])
                     ->map(fn($id) => (int) $id)
@@ -243,18 +219,6 @@ class AdminNotificationController extends Controller
                         $sentCount += $sendNotificationBatch($users);
                     });
 
-                if ($sentCount > 0) {
-                    $this->dispatchPushAfterResponse(function () use ($recipientUserIds, $validated, $pushData) {
-                        $this->oneSignalPushService->sendToPanelUsers(
-                            'user',
-                            $recipientUserIds->all(),
-                            $validated['title'],
-                            $validated['message'],
-                            $validated['link'] ?? null,
-                            $pushData
-                        );
-                    });
-                }
             } else {
                 $supplierIds = collect($validated['supplier_ids'] ?? [])
                     ->map(fn($id) => (int) $id)
@@ -281,18 +245,6 @@ class AdminNotificationController extends Controller
                         });
                 }
 
-                if ($sentCount > 0) {
-                    $this->dispatchPushAfterResponse(function () use ($recipientUserIds, $validated, $pushData) {
-                        $this->oneSignalPushService->sendToPanelUsers(
-                            'supplier',
-                            $recipientUserIds->all(),
-                            $validated['title'],
-                            $validated['message'],
-                            $validated['link'] ?? null,
-                            $pushData
-                        );
-                    });
-                }
             }
 
             if ($sentCount < 1) {
@@ -438,16 +390,4 @@ SQL;
         ]);
     }
 
-    private function dispatchPushAfterResponse(callable $callback): void
-    {
-        app()->terminating(function () use ($callback) {
-            try {
-                $callback();
-            } catch (\Throwable $exception) {
-                Log::warning('Deferred OneSignal push failed', [
-                    'error' => $exception->getMessage(),
-                ]);
-            }
-        });
-    }
 }
