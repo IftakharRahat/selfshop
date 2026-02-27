@@ -8,10 +8,11 @@ use App\Models\Vendor;
 use App\Notifications\AdminBroadcastNotification;
 use App\Services\OneSignalPushService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AdminNotificationController extends Controller
@@ -173,6 +174,7 @@ class AdminNotificationController extends Controller
                 'admin_name' => $admin?->name,
                 'target_type' => $audienceType,
             ];
+            $startedAt = microtime(true);
 
             $pushData = array_filter([
                 'type' => 'admin_broadcast',
@@ -184,38 +186,40 @@ class AdminNotificationController extends Controller
 
             $sendNotificationBatch = function ($users) use ($validated, $audienceType, $meta) {
                 if ($users->isEmpty()) {
-                    return;
+                    return 0;
                 }
 
-                Notification::send($users, new AdminBroadcastNotification(
+                return $this->storeDatabaseNotificationsForUsers(
+                    $users->pluck('id')->all(),
                     $validated['title'],
                     $validated['message'],
                     $validated['image_url'] ?? null,
                     $validated['link'] ?? null,
                     $audienceType,
                     $meta
-                ));
+                );
             };
 
             $sentCount = 0;
 
             if ($targetType === '1') {
-                $sentCount = User::query()->whereDoesntHave('vendor')->count();
                 User::query()
                     ->whereDoesntHave('vendor')
                     ->select('id')
                     ->orderBy('id')
-                    ->chunkById(300, function ($users) use ($sendNotificationBatch) {
-                        $sendNotificationBatch($users);
+                    ->chunkById(300, function ($users) use ($sendNotificationBatch, &$sentCount) {
+                        $sentCount += $sendNotificationBatch($users);
                     });
 
-                $this->oneSignalPushService->sendToPanel(
-                    'user',
-                    $validated['title'],
-                    $validated['message'],
-                    $validated['link'] ?? null,
-                    $pushData
-                );
+                if ($sentCount > 0) {
+                    $this->oneSignalPushService->sendToPanel(
+                        'user',
+                        $validated['title'],
+                        $validated['message'],
+                        $validated['link'] ?? null,
+                        $pushData
+                    );
+                }
             } elseif ($targetType === '2') {
                 $recipientUserIds = collect($validated['user_ids'] ?? [])
                     ->map(fn($id) => (int) $id)
@@ -223,21 +227,16 @@ class AdminNotificationController extends Controller
                     ->unique()
                     ->values();
 
-                $sentCount = User::query()
+                User::query()
                     ->whereDoesntHave('vendor')
                     ->whereIn('id', $recipientUserIds)
-                    ->count();
+                    ->select('id')
+                    ->orderBy('id')
+                    ->chunkById(300, function ($users) use ($sendNotificationBatch, &$sentCount) {
+                        $sentCount += $sendNotificationBatch($users);
+                    });
 
                 if ($sentCount > 0) {
-                    User::query()
-                        ->whereDoesntHave('vendor')
-                        ->whereIn('id', $recipientUserIds)
-                        ->select('id')
-                        ->orderBy('id')
-                        ->chunkById(300, function ($users) use ($sendNotificationBatch) {
-                            $sendNotificationBatch($users);
-                        });
-
                     $this->oneSignalPushService->sendToPanelUsers(
                         'user',
                         $recipientUserIds->all(),
@@ -263,17 +262,17 @@ class AdminNotificationController extends Controller
                     ->unique()
                     ->values();
 
-                $sentCount = $recipientUserIds->count();
-
-                if ($sentCount > 0) {
+                if ($recipientUserIds->isNotEmpty()) {
                     User::query()
                         ->whereIn('id', $recipientUserIds)
                         ->select('id')
                         ->orderBy('id')
-                        ->chunkById(300, function ($users) use ($sendNotificationBatch) {
-                            $sendNotificationBatch($users);
+                        ->chunkById(300, function ($users) use ($sendNotificationBatch, &$sentCount) {
+                            $sentCount += $sendNotificationBatch($users);
                         });
+                }
 
+                if ($sentCount > 0) {
                     $this->oneSignalPushService->sendToPanelUsers(
                         'supplier',
                         $recipientUserIds->all(),
@@ -291,6 +290,12 @@ class AdminNotificationController extends Controller
                     ->withInput()
                     ->with('error', 'No valid recipients found for this notification.');
             }
+
+            Log::info('Admin notification sent', [
+                'target_type' => $audienceType,
+                'sent_count' => $sentCount,
+                'duration_ms' => (int) ((microtime(true) - $startedAt) * 1000),
+            ]);
 
             return redirect()
                 ->route('admin.notifications.index')
@@ -320,5 +325,61 @@ class AdminNotificationController extends Controller
             '3' => 'supplier',
             default => 'all_user',
         };
+    }
+
+    private function storeDatabaseNotificationsForUsers(
+        array $userIds,
+        string $title,
+        string $message,
+        ?string $imageUrl = null,
+        ?string $actionUrl = null,
+        string $audienceType = 'all_user',
+        array $meta = []
+    ): int {
+        $normalizedUserIds = collect($userIds)
+            ->map(fn($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($normalizedUserIds->isEmpty()) {
+            return 0;
+        }
+
+        $timestamp = now();
+        $payload = [
+            'title' => $title,
+            'message' => $message,
+            'type' => 'admin_broadcast',
+            'image_url' => $imageUrl,
+            'action_url' => $actionUrl,
+            'link' => $actionUrl,
+            'audience_type' => $audienceType,
+            'meta' => $meta,
+            'created_at' => $timestamp->toIso8601String(),
+        ];
+
+        $encodedPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if (!is_string($encodedPayload)) {
+            throw new \RuntimeException('Failed to encode notification payload.');
+        }
+
+        $rows = $normalizedUserIds->map(function (int $userId) use ($encodedPayload, $timestamp) {
+            return [
+                'id' => (string) Str::uuid(),
+                'type' => AdminBroadcastNotification::class,
+                'notifiable_type' => User::class,
+                'notifiable_id' => $userId,
+                'data' => $encodedPayload,
+                'read_at' => null,
+                'created_at' => $timestamp,
+                'updated_at' => $timestamp,
+            ];
+        })->all();
+
+        DB::table('notifications')->insert($rows);
+
+        return $normalizedUserIds->count();
     }
 }
