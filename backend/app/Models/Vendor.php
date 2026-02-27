@@ -27,6 +27,7 @@ class Vendor extends Model
         'address_line_2',
         'pickup_location_label',
         'status',
+        'approval_type',
         'is_verified_badge',
         'verified_badge_at',
         'verified_badge_by',
@@ -43,6 +44,38 @@ class Vendor extends Model
         'rejected_at' => 'datetime',
         'suspended_at' => 'datetime',
     ];
+
+    /**
+     * Generate the masked supplier ID for privately approved vendors.
+     */
+    public function getPrivateIdAttribute(): string
+    {
+        return 'SS-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Return company_name for public vendors, masked ID for private vendors.
+     */
+    public function getPublicNameAttribute(): string
+    {
+        if ($this->approval_type === 'private') {
+            return $this->private_id;
+        }
+
+        return $this->company_name ?? '';
+    }
+
+    /**
+     * Return slug for public vendors, masked slug for private vendors.
+     */
+    public function getPublicSlugAttribute(): string
+    {
+        if ($this->approval_type === 'private') {
+            return strtolower($this->private_id);
+        }
+
+        return $this->slug ?? '';
+    }
 
     public function user()
     {

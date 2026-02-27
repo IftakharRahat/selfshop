@@ -99,6 +99,7 @@ class VendorController extends Controller
             'city' => ['nullable', 'string', 'max:100'],
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'suspended'])],
+            'approval_type' => ['nullable', Rule::in(['public', 'private'])],
             'is_verified_badge' => ['nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'user_status' => ['nullable', Rule::in(['Active', 'Inactive', 'Block'])],
@@ -114,6 +115,9 @@ class VendorController extends Controller
         $vendor->city = $validated['city'] ?? null;
         $vendor->address_line_1 = $validated['address_line_1'] ?? null;
         $vendor->status = $validated['status'];
+        if ($validated['status'] === 'approved' && isset($validated['approval_type'])) {
+            $vendor->approval_type = $validated['approval_type'];
+        }
         $vendor->is_verified_badge = $request->boolean('is_verified_badge');
         $vendor->notes = $validated['notes'] ?? null;
 
@@ -168,9 +172,10 @@ class VendorController extends Controller
      * Approve a vendor and activate its user account.
      * POST /admin/vendors/{vendor}/approve
      */
-    public function approve(Vendor $vendor)
+    public function approve(Request $request, Vendor $vendor)
     {
         $vendor->status = 'approved';
+        $vendor->approval_type = $request->input('approval_type', 'public');
         $vendor->approved_at = now();
         $vendor->rejected_at = null;
         $vendor->save();

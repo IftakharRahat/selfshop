@@ -715,7 +715,7 @@ a {
 .admin-content-card .dataTables_wrapper {
     padding: 0;
     position: relative;
-    overflow: hidden;
+    overflow-x: auto;
 }
 
 .admin-content-card .dataTables_length,
