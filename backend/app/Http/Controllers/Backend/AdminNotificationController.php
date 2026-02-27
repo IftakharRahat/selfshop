@@ -139,6 +139,10 @@ class AdminNotificationController extends Controller
     public function send(Request $request)
     {
         try {
+            Log::info('AdminNotificationController@send start', [
+                'target_type' => $request->input('target_type'),
+            ]);
+
             if (function_exists('set_time_limit')) {
                 @set_time_limit(120);
             }
@@ -213,13 +217,15 @@ class AdminNotificationController extends Controller
                 );
 
                 if ($sentCount > 0) {
-                    $this->oneSignalPushService->sendToPanel(
-                        'user',
-                        $validated['title'],
-                        $validated['message'],
-                        $validated['link'] ?? null,
-                        $pushData
-                    );
+                    $this->dispatchPushAfterResponse(function () use ($validated, $pushData) {
+                        $this->oneSignalPushService->sendToPanel(
+                            'user',
+                            $validated['title'],
+                            $validated['message'],
+                            $validated['link'] ?? null,
+                            $pushData
+                        );
+                    });
                 }
             } elseif ($targetType === '2') {
                 $recipientUserIds = collect($validated['user_ids'] ?? [])
@@ -238,14 +244,16 @@ class AdminNotificationController extends Controller
                     });
 
                 if ($sentCount > 0) {
-                    $this->oneSignalPushService->sendToPanelUsers(
-                        'user',
-                        $recipientUserIds->all(),
-                        $validated['title'],
-                        $validated['message'],
-                        $validated['link'] ?? null,
-                        $pushData
-                    );
+                    $this->dispatchPushAfterResponse(function () use ($recipientUserIds, $validated, $pushData) {
+                        $this->oneSignalPushService->sendToPanelUsers(
+                            'user',
+                            $recipientUserIds->all(),
+                            $validated['title'],
+                            $validated['message'],
+                            $validated['link'] ?? null,
+                            $pushData
+                        );
+                    });
                 }
             } else {
                 $supplierIds = collect($validated['supplier_ids'] ?? [])
@@ -274,14 +282,16 @@ class AdminNotificationController extends Controller
                 }
 
                 if ($sentCount > 0) {
-                    $this->oneSignalPushService->sendToPanelUsers(
-                        'supplier',
-                        $recipientUserIds->all(),
-                        $validated['title'],
-                        $validated['message'],
-                        $validated['link'] ?? null,
-                        $pushData
-                    );
+                    $this->dispatchPushAfterResponse(function () use ($recipientUserIds, $validated, $pushData) {
+                        $this->oneSignalPushService->sendToPanelUsers(
+                            'supplier',
+                            $recipientUserIds->all(),
+                            $validated['title'],
+                            $validated['message'],
+                            $validated['link'] ?? null,
+                            $pushData
+                        );
+                    });
                 }
             }
 
@@ -426,5 +436,18 @@ SQL;
             $timestamp,
             $timestamp,
         ]);
+    }
+
+    private function dispatchPushAfterResponse(callable $callback): void
+    {
+        app()->terminating(function () use ($callback) {
+            try {
+                $callback();
+            } catch (\Throwable $exception) {
+                Log::warning('Deferred OneSignal push failed', [
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        });
     }
 }
