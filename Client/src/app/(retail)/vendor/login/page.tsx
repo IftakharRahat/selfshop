@@ -41,9 +41,11 @@ const VendorLoginPage = () => {
 
 			toast.success("Logged in successfully");
 			router.replace("/vendor");
-		} catch (error) {
-			console.error(error);
-			toast.error("Login failed");
+		} catch (error: any) {
+			console.error("Login Error details:", JSON.stringify(error, null, 2));
+			const errorMessage =
+				error?.data?.message || error?.error || error?.message || "Login failed";
+			toast.error(errorMessage);
 		}
 	};
 

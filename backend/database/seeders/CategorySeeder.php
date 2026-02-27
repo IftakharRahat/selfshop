@@ -78,6 +78,7 @@ class CategorySeeder extends Seeder
 
                 foreach ($subcatData['minicategories'] as $miniName) {
                     Minicategory::create([
+                        'category_id' => $category->id,
                         'subcategory_id' => $subcategory->id,
                         'mini_category_name' => $miniName,
                         'status' => 'Active',

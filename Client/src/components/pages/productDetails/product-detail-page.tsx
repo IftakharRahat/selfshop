@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { BadgeCheck, ChevronRight, Minus, Plus } from "lucide-react";
+import { BadgeCheck, ChevronRight, Minus, Plus, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -80,8 +80,8 @@ function DesktopTabs({
 				<button
 					onClick={() => setActiveTab("description")}
 					className={`px-6 py-3 text-sm font-semibold transition-colors relative cursor-pointer ${activeTab === "description"
-							? "text-pink-600"
-							: "text-gray-500 hover:text-gray-700"
+						? "text-pink-600"
+						: "text-gray-500 hover:text-gray-700"
 						}`}
 				>
 					Description
@@ -92,8 +92,8 @@ function DesktopTabs({
 				<button
 					onClick={() => setActiveTab("reviews")}
 					className={`px-6 py-3 text-sm font-semibold transition-colors relative cursor-pointer ${activeTab === "reviews"
-							? "text-pink-600"
-							: "text-gray-500 hover:text-gray-700"
+						? "text-pink-600"
+						: "text-gray-500 hover:text-gray-700"
 						}`}
 				>
 					Reviews
@@ -137,13 +137,18 @@ export default function ProductDetailPage({ product }: any) {
 		sku: product.ProductSku,
 		minimumPrice: parseFloat(product.min_sell_price),
 		currentPrice: parseFloat(product.ProductResellerPrice),
-		sizes: JSON.parse(product.size || "[]"),
 		description: product.ProductDetails,
 		images: {
 			main: images,
 			thumbnails: images,
 		},
+		sizes: Array.isArray(product.size)
+			? product.size
+			: typeof product.size === "string"
+				? JSON.parse(product.size)
+				: [],
 		varients: product.varients || [],
+		priceTiers: product.price_tiers || [], // Ensure we have product-level tiers
 		vendor: product.vendor
 			? {
 				companyName: product.vendor.company_name || "",
@@ -153,16 +158,11 @@ export default function ProductDetailPage({ product }: any) {
 			}
 			: null,
 	};
-	const sellingPriceSchema = z
-		.number({ required_error: "Selling price is required" })
-		.min(
-			productData.minimumPrice,
-			`Price must be at least ${productData.minimumPrice} taka.`,
-		);
 
 	// ---- UI States ----
 	const variants: any[] = productData.varients || [];
 	const [activeVariantIdx, setActiveVariantIdx] = useState(0);
+	const [activeSizeIdx, setActiveSizeIdx] = useState(0); // New: tracks currently "highlighted" size within active variant
 	// Per-variant per-size quantities: { [variantId]: { [size]: qty } }
 	const [variantQuantities, setVariantQuantities] = useState<Record<number, Record<string, number>>>({});
 	const [sellingPrice, setSellingPrice] = useState("");
@@ -193,21 +193,67 @@ export default function ProductDetailPage({ product }: any) {
 
 	const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
+	// Helper: get unit price for a specific size based on its own bulk tiers OR product tiers
+	const getSizePrice = (sizeItem: any, qty: number) => {
+		// 1. Check size-level bulk tiers if any (normalize camelCase/snake_case)
+		const tiers = sizeItem.bulkPrices || sizeItem.bulk_prices || [];
+		if (tiers && tiers.length > 0) {
+			const tier = tiers
+				.slice()
+				.sort((a: any, b: any) => b.min_qty - a.min_qty)
+				.find((t: any) => qty >= t.min_qty);
+			if (tier) return parseFloat(tier.bulk_price || tier.unit_price);
+		}
+
+		// 2. Check size-level base price if any
+		if (sizeItem.price !== null && sizeItem.price !== undefined) {
+			const sPrice = parseFloat(sizeItem.price);
+			if (sPrice > 0) return sPrice;
+		}
+
+		// 3. Fallback to product-level tiers based on total quantity
+		if (productData.priceTiers && productData.priceTiers.length > 0) {
+			const tier = productData.priceTiers
+				.slice()
+				.sort((a: any, b: any) => b.min_qty - a.min_qty)
+				.find((t: any) => totalQuantity >= t.min_qty);
+			if (tier) return parseFloat(tier.unit_price);
+		}
+
+		// 4. Final fallback to product-level current price
+		return productData.currentPrice;
+	};
+
 	// Determine selling type
 	const sellingType: 'wholesale' | 'dropshipping' | 'both' = product.selling_type || 'both';
-	const hasTiers = product.price_tiers && product.price_tiers.length > 0;
-	const showWholesale = (sellingType === 'wholesale' || sellingType === 'both') && hasTiers;
+	const hasProductTiers = productData.priceTiers && productData.priceTiers.length > 0;
+	const showWholesale = (sellingType === 'wholesale' || sellingType === 'both') && hasProductTiers;
 	const showDropshipping = sellingType === 'dropshipping' || sellingType === 'both';
 
-	// Auto-select active pricing tier based on total quantity
-	const activeTier = hasTiers
-		? product.price_tiers
+	// For display consistency in main section, we'll show the "current" effective unit price based on total qty
+	const activeTier = hasProductTiers
+		? productData.priceTiers
 			.slice()
 			.sort((a: any, b: any) => b.min_qty - a.min_qty)
-			.find((t: any) => totalQuantity >= t.min_qty) ?? product.price_tiers[0]
+			.find((t: any) => totalQuantity >= t.min_qty) ?? productData.priceTiers[0]
 		: null;
 	const activeTierId = activeTier?.id ?? null;
-	const effectiveUnitPrice = activeTier ? parseFloat(activeTier.unit_price) : productData.currentPrice;
+	const firstSizePrice = (() => {
+		const fv = variants[0];
+		if (!fv) return productData.currentPrice;
+		const fs = fv.sizes?.[0];
+		if (!fs) return fv.price || productData.currentPrice;
+		return (fs.price > 0) ? fs.price : (fs.bulkPrices?.[0]?.bulk_price || fs.bulk_prices?.[0]?.bulk_price || productData.currentPrice);
+	})();
+
+	const effectiveUnitPrice = activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice);
+
+	const sellingPriceSchema = z
+		.number({ required_error: "Selling price is required" })
+		.min(
+			effectiveUnitPrice,
+			`Price must be at least ৳${effectiveUnitPrice.toFixed(2)}.`,
+		);
 
 
 
@@ -231,8 +277,10 @@ export default function ProductDetailPage({ product }: any) {
 			});
 			return;
 		}
-		const validPrice = showDropshipping ? validateSellingPrice() : effectiveUnitPrice;
-		if (!validPrice) return;
+
+		if (showDropshipping && !validateSellingPrice()) {
+			return;
+		}
 
 		const items = getSelectedItems();
 		if (items.length === 0) {
@@ -241,11 +289,15 @@ export default function ProductDetailPage({ product }: any) {
 		}
 
 		for (const item of items) {
+			const itemPrice = showDropshipping && sellingPrice ? parseFloat(sellingPrice) : item.price;
 			const formData = new FormData();
 			formData.append("product_id", product.id);
-			formData.append("price", validPrice.toString());
+			formData.append("price", itemPrice.toString());
 			formData.append("qty", item.qty.toString());
-			formData.append("size", item.size);
+			formData.append("size", item.size); // The size name
+			if (item.variantId) {
+				formData.append("varient_id", item.variantId.toString());
+			}
 			if (item.variantTitle) {
 				formData.append("color", item.variantTitle);
 			}
@@ -265,8 +317,10 @@ export default function ProductDetailPage({ product }: any) {
 			});
 			return;
 		}
-		const validPrice = showDropshipping ? validateSellingPrice() : effectiveUnitPrice;
-		if (!validPrice) return;
+
+		if (showDropshipping && !validateSellingPrice()) {
+			return;
+		}
 
 		const items = getSelectedItems();
 		if (items.length === 0) {
@@ -276,11 +330,15 @@ export default function ProductDetailPage({ product }: any) {
 
 		let lastResult: any;
 		for (const item of items) {
+			const itemPrice = showDropshipping && sellingPrice ? parseFloat(sellingPrice) : item.price;
 			const formData = new FormData();
 			formData.append("product_id", product.id);
-			formData.append("price", validPrice.toString());
+			formData.append("price", itemPrice.toString());
 			formData.append("qty", item.qty.toString());
-			formData.append("size", item.size);
+			formData.append("size", item.size); // The size name
+			if (item.variantId) {
+				formData.append("varient_id", item.variantId.toString());
+			}
 			if (item.variantTitle) {
 				formData.append("color", item.variantTitle);
 			}
@@ -308,13 +366,22 @@ export default function ProductDetailPage({ product }: any) {
 
 	// Helper: get items that have non-zero quantity for cart submission
 	const getSelectedItems = () => {
-		const items: { variantId: number; variantTitle: string; size: string; qty: number }[] = [];
+		const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number }[] = [];
 		for (const [vid, sizes] of Object.entries(variantQuantities)) {
 			const v = variants.find((vr: any) => vr.id === Number(vid));
-			for (const [size, qty] of Object.entries(sizes)) {
+			for (const [sizeName, qty] of Object.entries(sizes)) {
 				if (qty > 0) {
 					const variantLabel = v?.color_name || v?.title || "";
-					items.push({ variantId: Number(vid), variantTitle: variantLabel, size, qty });
+					// Find the actual size object for price calculation
+					const sizeItem = v?.sizes?.find((s: any) => s.size_name === sizeName);
+					const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : effectiveUnitPrice;
+					items.push({
+						variantId: Number(vid),
+						variantTitle: variantLabel,
+						size: sizeName,
+						qty,
+						price: itemPrice
+					});
 				}
 			}
 		}
@@ -486,7 +553,14 @@ export default function ProductDetailPage({ product }: any) {
 							<div className="flex items-center">
 								<span className="font-medium text-gray-900">Quantity :</span>
 								<span className="ml-2 text-gray-600">
-									{productData.quantity}
+									{(() => {
+										const currentVariant = variants[activeVariantIdx];
+										if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+											const selectedSize = currentVariant.sizes[activeSizeIdx];
+											return selectedSize?.qty ?? 0;
+										}
+										return currentVariant?.qty ?? productData.quantity;
+									})()}
 								</span>
 							</div>
 							<div className="flex items-center">
@@ -499,7 +573,17 @@ export default function ProductDetailPage({ product }: any) {
 								</span>
 								<span className="ml-2 text-gray-600 flex items-center">
 									<TbCurrencyTaka size={20} />
-									{productData.minimumPrice.toFixed(2)}
+									{(() => {
+										const currentVariant = variants[activeVariantIdx];
+										if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+											const selectedSize = currentVariant.sizes[activeSizeIdx];
+											if (selectedSize) {
+												// Use the same price helper we used for the table
+												return getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0).toFixed(2);
+											}
+										}
+										return productData.minimumPrice.toFixed(2);
+									})()}
 								</span>
 							</div>
 						</div>
@@ -569,7 +653,10 @@ export default function ProductDetailPage({ product }: any) {
 											return (
 												<button
 													key={v.id}
-													onClick={() => setActiveVariantIdx(idx)}
+													onClick={() => {
+														setActiveVariantIdx(idx);
+														setActiveSizeIdx(0);
+													}}
 													className={`relative flex flex-col items-center p-1 rounded-md transition min-w-[52px] ${isActive
 														? "ring-2 ring-pink-500 bg-white"
 														: "hover:ring-1 hover:ring-gray-300"
@@ -581,7 +668,15 @@ export default function ProductDetailPage({ product }: any) {
 													>
 														{selectedVarQty}
 													</span>
-													{productData.images.main[idx] ? (
+													{v.image ? (
+														<Image
+															src={getImageUrl(v.image) || "/placeholder.svg"}
+															alt={v.title || `Variant ${idx + 1}`}
+															width={40}
+															height={40}
+															className="w-10 h-10 rounded object-cover"
+														/>
+													) : productData.images.main[idx] ? (
 														<Image
 															src={getImageUrl(productData.images.main[idx]) || "/placeholder.svg"}
 															alt={v.title || `Variant ${idx + 1}`}
@@ -601,8 +696,8 @@ export default function ProductDetailPage({ product }: any) {
 															title={v.color_name || colorCode}
 														/>
 													)}
-													<span className="mt-1 text-[10px] leading-none text-gray-500">
-														Stock {variantStock}
+													<span className="mt-1 text-[10px] leading-none text-gray-500 font-semibold text-center mt-1">
+														{v.price ? `৳${v.price}` : <span className="text-gray-400 italic">No override</span>}
 													</span>
 												</button>
 											);
@@ -615,8 +710,27 @@ export default function ProductDetailPage({ product }: any) {
 							{(() => {
 								const currentVariant = variants[activeVariantIdx];
 								const currentVarId = currentVariant?.id ?? 0;
-								const currentStock = currentVariant?.qty ?? productData.quantity;
-								const sizesForTable = productData.sizes.length > 0 ? productData.sizes : ['Default'];
+
+								// First priority: read sizes from explicitly attached variant sizes if available
+								let sizesForTable: Array<{ size_name: string, price: string | null, qty: number, bulk_prices: any[] }> = [];
+								if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+									sizesForTable = currentVariant.sizes.map((sz: any) => ({
+										size_name: sz.size_name,
+										price: sz.price,
+										qty: sz.qty,
+										bulk_prices: sz.bulkPrices || sz.bulk_prices || [] // Normalizing
+									}));
+								} else {
+									// Fallback: Use product-level sizes with variant stock OR product stock
+									const overrideStock = currentVariant ? currentVariant.qty : productData.quantity;
+									const legacySizes = productData.sizes && productData.sizes.length > 0 ? productData.sizes : ['Default'];
+									sizesForTable = legacySizes.map((s: string) => ({
+										size_name: s,
+										price: null,
+										qty: overrideStock,
+										bulk_prices: []
+									}));
+								}
 
 								return (
 									<div className="space-y-3">
@@ -627,17 +741,34 @@ export default function ProductDetailPage({ product }: any) {
 												<div className="text-center">Stock</div>
 												<div className="text-right">Quantity</div>
 											</div>
-											{sizesForTable.map((size: string) => {
+											{sizesForTable.map((sz, szIdx) => {
+												const size = sz.size_name;
 												const qty = variantQuantities[currentVarId]?.[size] || 0;
+												const displayPrice = getSizePrice(sz, qty);
+												const isSelected = activeSizeIdx === szIdx;
 												return (
-													<div key={size} className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-100 items-center">
+													<div
+														key={size}
+														onClick={() => setActiveSizeIdx(szIdx)}
+														className={cn(
+															"grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-100 items-center cursor-pointer transition-colors",
+															isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50"
+														)}
+													>
 														<div className="font-medium text-gray-900 text-sm">{size}</div>
-														<div className="text-gray-700 flex items-center text-sm">
-															<TbCurrencyTaka size={14} />
-															{effectiveUnitPrice.toFixed(2)}
+														<div className="text-gray-700 flex items-center text-sm gap-1">
+															<div className="flex items-center">
+																<TbCurrencyTaka size={14} />
+																{displayPrice.toFixed(2)}
+															</div>
+															{sz.bulk_prices?.length > 0 && (
+																<span className="text-[9px] bg-green-100 text-green-700 px-1 rounded font-bold uppercase leading-tight">
+																	Bulk
+																</span>
+															)}
 														</div>
-														<div className="text-gray-600 text-sm text-center">{currentStock}</div>
-														<div className="flex items-center justify-end gap-1">
+														<div className="text-gray-600 text-sm text-center">{sz.qty}</div>
+														<div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
 															<button
 																onClick={() => handleQtyChange(currentVarId, size, "decrease")}
 																className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
@@ -663,15 +794,21 @@ export default function ProductDetailPage({ product }: any) {
 												);
 											})}
 											{/* Total Row */}
-											<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
-												<div className="text-gray-900">Total</div>
-												<div className="text-pink-600 flex items-center">
-													<TbCurrencyTaka size={16} />
-													{(effectiveUnitPrice * totalQuantity).toFixed(2)}
-												</div>
-												<div></div>
-												<div className="text-right text-gray-700">{totalQuantity} pcs</div>
-											</div>
+											{(() => {
+												const selectedItems = getSelectedItems();
+												const totalPrice = selectedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+												return (
+													<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
+														<div className="text-gray-900">Total</div>
+														<div className="text-pink-600 flex items-center">
+															<TbCurrencyTaka size={16} />
+															{totalPrice.toFixed(2)}
+														</div>
+														<div></div>
+														<div className="text-right text-gray-700">{totalQuantity} pcs</div>
+													</div>
+												);
+											})()}
 										</div>
 									</div>
 								);
@@ -680,22 +817,55 @@ export default function ProductDetailPage({ product }: any) {
 
 
 						{/* Unit Price + Total Price */}
-						<div className="space-y-1">
-							<div className="text-3xl font-bold text-gray-900 flex items-center">
-								<TbCurrencyTaka size={35} />
-								{effectiveUnitPrice.toFixed(2)}
-								<span className="text-sm font-normal text-gray-500 ml-1">/pc</span>
-							</div>
-							{totalQuantity > 0 && (
-								<div className="flex items-center gap-2 text-sm">
-									<span className="text-gray-500">Total ({totalQuantity} pcs):</span>
-									<span className="font-bold text-lg text-pink-600 flex items-center">
-										<TbCurrencyTaka size={20} />
-										{(effectiveUnitPrice * totalQuantity).toFixed(2)}
-									</span>
+						{(() => {
+							const currentVariant = variants[activeVariantIdx];
+							const selectedSize = currentVariant?.sizes?.[activeSizeIdx];
+							const unitPrice = selectedSize
+								? getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0)
+								: effectiveUnitPrice;
+
+							const selectedItems = getSelectedItems();
+							const totalPrice = selectedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+							// Size specific bulk tiers
+							const sizeBulkPrices = selectedSize?.bulkPrices || selectedSize?.bulk_prices || [];
+
+							return (
+								<div className="space-y-4">
+									<div className="space-y-1">
+										<div className="text-3xl font-bold text-gray-900 flex items-center">
+											<TbCurrencyTaka size={35} />
+											{unitPrice.toFixed(2)}
+											<span className="text-sm font-normal text-gray-500 ml-1">/pc</span>
+										</div>
+										{totalQuantity > 0 && (
+											<div className="flex items-center gap-2 text-sm">
+												<span className="text-gray-500">Total ({totalQuantity} pcs):</span>
+												<span className="font-bold text-lg text-pink-600 flex items-center">
+													<TbCurrencyTaka size={20} />
+													{totalPrice.toFixed(2)}
+												</span>
+											</div>
+										)}
+									</div>
+
+									{sizeBulkPrices.length > 0 && (
+										<div className="p-3 bg-pink-50/50 border border-pink-100 rounded-xl space-y-2">
+											<h4 className="text-xs font-bold text-pink-700 uppercase tracking-tight flex items-center gap-1.5">
+												<Tag className="w-3 h-3" /> Bulk Discounts for size {selectedSize.size_name}
+											</h4>
+											<div className="flex flex-wrap gap-2">
+												{sizeBulkPrices.map((tier: any, tIdx: number) => (
+													<div key={tIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-pink-200 text-[11px] text-pink-600 font-semibold shadow-sm">
+														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">৳{Number(tier.bulk_price || tier.unit_price).toFixed(2)}</span>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
 								</div>
-							)}
-						</div>
+							);
+						})()}
 
 						{/* Dropshipping: Selling Price + Earnings */}
 						{showDropshipping && (
@@ -705,7 +875,10 @@ export default function ProductDetailPage({ product }: any) {
 									type="number"
 									placeholder="Enter your selling price"
 									value={sellingPrice}
-									onChange={(e) => setSellingPrice(e.target.value)}
+									onChange={(e) => {
+										setSellingPrice(e.target.value);
+										if (priceError) setPriceError(null);
+									}}
 									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
 								/>
 								{priceError && (

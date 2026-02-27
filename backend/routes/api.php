@@ -216,10 +216,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/products/{id}', [VendorProductController::class, 'update'])->name('api.vendor.products.update.post'); // POST for file uploads (PHP does not populate $_FILES for PUT)
         Route::put('/products/{id}/status', [VendorProductController::class, 'updateStatus'])->name('api.vendor.products.status');
         Route::put('/products/{id}/stock-status', [VendorProductController::class, 'updateStockStatus'])->name('api.vendor.products.stock-status');
+        Route::post('/products/{id}/refresh-aggregation', [VendorProductController::class, 'refreshAggregation'])->name('api.vendor.products.refresh-aggregation');
         Route::get('/products/{id}/variants', [VendorProductController::class, 'variants'])->name('api.vendor.products.variants');
         Route::post('/products/{id}/variants', [VendorProductController::class, 'storeVariant'])->name('api.vendor.products.variants.store');
         Route::put('/products/{id}/variants/{variantId}', [VendorProductController::class, 'updateVariant'])->name('api.vendor.products.variants.update');
         Route::delete('/products/{id}/variants/{variantId}', [VendorProductController::class, 'destroyVariant'])->name('api.vendor.products.variants.destroy');
+        Route::get('/products/{id}/variants/{variantId}/sizes', [VendorProductController::class, 'sizes'])->name('api.vendor.products.variants.sizes');
+        Route::post('/products/{id}/variants/{variantId}/sizes', [VendorProductController::class, 'storeSize'])->name('api.vendor.products.variants.sizes.store');
+        Route::put('/products/{id}/variants/{variantId}/sizes/{sizeId}', [VendorProductController::class, 'updateSize'])->name('api.vendor.products.variants.sizes.update');
+        Route::delete('/products/{id}/variants/{variantId}/sizes/{sizeId}', [VendorProductController::class, 'destroySize'])->name('api.vendor.products.variants.sizes.destroy');
+        Route::post('/products/{id}/variants/{variantId}/sizes/{sizeId}/bulk-prices', [VendorProductController::class, 'storeSizeBulkPrice'])->name('api.vendor.products.variants.sizes.bulk-prices.store');
+        Route::delete('/products/{id}/variants/{variantId}/sizes/{sizeId}/bulk-prices/{bulkId}', [VendorProductController::class, 'destroySizeBulkPrice'])->name('api.vendor.products.variants.sizes.bulk-prices.destroy');
         Route::get('/products/{id}/price-tiers', [VendorProductController::class, 'priceTiers'])->name('api.vendor.products.price-tiers');
         Route::post('/products/{id}/price-tiers', [VendorProductController::class, 'storePriceTier'])->name('api.vendor.products.price-tiers.store');
         Route::put('/products/{id}/price-tiers/{tierId}', [VendorProductController::class, 'updatePriceTier'])->name('api.vendor.products.price-tiers.update');
