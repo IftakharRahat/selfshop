@@ -52,7 +52,7 @@
                                         </td>
                                         <td>{{ $target->order_scope === 'delivered' ? 'Delivered' : 'Non Canceled' }}</td>
                                         <td>
-                                            <span class="badge bg-info text-dark">{{ ucfirst($target->reward_type) }}</span>
+                                            <span class="badge bg-info text-white">{{ ucfirst($target->reward_type) }}</span>
                                             @if($target->reward_value !== null)
                                                 <div class="small">TK {{ number_format($target->reward_value, 2) }}</div>
                                             @endif

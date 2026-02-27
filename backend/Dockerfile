@@ -61,7 +61,23 @@ server {
 
     client_max_body_size 100M;
 
+    # CORS headers
+    add_header Access-Control-Allow-Origin * always;
+    add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS" always;
+    add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin" always;
+    add_header Access-Control-Allow-Credentials "true" always;
+
     location / {
+        # Handle preflight OPTIONS requests
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+            add_header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin";
+            add_header Access-Control-Max-Age 3600;
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
         try_files $uri $uri/ /index.php?$query_string;
     }
 
@@ -120,6 +136,12 @@ php artisan migrate --force
 
 echo "Seeding flash sale data..."
 php artisan db:seed --class=FlashSaleSeeder --force || true
+
+echo "Clearing old caches..."
+php artisan config:clear || true
+php artisan route:clear || true
+php artisan view:clear || true
+php artisan cache:clear || true
 
 echo "Caching configuration..."
 php artisan config:cache || true
