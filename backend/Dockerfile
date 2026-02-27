@@ -132,6 +132,14 @@ php artisan config:cache || true
 php artisan route:cache || true
 php artisan view:cache || true
 
+echo "Fixing runtime permissions..."
+mkdir -p /app/storage/logs /app/storage/framework/cache /app/storage/framework/sessions /app/storage/framework/views /app/bootstrap/cache
+touch /app/storage/logs/laravel.log
+chown -R www-data:www-data /app/storage /app/bootstrap/cache
+find /app/storage -type d -exec chmod 775 {} \;
+find /app/storage -type f -exec chmod 664 {} \;
+chmod -R 775 /app/bootstrap/cache || true
+
 echo "Starting services..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/app.conf
 EOF
