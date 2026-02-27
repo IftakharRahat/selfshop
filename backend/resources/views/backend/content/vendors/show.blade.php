@@ -102,17 +102,53 @@
                 </div>
                 <div class="admin-card-body">
                     <a href="{{ route('admin.vendors.edit', $vendor->id) }}" class="btn btn-sm btn-primary w-100 mb-2">Edit supplier account</a>
+
+                    {{-- Show current approval type --}}
+                    @if($vendor->status === 'approved' && $vendor->approval_type)
+                        <p class="small mb-2">
+                            Approval type:
+                            @if($vendor->approval_type === 'private')
+                                <span class="badge bg-secondary">🔒 Private ({{ $vendor->private_id }})</span>
+                            @else
+                                <span class="badge bg-info">🌐 Public</span>
+                            @endif
+                        </p>
+                    @endif
+
                     @if($vendor->status === 'pending')
-                        <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="mb-2">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-success w-100">Approve supplier</button>
-                        </form>
+                        <div class="d-flex gap-2 mb-2">
+                            <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="flex-fill">
+                                @csrf
+                                <input type="hidden" name="approval_type" value="public">
+                                <button type="submit" class="btn btn-sm btn-success w-100">🌐 Approve (Public)</button>
+                            </form>
+                            <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="flex-fill">
+                                @csrf
+                                <input type="hidden" name="approval_type" value="private">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">🔒 Approve (Private)</button>
+                            </form>
+                        </div>
                         <form action="{{ route('admin.vendors.reject', $vendor->id) }}" method="post">
                             @csrf
                             <input type="text" name="reason" placeholder="Reason (optional)" class="form-control form-control-sm mb-2">
                             <button type="submit" class="btn btn-sm btn-danger w-100">Reject supplier</button>
                         </form>
                     @elseif($vendor->status === 'approved')
+                        {{-- Toggle approval type --}}
+                        @if($vendor->approval_type === 'private')
+                            <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="mb-2">
+                                @csrf
+                                <input type="hidden" name="approval_type" value="public">
+                                <button type="submit" class="btn btn-sm btn-outline-info w-100">Switch to Public</button>
+                            </form>
+                        @else
+                            <form action="{{ route('admin.vendors.approve', $vendor->id) }}" method="post" class="mb-2">
+                                @csrf
+                                <input type="hidden" name="approval_type" value="private">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Switch to Private</button>
+                            </form>
+                        @endif
+
                         @if($vendor->is_verified_badge)
                             <form action="{{ route('admin.vendors.remove-verified-badge', $vendor->id) }}" method="post">
                                 @csrf

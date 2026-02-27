@@ -763,7 +763,7 @@ class FrontendApiController extends Controller
         $product = Product::with([
             'varients.sizes.bulkPrices',
             'priceTiers',
-            'vendor:id,user_id,company_name,slug,is_verified_badge',
+            'vendor:id,user_id,company_name,slug,approval_type,is_verified_badge',
         ])->where('ProductSlug', $slug)->first();
         if (!$product) {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
@@ -772,6 +772,13 @@ class FrontendApiController extends Controller
         if ($product->vendor_id && ($product->vendor_approval_status ?? '') !== 'approved') {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
         }
+
+        // Mask vendor identity for privately approved suppliers
+        if ($product->vendor && $product->vendor->approval_type === 'private') {
+            $product->vendor->company_name = $product->vendor->public_name;
+            $product->vendor->slug = $product->vendor->public_slug;
+        }
+
         $relatedproducts = Product::where('category_id', $product->category_id)->visibleOnStorefront()->latest()->paginate(12);
 
         return response()->json([
@@ -3089,6 +3096,7 @@ public function popularVendors()
             'user_id',
             'company_name',
             'slug',
+            'approval_type',
             'logo_path',
             'banner_path',
             'business_type',
@@ -3103,6 +3111,10 @@ public function popularVendors()
             ->where('status', 'Active');
         $vendor->avg_product_rating = round($reviews->avg('rating') ?? 0, 1);
         $vendor->review_count = $reviews->count();
+
+        // Mask vendor identity for privately approved suppliers
+        $vendor->company_name = $vendor->public_name;
+        $vendor->slug = $vendor->public_slug;
     }
 
     // Sort by average rating descending, then by product count
@@ -3121,8 +3133,18 @@ public function popularVendors()
      */
     public function supplierDetails(Request $request, string $slug)
     {
-        $vendor = Vendor::where('slug', $slug)
-            ->where('status', 'approved')
+        // Try matching by real slug first, then by private ID slug pattern (ss-XXXXX)
+        $vendor = Vendor::where('status', 'approved')
+            ->where(function ($q) use ($slug) {
+                $q->where('slug', $slug);
+                // Match private vendors by their generated slug pattern (ss-XXXXX)
+                if (preg_match('/^ss-(\d+)$/i', $slug, $matches)) {
+                    $vendorId = (int) ltrim($matches[1], '0');
+                    $q->orWhere(function ($sub) use ($vendorId) {
+                        $sub->where('id', $vendorId)->where('approval_type', 'private');
+                    });
+                }
+            })
             ->withCount('products')
             ->first();
 
@@ -3171,6 +3193,10 @@ public function popularVendors()
         $vendorReviews = Review::whereIn('product_id', $allProductIds)->where('status', 'Active');
         $vendor->avg_product_rating = round($vendorReviews->avg('rating') ?? 0, 1);
         $vendor->review_count = $vendorReviews->count();
+
+        // Mask vendor identity for privately approved suppliers
+        $vendor->company_name = $vendor->public_name;
+        $vendor->slug = $vendor->public_slug;
 
         return response()->json([
             'status'  => true,
