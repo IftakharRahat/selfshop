@@ -1625,34 +1625,44 @@ class FrontendApiController extends Controller
             ], 422);
         }
 
-        $product = new Productrequest();
-        $productImg = $request->file('attachment');
-        $time = microtime('.') * 10000;
-        if ($productImg) {
-            $imgname = $time . $productImg->getClientOriginalName();
-            $imguploadPath = ('public/images/user/profile/');
-            $productImg->move($imguploadPath, $imgname);
-            $productImgUrl = $imguploadPath . $imgname;
-            $product->attachment = $productImgUrl;
+        try {
+            $product = new Productrequest();
+            $productImg = $request->file('attachment');
+            $time = microtime('.') * 10000;
+            if ($productImg) {
+                $imgname = $time . $productImg->getClientOriginalName();
+                $imguploadPath = ('public/images/user/profile/');
+                if (!file_exists($imguploadPath)) {
+                    mkdir($imguploadPath, 0755, true);
+                }
+                $productImg->move($imguploadPath, $imgname);
+                $productImgUrl = $imguploadPath . $imgname;
+                $product->attachment = $productImgUrl;
+            }
+            $id = Auth::user()->id;
+            $product->from_id = $id;
+            $product->p_name = $request->p_name;
+            if (Schema::hasColumn('productrequests', 'p_quantity')) {
+                $product->p_quantity = $request->p_quantity;
+            }
+            if (Schema::hasColumn('productrequests', 'p_description')) {
+                $product->p_description = $request->p_description;
+            }
+            if (Schema::hasColumn('productrequests', 'message')) {
+                $product->message = $request->p_description ?? $request->message;
+            }
+            $product->save();
+            return response()->json([
+                'status' => true,
+                'message' => 'Product request give successfully',
+                'data' => $product
+            ], 200);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to submit product request: ' . $e->getMessage(),
+            ], 500);
         }
-        $id = Auth::user()->id;
-        $product->from_id = $id;
-        $product->p_name = $request->p_name;
-        if (Schema::hasColumn('productrequests', 'p_quantity')) {
-            $product->p_quantity = $request->p_quantity;
-        }
-        if (Schema::hasColumn('productrequests', 'p_description')) {
-            $product->p_description = $request->p_description;
-        }
-        if (Schema::hasColumn('productrequests', 'message')) {
-            $product->message = $request->p_description ?? $request->message;
-        }
-        $product->save();
-        return response()->json([
-            'status' => true,
-            'message' => 'Product request give successfully',
-            'data' => $product
-        ], 200);
     }
 
 
