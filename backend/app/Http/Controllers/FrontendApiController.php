@@ -1633,7 +1633,8 @@ class FrontendApiController extends Controller
                 $imgname = $time . $productImg->getClientOriginalName();
                 $imguploadPath = public_path('images/user/profile/');
                 if (!file_exists($imguploadPath)) {
-                    mkdir($imguploadPath, 0755, true);
+                    mkdir($imguploadPath, 0777, true);
+                    chmod($imguploadPath, 0777);
                 }
                 $productImg->move($imguploadPath, $imgname);
                 $productImgUrl = 'public/images/user/profile/' . $imgname;
