@@ -1631,14 +1631,8 @@ class FrontendApiController extends Controller
             $time = microtime('.') * 10000;
             if ($productImg) {
                 $imgname = $time . $productImg->getClientOriginalName();
-                $imguploadPath = public_path('images/user/profile/');
-                if (!file_exists($imguploadPath)) {
-                    mkdir($imguploadPath, 0777, true);
-                    chmod($imguploadPath, 0777);
-                }
-                $productImg->move($imguploadPath, $imgname);
-                $productImgUrl = 'public/images/user/profile/' . $imgname;
-                $product->attachment = $productImgUrl;
+                $storagePath = $productImg->storeAs('images/user/profile', $imgname, 'public');
+                $product->attachment = 'storage/' . $storagePath;
             }
             $id = Auth::user()->id;
             $product->from_id = $id;
