@@ -13,7 +13,7 @@ import {
 	Modal,
 	Tabs,
 } from "antd";
-import { Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
+import { ChevronDown, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -327,60 +327,80 @@ export default function Navbar() {
               </div>
             )} */}
 						{isMobileMenuOpen && (
-							<div className="lg:hidden py-3 space-y-2 bg-white shadow-md rounded-lg">
-								{mappedMenuData.map((category: any) => (
-									<div key={category.id} className="space-y-1">
-										{/* Main category button */}
-										<button
-											onClick={() =>
-												category.sub_items && category.sub_items.length === 0
-													? router.push(category.href)
-													: setExpandedCategory(
-														expandedCategory === category.id
-															? null
-															: category.id,
-													)
-											}
-											className="w-full flex text-xs justify-between items-center text-gray-800 hover:text-pink-600 hover:bg-pink-50 rounded-lg px-4 py-3 font-semibold transition-all duration-200"
-										>
-											<span className="text-sm">{category.name}</span>
-											{category.sub_items && category.sub_items.length > 0 && (
-												<svg
-													className={`w-5 h-5 ml-2 text-gray-400 transition-transform duration-300 ${expandedCategory === category.id ? "rotate-180" : ""
-														}`}
-													fill="none"
-													stroke="currentColor"
-													viewBox="0 0 24 24"
-													xmlns="http://www.w3.org/2000/svg"
-												>
-													<path
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														strokeWidth={2}
-														d="M19 9l-7 7-7-7"
-													/>
-												</svg>
-											)}
-										</button>
+							<div className="lg:hidden pb-4 animate-in slide-in-from-top duration-200">
+								{/* Mobile Quick Actions */}
+								<div className="flex items-center gap-3 px-1 pb-3 border-b border-gray-100">
+									<button
+										onClick={() => setIsCartOpen(true)}
+										className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-[#E5005F] to-[#B9006E] text-white rounded-full text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200"
+									>
+										<ShoppingCart className="h-4 w-4" />
+										Cart ({cartItems?.data?.length || 0})
+									</button>
+									<Link
+										href="/dashboard/track-orders"
+										onClick={() => setIsMobileMenuOpen(false)}
+										className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-200 text-gray-700 rounded-full text-sm font-medium hover:border-[#E5005F] hover:text-[#E5005F] transition-all duration-200"
+									>
+										Track Order
+									</Link>
+								</div>
 
-										{/* Subcategories */}
-										{category.sub_items &&
-											category.sub_items.length > 0 &&
-											expandedCategory === category.id && (
-												<div className="pl-6 space-y-1 border-l border-gray-200">
-													{category.sub_items.map((sub: any) => (
+								{/* Category List */}
+								<div className="mt-3 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+									{mappedMenuData.map((category: any, idx: number) => (
+										<div key={category.id}>
+											{idx > 0 && <div className="h-px bg-gray-100 mx-4" />}
+											<div className="group">
+												{/* Main category row */}
+												<div className="flex items-center">
+													<Link
+														href={category.href}
+														onClick={() => setIsMobileMenuOpen(false)}
+														className="flex-1 px-4 py-3 text-sm font-semibold text-gray-800 hover:text-[#E5005F] transition-colors duration-200"
+													>
+														{category.name}
+													</Link>
+													{category.sub_items && category.sub_items.length > 0 && (
 														<button
-															key={sub.id}
-															onClick={() => router.push(sub.href)}
-															className="w-full text-gray-600 hover:text-pink-500 hover:bg-pink-50 rounded-lg px-4 py-2 text-xs font-medium transition-colors duration-200"
+															onClick={() =>
+																setExpandedCategory(
+																	expandedCategory === category.id ? null : category.id,
+																)
+															}
+															className="px-4 py-3 text-gray-400 hover:text-[#E5005F] transition-all duration-200"
+															aria-label={`Toggle ${category.name} subcategories`}
 														>
-															<span className="text-xs"> {sub.name}</span>
+															<ChevronDown
+																className={`h-4 w-4 transition-transform duration-300 ease-in-out ${expandedCategory === category.id ? "rotate-180 text-[#E5005F]" : ""}`}
+															/>
 														</button>
-													))}
+													)}
 												</div>
-											)}
-									</div>
-								))}
+
+												{/* Subcategories with smooth expand */}
+												<div
+													className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedCategory === category.id ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}`}
+												>
+													{category.sub_items && category.sub_items.length > 0 && (
+														<div className="mx-4 mb-3 pl-3 border-l-2 border-[#E5005F]/20 space-y-0.5">
+															{category.sub_items.map((sub: any) => (
+																<Link
+																	key={sub.id}
+																	href={sub.href}
+																	onClick={() => setIsMobileMenuOpen(false)}
+																	className="block px-3 py-2 text-sm text-gray-600 hover:text-[#E5005F] hover:bg-[#E5005F]/5 rounded-lg transition-all duration-200"
+																>
+																	{sub.name}
+																</Link>
+															))}
+														</div>
+													)}
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
 							</div>
 						)}
 					</div>
