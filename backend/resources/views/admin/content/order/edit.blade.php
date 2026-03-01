@@ -1,3 +1,7 @@
+ @php
+     $assignedUser = App\Models\User::find($order->user_id);
+ @endphp
+
  <div class="row">
      <div class="col-md-6">
          <div class="card">
@@ -11,10 +15,10 @@
                      </div>
                      <div class="col-md-7">
                          <div class="p-1 card card-body">
-                             <strong style="margin-bottom:0px;font-size: 12px;">Shop:{{App\Models\User::where('id',$order->user_id)->first()->shop_name}} <br>Name: {{ App\Models\User::where('id',$order->user_id)->first()->name }} <br> Phone: {{App\Models\User::where('id',$order->user_id)->first()->phone}}</strong>
+                             <strong style="margin-bottom:0px;font-size: 12px;">Shop: {{ $assignedUser?->shop_name ?? 'N/A' }} <br>Name: {{ $assignedUser?->name ?? 'N/A' }} <br> Phone: {{ $assignedUser?->phone ?? 'N/A' }}</strong>
                          </div>
-                     </div>
-                 </div>
+                      </div>
+                  </div>
                  <div class="row">
                      <div class="col-lg-6" hidden>
                          <div class="form-group" id="storenamepart">
@@ -40,7 +44,7 @@
                                  value="{{ $order->customerName }}">
                          </div>
                      </div>
-                     @if (Auth::user()->role == 0)
+                     @if (Auth::guard('admin')->user()?->role == 0)
                          <div class="col-lg-6">
                              <div class="form-group">
                                  <label for="customerPhone">Customer Phone</label>
