@@ -2098,7 +2098,13 @@ class OrderController extends Controller
             ->leftJoin('cities', 'orders.city_id', '=', 'cities.id')
             ->leftJoin('zones', 'orders.zone_id', '=', 'zones.id')
             ->leftJoin('admins', 'orders.admin_id', '=', 'admins.id')
-            ->where('orders.id', '=', $id)->get()->first();
+            ->where('orders.id', '=', $id)
+            ->first();
+
+        if (!$orders) {
+            return response('Order not found.', 404);
+        }
+
         $products = DB::table('orderproducts')->where('order_id', '=', $id)->get();
         $orders->products = $products;
         $orders->id = $id;
