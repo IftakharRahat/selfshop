@@ -4,7 +4,7 @@
 import { BadgeCheck, ChevronRight, Minus, Plus, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { TbCurrencyTaka } from "react-icons/tb";
 import type { Swiper as SwiperType } from "swiper";
@@ -118,7 +118,7 @@ function DesktopTabs({
 	);
 }
 
-export default function ProductDetailPage({ product }: any) {
+export default function ProductDetailPage({ product, flashSale }: any) {
 	const [orderOpen, setOrderOpen] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 
@@ -168,6 +168,29 @@ export default function ProductDetailPage({ product }: any) {
 	const [sellingPrice, setSellingPrice] = useState("");
 	const [priceError, setPriceError] = useState<string | null>(null);
 
+	// ---- Flash Sale Countdown ----
+	const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
+	useEffect(() => {
+		if (!flashSale || !flashSale.flash_sale_end_time) return;
+
+		const timer = setInterval(() => {
+			const diff = new Date(flashSale.flash_sale_end_time).getTime() - Date.now();
+			if (diff <= 0) {
+				setTimeLeft({ h: 0, m: 0, s: 0 });
+				clearInterval(timer);
+			} else {
+				setTimeLeft({
+					h: Math.floor((diff / (1000 * 60 * 60))),
+					m: Math.floor((diff / (1000 * 60)) % 60),
+					s: Math.floor((diff / 1000) % 60),
+				});
+			}
+		}, 1000);
+		return () => clearInterval(timer);
+	}, [flashSale]);
+
+	const pad = (n: number) => n.toString().padStart(2, "0");
+
 	const handleQtyChange = (variantId: number, size: string, type: "increase" | "decrease") => {
 		setVariantQuantities((prev) => {
 			const varSizes = { ...(prev[variantId] || {}) };
@@ -195,6 +218,11 @@ export default function ProductDetailPage({ product }: any) {
 
 	// Helper: get unit price for a specific size based on its own bulk tiers OR product tiers
 	const getSizePrice = (sizeItem: any, qty: number) => {
+		// 0. If flash sale is active and valid, it overrides everything
+		if (flashSale && flashSale.flash_price > 0) {
+			return parseFloat(flashSale.flash_price);
+		}
+
 		// 1. Check size-level bulk tiers if any (normalize camelCase/snake_case)
 		const tiers = sizeItem.bulkPrices || sizeItem.bulk_prices || [];
 		if (tiers && tiers.length > 0) {
@@ -246,7 +274,9 @@ export default function ProductDetailPage({ product }: any) {
 		return (fs.price > 0) ? fs.price : (fs.bulkPrices?.[0]?.bulk_price || fs.bulk_prices?.[0]?.bulk_price || productData.currentPrice);
 	})();
 
-	const effectiveUnitPrice = activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice);
+	const effectiveUnitPrice = flashSale && flashSale.flash_price > 0
+		? parseFloat(flashSale.flash_price)
+		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice));
 
 	const sellingPriceSchema = z
 		.number({ required_error: "Selling price is required" })
@@ -289,10 +319,12 @@ export default function ProductDetailPage({ product }: any) {
 		}
 
 		for (const item of items) {
-			const itemPrice = showDropshipping && sellingPrice ? parseFloat(sellingPrice) : item.price;
 			const formData = new FormData();
 			formData.append("product_id", product.id);
-			formData.append("price", itemPrice.toString());
+			formData.append("price", item.price.toString());
+			if (showDropshipping && sellingPrice) {
+				formData.append("selling_price", sellingPrice.toString());
+			}
 			formData.append("qty", item.qty.toString());
 			formData.append("size", item.size); // The size name
 			if (item.variantId) {
@@ -330,10 +362,12 @@ export default function ProductDetailPage({ product }: any) {
 
 		let lastResult: any;
 		for (const item of items) {
-			const itemPrice = showDropshipping && sellingPrice ? parseFloat(sellingPrice) : item.price;
 			const formData = new FormData();
 			formData.append("product_id", product.id);
-			formData.append("price", itemPrice.toString());
+			formData.append("price", item.price.toString());
+			if (showDropshipping && sellingPrice) {
+				formData.append("selling_price", sellingPrice.toString());
+			}
 			formData.append("qty", item.qty.toString());
 			formData.append("size", item.size); // The size name
 			if (item.variantId) {
@@ -404,7 +438,9 @@ export default function ProductDetailPage({ product }: any) {
 			<div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
 				{/* Breadcrumb */}
 				<nav className="flex items-center space-x-2 text-sm mb-8">
-					<span className="text-gray-600">Home</span>
+					<Link href="/" className="text-gray-600 hover:text-pink-600 transition-colors">
+						Home
+					</Link>
 					<ChevronRight className="w-4 h-4 text-gray-400" />
 					<span className="text-pink-600 font-medium">product details</span>
 				</nav>
@@ -501,6 +537,35 @@ export default function ProductDetailPage({ product }: any) {
 						<h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
 							{productData.name}
 						</h1>
+
+						{flashSale && (
+							<div className="bg-gradient-to-r from-[#E5005F] to-[#ff4b9c] p-4 rounded-xl text-white shadow-lg overflow-hidden relative">
+								<div className="absolute top-0 right-0 p-2 opacity-10">
+									<Tag size={100} rotate={45} />
+								</div>
+								<div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+									<div className="flex items-center gap-3">
+										<div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+											<span className="text-2xl">⚡</span>
+										</div>
+										<div>
+											<p className="text-[10px] uppercase font-bold tracking-widest opacity-90">Flash Sale Active</p>
+											<h3 className="text-xl font-bold leading-tight">{flashSale.flash_sale_title}</h3>
+										</div>
+									</div>
+									<div className="flex flex-col items-start sm:items-end gap-1">
+										<p className="text-[10px] uppercase font-bold tracking-widest opacity-90">Ends In</p>
+										<div className="flex items-center gap-2">
+											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.h)}</div>
+											<span className="font-bold">:</span>
+											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.m)}</div>
+											<span className="font-bold">:</span>
+											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.s)}</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						)}
 						{productData.vendor?.companyName && (
 							<Link
 								href={productData.vendor.slug ? `/supplier/${productData.vendor.slug}` : "#"}
@@ -833,10 +898,18 @@ export default function ProductDetailPage({ product }: any) {
 							return (
 								<div className="space-y-4">
 									<div className="space-y-1">
-										<div className="text-3xl font-bold text-gray-900 flex items-center">
-											<TbCurrencyTaka size={35} />
-											{unitPrice.toFixed(2)}
-											<span className="text-sm font-normal text-gray-500 ml-1">/pc</span>
+										<div className="flex items-baseline gap-3">
+											<div className="text-3xl font-bold text-gray-900 flex items-center">
+												<TbCurrencyTaka size={35} />
+												{unitPrice.toFixed(2)}
+											</div>
+											{flashSale && (
+												<div className="text-lg text-gray-400 line-through flex items-center">
+													<TbCurrencyTaka size={20} />
+													{parseFloat(flashSale.original_price).toFixed(2)}
+												</div>
+											)}
+											<span className="text-sm font-normal text-gray-500">/pc</span>
 										</div>
 										{totalQuantity > 0 && (
 											<div className="flex items-center gap-2 text-sm">
@@ -890,7 +963,7 @@ export default function ProductDetailPage({ product }: any) {
 											"text-green-600 text-sm mt-1",
 											Number(
 												(
-													(Number(sellingPrice) - productData.currentPrice) *
+													(Number(sellingPrice) - effectiveUnitPrice) *
 													(totalQuantity || 1)
 												).toFixed(2),
 											) > 0
@@ -900,7 +973,7 @@ export default function ProductDetailPage({ product }: any) {
 									>
 										Your total earn{" "}
 										{(
-											(Number(sellingPrice) - productData.currentPrice) *
+											(Number(sellingPrice) - effectiveUnitPrice) *
 											(totalQuantity || 1)
 										).toFixed(2)}{" "}
 										TK

@@ -51,10 +51,10 @@ const VendorRegisterPage = () => {
 			<div className="w-full max-w-xl rounded-2xl bg-white shadow-sm border border-gray-100 p-8 space-y-6">
 				<div className="space-y-1 text-center">
 					<h1 className="text-2xl font-bold text-gray-900">
-						Become a SelfShop vendor
+						Become a SelfShop supplier
 					</h1>
 					<p className="text-sm text-gray-600">
-						Create your vendor account. We will review your details before
+						Create your supplier account. We will review your details before
 						activating access to the portal.
 					</p>
 				</div>
@@ -139,7 +139,7 @@ const VendorRegisterPage = () => {
 				</form>
 
 				<p className="text-xs text-gray-500 text-center">
-					After approval, you can sign in from the vendor login page using the
+					After approval, you can sign in from the supplier login page using the
 					same email and password.
 				</p>
 				<div className="text-center">
@@ -147,7 +147,7 @@ const VendorRegisterPage = () => {
 						href="/vendor/login"
 						className="inline-flex items-center justify-center text-sm font-semibold text-indigo-700 hover:text-indigo-900"
 					>
-						Back to vendor login
+						Back to supplier login
 					</Link>
 				</div>
 			</div>

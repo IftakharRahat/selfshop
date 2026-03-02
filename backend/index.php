@@ -47,8 +47,10 @@ require __DIR__.'/vendor/autoload.php';
 $domains = [
     'localhost',
     'localhost:8000',
+    'localhost:8001',
     '127.0.0.1',
     '127.0.0.1:8000',
+    '127.0.0.1:8001',
     'selfshop.com.bd',
     'api-v1.selfshop.com.bd',
 ];

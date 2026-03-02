@@ -16,6 +16,7 @@ use App\Models\Coursecategory;
 use App\Models\Customer;
 use App\Models\Faq;
 use App\Models\FlashSale;
+use App\Models\FlashSaleProduct;
 use App\Models\Fraud;
 use App\Models\Income;
 use App\Models\Message;
@@ -781,12 +782,36 @@ class FrontendApiController extends Controller
 
         $relatedproducts = Product::where('category_id', $product->category_id)->visibleOnStorefront()->latest()->paginate(12);
 
+        $flashSaleData = null;
+        $activeFlashSale = FlashSale::active()->orderBy('end_time', 'asc')->first();
+        if ($activeFlashSale) {
+            $fsp = FlashSaleProduct::where('flash_sale_id', $activeFlashSale->id)
+                ->where('product_id', $product->id)
+                ->first();
+            if ($fsp) {
+                $regularPrice = floatval($product->ProductRegularPrice ?? 0);
+                $salePrice = floatval($product->ProductSalePrice ?? $regularPrice);
+                $discount = floatval($fsp->discount_percentage);
+                $flashPrice = $discount > 0
+                    ? round($salePrice * (1 - $discount / 100), 2)
+                    : $salePrice;
+                $flashSaleData = [
+                    'flash_sale_title' => $activeFlashSale->title,
+                    'flash_sale_end_time' => $activeFlashSale->end_time,
+                    'discount_percentage' => $discount,
+                    'flash_price' => $flashPrice,
+                    'original_price' => $salePrice,
+                ];
+            }
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Products Details & Related Products',
             'data' => [
                 'product_details' => $product,
-                'relatedproducts' => $relatedproducts
+                'relatedproducts' => $relatedproducts,
+                'flash_sale' => $flashSaleData
             ]
         ], 200);
     }
@@ -2498,15 +2523,95 @@ class FrontendApiController extends Controller
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
         }
 
-        // Server-side Price Validation
-        $submittedPrice = (float) $request->price;
-        $minAllowedPrice = (float) $cartProduct->ProductResellerPrice;
+        // Server-side Price Calculation (Buy Price)
+        $costPrice = (float) $cartProduct->ProductResellerPrice;
 
+        // 1. Handle Variant/Size specific base price
+        if ($request->size || $request->color) {
+            $variant = $cartProduct->varients()->where('title', $request->color)->first();
+            if ($variant) {
+                $sizeRecord = $variant->sizes()->where('size_name', $request->size)->first();
+                if ($sizeRecord && $sizeRecord->price > 0) {
+                    $costPrice = (float) $sizeRecord->price;
+                } elseif ($variant->price > 0) {
+                    $costPrice = (float) $variant->price;
+                }
+            }
+        }
+
+        // 2. Handle Bulk Discounts
+        $qty = (int) $request->qty;
+        if ($request->size || $request->color) {
+            // Check for size-specific bulk tiers first
+            $variant = $cartProduct->varients()->where('title', $request->color)->first();
+            if ($variant) {
+                $sizeRecord = $variant->sizes()->where('size_name', $request->size)->first();
+                if ($sizeRecord) {
+                    $bulkTier = $sizeRecord->bulkPrices()
+                        ->where('min_qty', '<=', $qty)
+                        ->where(function ($q) use ($qty) {
+                            $q->where('max_qty', '>=', $qty)->orWhereNull('max_qty');
+                        })
+                        ->orderBy('min_qty', 'desc')
+                        ->first();
+                    if ($bulkTier) {
+                        $costPrice = (float) ($bulkTier->bulk_price ?: $bulkTier->unit_price);
+                    }
+                }
+            }
+        } else {
+            // Check for product-level tiers
+            $bulkTier = $cartProduct->priceTiers()
+                ->where('min_qty', '<=', $qty)
+                ->where(function ($q) use ($qty) {
+                    $q->where('max_qty', '>=', $qty)->orWhereNull('max_qty');
+                })
+                ->orderBy('min_qty', 'desc')
+                ->first();
+            if ($bulkTier) {
+                $costPrice = (float) $bulkTier->unit_price;
+            }
+        }
+
+        // 3. Handle Flash Sale Discount
+        $activeFlashSale = FlashSale::active()->orderBy('end_time', 'asc')->first();
+        if ($activeFlashSale) {
+            $fsp = FlashSaleProduct::where('flash_sale_id', $activeFlashSale->id)
+                ->where('product_id', $cartProduct->id)
+                ->first();
+            if ($fsp) {
+                $discount = floatval($fsp->discount_percentage);
+                if ($discount > 0) {
+                    $costPrice = round($costPrice * (1 - $discount / 100), 2);
+                }
+            }
+        }
+
+        $minAllowedPrice = $costPrice;
+        $submittedPrice = (float) ($request->selling_price ?: $request->price);
+
+        // Validation: If selling price provided, it must be >= cost
         if ($submittedPrice < $minAllowedPrice) {
             return response()->json([
                 'status' => false,
-                'message' => 'Selling price (' . number_format($submittedPrice, 2) . ') cannot be lower than the product price (' . number_format($minAllowedPrice, 2) . ').'
+                'message' => 'Selling price (' . number_format($submittedPrice, 2) . ') cannot be lower than the product cost (' . number_format($minAllowedPrice, 2) . ').'
             ], 422);
+        }
+
+        // Final Cart Values
+        // For dropshipping, 'price' in Cart table should be the cost (what they pay)
+        // Their intended selling price is stored in options
+        $cartPrice = $costPrice; 
+        $options = [
+            'size' => $request->size,
+            'color' => $request->color,
+            'image' => $cartProduct->ProductImage,
+            'code' => $cartProduct->ProductSku,
+            'original_price' => $cartProduct->ProductResellerPrice,
+        ];
+
+        if ($request->selling_price) {
+            $options['selling_price'] = $request->selling_price;
         }
 
         $cart = Cart::updateOrCreate(
@@ -2520,18 +2625,13 @@ class FrontendApiController extends Controller
                 'product_id' => $request->product_id,
                 'name' => $cartProduct->ProductName,
                 'code' => $cartProduct->ProductSku,
-                'price' => $request->price,
+                'price' => $cartPrice,
                 'qty' => $request->qty,
                 'size' => $request->size,
                 'color' => $request->color,
                 'shop_id' => $cartProduct->shop_id,
                 'image' => $cartProduct->ProductImage,
-                'options' => [
-                    'size' => $request->size,
-                    'color' => $request->color,
-                    'image' => $cartProduct->ProductImage,
-                    'code' => $cartProduct->ProductSku,
-                ],
+                'options' => $options,
                 'user_id' => Auth::user()->id,
             ]
         );
@@ -2555,15 +2655,85 @@ class FrontendApiController extends Controller
             ], 404);
         }
 
-        $cart->update([
-            'qty' => $request->qty ?? $cart->qty, // Update quantity or keep it as is
-        ]);
+        $newQty = $request->qty ?? $cart->qty;
+        $cart->qty = $newQty;
+
+        // ── Recalculate price based on new quantity ──
+        $product = Product::find($cart->product_id);
+        if ($product) {
+            $costPrice = (float) $product->ProductResellerPrice;
+
+            // 1. Variant/Size base price
+            if ($cart->color || $cart->size) {
+                $variant = $product->varients()->where('title', $cart->color)->first();
+                if ($variant) {
+                    $sizeRecord = $variant->sizes()->where('size_name', $cart->size)->first();
+                    if ($sizeRecord && $sizeRecord->price > 0) {
+                        $costPrice = (float) $sizeRecord->price;
+                    } elseif ($variant->price > 0) {
+                        $costPrice = (float) $variant->price;
+                    }
+                }
+            }
+
+            // 2. Bulk tier lookup
+            if ($cart->color || $cart->size) {
+                // Size-specific bulk tiers
+                $variant = $product->varients()->where('title', $cart->color)->first();
+                if ($variant) {
+                    $sizeRecord = $variant->sizes()->where('size_name', $cart->size)->first();
+                    if ($sizeRecord) {
+                        $bulkTier = $sizeRecord->bulkPrices()
+                            ->where('min_qty', '<=', $newQty)
+                            ->where(function ($q) use ($newQty) {
+                                $q->where('max_qty', '>=', $newQty)->orWhereNull('max_qty');
+                            })
+                            ->orderBy('min_qty', 'desc')
+                            ->first();
+                        if ($bulkTier) {
+                            $costPrice = (float) ($bulkTier->bulk_price ?: $bulkTier->unit_price);
+                        }
+                    }
+                }
+            } else {
+                // Product-level bulk tiers
+                $bulkTier = $product->priceTiers()
+                    ->where('min_qty', '<=', $newQty)
+                    ->where(function ($q) use ($newQty) {
+                        $q->where('max_qty', '>=', $newQty)->orWhereNull('max_qty');
+                    })
+                    ->orderBy('min_qty', 'desc')
+                    ->first();
+                if ($bulkTier) {
+                    $costPrice = (float) $bulkTier->unit_price;
+                }
+            }
+
+            // 3. Flash sale discount
+            $activeFlashSale = FlashSale::active()->orderBy('end_time', 'asc')->first();
+            if ($activeFlashSale) {
+                $fsp = FlashSaleProduct::where('flash_sale_id', $activeFlashSale->id)
+                    ->where('product_id', $product->id)
+                    ->first();
+                if ($fsp) {
+                    $discount = floatval($fsp->discount_percentage);
+                    if ($discount > 0) {
+                        $costPrice = round($costPrice * (1 - $discount / 100), 2);
+                    }
+                }
+            }
+
+            $cart->price = $costPrice;
+        }
+
+        $cart->save();
 
         return response()->json([
             'status' => true,
             'message' => 'Cart updated successfully',
             'data' => [
                 'qty' => $cart->qty,
+                'price' => $cart->price,
             ],
         ], 200);
     }
