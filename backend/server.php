@@ -19,4 +19,4 @@ if ($uri !== '/' && file_exists($publicPath . $uri)) {
     return false;
 }
 
-require_once __DIR__ . DIRECTORY_SEPARATOR . 'index.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php';
