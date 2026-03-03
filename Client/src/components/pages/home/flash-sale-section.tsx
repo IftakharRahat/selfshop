@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, FreeMode } from "swiper/modules";
+import { Lock } from "lucide-react";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 import { useGetFlashSaleQuery } from "@/redux/features/home/homeApi";
 import { getImageUrl } from "@/lib/utils";
 import "swiper/css";
@@ -174,6 +176,7 @@ export default function FlashSaleSection() {
 
 function FlashProductCard({ product }: { product: any }) {
     const [imgError, setImgError] = useState(false);
+    const { isActive: isResellerActive } = useIsActiveReseller();
     const hasDiscount =
         product.discount_percentage > 0 &&
         product.FlashPrice < product.SalePrice;
@@ -216,16 +219,27 @@ function FlashProductCard({ product }: { product: any }) {
                     {/* Price Section */}
                     <div className="mt-auto flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-sm sm:text-base font-bold text-gray-900">
-                                ৳{product.FlashPrice}
-                            </span>
-                            {hasDiscount && (
-                                <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                                    ৳{product.SalePrice}
-                                </span>
+                            {isResellerActive ? (
+                                <>
+                                    <span className="text-sm sm:text-base font-bold text-gray-900">
+                                        ৳{product.FlashPrice}
+                                    </span>
+                                    {hasDiscount && (
+                                        <span className="text-[10px] sm:text-xs text-gray-400 line-through">
+                                            ৳{product.SalePrice}
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                <div className="flex flex-col">
+                                    <span className="text-gray-400 text-xs font-bold">৳???</span>
+                                    <span className="text-[10px] text-pink-600 font-bold flex items-center gap-1">
+                                        <Lock className="w-2.5 h-2.5" /> Login to See Price
+                                    </span>
+                                </div>
                             )}
                         </div>
-                        {hasDiscount && (
+                        {isResellerActive && hasDiscount && (
                             <span className="text-[10px] sm:text-xs text-white bg-[#E5005F] px-1.5 py-0.5 rounded font-bold">
                                 SAVE {Math.round(product.discount_percentage)}%
                             </span>

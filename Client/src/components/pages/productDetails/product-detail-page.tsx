@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { BadgeCheck, ChevronRight, Minus, Plus, Tag } from "lucide-react";
+import { BadgeCheck, ChevronRight, Lock, Minus, Plus, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -26,6 +26,7 @@ import { cn, getImageUrl } from "@/lib/utils";
 import { useAppSelector } from "@/redux/hooks";
 import OrderNowModal from "./OrderNowModal";
 import ProductReviewsSection from "./ProductReviewsSection";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 type ColorOption = {
 	id: string | number;
@@ -121,6 +122,7 @@ function DesktopTabs({
 export default function ProductDetailPage({ product, flashSale }: any) {
 	const [orderOpen, setOrderOpen] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
+	const { isActive: isResellerActive, isLoading: isResellerLoading } = useIsActiveReseller();
 
 	const [addToCart, { isLoading }] = useAddToCartMutation();
 
@@ -191,20 +193,30 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 
 	const pad = (n: number) => n.toString().padStart(2, "0");
 
-	const handleQtyChange = (variantId: number, size: string, type: "increase" | "decrease") => {
+	const handleQtyChange = (variantId: number, size: string, type: "increase" | "decrease", stock?: number) => {
 		setVariantQuantities((prev) => {
 			const varSizes = { ...(prev[variantId] || {}) };
 			const cur = varSizes[size] || 0;
-			varSizes[size] = type === "increase" ? cur + 1 : Math.max(0, cur - 1);
+			let next = type === "increase" ? cur + 1 : Math.max(0, cur - 1);
+			if (type === "increase" && stock !== undefined && next > stock) {
+				next = stock;
+				toast.error(`Only ${stock} items in stock for size ${size}`);
+			}
+			varSizes[size] = next;
 			return { ...prev, [variantId]: varSizes };
 		});
 	};
 
-	const handleQtySet = (variantId: number, size: string, value: string) => {
+	const handleQtySet = (variantId: number, size: string, value: string, stock?: number) => {
 		const num = parseInt(value, 10);
 		setVariantQuantities((prev) => {
 			const varSizes = { ...(prev[variantId] || {}) };
-			varSizes[size] = value === '' ? 0 : (isNaN(num) ? 0 : Math.max(0, num));
+			let next = value === '' ? 0 : (isNaN(num) ? 0 : Math.max(0, num));
+			if (stock !== undefined && next > stock) {
+				next = stock;
+				toast.error(`Only ${stock} items in stock for size ${size}`);
+			}
+			varSizes[size] = next;
 			return { ...prev, [variantId]: varSizes };
 		});
 	};
@@ -637,18 +649,26 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 									Minimum Sell Price :
 								</span>
 								<span className="ml-2 text-gray-600 flex items-center">
-									<TbCurrencyTaka size={20} />
-									{(() => {
-										const currentVariant = variants[activeVariantIdx];
-										if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
-											const selectedSize = currentVariant.sizes[activeSizeIdx];
-											if (selectedSize) {
-												// Use the same price helper we used for the table
-												return getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0).toFixed(2);
-											}
-										}
-										return productData.minimumPrice.toFixed(2);
-									})()}
+									{!isResellerActive ? (
+										<span className="text-pink-600 font-bold flex items-center gap-1.5 bg-pink-50 px-2 py-0.5 rounded border border-pink-100 text-xs shadow-sm">
+											<Lock className="w-3 h-3" /> Login & Activate to see price
+										</span>
+									) : (
+										<>
+											<TbCurrencyTaka size={20} />
+											{(() => {
+												const currentVariant = variants[activeVariantIdx];
+												if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+													const selectedSize = currentVariant.sizes[activeSizeIdx];
+													if (selectedSize) {
+														// Use the same price helper we used for the table
+														return getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0).toFixed(2);
+													}
+												}
+												return productData.minimumPrice.toFixed(2);
+											})()}
+										</>
+									)}
 								</span>
 							</div>
 						</div>
@@ -681,8 +701,14 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 														}`}
 												>
 													<span className={`text-base sm:text-lg font-bold flex items-center ${isActive ? 'text-pink-700' : 'text-gray-900'}`}>
-														<TbCurrencyTaka size={20} />
-														{parseFloat(tier.unit_price).toFixed(2)}
+														{!isResellerActive ? (
+															"৳???"
+														) : (
+															<>
+																<TbCurrencyTaka size={20} />
+																{parseFloat(tier.unit_price).toFixed(2)}
+															</>
+														)}
 													</span>
 													<span className={`text-[11px] font-medium mt-0.5 ${isActive ? 'text-pink-600' : 'text-gray-500'}`}>
 														{qtyLabel}
@@ -762,7 +788,13 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 														/>
 													)}
 													<span className="mt-1 text-[10px] leading-none text-gray-500 font-semibold text-center mt-1">
-														{v.price ? `৳${v.price}` : <span className="text-gray-400 italic">No override</span>}
+														{!isResellerActive ? (
+															"৳???"
+														) : v.price ? (
+															`৳${v.price}`
+														) : (
+															<span className="text-gray-400 italic">No override</span>
+														)}
 													</span>
 												</button>
 											);
@@ -823,8 +855,14 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 														<div className="font-medium text-gray-900 text-sm">{size}</div>
 														<div className="text-gray-700 flex items-center text-sm gap-1">
 															<div className="flex items-center">
-																<TbCurrencyTaka size={14} />
-																{displayPrice.toFixed(2)}
+																{isResellerActive ? (
+																	<>
+																		<TbCurrencyTaka size={14} />
+																		{displayPrice.toFixed(2)}
+																	</>
+																) : (
+																	<span className="text-xs text-gray-400">Locked</span>
+																)}
 															</div>
 															{sz.bulk_prices?.length > 0 && (
 																<span className="text-[9px] bg-green-100 text-green-700 px-1 rounded font-bold uppercase leading-tight">
@@ -835,7 +873,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 														<div className="text-gray-600 text-sm text-center">{sz.qty}</div>
 														<div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
 															<button
-																onClick={() => handleQtyChange(currentVarId, size, "decrease")}
+																onClick={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
 																className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
 															>
 																<Minus className="w-3 h-3" />
@@ -843,14 +881,16 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 															<input
 																type="number"
 																min={0}
+																max={sz.qty}
 																value={qty || ''}
-																onChange={(e) => handleQtySet(currentVarId, size, e.target.value)}
+																onChange={(e) => handleQtySet(currentVarId, size, e.target.value, sz.qty)}
 																placeholder="0"
 																className={`w-14 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${qty > 0 ? 'bg-pink-50 border-pink-300 text-pink-700' : 'bg-white border-gray-200'}`}
 															/>
 															<button
-																onClick={() => handleQtyChange(currentVarId, size, "increase")}
-																className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-pink-50 transition-colors bg-white"
+																disabled={qty >= sz.qty}
+																onClick={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
+																className={`w-8 h-8 border rounded-lg flex items-center justify-center transition-colors ${qty >= sz.qty ? 'opacity-40 cursor-not-allowed bg-gray-100 border-gray-200' : 'hover:bg-pink-50 border-gray-300 bg-white'}`}
 															>
 																<Plus className="w-3 h-3" />
 															</button>
@@ -866,8 +906,14 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 													<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
 														<div className="text-gray-900">Total</div>
 														<div className="text-pink-600 flex items-center">
-															<TbCurrencyTaka size={16} />
-															{totalPrice.toFixed(2)}
+															{isResellerActive ? (
+																<>
+																	<TbCurrencyTaka size={16} />
+																	{totalPrice.toFixed(2)}
+																</>
+															) : (
+																"???"
+															)}
 														</div>
 														<div></div>
 														<div className="text-right text-gray-700">{totalQuantity} pcs</div>
@@ -915,8 +961,14 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 											<div className="flex items-center gap-2 text-sm">
 												<span className="text-gray-500">Total ({totalQuantity} pcs):</span>
 												<span className="font-bold text-lg text-pink-600 flex items-center">
-													<TbCurrencyTaka size={20} />
-													{totalPrice.toFixed(2)}
+													{isResellerActive ? (
+														<>
+															<TbCurrencyTaka size={20} />
+															{totalPrice.toFixed(2)}
+														</>
+													) : (
+														"৳???"
+													)}
 												</span>
 											</div>
 										)}
@@ -930,7 +982,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 											<div className="flex flex-wrap gap-2">
 												{sizeBulkPrices.map((tier: any, tIdx: number) => (
 													<div key={tIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-pink-200 text-[11px] text-pink-600 font-semibold shadow-sm">
-														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">৳{Number(tier.bulk_price || tier.unit_price).toFixed(2)}</span>
+														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">{isResellerActive ? `৳${Number(tier.bulk_price || tier.unit_price).toFixed(2)}` : '৳???'}</span>
 													</div>
 												))}
 											</div>
@@ -983,18 +1035,30 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 						)}
 
 						<div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 ">
-							<button
-								onClick={handleAddToCart}
-								className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium cursor-pointer"
-							>
-								Add to cart
-							</button>
-							<button
-								onClick={handleBuyNow}
-								className="flex-1 px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium cursor-pointer"
-							>
-								{isLoading ? "Processing..." : "Buy Now"}
-							</button>
+							{!isResellerActive ? (
+								<button
+									onClick={() => (window.location.href = "/pricing")}
+									className="flex-1 px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-bold cursor-pointer flex items-center justify-center gap-2 group"
+								>
+									<Lock className="w-5 h-5 group-hover:scale-110 transition-transform" />
+									Login & Activate Account to Order
+								</button>
+							) : (
+								<>
+									<button
+										onClick={handleAddToCart}
+										className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+									>
+										Add to cart
+									</button>
+									<button
+										onClick={handleBuyNow}
+										className="flex-1 px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium cursor-pointer"
+									>
+										{isLoading ? "Processing..." : "Buy Now"}
+									</button>
+								</>
+							)}
 						</div>
 					</div>
 				</div>

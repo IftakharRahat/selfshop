@@ -5,6 +5,7 @@ import { Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
 import { TbCurrencyTaka } from "react-icons/tb";
+import { toast } from "sonner";
 
 type ColorOption = {
 	id: string | number;
@@ -47,11 +48,19 @@ export default function OrderNowModal({
 		),
 	);
 
-	const handleQtyChange = (size: string, type: "inc" | "dec") => {
-		setQuantities((prev) => ({
-			...prev,
-			[size]: type === "inc" ? prev[size] + 1 : Math.max(0, prev[size] - 1),
-		}));
+	const handleQtyChange = (size: string, type: "inc" | "dec", stock: number) => {
+		setQuantities((prev) => {
+			const cur = prev[size] || 0;
+			let next = type === "inc" ? cur + 1 : Math.max(0, cur - 1);
+			if (type === "inc" && next > stock) {
+				next = stock;
+				toast.error(`Only ${stock} items in stock for size ${size}`);
+			}
+			return {
+				...prev,
+				[size]: next,
+			};
+		});
 	};
 
 	const totalCount = Object.values(quantities).reduce((a, b) => a + b, 0);
@@ -92,11 +101,10 @@ export default function OrderNowModal({
 							<button
 								key={c.id}
 								onClick={() => setSelectedColor(c)}
-								className={`flex flex-col items-center p-1 rounded-md transition ${
-									selectedColor.id === c.id
+								className={`flex flex-col items-center p-1 rounded-md transition ${selectedColor.id === c.id
 										? "ring-2 ring-pink-500"
 										: "hover:ring-1 hover:ring-gray-200"
-								}`}
+									}`}
 							>
 								<div
 									className="w-5 h-5 rounded-full border"
@@ -131,37 +139,44 @@ export default function OrderNowModal({
 						<div className="text-right">Qty</div>
 					</div>
 
-					{sizes.map((size) => (
-						<div key={size} className="grid grid-cols-3 py-2 border-t">
-							<div>
-								<span className="px-2 py-0.5 border rounded text-xs">
-									{size}
-								</span>
-							</div>
+					{sizes.map((sizeObj: any) => {
+						const sizeName = typeof sizeObj === "string" ? sizeObj : sizeObj.size_name;
+						const stockValue = typeof sizeObj === "string" ? defaultStock : (sizeObj.qty ?? defaultStock);
+						const qty = quantities[sizeName] || 0;
 
-							<div>{defaultStock} pcs</div>
-
-							<div className="flex items-center justify-end gap-1">
-								<button
-									onClick={() => handleQtyChange(size, "dec")}
-									className="w-6 h-6 bg-white border rounded flex items-center justify-center"
-								>
-									<Minus size={12} />
-								</button>
-
-								<div className="w-7 h-6 flex items-center justify-center bg-white border text-xs">
-									{quantities[size]}
+						return (
+							<div key={sizeName} className="grid grid-cols-3 py-2 border-t">
+								<div>
+									<span className="px-2 py-0.5 border rounded text-xs">
+										{sizeName}
+									</span>
 								</div>
 
-								<button
-									onClick={() => handleQtyChange(size, "inc")}
-									className="w-6 h-6 bg-white border rounded flex items-center justify-center"
-								>
-									<Plus size={12} />
-								</button>
+								<div>{stockValue} pcs</div>
+
+								<div className="flex items-center justify-end gap-1">
+									<button
+										onClick={() => handleQtyChange(sizeName, "dec", stockValue)}
+										className="w-6 h-6 bg-white border rounded flex items-center justify-center hover:bg-gray-50 transition-colors"
+									>
+										<Minus size={12} />
+									</button>
+
+									<div className="w-7 h-6 flex items-center justify-center bg-white border text-xs">
+										{qty}
+									</div>
+
+									<button
+										disabled={qty >= stockValue}
+										onClick={() => handleQtyChange(sizeName, "inc", stockValue)}
+										className={`w-6 h-6 border rounded flex items-center justify-center transition-colors ${qty >= stockValue ? 'opacity-40 cursor-not-allowed bg-gray-100 border-gray-200' : 'bg-white border-gray-300 hover:bg-pink-50'}`}
+									>
+										<Plus size={12} />
+									</button>
+								</div>
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 
 				{/* Totals */}

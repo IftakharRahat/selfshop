@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, Lock, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -11,13 +11,14 @@ import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import type { TProductSectionProps } from "@/types/product";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 import "swiper/css";
 import "swiper/css/navigation";
 import { Navigation } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 /** Compact row card used for regular products */
-function RowProductCard({ product, onAddToCart }: { product: any; onAddToCart: (p: any) => void }) {
+function RowProductCard({ product, onAddToCart, isActive }: { product: any; onAddToCart: (p: any) => void; isActive: boolean }) {
 	const [imgError, setImgError] = useState(false);
 
 	return (
@@ -51,21 +52,33 @@ function RowProductCard({ product, onAddToCart }: { product: any; onAddToCart: (
 					</Link>
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-1.5">
-							<span className="text-sm sm:text-base font-bold text-gray-900">
-								৳{product?.ProductSalePrice}
-							</span>
-							{product?.ProductRegularPrice && product.ProductRegularPrice !== product.ProductSalePrice && (
-								<span className="text-[10px] sm:text-xs text-gray-400 line-through">
-									৳{product?.ProductRegularPrice}
-								</span>
+							{isActive ? (
+								<>
+									<span className="text-sm sm:text-base font-bold text-gray-900">
+										৳{product?.ProductSalePrice}
+									</span>
+									{product?.ProductRegularPrice && product.ProductRegularPrice !== product.ProductSalePrice && (
+										<span className="text-[10px] sm:text-xs text-gray-400 line-through">
+											৳{product?.ProductRegularPrice}
+										</span>
+									)}
+								</>
+							) : (
+								<span className="text-gray-400 text-xs font-bold">৳???</span>
 							)}
 						</div>
-						<button
-							onClick={() => onAddToCart(product)}
-							className="cursor-pointer w-7 h-7 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
-						>
-							<ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-						</button>
+						{isActive ? (
+							<button
+								onClick={() => onAddToCart(product)}
+								className="cursor-pointer w-7 h-7 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
+							>
+								<ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+							</button>
+						) : (
+							<span className="text-pink-600">
+								<Lock className="w-4 h-4" />
+							</span>
+						)}
 					</div>
 				</div>
 			</div>
@@ -74,7 +87,7 @@ function RowProductCard({ product, onAddToCart }: { product: any; onAddToCart: (
 }
 
 /** Large featured card for desktop view */
-function FeaturedCard({ product, onAddToCart }: { product: any; onAddToCart: (p: any) => void }) {
+function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddToCart: (p: any) => void; isActive: boolean }) {
 	const [imgError, setImgError] = useState(false);
 
 	return (
@@ -108,24 +121,34 @@ function FeaturedCard({ product, onAddToCart }: { product: any; onAddToCart: (p:
 
 					{/* Price */}
 					<div className="flex items-center gap-2.5 mb-4">
-						<span className="text-xl lg:text-2xl font-bold text-gray-900">
-							৳{product?.ProductSalePrice}
-						</span>
-						{product?.ProductRegularPrice && product.ProductRegularPrice !== product.ProductSalePrice && (
-							<span className="text-sm lg:text-base text-gray-400 line-through">
-								৳{product?.ProductRegularPrice}
+						{isActive ? (
+							<>
+								<span className="text-xl lg:text-2xl font-bold text-gray-900">
+									৳{product?.ProductSalePrice}
+								</span>
+								{product?.ProductRegularPrice && product.ProductRegularPrice !== product.ProductSalePrice && (
+									<span className="text-sm lg:text-base text-gray-400 line-through">
+										৳{product?.ProductRegularPrice}
+									</span>
+								)}
+							</>
+						) : (
+							<span className="text-pink-600 font-bold flex items-center gap-2 bg-pink-50 px-3 py-1 rounded-lg border border-pink-100">
+								<Lock className="w-4 h-4" /> Login to See Price
 							</span>
 						)}
 					</div>
 
 					{/* Add to Cart Button */}
-					<button
-						onClick={() => onAddToCart(product)}
-						className="cursor-pointer bg-[#E5005F] hover:bg-[#c9004f] text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium text-sm w-fit"
-					>
-						<ShoppingCart className="w-4 h-4" />
-						<span>Add to cart</span>
-					</button>
+					{isActive && (
+						<button
+							onClick={() => onAddToCart(product)}
+							className="cursor-pointer bg-[#E5005F] hover:bg-[#c9004f] text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium text-sm w-fit"
+						>
+							<ShoppingCart className="w-4 h-4" />
+							<span>Add to cart</span>
+						</button>
+					)}
 				</div>
 			</div>
 		</div>
@@ -139,6 +162,7 @@ export default function ProductSection({
 	className = "",
 }: TProductSectionProps) {
 	const token = useAppSelector((state) => state.auth.access_token);
+	const { isActive: isResellerActive } = useIsActiveReseller();
 	const [addToCart] = useAddToCartMutation();
 
 	const handleAddToCart = async (product: any) => {
@@ -197,6 +221,7 @@ export default function ProductSection({
 									key={product?.id || i}
 									product={product}
 									onAddToCart={handleAddToCart}
+									isActive={isResellerActive}
 								/>
 							))}
 						</div>
@@ -213,6 +238,7 @@ export default function ProductSection({
 									key={product?.id || i}
 									product={product}
 									onAddToCart={handleAddToCart}
+									isActive={isResellerActive}
 								/>
 							))}
 						</div>
@@ -226,6 +252,7 @@ export default function ProductSection({
 									key={product?.id || i}
 									product={product}
 									onAddToCart={handleAddToCart}
+									isActive={isResellerActive}
 								/>
 							))}
 						</div>
