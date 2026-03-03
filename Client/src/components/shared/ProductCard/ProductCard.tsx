@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, Lock, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type React from "react";
@@ -11,6 +11,7 @@ import { getImageUrl } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 interface ProductCardProps {
 	product: any;
@@ -18,6 +19,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 	const token = useAppSelector((state) => state.auth.access_token);
+	const { isActive: isResellerActive } = useIsActiveReseller();
 	const [addToCart] = useAddToCartMutation();
 	const [imgError, setImgError] = useState(false);
 
@@ -69,15 +71,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 				</Link>
 
 				<div className="flex items-center justify-between">
-					<span className="text-sm sm:text-base font-bold text-gray-900">
-						৳{product.ProductRegularPrice}
-					</span>
-					<button
-						className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
-						onClick={handleAddToCart}
-					>
-						<ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-					</button>
+					<div className="flex items-center justify-between">
+						{isResellerActive ? (
+							<>
+								<span className="text-sm sm:text-base font-bold text-gray-900">
+									৳{product.ProductRegularPrice}
+								</span>
+								<button
+									className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
+									onClick={handleAddToCart}
+								>
+									<ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+								</button>
+							</>
+						) : (
+							<div className="w-full flex items-center justify-between gap-1">
+								<span className="text-gray-400 text-xs font-bold">৳???</span>
+								<span className="text-[10px] text-pink-600 font-bold bg-pink-50 px-1.5 py-0.5 rounded flex items-center gap-1">
+									<Lock className="w-2.5 h-2.5" /> Login to See Price
+								</span>
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>

@@ -13,6 +13,7 @@ import {
 } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 interface CartDrawerProps {
 	isOpen: boolean;
@@ -21,6 +22,7 @@ interface CartDrawerProps {
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 	const token = useAppSelector((state) => state.auth.access_token);
+	const { isActive: isResellerActive } = useIsActiveReseller();
 	const { data: cartItems } = useGetAllCartItemsQuery(undefined, {
 		skip: !token,
 	});
@@ -107,7 +109,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 										</p>
 										<p className="text-xs text-gray-400 mt-0.5">{item.code}</p>
 										<p className="text-sm font-bold text-pink-600 mt-1">
-											৳{item.price}
+											{isResellerActive ? `৳${item.price}` : "৳???"}
 										</p>
 
 										{/* Quantity Controls */}
@@ -148,7 +150,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 									{/* Line Total */}
 									<div className="text-right flex-shrink-0 self-start">
 										<p className="text-sm font-bold text-gray-900">
-											৳{(parseFloat(item.price) * item.qty).toFixed(0)}
+											{isResellerActive ? `৳${(parseFloat(item.price) * item.qty).toFixed(0)}` : "???"}
 										</p>
 									</div>
 								</div>
@@ -184,19 +186,28 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 								Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
 							</span>
 							<span className="text-xl font-bold text-gray-900">
-								৳{totalPrice?.toFixed(2)}
+								{isResellerActive ? `৳${totalPrice?.toFixed(2)}` : "৳???"}
 							</span>
 						</div>
 
 						{/* Checkout Button */}
-						<Link href="/order-confirmation">
+						{isResellerActive ? (
+							<Link href="/order-confirmation">
+								<button
+									onClick={onClose}
+									className="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors cursor-pointer shadow-sm shadow-pink-200"
+								>
+									Proceed to Checkout
+								</button>
+							</Link>
+						) : (
 							<button
-								onClick={onClose}
+								onClick={() => (window.location.href = "/pricing")}
 								className="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors cursor-pointer shadow-sm shadow-pink-200"
 							>
-								Proceed to Checkout
+								Activate Account to Checkout
 							</button>
-						</Link>
+						)}
 
 						{/* Continue Shopping */}
 						<button
