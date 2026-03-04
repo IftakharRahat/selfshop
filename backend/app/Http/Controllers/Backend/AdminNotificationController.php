@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Notifications\AdminBroadcastNotification;
+use App\Services\FcmService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -210,6 +211,9 @@ class AdminNotificationController extends Controller
                             $meta
                         );
 
+                        // Send FCM push to all users
+                        $this->sendFcmPushToAllUsers($title, $message, $imageUrl, $link);
+
                         $this->safeLog('info', 'Admin notification sent', [
                             'target_type' => $audienceType,
                             'sent_count' => $asyncSentCount,
@@ -245,6 +249,15 @@ class AdminNotificationController extends Controller
                         $sentCount += $sendNotificationBatch($users);
                     });
 
+                // Send FCM push to targeted users
+                $this->sendFcmPushToUsers(
+                    $recipientUserIds->all(),
+                    $validated['title'],
+                    $validated['message'],
+                    $validated['image_url'] ?? null,
+                    $validated['link'] ?? null
+                );
+
             } else {
                 $supplierIds = collect($validated['supplier_ids'] ?? [])
                     ->map(fn($id) => (int) $id)
@@ -269,6 +282,15 @@ class AdminNotificationController extends Controller
                         ->chunkById(300, function ($users) use ($sendNotificationBatch, &$sentCount) {
                             $sentCount += $sendNotificationBatch($users);
                         });
+
+                    // Send FCM push to supplier users
+                    $this->sendFcmPushToUsers(
+                        $recipientUserIds->all(),
+                        $validated['title'],
+                        $validated['message'],
+                        $validated['image_url'] ?? null,
+                        $validated['link'] ?? null
+                    );
                 }
 
             }
@@ -415,8 +437,6 @@ class AdminNotificationController extends Controller
 INSERT INTO notifications (id, type, notifiable_type, notifiable_id, data, read_at, created_at, updated_at)
 SELECT UUID(), ?, ?, users.id, ?, NULL, ?, ?
 FROM users
-LEFT JOIN vendors ON vendors.user_id = users.id
-WHERE vendors.id IS NULL
 SQL;
 
         try {
@@ -435,7 +455,6 @@ SQL;
 
         $sentCount = 0;
         User::query()
-            ->whereDoesntHave('vendor')
             ->select('id')
             ->orderBy('id')
             ->chunkById(1000, function ($users) use (&$sentCount, $title, $message, $imageUrl, $actionUrl, $audienceType, $meta) {
@@ -453,4 +472,36 @@ SQL;
         return $sentCount;
     }
 
+    /**
+     * Send FCM push to specific user IDs (best-effort, never breaks the request).
+     */
+    private function sendFcmPushToUsers(array $userIds, string $title, string $message, ?string $imageUrl = null, ?string $link = null): void
+    {
+        try {
+            $fcmService = new FcmService();
+            $result = $fcmService->sendToUsers($userIds, $title, $message, $imageUrl, $link);
+            $this->safeLog('info', 'FCM push sent to users', $result);
+        } catch (\Throwable $e) {
+            $this->safeLog('error', 'FCM push to users failed', [
+                'error' => $e->getMessage(),
+                'user_count' => count($userIds),
+            ]);
+        }
+    }
+
+    /**
+     * Send FCM push to ALL users with registered tokens.
+     */
+    private function sendFcmPushToAllUsers(string $title, string $message, ?string $imageUrl = null, ?string $link = null): void
+    {
+        try {
+            $fcmService = new FcmService();
+            $result = $fcmService->sendToAllUsers($title, $message, $imageUrl, $link);
+            $this->safeLog('info', 'FCM push sent to all users', $result);
+        } catch (\Throwable $e) {
+            $this->safeLog('error', 'FCM push to all users failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 }
