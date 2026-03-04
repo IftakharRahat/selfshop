@@ -5,6 +5,7 @@ import MyContextProvider from "@/lib/MyContextProvider";
 import SessionProviderForNextAuth from "@/nextAuth/SessionProviderForNextAuth";
 import ReduxStoreProvider from "@/redux/ReduxStoreProvider";
 import StyledComponentsRegistry from "@/lib/AntdRegistry";
+import FcmProvider from "@/components/providers/FcmProvider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -33,8 +34,10 @@ export default function RootLayout({
 					<SessionProviderForNextAuth>
 						<ReduxStoreProvider>
 							<StyledComponentsRegistry>
-								<Toaster />
-								{children}
+								<FcmProvider>
+									<Toaster />
+									{children}
+								</FcmProvider>
 							</StyledComponentsRegistry>
 						</ReduxStoreProvider>
 					</SessionProviderForNextAuth>

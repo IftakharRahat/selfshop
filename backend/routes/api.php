@@ -23,6 +23,7 @@ use App\Http\Controllers\VendorNotificationController;
 use App\Http\Controllers\VendorCommissionController;
 use App\Http\Controllers\VendorCampaignController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\FcmTokenController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -170,6 +171,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user-notification', [FrontendApiController::class, 'userNotification'])->name('api.user.notification');
     Route::post('/user-notification/read-all', [FrontendApiController::class, 'markAllUserNotificationsRead'])->name('api.user.notification.read-all');
     Route::post('/user-notification/{id}/read', [FrontendApiController::class, 'markUserNotificationRead'])->name('api.user.notification.read');
+
+    // FCM Push Notification Tokens
+    Route::post('/fcm-token', [FcmTokenController::class, 'store'])->name('api.fcm-token.store');
+    Route::delete('/fcm-token', [FcmTokenController::class, 'destroy'])->name('api.fcm-token.destroy');
 
     //Coupons
     Route::get('check-coupon', [FrontendApiController::class, 'couponCheck']);
