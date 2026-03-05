@@ -121,4 +121,9 @@ class Vendor extends Model
     {
         return $this->hasMany(VendorPayout::class);
     }
+
+    public function followers()
+    {
+        return $this->hasMany(VendorFollower::class);
+    }
 }

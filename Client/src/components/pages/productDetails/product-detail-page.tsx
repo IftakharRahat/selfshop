@@ -651,7 +651,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 								<span className="ml-2 text-gray-600 flex items-center">
 									{!isResellerActive ? (
 										<span className="text-pink-600 font-bold flex items-center gap-1.5 bg-pink-50 px-2 py-0.5 rounded border border-pink-100 text-xs shadow-sm">
-											<Lock className="w-3 h-3" /> Login & Activate to see price
+											<Lock className="w-3 h-3" /> Active profile required to see price
 										</span>
 									) : (
 										<>
@@ -702,7 +702,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 												>
 													<span className={`text-base sm:text-lg font-bold flex items-center ${isActive ? 'text-pink-700' : 'text-gray-900'}`}>
 														{!isResellerActive ? (
-															"৳???"
+															"***"
 														) : (
 															<>
 																<TbCurrencyTaka size={20} />
@@ -789,7 +789,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 													)}
 													<span className="mt-1 text-[10px] leading-none text-gray-500 font-semibold text-center mt-1">
 														{!isResellerActive ? (
-															"৳???"
+															"***"
 														) : v.price ? (
 															`৳${v.price}`
 														) : (
@@ -912,7 +912,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 																	{totalPrice.toFixed(2)}
 																</>
 															) : (
-																"???"
+																"***"
 															)}
 														</div>
 														<div></div>
@@ -946,16 +946,22 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 									<div className="space-y-1">
 										<div className="flex items-baseline gap-3">
 											<div className="text-3xl font-bold text-gray-900 flex items-center">
-												<TbCurrencyTaka size={35} />
-												{unitPrice.toFixed(2)}
+												{isResellerActive ? (
+													<>
+														<TbCurrencyTaka size={35} />
+														{unitPrice.toFixed(2)}
+													</>
+												) : (
+													"***"
+												)}
 											</div>
-											{flashSale && (
+											{flashSale && isResellerActive && (
 												<div className="text-lg text-gray-400 line-through flex items-center">
 													<TbCurrencyTaka size={20} />
 													{parseFloat(flashSale.original_price).toFixed(2)}
 												</div>
 											)}
-											<span className="text-sm font-normal text-gray-500">/pc</span>
+											{isResellerActive && <span className="text-sm font-normal text-gray-500">/pc</span>}
 										</div>
 										{totalQuantity > 0 && (
 											<div className="flex items-center gap-2 text-sm">
@@ -967,7 +973,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 															{totalPrice.toFixed(2)}
 														</>
 													) : (
-														"৳???"
+														"***"
 													)}
 												</span>
 											</div>
@@ -982,7 +988,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 											<div className="flex flex-wrap gap-2">
 												{sizeBulkPrices.map((tier: any, tIdx: number) => (
 													<div key={tIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-pink-200 text-[11px] text-pink-600 font-semibold shadow-sm">
-														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">{isResellerActive ? `৳${Number(tier.bulk_price || tier.unit_price).toFixed(2)}` : '৳???'}</span>
+														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">{isResellerActive ? `৳${Number(tier.bulk_price || tier.unit_price).toFixed(2)}` : '***'}</span>
 													</div>
 												))}
 											</div>
@@ -993,7 +999,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 						})()}
 
 						{/* Dropshipping: Selling Price + Earnings */}
-						{showDropshipping && (
+						{showDropshipping && isResellerActive && (
 							<div className="space-y-3">
 								<h3 className="font-medium text-gray-900">Your selling price</h3>
 								<input
@@ -1041,7 +1047,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 									className="flex-1 px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-bold cursor-pointer flex items-center justify-center gap-2 group"
 								>
 									<Lock className="w-5 h-5 group-hover:scale-110 transition-transform" />
-									Login & Activate Account to Order
+									Active Profile Required to Order
 								</button>
 							) : (
 								<>

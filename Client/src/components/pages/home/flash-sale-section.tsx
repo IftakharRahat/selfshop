@@ -232,9 +232,9 @@ function FlashProductCard({ product }: { product: any }) {
                                 </>
                             ) : (
                                 <div className="flex flex-col">
-                                    <span className="text-gray-400 text-xs font-bold">৳???</span>
+                                    <span className="text-gray-400 text-xs font-bold">***</span>
                                     <span className="text-[10px] text-pink-600 font-bold flex items-center gap-1">
-                                        <Lock className="w-2.5 h-2.5" /> Login to See Price
+                                        <Lock className="w-2.5 h-2.5" /> Active profile required
                                     </span>
                                 </div>
                             )}

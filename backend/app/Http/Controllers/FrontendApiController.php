@@ -39,6 +39,7 @@ use App\Models\Tikit;
 use App\Models\User;
 use App\Models\Varient;
 use App\Models\Vendor;
+use App\Models\VendorFollower;
 use App\Models\Withdrew;
 use App\Models\Review;
 use App\Notifications\AdminBroadcastNotification;
@@ -3373,6 +3374,9 @@ public function popularVendors()
         $vendor->company_name = $vendor->public_name;
         $vendor->slug = $vendor->public_slug;
 
+        // Include followers count
+        $vendor->followers_count = $vendor->followers()->count();
+
         return response()->json([
             'status'  => true,
             'message' => 'Supplier details',
@@ -3648,6 +3652,86 @@ public function popularVendors()
             'status' => true,
             'message' => 'Review updated successfully',
             'data' => $review,
+        ], 200);
+    }
+
+    /**
+     * Follow a vendor (toggle). If already following, does nothing.
+     */
+    public function followVendor(Request $request, $vendorId)
+    {
+        $user = Auth::user();
+        $vendor = Vendor::find($vendorId);
+
+        if (!$vendor) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Vendor not found',
+            ], 404);
+        }
+
+        $existing = VendorFollower::where('user_id', $user->id)
+            ->where('vendor_id', $vendorId)
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Already following',
+                'data' => ['is_following' => true, 'followers_count' => $vendor->followers()->count()],
+            ], 200);
+        }
+
+        VendorFollower::create([
+            'user_id' => $user->id,
+            'vendor_id' => $vendorId,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Followed successfully',
+            'data' => ['is_following' => true, 'followers_count' => $vendor->followers()->count()],
+        ], 200);
+    }
+
+    /**
+     * Unfollow a vendor.
+     */
+    public function unfollowVendor(Request $request, $vendorId)
+    {
+        $user = Auth::user();
+
+        $deleted = VendorFollower::where('user_id', $user->id)
+            ->where('vendor_id', $vendorId)
+            ->delete();
+
+        $vendor = Vendor::find($vendorId);
+        $followersCount = $vendor ? $vendor->followers()->count() : 0;
+
+        return response()->json([
+            'status' => true,
+            'message' => $deleted ? 'Unfollowed successfully' : 'Was not following',
+            'data' => ['is_following' => false, 'followers_count' => $followersCount],
+        ], 200);
+    }
+
+    /**
+     * Check if the authenticated user is following a vendor.
+     */
+    public function checkFollowStatus($vendorId)
+    {
+        $user = Auth::user();
+
+        $isFollowing = VendorFollower::where('user_id', $user->id)
+            ->where('vendor_id', $vendorId)
+            ->exists();
+
+        $vendor = Vendor::find($vendorId);
+        $followersCount = $vendor ? $vendor->followers()->count() : 0;
+
+        return response()->json([
+            'status' => true,
+            'data' => ['is_following' => $isFollowing, 'followers_count' => $followersCount],
         ], 200);
     }
 }

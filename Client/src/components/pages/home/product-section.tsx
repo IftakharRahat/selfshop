@@ -64,7 +64,7 @@ function RowProductCard({ product, onAddToCart, isActive }: { product: any; onAd
 									)}
 								</>
 							) : (
-								<span className="text-gray-400 text-xs font-bold">৳???</span>
+								<span className="text-gray-400 text-xs font-bold">***</span>
 							)}
 						</div>
 						{isActive ? (
@@ -134,7 +134,7 @@ function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddT
 							</>
 						) : (
 							<span className="text-pink-600 font-bold flex items-center gap-2 bg-pink-50 px-3 py-1 rounded-lg border border-pink-100">
-								<Lock className="w-4 h-4" /> Login to See Price
+								<Lock className="w-4 h-4" /> Active Profile Required to See Price
 							</span>
 						)}
 					</div>
