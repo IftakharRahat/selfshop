@@ -12,12 +12,19 @@ import {
 	ChevronRight,
 	Search,
 	UserPlus,
+	UserCheck,
 	Star,
 } from "lucide-react";
-import { Tooltip } from "antd";
 import { getImageUrl } from "@/lib/utils";
-import { useGetSupplierDetailsQuery } from "@/redux/features/home/homeApi";
+import {
+	useGetSupplierDetailsQuery,
+	useFollowVendorMutation,
+	useUnfollowVendorMutation,
+	useGetFollowStatusQuery,
+} from "@/redux/features/home/homeApi";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
+import { useAppSelector } from "@/redux/hooks";
+import { toast } from "sonner";
 
 interface SupplierDetailsComponentProps {
 	slug: string;
@@ -39,6 +46,37 @@ export default function SupplierDetailsComponent({
 	});
 
 	const [activeTab, setActiveTab] = useState("all");
+
+	const token = useAppSelector((state) => state.auth.access_token);
+	const vendorId = data?.data?.vendor?.id;
+
+	// Follow status query (only when logged in and vendor loaded)
+	const { data: followData } = useGetFollowStatusQuery(vendorId, {
+		skip: !token || !vendorId,
+	});
+	const [followVendor, { isLoading: isFollowing }] = useFollowVendorMutation();
+	const [unfollowVendor, { isLoading: isUnfollowing }] = useUnfollowVendorMutation();
+
+	const isFollowed = followData?.data?.is_following ?? false;
+	const followersCount = followData?.data?.followers_count ?? data?.data?.vendor?.followers_count ?? 0;
+
+	const handleFollowToggle = async () => {
+		if (!token) {
+			toast.info("Please log in to follow suppliers");
+			return;
+		}
+		if (!vendorId) return;
+
+		try {
+			if (isFollowed) {
+				await unfollowVendor(vendorId);
+			} else {
+				await followVendor(vendorId);
+			}
+		} catch {
+			toast.error("Something went wrong");
+		}
+	};
 
 	if (isLoading) {
 		return (
@@ -164,6 +202,8 @@ export default function SupplierDetailsComponent({
 								<BadgeCheck className="w-5 h-5 text-blue-500 shrink-0" />
 							)}
 						</div>
+
+						{/* Location + Product count + Business type */}
 						<div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
 							{vendor.city && (
 								<>
@@ -179,19 +219,6 @@ export default function SupplierDetailsComponent({
 								{vendor.products_count}{" "}
 								{vendor.products_count === 1 ? "Product" : "Products"}
 							</span>
-							{vendor.avg_product_rating > 0 && (
-								<>
-									<span className="text-gray-300">|</span>
-									<span className="flex items-center gap-1">
-										<Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-										{vendor.avg_product_rating}
-										<span className="text-gray-400">
-											({vendor.review_count}{" "}
-											{vendor.review_count === 1 ? "review" : "reviews"})
-										</span>
-									</span>
-								</>
-							)}
 							{vendor.business_type && (
 								<>
 									<span className="text-gray-300">|</span>
@@ -199,16 +226,59 @@ export default function SupplierDetailsComponent({
 								</>
 							)}
 						</div>
+
+						{/* Rating — separate row below location */}
+						{vendor.avg_product_rating > 0 && (
+							<div className="flex items-center gap-1.5 mt-1.5">
+								<div className="flex items-center gap-0.5">
+									{[1, 2, 3, 4, 5].map((star) => (
+										<Star
+											key={star}
+											className={`w-3.5 h-3.5 ${star <= Math.round(vendor.avg_product_rating)
+													? "fill-amber-400 text-amber-400"
+													: "fill-gray-200 text-gray-200"
+												}`}
+										/>
+									))}
+								</div>
+								<span className="text-sm font-medium text-gray-700">
+									{vendor.avg_product_rating}
+								</span>
+								<span className="text-xs text-gray-400">
+									({vendor.review_count}{" "}
+									{vendor.review_count === 1 ? "review" : "reviews"})
+								</span>
+							</div>
+						)}
 					</div>
 
 					{/* Follow Button — right side */}
-					<div className="shrink-0 sm:ml-auto">
-						<Tooltip title="Coming soon" placement="top">
-							<button className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[#E5005F] border border-[#E5005F] rounded-full hover:bg-pink-50 transition-colors cursor-pointer">
-								<UserPlus className="w-4 h-4" />
-								Follow
-							</button>
-						</Tooltip>
+					<div className="shrink-0 sm:ml-auto flex flex-col items-center gap-1">
+						<button
+							onClick={handleFollowToggle}
+							disabled={isFollowing || isUnfollowing}
+							className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors cursor-pointer ${isFollowed
+									? "bg-pink-50 text-[#E5005F] border border-[#E5005F]"
+									: "text-[#E5005F] border border-[#E5005F] hover:bg-pink-50"
+								} ${(isFollowing || isUnfollowing) ? "opacity-60 cursor-wait" : ""}`}
+						>
+							{isFollowed ? (
+								<>
+									<UserCheck className="w-4 h-4" />
+									Following
+								</>
+							) : (
+								<>
+									<UserPlus className="w-4 h-4" />
+									Follow
+								</>
+							)}
+						</button>
+						{followersCount > 0 && (
+							<span className="text-xs text-gray-400">
+								{followersCount} {followersCount === 1 ? "follower" : "followers"}
+							</span>
+						)}
 					</div>
 				</div>
 			</div>
@@ -217,9 +287,26 @@ export default function SupplierDetailsComponent({
 			<div className="border-b border-gray-200 mt-2">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide py-2.5">
-						{/* Category pills */}
+						{/* Page tabs — come first (left side) */}
+						{tabs.map((tab) => (
+							<button
+								key={tab.key}
+								onClick={() => setActiveTab(tab.key)}
+								className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === tab.key
+									? "bg-white text-[#E5005F] border-[#E5005F]"
+									: "bg-white text-gray-500 border-transparent hover:text-gray-700"
+									}`}
+							>
+								{tab.label}
+							</button>
+						))}
+
+						{/* Divider between tabs and category pills */}
 						{categories.length > 0 && (
 							<>
+								<div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
+
+								{/* Category pills */}
 								<button
 									onClick={() => setSelectedCategory(undefined)}
 									className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${!selectedCategory
@@ -241,25 +328,8 @@ export default function SupplierDetailsComponent({
 										{cat.category_name}
 									</button>
 								))}
-
-								{/* Divider */}
-								<div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
 							</>
 						)}
-
-						{/* Page tabs */}
-						{tabs.map((tab) => (
-							<button
-								key={tab.key}
-								onClick={() => setActiveTab(tab.key)}
-								className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${activeTab === tab.key
-									? "bg-white text-[#E5005F] border-[#E5005F]"
-									: "bg-white text-gray-500 border-transparent hover:text-gray-700"
-									}`}
-							>
-								{tab.label}
-							</button>
-						))}
 					</div>
 				</div>
 			</div>
@@ -398,6 +468,30 @@ export default function SupplierDetailsComponent({
 											Verified Supplier
 										</span>
 									</div>
+									{vendor.avg_product_rating > 0 && (
+										<div>
+											<span className="text-gray-400 block mb-0.5">Rating</span>
+											<div className="flex items-center gap-1.5">
+												<div className="flex items-center gap-0.5">
+													{[1, 2, 3, 4, 5].map((star) => (
+														<Star
+															key={star}
+															className={`w-3.5 h-3.5 ${star <= Math.round(vendor.avg_product_rating)
+																	? "fill-amber-400 text-amber-400"
+																	: "fill-gray-200 text-gray-200"
+																}`}
+														/>
+													))}
+												</div>
+												<span className="text-sm font-medium text-gray-700">
+													{vendor.avg_product_rating}
+												</span>
+												<span className="text-xs text-gray-400">
+													({vendor.review_count} reviews)
+												</span>
+											</div>
+										</div>
+									)}
 								</div>
 							</div>
 						</div>

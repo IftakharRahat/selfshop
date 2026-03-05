@@ -198,6 +198,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/shipping-addresses/{id}', [ShippingAddressController::class, 'update'])->name('api.shipping-addresses.update');
     Route::delete('/shipping-addresses/{id}', [ShippingAddressController::class, 'destroy'])->name('api.shipping-addresses.destroy');
 
+    // Vendor Follow (resellers follow suppliers)
+    Route::post('/vendor-follow/{vendorId}/follow', [FrontendApiController::class, 'followVendor'])->name('api.vendor-follow.follow');
+    Route::post('/vendor-follow/{vendorId}/unfollow', [FrontendApiController::class, 'unfollowVendor'])->name('api.vendor-follow.unfollow');
+    Route::get('/vendor-follow/{vendorId}/status', [FrontendApiController::class, 'checkFollowStatus'])->name('api.vendor-follow.status');
+
     // Vendor (Wholesale / Supplier) – vendor portal APIs
     Route::prefix('vendor')->group(function () {
         // Dashboard

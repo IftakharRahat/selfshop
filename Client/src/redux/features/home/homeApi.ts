@@ -170,6 +170,29 @@ const homeApi = baseApi.injectEndpoints({
 			providesTags: ["categories"],
 		}),
 
+		// Vendor Follow
+		followVendor: builder.mutation({
+			query: (vendorId: number) => ({
+				url: `/vendor-follow/${vendorId}/follow`,
+				method: "POST",
+			}),
+			invalidatesTags: ["vendorFollow"],
+		}),
+		unfollowVendor: builder.mutation({
+			query: (vendorId: number) => ({
+				url: `/vendor-follow/${vendorId}/unfollow`,
+				method: "POST",
+			}),
+			invalidatesTags: ["vendorFollow"],
+		}),
+		getFollowStatus: builder.query({
+			query: (vendorId: number) => ({
+				url: `/vendor-follow/${vendorId}/status`,
+				method: "GET",
+			}),
+			providesTags: ["vendorFollow"],
+		}),
+
 		createExample: builder.mutation({
 			query: (data) => {
 				return {
@@ -220,4 +243,7 @@ export const {
 	useGetPopularSuppliersQuery,
 	useGetSupplierDetailsQuery,
 	useGetBrandProductsQuery,
+	useFollowVendorMutation,
+	useUnfollowVendorMutation,
+	useGetFollowStatusQuery,
 } = homeApi;
