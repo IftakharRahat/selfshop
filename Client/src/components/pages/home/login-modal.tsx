@@ -122,8 +122,8 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 
 					<p className="text-gray-600 mb-6">
 						{isRegistration
-							? "Create your account to get started with the admin panel."
-							: "Use your correct email and password to log in to the admin panel."}
+							? "Join our dropshipping and wholesale marketplace to start selling and sourcing products easily."
+							: "Sign in to your account to access dropshipping products and wholesale deals."}
 					</p>
 				</div>
 

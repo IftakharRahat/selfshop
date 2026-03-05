@@ -127,8 +127,8 @@ export default function AuthModal({
 
 						<p className="text-gray-600 mb-6">
 							{isLogin
-								? "Use your correct email and password to log in to the admin panel."
-								: "Create your account to get started with the admin panel."}
+								? "Sign in to your account to access dropshipping products and wholesale deals."
+								: "Join our dropshipping and wholesale marketplace to start selling and sourcing products easily."}
 						</p>
 					</div>
 
