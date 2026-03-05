@@ -86,9 +86,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 							</>
 						) : (
 							<div className="w-full flex items-center justify-between gap-1">
-								<span className="text-gray-400 text-xs font-bold">৳???</span>
+								<span className="text-gray-400 text-xs font-bold">***</span>
 								<span className="text-[10px] text-pink-600 font-bold bg-pink-50 px-1.5 py-0.5 rounded flex items-center gap-1">
-									<Lock className="w-2.5 h-2.5" /> Login to See Price
+									<Lock className="w-2.5 h-2.5" /> Active profile required
 								</span>
 							</div>
 						)}

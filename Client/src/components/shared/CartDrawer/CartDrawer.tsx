@@ -109,7 +109,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 										</p>
 										<p className="text-xs text-gray-400 mt-0.5">{item.code}</p>
 										<p className="text-sm font-bold text-pink-600 mt-1">
-											{isResellerActive ? `৳${item.price}` : "৳???"}
+											{isResellerActive ? `৳${item.price}` : "***"}
 										</p>
 
 										{/* Quantity Controls */}
@@ -186,7 +186,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 								Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
 							</span>
 							<span className="text-xl font-bold text-gray-900">
-								{isResellerActive ? `৳${totalPrice?.toFixed(2)}` : "৳???"}
+								{isResellerActive ? `৳${totalPrice?.toFixed(2)}` : "***"}
 							</span>
 						</div>
 
