@@ -35,7 +35,7 @@ export default function RootLayout({
 						<ReduxStoreProvider>
 							<StyledComponentsRegistry>
 								<FcmProvider>
-									<Toaster />
+									<Toaster position="top-center" toastOptions={{ style: { zIndex: 99999 } }} />
 									{children}
 								</FcmProvider>
 							</StyledComponentsRegistry>

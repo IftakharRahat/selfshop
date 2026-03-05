@@ -70,30 +70,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 					</h3>
 				</Link>
 
-				<div className="flex items-center justify-between">
-					<div className="flex items-center justify-between">
-						{isResellerActive ? (
-							<>
-								<span className="text-sm sm:text-base font-bold text-gray-900">
-									৳{product.ProductRegularPrice}
-								</span>
-								<button
-									className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
-									onClick={handleAddToCart}
-								>
-									<ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-								</button>
-							</>
-						) : (
-							<div className="w-full flex items-center justify-between gap-1">
-								<span className="text-gray-400 text-xs font-bold">***</span>
-								<span className="text-[10px] text-pink-600 font-bold bg-pink-50 px-1.5 py-0.5 rounded flex items-center gap-1">
-									<Lock className="w-2.5 h-2.5" /> Active profile required
-								</span>
-							</div>
-						)}
+				{isResellerActive ? (
+					<div className="flex items-center justify-between w-full">
+						<span className="text-sm sm:text-base font-bold text-gray-900">
+							৳{product.ProductRegularPrice}
+						</span>
+						<button
+							className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors shrink-0"
+							onClick={handleAddToCart}
+						>
+							<ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+						</button>
 					</div>
-				</div>
+				) : (
+					<div className="flex items-center justify-between w-full gap-1">
+						<span className="text-gray-400 text-xs font-bold">***</span>
+						<span className="text-[10px] text-pink-600 font-bold bg-pink-50 px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap">
+							<Lock className="w-2.5 h-2.5 shrink-0" />
+							<span className="hidden sm:inline">Active profile required</span>
+							<span className="sm:hidden">Login required</span>
+						</span>
+					</div>
+				)}
 			</div>
 		</div>
 	);
