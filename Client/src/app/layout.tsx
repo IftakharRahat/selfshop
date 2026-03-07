@@ -6,6 +6,7 @@ import SessionProviderForNextAuth from "@/nextAuth/SessionProviderForNextAuth";
 import ReduxStoreProvider from "@/redux/ReduxStoreProvider";
 import StyledComponentsRegistry from "@/lib/AntdRegistry";
 import FcmProvider from "@/components/providers/FcmProvider";
+import NotificationProvider from "@/components/providers/NotificationProvider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -35,8 +36,10 @@ export default function RootLayout({
 						<ReduxStoreProvider>
 							<StyledComponentsRegistry>
 								<FcmProvider>
-									<Toaster position="top-center" toastOptions={{ style: { zIndex: 99999 } }} />
-									{children}
+									<NotificationProvider>
+										<Toaster position="top-center" toastOptions={{ style: { zIndex: 99999 } }} />
+										{children}
+									</NotificationProvider>
 								</FcmProvider>
 							</StyledComponentsRegistry>
 						</ReduxStoreProvider>

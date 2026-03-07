@@ -226,8 +226,12 @@ class OrderController extends Controller
                                         );
                                     }
                                 }
+
+                                // Real-time push notification for courier assignment
+                                $pushService = app(\App\Services\PushNotificationService::class);
+                                $pushService->onCourierAssigned($order, $courier->courierName, $res->consignment->tracking_code);
                             } catch (\Throwable $e) {
-                                \Log::warning('Failed to notify vendor(s) about tracking ID', [
+                                \Log::warning('Failed to notify about tracking ID', [
                                     'order_id' => $id,
                                     'error' => $e->getMessage(),
                                 ]);

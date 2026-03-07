@@ -214,6 +214,18 @@ class AdminNotificationController extends Controller
                         // Send FCM push to all users
                         $this->sendFcmPushToAllUsers($title, $message, $imageUrl, $link);
 
+                        // Real-time Pusher push to all users
+                        try {
+                            $pushService = app(\App\Services\PushNotificationService::class);
+                            User::query()->select('id')->orderBy('id')->chunkById(500, function ($users) use ($pushService, $title, $message) {
+                                foreach ($users as $user) {
+                                    $pushService->notifyUser((int) $user->id, $title, $message, 'info', ['event' => 'admin_broadcast']);
+                                }
+                            });
+                        } catch (\Throwable $pe) {
+                            $this->safeLog('warning', 'Pusher broadcast to all users failed', ['error' => $pe->getMessage()]);
+                        }
+
                         $this->safeLog('info', 'Admin notification sent', [
                             'target_type' => $audienceType,
                             'sent_count' => $asyncSentCount,
@@ -258,6 +270,16 @@ class AdminNotificationController extends Controller
                     $validated['link'] ?? null
                 );
 
+                // Real-time Pusher push to targeted users
+                try {
+                    $pushService = app(\App\Services\PushNotificationService::class);
+                    foreach ($recipientUserIds as $userId) {
+                        $pushService->notifyUser((int) $userId, $validated['title'], $validated['message'], 'info', ['event' => 'admin_notification']);
+                    }
+                } catch (\Throwable $pe) {
+                    $this->safeLog('warning', 'Pusher broadcast to users failed', ['error' => $pe->getMessage()]);
+                }
+
             } else {
                 $supplierIds = collect($validated['supplier_ids'] ?? [])
                     ->map(fn($id) => (int) $id)
@@ -291,6 +313,16 @@ class AdminNotificationController extends Controller
                         $validated['image_url'] ?? null,
                         $validated['link'] ?? null
                     );
+
+                    // Real-time Pusher push to supplier users
+                    try {
+                        $pushService = app(\App\Services\PushNotificationService::class);
+                        foreach ($recipientUserIds as $userId) {
+                            $pushService->notifyUser((int) $userId, $validated['title'], $validated['message'], 'info', ['event' => 'admin_notification']);
+                        }
+                    } catch (\Throwable $pe) {
+                        $this->safeLog('warning', 'Pusher broadcast to suppliers failed', ['error' => $pe->getMessage()]);
+                    }
                 }
 
             }

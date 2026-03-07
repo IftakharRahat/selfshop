@@ -1,0 +1,16 @@
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env
+
+✓ Starting...
+Creating turbopack project {
+  dir: 'C:\\Users\\Rahat\\OneDrive\\Documents\\backup\\Client',
+  testMode: true
+}
+✓ Ready in 2.4s
+○ Compiling / ...
+ GET / 200 in 13.0s (compile: 5.8s, proxy.ts: 964ms, render: 6.2s)
+○ Compiling /vendor ...
+ GET /vendor 200 in 11.4s (compile: 10.2s, proxy.ts: 54ms, render: 1101ms)
+ GET /api/auth/session 200 in 3.9s (compile: 3.7s, render: 208ms)

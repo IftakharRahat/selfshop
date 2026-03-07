@@ -3092,6 +3092,14 @@ class FrontendApiController extends Controller
                 }
             }
 
+            // Real-time push notification
+            try {
+                $pushService = app(\App\Services\PushNotificationService::class);
+                $pushService->onNewOrder($order);
+            } catch (\Throwable $e) {
+                \Log::warning('Push notification failed for new order', ['error' => $e->getMessage()]);
+            }
+
             $ordersCreated[] = [
                 'order_id' => $order->id,
                 'invoiceID' => $order->invoiceID

@@ -308,6 +308,14 @@ class VendorOrderController extends Controller
 
         $meta = $this->statusMeta($order);
 
+        // Real-time push notification
+        try {
+            $pushService = app(\App\Services\PushNotificationService::class);
+            $pushService->onVendorAction($order, $action);
+        } catch (\Throwable $e) {
+            \Log::warning('Push notification failed for vendor action', ['error' => $e->getMessage()]);
+        }
+
         return response()->json([
             'status' => true,
             'message' => $action === 'accept' ? 'Order accepted' : 'Order cancelled',
@@ -406,6 +414,14 @@ class VendorOrderController extends Controller
         );
 
         $meta = $this->statusMeta($order);
+
+        // Real-time push notification
+        try {
+            $pushService = app(\App\Services\PushNotificationService::class);
+            $pushService->onWarehouseSent($order);
+        } catch (\Throwable $e) {
+            \Log::warning('Push notification failed for warehouse sent', ['error' => $e->getMessage()]);
+        }
 
         return response()->json([
             'status' => true,
