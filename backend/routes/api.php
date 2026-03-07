@@ -40,6 +40,11 @@ Route::get('/up', function () {
     return response()->json(['status' => true, 'message' => 'api up'], 200);
 });
 
+// Return authenticated user data (used by Pusher notification system)
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return response()->json($request->user());
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');

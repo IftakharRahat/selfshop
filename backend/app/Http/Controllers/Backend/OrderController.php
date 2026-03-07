@@ -2496,6 +2496,9 @@ class OrderController extends Controller
         $order = Order::find($id);
         $order->store_id = $request['data']['storeID'];
         $order->trackingLink = $request['data']['trackingLink'];
+        if (isset($request['data']['parcelID'])) {
+            $order->parcel_id = $request['data']['parcelID'];
+        }
         $order->subTotal = $request['data']['total'];
         $oldAmount = $order->paymentAmount;
         $newAmount = $request['data']['paymentAmount'];

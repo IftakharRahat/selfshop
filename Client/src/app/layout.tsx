@@ -37,7 +37,7 @@ export default function RootLayout({
 							<StyledComponentsRegistry>
 								<FcmProvider>
 									<NotificationProvider>
-										<Toaster position="top-center" toastOptions={{ style: { zIndex: 99999 } }} />
+										<Toaster position="top-right" richColors toastOptions={{ style: { zIndex: 99999 } }} />
 										{children}
 									</NotificationProvider>
 								</FcmProvider>

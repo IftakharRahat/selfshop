@@ -1185,6 +1185,7 @@
                 var id = $(this).val();
                 var invoiceID = $("#invoiceID");
                 var trackingLink = $("#trackingLink");
+                var parcelID = $("#parcelID").val();
                 var customerName = $("#customerName");
                 var customerPhone = $("#customerPhone");
                 var customerAddress = $("#customerAddress");
@@ -1300,6 +1301,7 @@
                 data["userID"] = $('#user_id').val();
                 data["products"] = product;
                 data["memo"] = memo;
+                data["parcelID"] = parcelID;
                 $.ajax({
                     type: "PUT",
                     url: "{{ url('admin_orders') }}/" + id,

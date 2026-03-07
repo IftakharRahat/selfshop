@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import Pusher from "pusher-js";
@@ -26,16 +26,80 @@ export default function NotificationProvider({
     const user = useSelector((state: RootState) => state.auth.user);
     const echoRef = useRef<Echo<"pusher"> | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
+
+    // Fetch user ID when token is available but user object has no ID
+    useEffect(() => {
+        if (user?.id) {
+            setUserId(user.id);
+            return;
+        }
+        if (!accessToken) {
+            setUserId(null);
+            return;
+        }
+
+        // Fetch user ID from backend using Sanctum token
+        const fetchUserId = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/user`, {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        Accept: "application/json",
+                    },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log("[Pusher] Fetched user data:", data);
+                    setUserId(data.id || null);
+                } else {
+                    console.warn("[Pusher] Failed to fetch user:", res.status);
+                }
+            } catch (err) {
+                console.warn("[Pusher] Error fetching user:", err);
+            }
+        };
+
+        fetchUserId();
+    }, [accessToken, user]);
+
+    const audioCtxRef = useRef<AudioContext | null>(null);
+
+    // Initialize AudioContext on first user interaction (click/keypress)
+    useEffect(() => {
+        const initAudio = () => {
+            if (!audioCtxRef.current) {
+                const AudioCtx =
+                    window.AudioContext ||
+                    (window as unknown as { webkitAudioContext: typeof AudioContext })
+                        .webkitAudioContext;
+                if (AudioCtx) {
+                    audioCtxRef.current = new AudioCtx();
+                    console.log("[Pusher] AudioContext initialized on user gesture");
+                }
+            } else if (audioCtxRef.current.state === "suspended") {
+                audioCtxRef.current.resume();
+            }
+        };
+
+        document.addEventListener("click", initAudio, { once: false });
+        document.addEventListener("keydown", initAudio, { once: false });
+
+        return () => {
+            document.removeEventListener("click", initAudio);
+            document.removeEventListener("keydown", initAudio);
+        };
+    }, []);
 
     const playNotificationSound = useCallback(() => {
         try {
-            const AudioCtx =
-                window.AudioContext ||
-                (window as unknown as { webkitAudioContext: typeof AudioContext })
-                    .webkitAudioContext;
-            if (!AudioCtx) return;
+            const ctx = audioCtxRef.current;
+            if (!ctx) return;
 
-            const ctx = new AudioCtx();
+            // Resume if suspended
+            if (ctx.state === "suspended") {
+                ctx.resume();
+            }
 
             // Create a pleasant two-tone chime
             const playTone = (freq: number, startTime: number, duration: number) => {
@@ -68,42 +132,28 @@ export default function NotificationProvider({
         }) => {
             playNotificationSound();
 
-            const toastType =
-                data.type === "success"
-                    ? "success"
-                    : data.type === "warning"
-                        ? "warning"
-                        : data.type === "error"
-                            ? "error"
-                            : "info";
+            const iconMap: Record<string, string> = {
+                success: "✅",
+                warning: "⚠️",
+                error: "❌",
+                info: "🔔",
+            };
 
-            if (toastType === "success") {
-                toast.success(data.title, {
-                    description: data.message,
-                    duration: 6000,
-                });
-            } else if (toastType === "warning") {
-                toast.warning(data.title, {
-                    description: data.message,
-                    duration: 6000,
-                });
-            } else if (toastType === "error") {
-                toast.error(data.title, {
-                    description: data.message,
-                    duration: 6000,
-                });
-            } else {
-                toast.info(data.title, {
-                    description: data.message,
-                    duration: 6000,
-                });
-            }
+            const icon = iconMap[data.type] || "🔔";
+
+            toast(data.title, {
+                description: data.message,
+                duration: 6000,
+                icon,
+            });
         },
         [playNotificationSound],
     );
 
     useEffect(() => {
-        if (!accessToken || !user?.id) {
+        console.log("[Pusher] Effect running. accessToken:", !!accessToken, "userId:", userId);
+
+        if (!accessToken || !userId) {
             // Cleanup if user logs out
             if (echoRef.current) {
                 echoRef.current.disconnect();
@@ -114,23 +164,33 @@ export default function NotificationProvider({
 
         const pusherKey = process.env.NEXT_PUBLIC_PUSHER_APP_KEY;
         const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER;
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+        console.log("[Pusher] Config:", { pusherKey, pusherCluster, baseUrl });
 
         if (!pusherKey || !pusherCluster) {
             console.warn(
-                "Pusher config missing: NEXT_PUBLIC_PUSHER_APP_KEY / NEXT_PUBLIC_PUSHER_APP_CLUSTER",
+                "[Pusher] Config missing: NEXT_PUBLIC_PUSHER_APP_KEY / NEXT_PUBLIC_PUSHER_APP_CLUSTER",
             );
             return;
         }
 
         // Make Pusher available globally for Laravel Echo
         window.Pusher = Pusher;
+        // Enable Pusher logging for debug
+        Pusher.logToConsole = true;
+
+        // Base URL includes /api but broadcasting/auth is at root
+        const serverUrl = (baseUrl || "").replace(/\/api\/?$/, "");
+
+        console.log("[Pusher] Initializing Echo...");
 
         const echo = new Echo({
             broadcaster: "pusher",
             key: pusherKey,
             cluster: pusherCluster,
             forceTLS: true,
-            authEndpoint: `${process.env.NEXT_PUBLIC_BASE_URL}/broadcasting/auth`,
+            authEndpoint: `${serverUrl}/broadcasting/auth`,
             auth: {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -141,8 +201,10 @@ export default function NotificationProvider({
 
         echoRef.current = echo;
 
+        console.log("[Pusher] Subscribing to private-user." + userId);
+
         // Listen on private channel for this user
-        echo.private(`user.${user.id}`).listen(
+        echo.private(`user.${userId}`).listen(
             ".order.notification",
             (data: {
                 title: string;
@@ -150,9 +212,12 @@ export default function NotificationProvider({
                 type: string;
                 meta?: Record<string, unknown>;
             }) => {
+                console.log("[Pusher] 🔔 Notification received on user." + userId, data);
                 showNotification(data);
             },
         );
+
+        console.log("[Pusher] Subscribing to private-user.0 (admin channel)");
 
         // Also listen on admin broadcast channel (user.0) for admin notifications
         echo.private("user.0").listen(
@@ -163,17 +228,18 @@ export default function NotificationProvider({
                 type: string;
                 meta?: Record<string, unknown>;
             }) => {
+                console.log("[Pusher] 🔔 Notification received on user.0", data);
                 showNotification(data);
             },
         );
 
         return () => {
-            echo.leave(`user.${user.id}`);
+            echo.leave(`user.${userId}`);
             echo.leave("user.0");
             echo.disconnect();
             echoRef.current = null;
         };
-    }, [accessToken, user?.id, showNotification]);
+    }, [accessToken, userId, showNotification]);
 
     return <>{children}</>;
 }

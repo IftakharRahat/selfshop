@@ -119,6 +119,13 @@
                                  id="trackingLink" value="{{ $order->trackingLink }}">
                          </div>
                      </div>
+                     <div class="mt-2 col-lg-12">
+                         <div class="form-group">
+                             <label for="parcelID">Parcel ID</label>
+                             <input type="text" class="form-control"
+                                 id="parcelID" placeholder="Enter Parcel ID after courier assignment" value="{{ $order->parcel_id }}">
+                         </div>
+                     </div>
                      <div class="mt-4 col-lg-12">
                         <div class="form-group">
                             <label for="customerNote">Cancel Notes</label>
