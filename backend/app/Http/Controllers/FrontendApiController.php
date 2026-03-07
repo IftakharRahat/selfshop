@@ -2853,6 +2853,7 @@ class FrontendApiController extends Controller
             'customerAddress' => 'required|string',
             'subTotal' => 'required|numeric',
             'deliveryCharge' => 'required|numeric',
+            'advance_delivery' => 'nullable|string|in:yes,no',
         ]);
 
         $shopproducts = Cart::where('user_id', Auth::user()->id)
@@ -2871,7 +2872,7 @@ class FrontendApiController extends Controller
             $shop = count($shopproducts);
             $chargeamount = $shop * $request->deliveryCharge;
             $post_data = array();
-            $post_data['total_amount'] = 10; # You cant not pay less than 10
+            $post_data['total_amount'] = $request->deliveryCharge > 10 ? $request->deliveryCharge : 10;
             $post_data['currency'] = "BDT";
             $post_data['tran_id'] = uniqid(); // tran_id must be unique
 
@@ -2902,6 +2903,14 @@ class FrontendApiController extends Controller
             $post_data['product_category'] = "Goods";
             $post_data['product_profile'] = "physical-goods";
 
+            # Pass user_id so the success callback can identify the user
+            $post_data['value_a'] = Auth::id();
+            $post_data['value_d'] = json_encode([
+                'user_id' => Auth::id(),
+                'advance_delivery' => $request->advance_delivery,
+                'balance_from' => 'online_pay',
+            ]);
+
             #Before  going to initiate the payment order status need to update as Pending.
             $update_product = DB::table('orders')
                 ->where('transaction_id', $post_data['tran_id'])
@@ -2910,6 +2919,7 @@ class FrontendApiController extends Controller
                     'invoiceID' => $this->uniqueID(),
                     'subTotal' => $request->subTotal,
                     'deliveryCharge' => $request->deliveryCharge,
+                    'advance_delivery' => $request->advance_delivery === 'yes' ? 1 : 0,
                     'data' => json_encode($request),
                     'cart' => json_encode($shopproducts),
                     'orderDate' => date('Y-m-d'),
@@ -2920,13 +2930,33 @@ class FrontendApiController extends Controller
 
                 ]);
 
-            $sslc = new SslCommerzNotification();
-            # initiate(Transaction Data , false: Redirect to SSLCOMMERZ gateway/ true: Show all the Payement gateway here )
-            return  $payment_options = $sslc->makePayment($post_data, 'checkout', 'json');
+            try {
+                $sslc = new SslCommerzNotification();
+                $payment_options = $sslc->makePayment($post_data, 'checkout', 'json');
 
-            if (!is_array($payment_options)) {
-                print_r($payment_options);
-                $payment_options = array();
+                // The response is a JSON string with gateway URL
+                $decoded = json_decode($payment_options, true);
+                if ($decoded && isset($decoded['status']) && ($decoded['status'] === 'success' || $decoded['status'] === 'SUCCESS') && isset($decoded['data'])) {
+                    return response()->json([
+                        'status' => true,
+                        'ssl_redirect' => true,
+                        'gateway_url' => $decoded['data'],
+                        'message' => 'Redirecting to payment gateway...',
+                    ]);
+                }
+
+                // If we got a fail response from SSLCommerz
+                $errorMessage = $decoded['message'] ?? 'Payment gateway error. Please try Account Wallet.';
+                return response()->json([
+                    'status' => false,
+                    'message' => $errorMessage,
+                ], 422);
+            } catch (\Throwable $e) {
+                \Log::error('SSLCommerz payment error: ' . $e->getMessage());
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Online payment is currently unavailable. Please use Account Wallet instead.',
+                ], 503);
             }
         }
 
@@ -2966,6 +2996,7 @@ class FrontendApiController extends Controller
             $order->deliveryCharge = $request->deliveryCharge;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
+            $order->advance_delivery = $request->advance_delivery === 'yes' ? 1 : 0;
 
             if ($request->balance_from == 'from_account') {
                 $order->paymentAmount = $request->deliveryCharge;

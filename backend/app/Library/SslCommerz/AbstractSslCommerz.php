@@ -91,7 +91,7 @@ abstract class AbstractSslCommerz implements SslCommerzInterface
         if ($type != 'checkout') {
             return $sslcz;
         } else {
-            if (!empty($sslcz['GatewayPageURL'])) {
+            if (is_array($sslcz) && !empty($sslcz['GatewayPageURL'])) {
                 // this is important to show the popup, return or echo to send json response back
                 if(!empty($this->getApiUrl()) && $this->getApiUrl() == 'https://securepay.sslcommerz.com') {
                    $response = json_encode(['status' => 'SUCCESS', 'data' => $sslcz['GatewayPageURL'], 'logo' => $sslcz['storeLogo']]);
@@ -99,10 +99,12 @@ abstract class AbstractSslCommerz implements SslCommerzInterface
                     $response = json_encode(['status' => 'success', 'data' => $sslcz['GatewayPageURL'], 'logo' => $sslcz['storeLogo']]);
                 }
             } else {
-                if (strpos($sslcz['failedreason'],'Store Credential') === false) {
+                if (is_array($sslcz) && isset($sslcz['failedreason']) && strpos($sslcz['failedreason'],'Store Credential') === false) {
                     $message = $sslcz['failedreason'];
-                } else {
+                } else if (is_array($sslcz) && isset($sslcz['failedreason'])) {
                     $message = "Check the SSLCZ_TESTMODE and SSLCZ_STORE_PASSWORD value in your .env; DO NOT USE MERCHANT PANEL PASSWORD HERE.";
+                } else {
+                    $message = "Failed to connect to SSLCommerz API. Please try again or use a different payment method.";
                 }
                 $response = json_encode(['status' => 'fail', 'data' => null, 'message' => $message]);
             }

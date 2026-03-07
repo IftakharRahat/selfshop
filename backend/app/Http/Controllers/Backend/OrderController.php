@@ -193,6 +193,7 @@ class OrderController extends Controller
                         if ($res->consignment->status == 'in_review') {
                             $order = Order::find($id);
                             $order->status = 'Ontheway';
+                            $order->tracking_number = $res->consignment->tracking_code;
                             $order->trackingLink = 'https://steadfast.com.bd/t' . '/' . $res->consignment->tracking_code;
                             $order->update();
                             $comment = new Comment();
@@ -200,6 +201,37 @@ class OrderController extends Controller
                             $comment->comment = Auth::guard('admin')->user()->name . ' Successfully Send To #SS00' . $id . ' Order to ' . $courier->courierName;
                             $comment->admin_id = Auth::guard('admin')->user()->id;
                             $comment->save();
+
+                            // Notify vendor(s) about the tracking ID
+                            try {
+                                $vendorIds = Orderproduct::where('order_id', $id)
+                                    ->join('products', 'orderproducts.product_id', '=', 'products.id')
+                                    ->whereNotNull('products.vendor_id')
+                                    ->distinct()
+                                    ->pluck('products.vendor_id');
+
+                                if ($vendorIds->isNotEmpty()) {
+                                    $notificationService = app(\App\Services\VendorAdminNotificationService::class);
+                                    foreach ($vendorIds as $vendorId) {
+                                        $notificationService->notifyVendorById(
+                                            (int) $vendorId,
+                                            'Courier Assigned - Tracking ID: ' . $res->consignment->tracking_code,
+                                            'Order #SS00' . $id . ' has been assigned to ' . $courier->courierName . '. Tracking ID: ' . $res->consignment->tracking_code,
+                                            'info',
+                                            [
+                                                'order_id' => $id,
+                                                'tracking_number' => $res->consignment->tracking_code,
+                                                'tracking_link' => 'https://steadfast.com.bd/t/' . $res->consignment->tracking_code,
+                                            ]
+                                        );
+                                    }
+                                }
+                            } catch (\Throwable $e) {
+                                \Log::warning('Failed to notify vendor(s) about tracking ID', [
+                                    'order_id' => $id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
                         } else {
                             $response['status'] = 'failed';
                             $response['message'] = 'This courier do not have permission for auto entry';

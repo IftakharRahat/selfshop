@@ -137,8 +137,7 @@ class VendorOrderController extends Controller
                 'Payment' => $order->Payment,
                 'paymentAmount' => $order->paymentAmount,
                 'subTotal' => $order->subTotal,
-                'customer_name' => $order->customer?->customerName,
-                'customer_phone' => $order->customer?->customerPhone,
+
                 'vendor_item_count' => $vendorItems->count(),
                 'vendor_subtotal' => round($vendorSubtotal, 2),
             ];
@@ -160,7 +159,7 @@ class VendorOrderController extends Controller
     }
 
     /**
-     * Single order detail: only line items that belong to this vendor, plus order and customer info.
+     * Single order detail: only line items that belong to this vendor, plus order info.
      */
     public function show($id)
     {
@@ -212,11 +211,7 @@ class VendorOrderController extends Controller
                     'trackingLink' => $order->trackingLink,
                     'shipped_at' => $order->shipped_at?->toIso8601String(),
                 ],
-                'customer' => $customer ? [
-                    'customerName' => $customer->customerName,
-                    'customerPhone' => $customer->customerPhone,
-                    'customerAddress' => $customer->customerAddress,
-                ] : null,
+
                 'line_items' => $vendorOrderProducts->values()->map(fn($op) => [
                     'id' => $op->id,
                     'product_id' => $op->product_id,

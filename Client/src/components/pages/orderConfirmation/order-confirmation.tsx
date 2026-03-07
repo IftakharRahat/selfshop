@@ -19,7 +19,7 @@ import {
 	useGetAllCartItemsQuery,
 	useUpdateCartItemMutation,
 } from "@/redux/features/cartApi";
-import { useGetPricingQuery } from "@/redux/features/pricingApi";
+import { useGetBasicInfoQuery } from "@/redux/features/home/homeApi";
 import {
 	useGetShippingAddressesQuery,
 	useCreateShippingAddressMutation,
@@ -55,11 +55,11 @@ export default function OrderConfirmation() {
 	const [updateCartItem] = useUpdateCartItemMutation();
 	const [deleteCartItem] = useDeleteCartItemMutation();
 	const [createOrder] = useCreateOrderMutation();
-	const [selected, setSelected] = useState("cod");
-	const [selectedLocation, setSelectedLocation] = useState("inside");
+	const [selected, setSelected] = useState("account");
 	const [agreedToTerms, setAgreedToTerms] = useState(false);
-	const { data: pricingData } = useGetPricingQuery(undefined);
-	console.log("invoice id:", pricingData?.data?.invoice?.invoiceID);
+	const [advanceDelivery, setAdvanceDelivery] = useState<"yes" | "no">("no");
+	const { data: basicInfoData } = useGetBasicInfoQuery(undefined);
+	const deliveryCharge: number = basicInfoData?.data?.deliveryCharge ?? 60;
 	const [customerData, setCustomerData] = useState({
 		name: "",
 		address: "",
@@ -125,7 +125,10 @@ export default function OrderConfirmation() {
 			0,
 		) || 0;
 	const discount = 0;
-	const taxAndFee = 0;
+	const grandTotal =
+		advanceDelivery === "yes"
+			? subtotal - discount // customer already paid delivery
+			: subtotal - discount + deliveryCharge; // delivery added
 
 	// ✅ Form Validation Before Submission
 	const validateForm = () => {
@@ -151,14 +154,15 @@ export default function OrderConfirmation() {
 		formData.append("customerPhone", customerData.phone);
 		formData.append("customerAddress", customerData.address);
 		formData.append("subTotal", subtotal.toString());
-		formData.append(
-			"deliveryCharge",
-			selectedLocation === "inside" ? "60" : "120",
-		);
+		formData.append("deliveryCharge", deliveryCharge.toString());
+		formData.append("advance_delivery", advanceDelivery);
 		formData.append(
 			"balance_from",
-			selected === "account" ? "from_account" : selected === "ssl" ? "online_pay" : "cash_on_delivery",
+			selected === "account" ? "from_account" : "online_pay",
 		);
+		if (customerData.note) {
+			formData.append("customerNote", customerData.note);
+		}
 
 		const result = await handleAsyncWithToast(
 			async () => createOrder(formData),
@@ -166,6 +170,21 @@ export default function OrderConfirmation() {
 			"Creating order...",
 			"Order created successfully",
 		);
+
+		// Handle SSLCommerz redirect
+		if (result?.data?.ssl_redirect && result?.data?.gateway_url) {
+			Swal.fire({
+				icon: "info",
+				title: "Redirecting to Payment",
+				text: "You will be redirected to the payment gateway...",
+				timer: 2000,
+				showConfirmButton: false,
+			}).then(() => {
+				window.location.href = result.data.gateway_url;
+			});
+			return;
+		}
+
 		if (result?.data?.status) {
 			setCustomerData({ name: "", address: "", phone: "", note: "" });
 			Swal.fire({
@@ -326,114 +345,104 @@ export default function OrderConfirmation() {
 							})()}
 						</div>
 
-						{/* <div className="flex items-center justify-between w-full gap-3 mt-5">
-              <label
-                className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all w-full ${
-                  selectedLocation === "inside" ? "border-pink-500 text-pink-500" : "border-gray-300 text-gray-700"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="deliveryLocation"
-                  value="inside"
-                  checked={selectedLocation === "inside"}
-                  onChange={() => setSelectedLocation("inside")}
-                  className="accent-pink-500"
-                />
-                Inside Dhaka
-              </label>
+						{/* Advance Delivery Toggle */}
+						<div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+							<p className="text-sm font-semibold text-gray-800 mb-3">
+								Did customer pay advance delivery charge?
+							</p>
+							<div className="flex items-center gap-3">
+								<label
+									className={`flex items-center gap-2 border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${advanceDelivery === "yes"
+										? "border-green-500 bg-green-50 text-green-700"
+										: "border-gray-300 text-gray-600 hover:border-gray-400"
+										}`}
+								>
+									<input
+										type="radio"
+										name="advanceDelivery"
+										value="yes"
+										checked={advanceDelivery === "yes"}
+										onChange={() => setAdvanceDelivery("yes")}
+										className="accent-green-500"
+									/>
+									Yes
+								</label>
+								<label
+									className={`flex items-center gap-2 border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${advanceDelivery === "no"
+										? "border-pink-500 bg-pink-50 text-pink-700"
+										: "border-gray-300 text-gray-600 hover:border-gray-400"
+										}`}
+								>
+									<input
+										type="radio"
+										name="advanceDelivery"
+										value="no"
+										checked={advanceDelivery === "no"}
+										onChange={() => setAdvanceDelivery("no")}
+										className="accent-pink-500"
+									/>
+									No
+								</label>
+							</div>
+							{advanceDelivery === "yes" ? (
+								<p className="flex items-center gap-2 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
+									<FaCheckCircle size={16} />
+									Customer paid ৳{deliveryCharge} advance delivery
+								</p>
+							) : (
+								<p className="flex items-center gap-2 text-amber-700 text-sm font-medium p-3 rounded-lg mt-3 bg-amber-50">
+									<IoMdInformationCircleOutline size={18} />
+									৳{deliveryCharge} delivery charge will be added to total
+								</p>
+							)}
+						</div>
 
-              <span className="text-gray-500">or</span>
-
-      
-              <label
-                className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all  w-full ${
-                  selectedLocation === "outside" ? "border-pink-500 text-pink-500" : "border-gray-300 text-gray-700"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="deliveryLocation"
-                  value="outside"
-                  checked={selectedLocation === "outside"}
-                  onChange={() => setSelectedLocation("outside")}
-                  className="accent-pink-500"
-                />
-                Outside Dhaka
-              </label>
-            </div>
-
-            <div className="pb-3 border-b border-gray-300">
-              <p className="flex items-center justify-center gap-2 text-green-700 text-sm font-medium p-4 rounded-lg mt-4 bg-green-100">
-                <FaCheckCircle size={20} />
-                You have
-                <span className="mx-[2px] font-bold text-lg ">
-
-                {selectedLocation === "inside" ? "60" : "120"}
-                </span>
-                TK for payment.
-              </p>
-            </div> */}
-
-						<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-2 ">
+						{/* Delivery Fee Payment Info */}
+						<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
 							<IoMdInformationCircleOutline size={20} />
-							Please pay the delivery charge before confirm the order.
+							Please pay ৳{deliveryCharge} delivery fee to confirm the order.
 						</p>
 
-						<div className="flex flex-wrap items-center w-full gap-3 mt-5">
-							{/* Cash on Delivery */}
-							<label
-								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "cod"
-									? "border-pink-500 text-pink-500"
-									: "border-gray-300 text-gray-700"
-									}`}
-							>
-								<input
-									type="radio"
-									name="paymentMethod"
-									value="cod"
-									checked={selected === "cod"}
-									onChange={() => setSelected("cod")}
-									className="accent-pink-500"
-								/>
-								Cash on Delivery
-							</label>
+						{/* Delivery Fee Payment Method */}
+						<div className="mt-5">
+							<p className="text-sm font-semibold text-gray-800 mb-3">Pay delivery fee via</p>
+							<div className="flex flex-wrap items-center w-full gap-3">
+								{/* Account Wallet */}
+								<label
+									className={`flex items-center gap-2 border rounded-md px-4 py-2.5 cursor-pointer transition-all flex-1 ${selected === "account"
+										? "border-pink-500 text-pink-500 bg-pink-50"
+										: "border-gray-300 text-gray-700 hover:border-gray-400"
+										}`}
+								>
+									<input
+										type="radio"
+										name="paymentMethod"
+										value="account"
+										checked={selected === "account"}
+										onChange={() => setSelected("account")}
+										className="accent-pink-500"
+									/>
+									Account Wallet
+								</label>
 
-							{/* Account Payment */}
-							<label
-								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "account"
-									? "border-pink-500 text-pink-500"
-									: "border-gray-300 text-gray-700"
-									}`}
-							>
-								<input
-									type="radio"
-									name="paymentMethod"
-									value="account"
-									checked={selected === "account"}
-									onChange={() => setSelected("account")}
-									className="accent-pink-500"
-								/>
-								Account wallet
-							</label>
-
-							{/* SSL Commerce */}
-							<label
-								className={`flex items-center gap-2 border rounded-md px-4 py-2 cursor-pointer transition-all flex-1 ${selected === "ssl"
-									? "border-pink-500 text-pink-500"
-									: "border-gray-300 text-gray-700"
-									}`}
-							>
-								<input
-									type="radio"
-									name="paymentMethod"
-									value="ssl"
-									checked={selected === "ssl"}
-									onChange={() => setSelected("ssl")}
-									className="accent-pink-500"
-								/>
-								SSL commerce
-							</label>
+								{/* SSL Commerz */}
+								<label
+									className={`flex items-center gap-2 border rounded-md px-4 py-2.5 cursor-pointer transition-all flex-1 ${selected === "ssl"
+										? "border-pink-500 text-pink-500 bg-pink-50"
+										: "border-gray-300 text-gray-700 hover:border-gray-400"
+										}`}
+								>
+									<input
+										type="radio"
+										name="paymentMethod"
+										value="ssl"
+										checked={selected === "ssl"}
+										onChange={() => setSelected("ssl")}
+										className="accent-pink-500"
+									/>
+									SSL Commerz
+								</label>
+							</div>
 						</div>
 
 						{/* Terms & Conditions Checkbox */}
@@ -460,7 +469,7 @@ export default function OrderConfirmation() {
 								: "bg-gray-300 text-gray-500 cursor-not-allowed"
 								}`}
 						>
-							Confirm order
+							Pay ৳{deliveryCharge} & Confirm Order
 						</button>
 					</div>
 
@@ -542,48 +551,49 @@ export default function OrderConfirmation() {
 							</h2>
 							<div className="space-y-4">
 								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-									<span>Total Price</span>
+									<span>Subtotal</span>
 									<span className="flex items-center">
-										{" "}
 										<TbCurrencyTaka size={20} />
-										{cartItems?.data
-											.reduce(
-												(total: number, item: any) =>
-													total + parseFloat(item.price) * item.qty,
-												0,
-											)
-											.toFixed(2)}
+										{subtotal.toFixed(2)}
 									</span>
 								</div>
+								{discount > 0 && (
+									<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+										<span>Discount</span>
+										<span className="flex items-center text-green-600">
+											-<TbCurrencyTaka size={20} />
+											{discount}
+										</span>
+									</div>
+								)}
 								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-									<span>Total Price (Discount)</span>
+									<span>Delivery Charge</span>
 									<span className="flex items-center">
-										{" "}
-										<TbCurrencyTaka size={20} />
-										{discount}
-									</span>
-								</div>
-								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
-									<span>Tax & Fee</span>
-									<span className="flex items-center">
-										{" "}
-										<TbCurrencyTaka size={20} />
-										{taxAndFee}
+										{advanceDelivery === "yes" ? (
+											<span className="text-green-600 text-sm font-medium">Paid by customer</span>
+										) : (
+											<>
+												<TbCurrencyTaka size={20} />
+												{deliveryCharge}
+											</>
+										)}
 									</span>
 								</div>
 								<div className="border-t pt-4">
 									<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
-										<span>Total Price</span>
+										<span>Grand Total</span>
 										<span className="flex items-center">
-											{" "}
 											<TbCurrencyTaka size={20} />
-											{cartItems?.data
-												.reduce(
-													(total: number, item: any) =>
-														total + parseFloat(item.price) * item.qty,
-													0,
-												)
-												.toFixed(2)}
+											{grandTotal.toFixed(2)}
+										</span>
+									</div>
+								</div>
+								<div className="border-t pt-4">
+									<div className="flex flex-col sm:flex-row justify-between text-sm font-semibold text-pink-700 bg-pink-50 p-3 rounded-lg">
+										<span>Delivery fee (pay now)</span>
+										<span className="flex items-center">
+											<TbCurrencyTaka size={18} />
+											{deliveryCharge}
 										</span>
 									</div>
 								</div>
