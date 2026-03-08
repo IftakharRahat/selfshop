@@ -59,10 +59,10 @@
                     <div class="col-md-4">
                         <label class="form-label">Supplier Status <span class="text-danger">*</span></label>
                         <select name="status" class="form-select" required>
-                            <option value="pending" @selected(old('status', $vendor->status) === 'pending')>Pending</option>
-                            <option value="approved" @selected(old('status', $vendor->status) === 'approved')>Approved</option>
-                            <option value="rejected" @selected(old('status', $vendor->status) === 'rejected')>Rejected</option>
-                            <option value="suspended" @selected(old('status', $vendor->status) === 'suspended')>Suspended</option>
+                            <option value="pending" {{ old('status', $vendor->status) === 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="approved" {{ old('status', $vendor->status) === 'approved' ? 'selected' : '' }}>Approved</option>
+                            <option value="rejected" {{ old('status', $vendor->status) === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                            <option value="suspended" {{ old('status', $vendor->status) === 'suspended' ? 'selected' : '' }}>Suspended</option>
                         </select>
                     </div>
 
@@ -75,23 +75,23 @@
                         <label class="form-label">Linked User Status</label>
                         <select name="user_status" class="form-select">
                             <option value="">Do not change</option>
-                            <option value="Active" @selected(old('user_status') === 'Active')>Active</option>
-                            <option value="Inactive" @selected(old('user_status') === 'Inactive')>Inactive</option>
-                            <option value="Block" @selected(old('user_status') === 'Block')>Block</option>
+                            <option value="Active" {{ old('user_status') === 'Active' ? 'selected' : '' }}>Active</option>
+                            <option value="Inactive" {{ old('user_status') === 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                            <option value="Block" {{ old('user_status') === 'Block' ? 'selected' : '' }}>Block</option>
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Linked User Membership</label>
                         <select name="membership_status" class="form-select">
                             <option value="">Do not change</option>
-                            <option value="Paid" @selected(old('membership_status') === 'Paid')>Paid</option>
-                            <option value="Unpaid" @selected(old('membership_status') === 'Unpaid')>Unpaid</option>
+                            <option value="Paid" {{ old('membership_status') === 'Paid' ? 'selected' : '' }}>Paid</option>
+                            <option value="Unpaid" {{ old('membership_status') === 'Unpaid' ? 'selected' : '' }}>Unpaid</option>
                         </select>
                     </div>
 
                     <div class="col-md-12">
                         <div class="form-check mt-1">
-                            <input class="form-check-input" type="checkbox" id="is_verified_badge" name="is_verified_badge" value="1" @checked(old('is_verified_badge', $vendor->is_verified_badge))>
+                            <input class="form-check-input" type="checkbox" id="is_verified_badge" name="is_verified_badge" value="1" {{ old('is_verified_badge', $vendor->is_verified_badge) ? 'checked' : '' }}>
                             <label class="form-check-label" for="is_verified_badge">
                                 Verified badge
                             </label>
