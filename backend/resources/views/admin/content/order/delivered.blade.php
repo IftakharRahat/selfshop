@@ -24,20 +24,87 @@
             </div>
         </div>
 
-        <!-- Status Pills -->
-        <div class="order-status-bar mb-3">
-            <a href="{{ url('admin_order/Delivered') }}" class="order-status-pill" style="--pill-color: #14BF7D;">
-                Delivered <span class="pill-count" id="delivered">0</span>
+        {{-- Status pills --}}
+        <style>
+        .order-status-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .order-status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #374151;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .order-status-pill:hover {
+            border-color: #3b82f6;
+            color: #2563eb;
+            background: #eff6ff;
+            text-decoration: none;
+        }
+        .order-status-pill.active {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .order-status-pill.active .pill-count {
+            color: #fff;
+        }
+        .order-status-pill .pill-count {
+            font-size: 15px;
+            font-weight: 700;
+            color: #111827;
+        }
+        </style>
+        <div class="order-status-bar">
+            @if ($admin->hasrole('Executive'))
+                <a href="{{ url('user/order') }}" class="order-status-pill {{ $status == 'orderall' ? 'active' : '' }}">
+            @else
+                <a href="{{ url('admin_order/orderall') }}" class="order-status-pill {{ $status == 'orderall' ? 'active' : '' }}">
+            @endif
+                <span class="pill-count" id="all">0</span> All
             </a>
-            <a href="{{ url('admin_order/Return') }}" class="order-status-pill" style="--pill-color: #dc3545;">
-                Return <span class="pill-count" id="return">0</span>
+            <a href="{{ url('admin_order/Pending') }}" class="order-status-pill {{ $status == 'Pending' ? 'active' : '' }}">
+                <span class="pill-count" id="pending">0</span> Pending
+            </a>
+            <a href="{{ url('admin_order/Confirmed') }}" class="order-status-pill {{ $status == 'Confirmed' ? 'active' : '' }}">
+                <span class="pill-count" id="confirmed">0</span> Confirmed
+            </a>
+            <a href="{{ url('admin_order/Processing') }}" class="order-status-pill {{ $status == 'Processing' ? 'active' : '' }}">
+                <span class="pill-count" id="processing">0</span> Processing
+            </a>
+            <a href="{{ url('admin_order/Packageing') }}" class="order-status-pill {{ $status == 'Packageing' ? 'active' : '' }}">
+                <span class="pill-count" id="packageing">0</span> Packaging
+            </a>
+            <a href="{{ url('admin_order/Ontheway') }}" class="order-status-pill {{ $status == 'Ontheway' ? 'active' : '' }}">
+                <span class="pill-count" id="ontheway">0</span> On the Way
+            </a>
+            <a href="{{ url('admin_order/Delivered') }}" class="order-status-pill {{ $status == 'Delivered' ? 'active' : '' }}">
+                <span class="pill-count" id="delivered">0</span> Delivered
+            </a>
+            <a href="{{ url('admin_order/Canceled') }}" class="order-status-pill {{ $status == 'Canceled' ? 'active' : '' }}">
+                <span class="pill-count" id="canceled">0</span> Canceled
+            </a>
+            <a href="{{ url('admin_order/Return') }}" class="order-status-pill {{ $status == 'Return' ? 'active' : '' }}">
+                <span class="pill-count" id="return">0</span> Return
             </a>
         </div>
 
         {{-- Edit Order Modal --}}
-        <div class="modal fade admin-modal" id="editmainOrder" tabindex="-1">
+        <div class="modal" id="editmainOrder">
             <div class="modal-dialog" style="width: 92%;max-width: none;">
-                <div class="modal-content">
+                <div class="modal-content admin-modal">
                     <div class="modal-header">
                         <h5 class="modal-title">Edit Order</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -76,10 +143,9 @@
                                 <th>Status</th>
                                 @if ($admin->hasRole('user'))
                                     <th style="width: 133px;">Notes</th>
-                                @elseif($admin->hasRole('superadmin') || $admin->hasRole('manager') || $admin->hasRole('admin'))
+                                @else
                                     <th style="width: 133px;">Notes</th>
                                     <th style="width: 133px;">User</th>
-                                @else
                                 @endif
                                 <th class="hidden-sm">Action</th>
                             </tr>
@@ -96,6 +162,9 @@
                                 <th></th>
                                 <th></th>
                                 <th></th>
+                                @if (!$admin->hasRole('user'))
+                                    <th></th>
+                                @endif
                                 <th></th>
                             </tr>
                         </tfoot>
@@ -124,6 +193,8 @@
         $(document).ready(function() {
             var user_role = $('#user_role').val();
             var orderstatus = $('#orderstatus').val();
+
+            console.log('[DELIVERED PAGE] JS loaded. user_role=' + user_role + ', orderstatus=' + orderstatus);
 
             if (user_role == 0) {
                 var orderinfotbl = $('#orderinfo').DataTable({
@@ -676,9 +747,9 @@
                     url: "{{ url('admin_orders') }}/" + id + "/edit",
                     success: function(response) {
 
-                        $('.modal .modal-body').empty().append(response);
-                        $('.modal').modal('toggle');
-                        $('.modal-footer').hide();
+                        $('#editmainOrder .modal-body').empty().append(response);
+                        $('#editmainOrder').modal('toggle');
+                        $('#editmainOrder .modal-footer').hide();
 
                         $(".datepicker").flatpickr();
 
@@ -1223,7 +1294,7 @@
                         var data = JSON.parse(response);
                         if (data["status"] === "success") {
                             toastr.success(data["message"]);
-                            $('.modal').modal('toggle');
+                            $('#editmainOrder').modal('hide');
                         } else {
                             toastr.error(data["message"]);
                         }
