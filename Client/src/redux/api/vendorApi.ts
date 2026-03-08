@@ -1097,6 +1097,7 @@ export const vendorApi = baseApi.injectEndpoints({
 				data: {
 					product_count: number;
 					total_orders: number;
+					pending_amount: number;
 					total_sales: number;
 					this_month_sales: number;
 					last_month_sales: number;
@@ -1111,7 +1112,10 @@ export const vendorApi = baseApi.injectEndpoints({
 						price: number;
 						total_sales: number;
 						total_quantity: number;
+						avg_rating: number;
 					}[];
+					avg_rating: number;
+					total_followers: number;
 				};
 			},
 			void

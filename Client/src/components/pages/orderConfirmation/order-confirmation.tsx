@@ -211,6 +211,13 @@ export default function OrderConfirmation() {
 		);
 	};
 
+	const totalProfit =
+		cartItems?.data?.reduce((total: number, item: any) => {
+			const sellingPrice = parseFloat(item.options?.selling_price || item.price);
+			const costPrice = parseFloat(item.price);
+			return total + (sellingPrice - costPrice) * item.qty;
+		}, 0) || 0;
+
 	return (
 		<div className="min-h-screen py-8">
 			<div className="container mx-auto px-4 max-w-7xl">
@@ -557,6 +564,15 @@ export default function OrderConfirmation() {
 										{subtotal.toFixed(2)}
 									</span>
 								</div>
+								{totalProfit > 0 && (
+									<div className="flex flex-col sm:flex-row justify-between text-pink-600 font-medium">
+										<span>Profit amount</span>
+										<span className="flex items-center">
+											<TbCurrencyTaka size={20} />
+											{totalProfit.toFixed(2)}
+										</span>
+									</div>
+								)}
 								{discount > 0 && (
 									<div className="flex flex-col sm:flex-row justify-between text-gray-600">
 										<span>Discount</span>

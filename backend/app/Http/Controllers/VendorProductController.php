@@ -124,10 +124,19 @@ class VendorProductController extends Controller
         $product->ProductBreaf = $data['ProductBreaf'] ?? null;
         $product->ProductDetails = $data['ProductDetails'] ?? null;
         $product->ProductResellerPrice = $data['ProductResellerPrice'] ?? 0;
-        $product->ProductRegularPrice = $data['ProductRegularPrice'] ?? 0;
-        $product->ProductWholesalePrice = $data['ProductResellerPrice'] ?? 0;
-        $product->ProductSalePrice = $data['ProductRegularPrice'] ?? 0;
-        $product->min_sell_price = $data['ProductResellerPrice'] ?? 0;
+
+        // Auto-calculate storefront price with category commission
+        $commissionService = app(\App\Services\VendorCommissionService::class);
+        $displayPrice = $commissionService->getStorefrontPrice(
+            (float) $product->ProductResellerPrice,
+            (int) $vendor->id,
+            (int) $product->category_id
+        );
+
+        $product->ProductRegularPrice = $displayPrice;
+        $product->ProductSalePrice = $displayPrice;
+        $product->ProductWholesalePrice = $product->ProductResellerPrice;
+        $product->min_sell_price = $product->ProductResellerPrice;
         $product->qty = $data['qty'] ?? 0;
         $product->low_stock = $data['low_stock'] ?? 0;
         $product->show_stock = $data['show_stock'] ?? 'On';
@@ -259,11 +268,23 @@ class VendorProductController extends Controller
             ], 422);
         }
 
-        foreach (['ProductName', 'ProductBreaf', 'ProductDetails', 'ProductResellerPrice', 'ProductRegularPrice', 'qty', 'low_stock', 'ProductSku', 'show_stock', 'show_stock_text', 'status', 'MetaKey', 'Discount', 'category_id', 'subcategory_id', 'brand_id'] as $key) {
+        foreach (['ProductName', 'ProductBreaf', 'ProductDetails', 'ProductResellerPrice', 'qty', 'low_stock', 'ProductSku', 'show_stock', 'show_stock_text', 'status', 'MetaKey', 'Discount', 'category_id', 'subcategory_id', 'brand_id'] as $key) {
             if (array_key_exists($key, $data)) {
                 $product->{$key} = $data[$key];
             }
         }
+
+        // Recalculate storefront price with category commission
+        $commissionService = app(\App\Services\VendorCommissionService::class);
+        $displayPrice = $commissionService->getStorefrontPrice(
+            (float) $product->ProductResellerPrice,
+            (int) $vendor->id,
+            (int) $product->category_id
+        );
+        $product->ProductRegularPrice = $displayPrice;
+        $product->ProductSalePrice = $displayPrice;
+        $product->ProductWholesalePrice = $product->ProductResellerPrice;
+        $product->min_sell_price = $product->ProductResellerPrice;
         if (array_key_exists('unit', $data)) {
             $product->weight = $data['unit'];
         }
@@ -697,9 +718,18 @@ class VendorProductController extends Controller
             $product->ProductBreaf = $data['ProductBreaf'] ?? null;
             $product->ProductDetails = $data['ProductDetails'] ?? null;
             $product->ProductResellerPrice = (float) ($data['ProductResellerPrice'] ?? 0);
-            $product->ProductRegularPrice = (float) ($data['ProductRegularPrice'] ?? 0);
+            
+            // Auto-calculate storefront price with category commission
+            $commissionService = app(\App\Services\VendorCommissionService::class);
+            $displayPrice = $commissionService->getStorefrontPrice(
+                (float) $product->ProductResellerPrice,
+                (int) $vendor->id,
+                (int) $product->category_id
+            );
+
+            $product->ProductRegularPrice = $displayPrice;
+            $product->ProductSalePrice = $displayPrice;
             $product->ProductWholesalePrice = $product->ProductResellerPrice;
-            $product->ProductSalePrice = $product->ProductRegularPrice;
             $product->min_sell_price = $product->ProductResellerPrice;
             $product->qty = (int) ($data['qty'] ?? 0);
             $product->low_stock = (int) ($data['low_stock'] ?? 0);
@@ -964,12 +994,15 @@ class VendorProductController extends Controller
             $product->ProductResellerPrice = $minPrice;
         }
         
-        // Sync the first selectable price to ProductRegularPrice for the frontend cards
-        if ($firstSizePrice !== null && $firstSizePrice > 0) {
-            $product->ProductRegularPrice = $firstSizePrice;
-        } elseif ($minPrice !== null && $minPrice > 0) {
-            // Fallback to minPrice if first size price couldn't be determined
-            $product->ProductRegularPrice = $minPrice;
+        // Apply commission markup for storefront price (ProductRegularPrice)
+        $commissionService = app(\App\Services\VendorCommissionService::class);
+        $rawCardPrice = $firstSizePrice ?? $minPrice ?? $product->ProductResellerPrice;
+        if ($rawCardPrice > 0) {
+            $product->ProductRegularPrice = $commissionService->getStorefrontPrice(
+                (float) $rawCardPrice,
+                (int) $product->vendor_id,
+                (int) $product->category_id
+            );
         }
 
         $product->save();

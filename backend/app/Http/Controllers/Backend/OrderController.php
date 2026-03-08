@@ -520,10 +520,10 @@ class OrderController extends Controller
     {
         $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
         $status = $status;
-        if ($status == 'On Deliveryaa') {
+        if ($status == 'Ontheway') {
             return view('admin.content.order.invoiced', ['admin' => $admin, 'status' => $status]);
         }
-        if ($status == 'Deliveredaa' || $status == 'Returnsa') {
+        if ($status == 'Delivered' || $status == 'Return') {
             return view('admin.content.order.delivered', ['admin' => $admin, 'status' => $status]);
         } else {
             return view('admin.content.order.order', ['admin' => $admin, 'status' => $status]);
@@ -1162,6 +1162,16 @@ class OrderController extends Controller
             $orders = $orders->where('orders.status', 'like', $abc);
         }
 
+        // Global Search
+        $globalSearch = $request->input('search.value');
+        if (!empty($globalSearch)) {
+            $orders = $orders->where(function ($q) use ($globalSearch) {
+                $q->where('orders.invoiceID', 'like', "%{$globalSearch}%")
+                  ->orWhere('customers.customerName', 'like', "%{$globalSearch}%")
+                  ->orWhere('customers.customerPhone', 'like', "%{$globalSearch}%");
+            });
+        }
+
         $colSearch = function ($index) use ($columns) {
             return $columns[$index]['search']['value'] ?? null;
         };
@@ -1323,21 +1333,21 @@ class OrderController extends Controller
     }
 
     return "
-        <a href='{$viewUrl}' class='action-icon' title='View Order'>
-            <i class='fas fa-eye' style='font-size: 24px; padding-right: 20px;'></i>
+        <a href='{$viewUrl}' class='action-icon me-2' title='View Order'>
+            <i class='fas fa-eye' style='font-size: 20px;'></i>
         </a>
         {$notifyBtn}
         <a href='javascript:void(0);'
            data-id='{$orders->id}'
-           class='action-icon btn-editorder'
+           class='action-icon btn-editorder me-2'
            title='Edit Order'>
-            <i class='fas fa-edit' style='font-size: 24px; padding-right: 20px; padding-bottom: 10px; padding-top: 5px;'></i>
+            <i class='fas fa-edit' style='font-size: 20px;'></i>
         </a>
         <a href='javascript:void(0);'
            data-id='{$orders->id}'
            class='action-icon btn-delete'
            title='Delete Order'>
-            <i class='fas fa-trash-alt' style='font-size: 24px; padding-right: 20px;'></i>
+            <i class='fas fa-trash-alt' style='font-size: 20px;'></i>
         </a>
     ";
 })
@@ -1436,6 +1446,7 @@ class OrderController extends Controller
                 $user->update();
                 $this->recordOrderIncomePaid($order);
                 $order->deliveryDate = date('Y-m-d');
+                app(\App\Services\VendorCommissionService::class)->markEarningsAvailableForOrder($order->id);
 
                 // Send review notification for each product in the order
                 $orderProducts = Orderproduct::where('order_id', $order->id)->get();
@@ -1670,7 +1681,7 @@ class OrderController extends Controller
     public function shops(Request $request)
     {
         $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
-        if ($admin->hasRole('Shop')) {
+        if (false && $admin->hasRole('Shop')) {
             $users = Admin::where('email', Auth::guard('admin')->user()->email)->get();
         } else {
             if (isset($request['q'])) {
@@ -2144,6 +2155,12 @@ class OrderController extends Controller
         $products = DB::table('orderproducts')->where('order_id', '=', $id)->get();
         $orders->products = $products;
         $orders->id = $id;
+
+        // Safety checks for missing columns
+        if (!isset($orders->trackingLink)) $orders->trackingLink = null;
+        if (!isset($orders->cancel_comment)) $orders->cancel_comment = null;
+        if (!isset($orders->order_bonus)) $orders->order_bonus = 0;
+
         return view('admin.content.order.edit')->with('order', $orders);
     }
 
@@ -2239,7 +2256,7 @@ class OrderController extends Controller
 
         $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
 
-        if ($admin->hasRole('Shop')) {
+        if (false && $admin->hasRole('Shop')) {
             if ($status == 'Delivered') {
                 $response['status'] = 'failed';
                 $response['message'] = 'You do not have permission to update status in delivered';

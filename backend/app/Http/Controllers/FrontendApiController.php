@@ -806,13 +806,17 @@ class FrontendApiController extends Controller
             }
         }
 
+        $commissionService = app(\App\Services\VendorCommissionService::class);
+        $commissionPercent = $commissionService->getRateForProduct($product->vendor_id, $product->category_id);
+        
         return response()->json([
             'status' => true,
             'message' => 'Products Details & Related Products',
             'data' => [
                 'product_details' => $product,
                 'relatedproducts' => $relatedproducts,
-                'flash_sale' => $flashSaleData
+                'flash_sale' => $flashSaleData,
+                'commission_percent' => $commissionPercent
             ]
         ], 200);
     }
@@ -2630,7 +2634,7 @@ class FrontendApiController extends Controller
                 'qty' => $request->qty,
                 'size' => $request->size,
                 'color' => $request->color,
-                'shop_id' => $cartProduct->shop_id,
+                'shop_id' => $cartProduct->shop_id ?: $cartProduct->vendor_id ?: 1,
                 'image' => $cartProduct->ProductImage,
                 'options' => $options,
                 'user_id' => Auth::user()->id,
@@ -2990,7 +2994,7 @@ class FrontendApiController extends Controller
             $order->order_bonus = $bonus;
             $order->user_id = Auth::id() ?? null; // if using API auth
             $order->courier_id = 26;
-            $order->store_id = $shopproduct[0]->shop_id;
+            $order->store_id = $shopproduct[0]->shop_id ?: 1;
             $order->invoiceID = $this->uniqueIDN();
             $order->subTotal = $request->subTotal;
             $order->deliveryCharge = $request->deliveryCharge;

@@ -119,7 +119,7 @@ function DesktopTabs({
 	);
 }
 
-export default function ProductDetailPage({ product, flashSale }: any) {
+export default function ProductDetailPage({ product, flashSale, commissionPercent }: any) {
 	const [orderOpen, setOrderOpen] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 	const { isActive: isResellerActive } = useIsActiveReseller();
@@ -137,8 +137,9 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 		category: `Category #${product.category_id}`,
 		quantity: product.qty,
 		sku: product.ProductSku,
+		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
 		minimumPrice: parseFloat(product.min_sell_price),
-		currentPrice: parseFloat(product.ProductResellerPrice),
+		currentPrice: parseFloat(product.ProductRegularPrice || product.ProductResellerPrice),
 		description: product.ProductDetails,
 		images: {
 			main: images,
@@ -235,6 +236,8 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 			return parseFloat(flashSale.flash_price);
 		}
 
+		let rawPrice = 0;
+
 		// 1. Check size-level bulk tiers if any (normalize camelCase/snake_case)
 		const tiers = sizeItem.bulkPrices || sizeItem.bulk_prices || [];
 		if (tiers && tiers.length > 0) {
@@ -242,13 +245,16 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 				.slice()
 				.sort((a: any, b: any) => b.min_qty - a.min_qty)
 				.find((t: any) => qty >= t.min_qty);
-			if (tier) return parseFloat(tier.bulk_price || tier.unit_price);
+			if (tier) {
+				rawPrice = parseFloat(tier.bulk_price || tier.unit_price);
+				return rawPrice * commissionFactor;
+			}
 		}
 
 		// 2. Check size-level base price if any
 		if (sizeItem.price !== null && sizeItem.price !== undefined) {
 			const sPrice = parseFloat(sizeItem.price);
-			if (sPrice > 0) return sPrice;
+			if (sPrice > 0) return sPrice * commissionFactor;
 		}
 
 		// 3. Fallback to product-level tiers based on total quantity
@@ -257,7 +263,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 				.slice()
 				.sort((a: any, b: any) => b.min_qty - a.min_qty)
 				.find((t: any) => totalQuantity >= t.min_qty);
-			if (tier) return parseFloat(tier.unit_price);
+			if (tier) return parseFloat(tier.unit_price) * commissionFactor;
 		}
 
 		// 4. Final fallback to product-level current price
@@ -286,9 +292,10 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 		return (fs.price > 0) ? fs.price : (fs.bulkPrices?.[0]?.bulk_price || fs.bulk_prices?.[0]?.bulk_price || productData.currentPrice);
 	})();
 
+	const commissionFactor = 1 + (productData.commission_percent / 100);
 	const effectiveUnitPrice = flashSale && flashSale.flash_price > 0
 		? parseFloat(flashSale.flash_price)
-		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice));
+		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice)) * commissionFactor;
 
 	const sellingPriceSchema = z
 		.number({ required_error: "Selling price is required" })
@@ -706,7 +713,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 														) : (
 															<>
 																<TbCurrencyTaka size={20} />
-																{parseFloat(tier.unit_price).toFixed(2)}
+																{(parseFloat(tier.unit_price) * commissionFactor).toFixed(2)}
 															</>
 														)}
 													</span>
@@ -988,7 +995,7 @@ export default function ProductDetailPage({ product, flashSale }: any) {
 											<div className="flex flex-wrap gap-2">
 												{sizeBulkPrices.map((tier: any, tIdx: number) => (
 													<div key={tIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-pink-200 text-[11px] text-pink-600 font-semibold shadow-sm">
-														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">{isResellerActive ? `৳${Number(tier.bulk_price || tier.unit_price).toFixed(2)}` : '***'}</span>
+														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">{isResellerActive ? `৳${(Number(tier.bulk_price || tier.unit_price) * commissionFactor).toFixed(2)}` : '***'}</span>
 													</div>
 												))}
 											</div>

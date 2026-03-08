@@ -46,6 +46,7 @@ export default function VendorNewProductPage() {
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 	const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
 	const [selectedMinicategoryId, setSelectedMinicategoryId] = useState<string>("");
+	const [basePrice, setBasePrice] = useState<string>("");
 	const selectedCategoryCommission = selectedCategoryId
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
 			?.commission_percent
@@ -130,9 +131,7 @@ export default function VendorNewProductPage() {
 		if (brief) formData.append("ProductBreaf", brief);
 		if (details) formData.append("ProductDetails", details);
 		const basePrice = (form.querySelector('[name="base_price"]') as HTMLInputElement)?.value;
-		const regularPrice = (form.querySelector('[name="regular_price"]') as HTMLInputElement)?.value ?? basePrice;
 		formData.append("ProductResellerPrice", basePrice || "0");
-		formData.append("ProductRegularPrice", regularPrice || "0");
 		formData.append("qty", (form.querySelector('[name="qty"]') as HTMLInputElement)?.value || "0");
 		formData.append("low_stock", (form.querySelector('[name="low_stock"]') as HTMLInputElement)?.value || "0");
 		const sku = (form.querySelector('[name="sku"]') as HTMLInputElement)?.value;
@@ -385,17 +384,26 @@ export default function VendorNewProductPage() {
 												min={0}
 												step="0.01"
 												name="base_price"
+												value={basePrice}
+												onChange={(e) => setBasePrice(e.target.value)}
 												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 											/>
+											{basePrice && selectedCategoryCommission !== null && !isNaN(Number(basePrice)) && (
+												<p className="text-xs text-green-600 mt-1 font-semibold">
+													Storefront price: ৳{(Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
+												</p>
+											)}
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
-											Regular price
+											Regular price (Storefront Price)
 											<input
-												type="number"
-												min={0}
-												step="0.01"
+												type="text"
+												readOnly
+												value={basePrice && selectedCategoryCommission !== null && !isNaN(Number(basePrice)) ? (Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2) : ""}
 												name="regular_price"
-												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+												placeholder="Auto-calculated"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-100 cursor-not-allowed"
 											/>
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
@@ -713,6 +721,11 @@ export default function VendorNewProductPage() {
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
 																	<div className="font-semibold text-indigo-600">৳{sz.price}</div>
+																	{sz.price && selectedCategoryCommission !== null && (
+																		<div className="text-[9px] text-green-600 font-medium">
+																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																		</div>
+																	)}
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Qty</label>
@@ -738,7 +751,14 @@ export default function VendorNewProductPage() {
 															{sz.bulkTiers.map((bt, btIdx) => (
 																<div key={btIdx} className="flex items-center gap-3 text-xs bg-white p-1.5 rounded border border-indigo-50">
 																	<span className="flex-1 font-medium">Qty: {bt.min_qty} - {bt.max_qty || '∞'}</span>
-																	<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																	<div className="text-right">
+																		<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																		{selectedCategoryCommission !== null && (
+																			<div className="text-[9px] text-green-600 font-medium">
+																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																			</div>
+																		)}
+																	</div>
 																	<button
 																		type="button"
 																		onClick={() => {
