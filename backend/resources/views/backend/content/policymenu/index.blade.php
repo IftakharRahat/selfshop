@@ -154,7 +154,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.policymenus.store') }}',
+                url: '{{ route('admin.policymenus.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),

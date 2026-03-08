@@ -126,7 +126,8 @@
                     data: 'menu_banner',
                     name: 'menu_banner',
                     render: function(data, type, full, meta) {
-                        return "<img src=../" + data + " height=\"40\" alt='No Image'/>";
+                        var imgSrc = data && data.startsWith('http') ? data : '../' + data;
+                        return "<img src='" + imgSrc + "' height=\"40\" alt='No Image'/>";
                     }
                 },
                 {
@@ -165,7 +166,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.menus.store') }}',
+                url: '{{ route('admin.menus.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),
@@ -200,8 +201,9 @@
                     $('#EditMenu').find('#menu_id').val(data.id);
 
                     $('#previmg').html('');
+                    var prevSrc = data.menu_banner && data.menu_banner.startsWith('http') ? data.menu_banner : '../' + data.menu_banner;
                     $('#previmg').append(`
-                        <img  src="../` + data.menu_banner + `" alt = "" style="height: 80px" />
+                        <img  src="` + prevSrc + `" alt = "" style="height: 80px" />
                     `);
 
                     $('#EditMenu').attr('data-id', data.id);

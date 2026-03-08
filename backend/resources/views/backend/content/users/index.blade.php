@@ -135,7 +135,7 @@ $(document).ready(function() {
         e.preventDefault();
         $.ajax({
             type: 'POST',
-            uploadUrl: '{{ route('admin.brands.store') }}',
+            url: '{{ route('admin.brands.store') }}',
             processData: false, contentType: false,
             data: new FormData(this),
             success: function(data) {
@@ -155,7 +155,8 @@ $(document).ready(function() {
                 $('#EditBrand').find('#brand_name').val(data.brand_name);
                 $('#EditBrand').find('#brand_id').val(data.id);
                 $('#previmg').html('');
-                $('#previmg').append(`<img src="../` + data.brand_icon + `" alt="" style="height: 80px" />`);
+                var prevSrc = data.brand_icon && data.brand_icon.startsWith('http') ? data.brand_icon : '../' + data.brand_icon;
+                $('#previmg').append(`<img src="` + prevSrc + `" alt="" style="height: 80px" />`);
                 $('#EditBrand').attr('data-id', data.id);
             },
             error: function(error) { console.log('error'); }
