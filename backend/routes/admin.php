@@ -71,6 +71,10 @@ use App\Http\Controllers\Backend\AdminActivityController;
 */
 
 
+Route::get('admin', function () {
+    return redirect()->route('admin.loginview');
+});
+
 Route::group(['prefix' => 'admin',], function () {
     // login
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('admin.loginview');

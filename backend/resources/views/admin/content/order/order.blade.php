@@ -24,7 +24,7 @@
             background-color: #005a0a;
             transition: width 0.6s ease;
         }
-        #orderinfo_filter input[type="search"] {
+        #orderinfo_filter {
             display: none;
         }
         /* Order status bar */
@@ -169,6 +169,12 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 @endif
+
+                <div class="mb-4 d-flex align-items-center">
+                    <input type="text" id="admin_order_search" class="form-control" 
+                        placeholder="Search orders..." 
+                        style="width: 250px; border-radius: 6px; border: 1px solid #ced4da; padding-left: 15px;">
+                </div>
 
                 @if($admin->hasrole('Shop'))
                     <div class="table-responsive">
@@ -322,20 +328,24 @@
                         },
                         {
                             data: 'invoice',
-                            width: "15%"
+                            width: "15%",
+                            searchable: false
                         },
                         {
                             data: 'customerInfo',
                             width: "25%",
-                            className: "customerInfo"
+                            className: "customerInfo",
+                            searchable: false
                         },
                         {
                             data: "products",
                             width: "15%",
+                            searchable: false
                         },
                         {
                             data: "wholesale",
-                            width: "5%"
+                            width: "5%",
+                            searchable: false
                         },
                         {
                             data: "subTotal",
@@ -352,7 +362,8 @@
                         },
                         {
                             data: 'statusButton',
-                            width: "10%"
+                            width: "10%",
+                            searchable: false
                         },
                         {
                             data: "user",
@@ -397,6 +408,16 @@
                         $(api.column(6).footer()).html(pageTotal + " Tk");
                     }
 
+                });
+
+                // Global search wiring (debounced)
+                var searchTimer;
+                $('#admin_order_search').on('keyup change', function() {
+                    clearTimeout(searchTimer);
+                    var val = $(this).val();
+                    searchTimer = setTimeout(function() {
+                        orderinfotbl.search(val).draw();
+                    }, 400);
                 });
 
                 $(document).on('click', '.assign-courier', function(e) {
@@ -1514,24 +1535,29 @@
                         },
                         {
                             data: 'invoice',
-                            width: "15%"
+                            width: "15%",
+                            searchable: false
                         },
                         {
                             data: 'customerInfo',
                             width: "25%",
-                            className: "customerInfo"
+                            className: "customerInfo",
+                            searchable: false
                         },
                         {
                             data: "products",
                             width: "15%",
+                            searchable: false
                         },
                         {
                             data: "resellprice",
-                            width: "5%"
+                            width: "5%",
+                            searchable: false
                         },
                         {
                             data: "profit",
-                            width: "5%"
+                            width: "5%",
+                            searchable: false
                         },
                         {
                             data: "subTotal",
@@ -1548,7 +1574,8 @@
                         },
                         {
                             data: 'statusButton',
-                            width: "10%"
+                            width: "10%",
+                            searchable: false
                         },
                         {
                             data: "user",
@@ -1862,6 +1889,16 @@
                     }
                 });
 
+            });
+
+            // Global search wiring (debounced)
+            var searchTimer;
+            $('#admin_order_search').on('keyup change', function() {
+                clearTimeout(searchTimer);
+                var val = $(this).val();
+                searchTimer = setTimeout(function() {
+                    orderinfotbl.search(val).draw();
+                }, 400);
             });
 
             function countorder() {

@@ -65,6 +65,23 @@ class AdminVendorCommissionController extends Controller
             ]
         );
 
+        // Recalculate ProductPrice for all vendor products in this category
+        $products = \App\Models\Product::where('category_id', $category->id)
+            ->whereNotNull('vendor_id')
+            ->get();
+
+        $commissionService = app(\App\Services\VendorCommissionService::class);
+        foreach ($products as $product) {
+            $displayPrice = $commissionService->getStorefrontPrice(
+                (float) $product->ProductResellerPrice,
+                (int) $product->vendor_id,
+                (int) $product->category_id
+            );
+            $product->ProductRegularPrice = $displayPrice;
+            $product->ProductSalePrice = $displayPrice;
+            $product->save();
+        }
+
         $this->vendorNotificationService->notifyAllVendors(
             'Commission updated',
             'Admin updated commission for category "' . $category->category_name . '" to ' . round((float) $validated['commission_percent'], 2) . '%.',

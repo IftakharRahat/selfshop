@@ -31,7 +31,11 @@ export default async function ProductDetailsComponent({
 
 	return (
 		<div>
-			<ProductDetailPage product={product?.data?.product_details} />
+			<ProductDetailPage
+				product={product?.data?.product_details}
+				flashSale={product?.data?.flash_sale}
+				commissionPercent={product?.data?.commission_percent}
+			/>
 			<ProductShowSection
 				title="NEW ARRIVALS"
 				className="bg-white"

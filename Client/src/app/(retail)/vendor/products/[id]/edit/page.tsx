@@ -219,7 +219,6 @@ export default function VendorEditProductPage() {
 		formData.append("ProductBreaf", f.short_description);
 		formData.append("ProductDetails", f.description);
 		formData.append("ProductResellerPrice", f.base_price || "0");
-		formData.append("ProductRegularPrice", f.regular_price || "0");
 		formData.append("qty", f.qty || "0");
 		formData.append("low_stock", f.low_stock || "0");
 		formData.append("ProductSku", f.sku);
@@ -367,10 +366,16 @@ export default function VendorEditProductPage() {
 										<label className="flex flex-col text-sm font-medium text-gray-700">
 											Base price (reseller)
 											<input type="number" min={0} step="0.01" value={f.base_price} onChange={set("base_price")} className={inputCls} />
+											{f.base_price && selectedCategoryCommission !== null && !isNaN(Number(f.base_price)) && (
+												<p className="text-xs text-green-600 mt-1 font-semibold">
+													Storefront price: ৳{(Number(f.base_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
+												</p>
+											)}
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
-											Regular price
-											<input type="number" min={0} step="0.01" value={f.regular_price} onChange={set("regular_price")} className={inputCls} />
+											Regular price (Storefront Price)
+											<input type="text" readOnly value={f.base_price && selectedCategoryCommission !== null && !isNaN(Number(f.base_price)) ? (Number(f.base_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2) : ""} placeholder="Auto-calculated" className={`${inputCls} bg-gray-100 cursor-not-allowed`} />
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
 											Quantity
@@ -676,6 +681,11 @@ export default function VendorEditProductPage() {
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
 																	<div className="font-semibold text-indigo-600">৳{sz.price || 'Inherited'}</div>
+																	{sz.price && selectedCategoryCommission !== null && (
+																		<div className="text-[9px] text-green-600 font-medium">
+																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																		</div>
+																	)}
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Qty</label>
@@ -697,7 +707,14 @@ export default function VendorEditProductPage() {
 															{sz.bulk_prices && sz.bulk_prices.map((bt: any) => (
 																<div key={bt.id} className="flex items-center gap-3 text-xs bg-white p-1.5 rounded border border-indigo-50">
 																	<span className="flex-1 font-medium">Qty: {bt.min_qty} - {bt.max_qty || '∞'}</span>
-																	<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																	<div className="text-right">
+																		<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																		{selectedCategoryCommission !== null && (
+																			<div className="text-[9px] text-green-600 font-medium">
+																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																			</div>
+																		)}
+																	</div>
 																	<button
 																		type="button"
 																		onClick={async () => {

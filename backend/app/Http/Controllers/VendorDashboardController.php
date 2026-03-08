@@ -9,9 +9,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use App\Models\Review;
+use App\Models\VendorFollower;
 
 class VendorDashboardController extends Controller
 {
+    // Need to include CommissionService
     private function getVendor()
     {
         $user = Auth::user();
@@ -25,7 +28,7 @@ class VendorDashboardController extends Controller
      * GET /vendor/dashboard
      * Aggregated stats for vendor dashboard: products, orders, sales, categories, top products.
      */
-    public function index(Request $request)
+    public function index(Request $request, \App\Services\VendorCommissionService $commissionService)
     {
         $vendor = $this->getVendor();
         if (!$vendor) {
@@ -34,6 +37,10 @@ class VendorDashboardController extends Controller
 
         $vendorId = $vendor->id;
         $cacheKey = "vendor:dashboard:{$vendorId}";
+
+        // Always ensure earnings are synced first before caching metrics
+        $this->ensureEarningsForVendorOrders($vendorId, $commissionService);
+
         $payload = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($vendor, $vendorId) {
             $now = now();
             $thisMonthStart = $now->copy()->startOfMonth()->format('Y-m-d');
@@ -47,12 +54,23 @@ class VendorDashboardController extends Controller
             // Total orders (orders containing at least one vendor product)
             $total_orders = Order::whereHas('orderproducts.product', fn ($q) => $q->where('vendor_id', $vendorId))->count();
 
-            // Total sales & last month / this month from vendor_earnings
-            $total_sales = (float) VendorEarning::where('vendor_id', $vendorId)->sum('line_total');
+            // Pending amount (Earnings synced but order not delivered yet)
+            $pending_amount = (float) VendorEarning::where('vendor_id', $vendorId)
+                ->where('status', 'pending')
+                ->sum('line_total');
+
+            // Total sales & last month / this month from vendor_earnings (ONLY available/delivered)
+            $total_sales = (float) VendorEarning::where('vendor_id', $vendorId)
+                ->where('status', 'available')
+                ->sum('line_total');
+
             $this_month_sales = (float) VendorEarning::where('vendor_id', $vendorId)
+                ->where('status', 'available')
                 ->whereBetween(DB::raw('DATE(created_at)'), [$thisMonthStart, $thisMonthEnd])
                 ->sum('line_total');
+
             $last_month_sales = (float) VendorEarning::where('vendor_id', $vendorId)
+                ->where('status', 'available')
                 ->whereBetween(DB::raw('DATE(created_at)'), [$lastMonthStart, $lastMonthEnd])
                 ->sum('line_total');
 
@@ -78,6 +96,7 @@ class VendorDashboardController extends Controller
 
             // Sales stat: last 6 months monthly totals for simple chart
             $sales_chart = VendorEarning::where('vendor_id', $vendorId)
+                ->where('status', 'available')
                 ->where(DB::raw('created_at'), '>=', now()->subMonths(5)->startOfMonth())
                 ->select(
                     DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
@@ -90,6 +109,7 @@ class VendorDashboardController extends Controller
 
             // Top 12 products by sales (from vendor_earnings + orderproducts)
             $top_products = VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
+                ->where('vendor_earnings.status', 'available')
                 ->join('orderproducts', 'vendor_earnings.order_product_id', '=', 'orderproducts.id')
                 ->join('products', 'orderproducts.product_id', '=', 'products.id')
                 ->select(
@@ -115,19 +135,32 @@ class VendorDashboardController extends Controller
                 ->orderByDesc('total_sales')
                 ->limit(12)
                 ->get()
-                ->map(fn ($p) => [
-                    'id' => $p->id,
-                    'name' => $p->ProductName,
-                    'slug' => $p->ProductSlug,
-                    'image' => $p->ViewProductImage ?: $p->ProductImage,
-                    'price' => (float) ($p->ProductSalePrice ?: $p->ProductRegularPrice),
-                    'total_sales' => (float) $p->total_sales,
-                    'total_quantity' => (int) $p->total_quantity,
-                ]);
+                ->map(function ($p) {
+                    $productRating = (float) Review::where('product_id', $p->id)->avg('rating');
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->ProductName,
+                        'slug' => $p->ProductSlug,
+                        'image' => $p->ViewProductImage ?: $p->ProductImage,
+                        'price' => (float) ($p->ProductSalePrice ?: $p->ProductRegularPrice),
+                        'total_sales' => (float) $p->total_sales,
+                        'total_quantity' => (int) $p->total_quantity,
+                        'avg_rating' => round($productRating, 1),
+                    ];
+                });
+
+            // Vendor rating (Average of all reviews for all products of this vendor)
+            $avg_rating = (float) Review::whereIn('product_id', function ($query) use ($vendorId) {
+                $query->select('id')->from('products')->where('vendor_id', $vendorId);
+            })->avg('rating');
+
+            // Total followers
+            $total_followers = (int) VendorFollower::where('vendor_id', $vendorId)->count();
 
             return [
                 'product_count' => $product_count,
                 'total_orders' => $total_orders,
+                'pending_amount' => round($pending_amount, 2),
                 'total_sales' => round($total_sales, 2),
                 'this_month_sales' => round($this_month_sales, 2),
                 'last_month_sales' => round($last_month_sales, 2),
@@ -135,6 +168,8 @@ class VendorDashboardController extends Controller
                 'category_wise_product_count' => $category_counts,
                 'sales_chart' => $sales_chart->all(),
                 'top_products' => $top_products->all(),
+                'avg_rating' => round($avg_rating, 1),
+                'total_followers' => $total_followers,
             ];
         });
 
@@ -142,5 +177,19 @@ class VendorDashboardController extends Controller
             'status' => true,
             'data' => $payload,
         ]);
+    }
+
+    private function ensureEarningsForVendorOrders(int $vendorId, \App\Services\VendorCommissionService $commissionService): void
+    {
+        $syncedOrderProductIds = VendorEarning::where('vendor_id', $vendorId)->pluck('order_product_id');
+
+        $orderIds = Order::whereHas('orderproducts', function ($q) use ($vendorId, $syncedOrderProductIds) {
+            $q->whereHas('product', fn ($p) => $p->where('vendor_id', $vendorId))
+                ->when($syncedOrderProductIds->isNotEmpty(), fn ($q) => $q->whereNotIn('id', $syncedOrderProductIds));
+        })->pluck('id');
+
+        foreach ($orderIds as $orderId) {
+            $commissionService->syncEarningsForOrder($orderId);
+        }
     }
 }

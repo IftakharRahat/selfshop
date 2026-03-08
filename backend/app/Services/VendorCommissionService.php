@@ -80,10 +80,16 @@ class VendorCommissionService
                 continue;
             }
 
-            $lineTotal = (float) $op->productPrice * (int) $op->quantity;
+            // Vendor receives exactly their base price (ProductResellerPrice)
+            $basePrice = (float) ($product->ProductResellerPrice ?? $op->productPrice);
+            $netAmount = round($basePrice * (int) $op->quantity, 2);
+
+            // Storefront price (commission inclusive)
+            $lineTotal = round((float) $op->productPrice * (int) $op->quantity, 2);
+
+            // Admin commission is the difference
+            $commissionAmount = round($lineTotal - $netAmount, 2);
             $rate = $this->getRateForProduct($product->vendor_id, $product->category_id);
-            $commissionAmount = round($lineTotal * $rate / 100, 2);
-            $netAmount = round($lineTotal - $commissionAmount, 2);
 
             $status = in_array($order->status, ['Delivered', 'Shipped'], true) ? 'available' : 'pending';
 
@@ -106,6 +112,12 @@ class VendorCommissionService
     public function markEarningsAvailableForOrder(int $orderId): void
     {
         VendorEarning::where('order_id', $orderId)->update(['status' => 'available']);
+    }
+
+    public function getStorefrontPrice(float $basePrice, ?int $vendorId, ?int $categoryId): float
+    {
+        $rate = $this->getRateForProduct($vendorId, $categoryId);
+        return round($basePrice * (1 + $rate / 100), 2);
     }
 
     /**

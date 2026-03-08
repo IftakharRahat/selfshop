@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import WithVendorAuth from "../WithVendorAuth";
 import { useGetVendorOrdersQuery } from "@/redux/api/vendorApi";
@@ -27,12 +27,22 @@ const statusBadgeClass = (status: string) => {
 
 export default function VendorOrdersPage() {
 	const [search, setSearch] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
 	const [status, setStatus] = useState("");
 	const [payment, setPayment] = useState("");
 	const [page, setPage] = useState(1);
 
+	useEffect(() => {
+		const handler = setTimeout(() => {
+			setDebouncedSearch(search);
+			setPage(1); // Reset to page 1 on new search
+		}, 400);
+
+		return () => clearTimeout(handler);
+	}, [search]);
+
 	const { data, isLoading, error } = useGetVendorOrdersQuery({
-		search: search || undefined,
+		search: debouncedSearch || undefined,
 		status: status || undefined,
 		payment: payment || undefined,
 		page,

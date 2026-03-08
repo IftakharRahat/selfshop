@@ -116,13 +116,13 @@
                          <div class="form-group">
                              <label for="trackingLink">Courier Tracking Link</label>
                              <input type="text" class="form-control"
-                                 id="trackingLink" value="{{ $order->trackingLink }}">
+                                 id="trackingLink" value="{{ $order->trackingLink ?? '' }}">
                          </div>
                      </div>
                      <div class="mt-4 col-lg-12">
                         <div class="form-group">
                             <label for="customerNote">Cancel Notes</label>
-                            <textarea name="" class="form-control" placeholder="Cancel Notes" id="cancel_comment" rows="2">{{ $order->cancel_comment }}</textarea>
+                            <textarea name="" class="form-control" placeholder="Cancel Notes" id="cancel_comment" rows="2">{{ $order->cancel_comment ?? '' }}</textarea>
                         </div>
                     </div>
                  </div>
@@ -268,7 +268,7 @@
                          <div class="mb-2 form-group row">
                              <label for="fname" class="text-right col-sm-4 control-label col-form-label">Order Bonus</label>
                              <div class="col-sm-8">
-                                 <span class="form-control" style="cursor: not-allowed;">{{ $order->order_bonus }}</span>
+                                 <span class="form-control" style="cursor: not-allowed;">{{ $order->order_bonus ?? 0 }}</span>
                              </div>
                          </div>
                          <div class="mb-2 form-group row">

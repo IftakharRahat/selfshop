@@ -82,8 +82,12 @@ export default function VendorHomePage() {
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm">Rating</p>
-								<p className="text-2xl font-bold mt-1">5</p>
-								<p className="text-xs text-gray-200 mt-3">Followers 0</p>
+								<p className="text-2xl font-bold mt-1">
+									{isLoading ? "—" : (dashboard?.avg_rating && dashboard.avg_rating > 0 ? dashboard.avg_rating : "No rating")}
+								</p>
+								<p className="text-xs text-gray-200 mt-3">
+									Followers {isLoading ? "—" : dashboard?.total_followers ?? 0}
+								</p>
 							</div>
 							<Star className="w-12 h-12 text-white/85" />
 						</div>
@@ -255,20 +259,29 @@ export default function VendorHomePage() {
 					</div>
 				</div>
 
-				<div className="rounded-xl bg-white p-5 border border-gray-100">
-					<h2 className="text-sm font-semibold mb-1">Sold Amount</h2>
-					<p className="text-xs text-gray-500 mb-2">Your sold amount (current month)</p>
-					<p className="text-4xl font-bold text-[#2d2a5d]">
-						{isLoading ? "—" : formatMoney(dashboard?.this_month_sales ?? 0)}
-					</p>
-					<p className="text-xs text-gray-500 mt-1">
-						Last Month: {isLoading ? "—" : formatMoney(dashboard?.last_month_sales ?? 0)}
-					</p>
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+					<div className="rounded-xl bg-white p-5 border border-gray-100">
+						<h2 className="text-sm font-semibold mb-1">Sold Amount</h2>
+						<p className="text-xs text-gray-500 mb-2">Your sold amount (current month)</p>
+						<p className="text-4xl font-bold text-[#2d2a5d]">
+							{isLoading ? "—" : formatMoney(dashboard?.this_month_sales ?? 0)}
+						</p>
+						<p className="text-xs text-gray-500 mt-1">
+							Last Month: {isLoading ? "—" : formatMoney(dashboard?.last_month_sales ?? 0)}
+						</p>
+					</div>
+					<div className="rounded-xl bg-orange-50 p-5 border border-orange-100">
+						<h2 className="text-sm font-semibold mb-1">Pending Amount</h2>
+						<p className="text-xs text-gray-500 mb-2">Orders processing or awaiting delivery</p>
+						<p className="text-4xl font-bold text-orange-600">
+							{isLoading ? "—" : formatMoney(dashboard?.pending_amount ?? 0)}
+						</p>
+					</div>
 				</div>
 
 				{/* Top 12 Products carousel */}
 				<div className="rounded-xl bg-white text-gray-900 p-5 border border-gray-100">
-					<h2 className="text-2xl font-semibold mb-4">Top 12 Products</h2>
+					<h2 className="text-2xl font-semibold mb-4">Top Products</h2>
 					{isLoading ? (
 						<div className="flex gap-4 overflow-hidden">
 							{[1, 2, 3, 4].map((i) => (
@@ -324,12 +337,14 @@ export default function VendorHomePage() {
 										<p className="text-sm font-semibold text-[#2d2a5d]">
 											{formatMoney(p.price)}
 										</p>
-										<div className="flex items-center gap-1 mt-1 text-amber-500">
-											<Star className="w-3.5 h-3.5 fill-current" />
-											<Star className="w-3.5 h-3.5 fill-current" />
-											<Star className="w-3.5 h-3.5 fill-current" />
-											<Star className="w-3.5 h-3.5 fill-current" />
-											<Star className="w-3.5 h-3.5 fill-current" />
+										<div className="flex items-center gap-1 mt-1">
+											{[1, 2, 3, 4, 5].map((i) => (
+												<Star
+													key={i}
+													className={`w-3.5 h-3.5 ${i <= Math.round(p.avg_rating ?? 0) ? "text-amber-500 fill-current" : "text-gray-300"}`}
+												/>
+											))}
+											{p.avg_rating > 0 && <span className="text-[10px] text-gray-500 ml-1">{p.avg_rating}</span>}
 										</div>
 										<p className="text-[11px] text-gray-500 mt-1">
 											Sales: {formatMoney(p.total_sales)} · Qty: {p.total_quantity}
