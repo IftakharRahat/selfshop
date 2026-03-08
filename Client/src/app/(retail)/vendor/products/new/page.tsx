@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import WithVendorAuth from "../../WithVendorAuth";
 import { toast } from "sonner";
+import R2ImageUploader from "@/components/shared/r2-image-uploader";
+import R2MultiImageUploader from "@/components/shared/r2-multi-image-uploader";
 import {
 	useCreateVendorProductMutation,
 	useCreateVendorProductVariantMutation,
@@ -88,6 +90,10 @@ export default function VendorNewProductPage() {
 		color_code: "#000000",
 	});
 
+	// Image state for R2 uploaders
+	const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+	const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+
 	const subcategories = useMemo(() => {
 		if (!selectedCategoryId) return [];
 		const cat = categories.find((c) => c.id === Number(selectedCategoryId));
@@ -149,12 +155,10 @@ export default function VendorNewProductPage() {
 		if (discount !== undefined && discount !== "") formData.append("Discount", discount);
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
-		const thumb = (form.querySelector('[name="thumbnail"]') as HTMLInputElement)?.files?.[0];
-		if (thumb) formData.append("ProductImage", thumb);
-		const galleryInput = form.querySelector('[name="gallery_images"]') as HTMLInputElement;
-		if (galleryInput?.files?.length) {
-			for (let i = 0; i < galleryInput.files.length; i++) {
-				formData.append("PostImage[]", galleryInput.files[i]);
+		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
+		if (galleryFiles.length > 0) {
+			for (let i = 0; i < galleryFiles.length; i++) {
+				formData.append("PostImage[]", galleryFiles[i]);
 			}
 		}
 		try {
@@ -586,26 +590,17 @@ export default function VendorNewProductPage() {
 								<h2 className="text-sm font-semibold text-gray-900">
 									Product images
 								</h2>
-								<label className="flex flex-col text-xs font-medium text-gray-700">
-									Gallery images
-									<input
-										name="gallery_images"
-										type="file"
-										multiple
-										accept="image/*"
-										className="mt-1 block w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-900 file:text-white hover:file:bg-black"
-									/>
-									<span className="text-xs text-gray-500 mt-0.5">Multiple images for product gallery.</span>
-								</label>
-								<label className="flex flex-col text-xs font-medium text-gray-700">
-									Thumbnail image
-									<input
-										name="thumbnail"
-										type="file"
-										accept="image/*"
-										className="mt-1 block w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-900 file:text-white hover:file:bg-black"
-									/>
-								</label>
+								<R2MultiImageUploader
+									label="Gallery images"
+									value={galleryFiles}
+									onChange={setGalleryFiles}
+								/>
+								<R2ImageUploader
+									label="Thumbnail image"
+									value={thumbnailFile}
+									onChange={setThumbnailFile}
+									compact
+								/>
 							</div>
 
 						</div>
@@ -651,16 +646,16 @@ export default function VendorNewProductPage() {
 							</div>
 							<div className="flex-1 min-w-[180px]">
 								<label className="block text-xs font-semibold text-gray-700 mb-1">Color Image (Optional)</label>
-								<input
-									type="file"
-									accept="image/*"
-									onChange={(e) => {
-										const file = e.target.files?.[0];
-										if (file) {
-											setNewVariant({ ...newVariant, imageFile: file, imagePreview: URL.createObjectURL(file) });
-										}
+								<R2ImageUploader
+									value={newVariant.imageFile ?? null}
+									onChange={(file) => {
+										setNewVariant({
+											...newVariant,
+											imageFile: file ?? undefined,
+											imagePreview: file ? URL.createObjectURL(file) : undefined,
+										});
 									}}
-									className="w-full text-xs text-gray-600 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700"
+									compact
 								/>
 							</div>
 							<div>
