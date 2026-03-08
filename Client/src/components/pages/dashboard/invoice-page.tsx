@@ -4,7 +4,6 @@ import { Check, Copy, Headset, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import Swal from "sweetalert2";
 import {
 	useGetPricingQuery,
 	useInitiatePackagePaymentMutation,
@@ -91,18 +90,14 @@ export function InvoicePage() {
 		}
 	};
 
-	const handleLogout = async () => {
-		const result = await Swal.fire({
-			title: "Are you sure?",
-			icon: "warning",
-			showCancelButton: true,
-			confirmButtonColor: "#3085d6",
-			cancelButtonColor: "#d33",
-			confirmButtonText: "Yes, Log out",
-		});
+	const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-		if (!result.isConfirmed) return;
+	const handleLogout = () => {
+		setShowLogoutModal(true);
+	};
 
+	const confirmLogout = async () => {
+		setShowLogoutModal(false);
 		await dispatch(setUser({ access_token: null }));
 		localStorage.removeItem("access_token");
 		router.replace("/");
@@ -117,80 +112,119 @@ export function InvoicePage() {
 	}
 
 	return (
-		<div className="w-full max-w-3xl mx-auto py-6">
-			{token ? (
-				<div className="mb-4 flex justify-end">
-					<button
-						type="button"
-						onClick={handleLogout}
-						className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-					>
-						<LogOut className="h-4 w-4" />
-						Logout
-					</button>
-				</div>
-			) : null}
-
-			<div className="rounded-2xl border border-pink-100 bg-white p-5 sm:p-6 shadow-sm">
-				<p className="text-gray-600 text-sm sm:text-base leading-7">
-					Thanks for selecting your package. We generated an invoice for you.
-					Choose any gateway to payment. Your account will
-					activate automatically after successful payment confirmation.
-				</p>
-
-				<div className="mt-5 rounded-2xl border border-pink-200 bg-pink-50/30 p-4 sm:p-5">
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-						<div>
-							<p className="text-xs text-gray-500">Invoice ID</p>
-							<p className="text-2xl font-bold text-pink-600">
-								{currentInvoice.invoiceID}
-							</p>
-						</div>
+		<>
+			<div className="w-full max-w-3xl mx-auto py-6">
+				{token ? (
+					<div className="mb-4 flex justify-end">
 						<button
 							type="button"
-							onClick={handleCopy}
-							className="h-11 rounded-xl px-5 bg-[#E5005F] text-white font-semibold hover:bg-[#ce0055] transition-colors flex items-center justify-center gap-2"
+							onClick={handleLogout}
+							className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
 						>
-							{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-							{copied ? "Copied" : "Copy"}
+							<LogOut className="h-4 w-4" />
+							Logout
 						</button>
 					</div>
+				) : null}
 
-					<div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-						<div className="rounded-xl border border-pink-100 bg-white p-3">
-							<p className="text-xs text-gray-500">Package</p>
-							<p className="font-semibold text-gray-800">{packageName}</p>
+				<div className="rounded-2xl border border-pink-100 bg-white p-5 sm:p-6 shadow-sm">
+					<p className="text-gray-600 text-sm sm:text-base leading-7">
+						Thanks for selecting your package. We generated an invoice for you.
+						Choose any gateway to payment. Your account will
+						activate automatically after successful payment confirmation.
+					</p>
+
+					<div className="mt-5 rounded-2xl border border-pink-200 bg-pink-50/30 p-4 sm:p-5">
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+							<div>
+								<p className="text-xs text-gray-500">Invoice ID</p>
+								<p className="text-2xl font-bold text-pink-600">
+									{currentInvoice.invoiceID}
+								</p>
+							</div>
+							<button
+								type="button"
+								onClick={handleCopy}
+								className="h-11 rounded-xl px-5 bg-[#E5005F] text-white font-semibold hover:bg-[#ce0055] transition-colors flex items-center justify-center gap-2"
+							>
+								{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+								{copied ? "Copied" : "Copy"}
+							</button>
 						</div>
-						<div className="rounded-xl border border-pink-100 bg-white p-3">
-							<p className="text-xs text-gray-500">Payable</p>
-							<p className="font-semibold text-gray-800">Tk {payableAmount.toLocaleString()}</p>
+
+						<div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+							<div className="rounded-xl border border-pink-100 bg-white p-3">
+								<p className="text-xs text-gray-500">Package</p>
+								<p className="font-semibold text-gray-800">{packageName}</p>
+							</div>
+							<div className="rounded-xl border border-pink-100 bg-white p-3">
+								<p className="text-xs text-gray-500">Payable</p>
+								<p className="font-semibold text-gray-800">Tk {payableAmount.toLocaleString()}</p>
+							</div>
 						</div>
 					</div>
-				</div>
 
-				<button
-					type="button"
-					onClick={handlePayment}
-					className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-white text-lg font-bold hover:bg-emerald-700 transition-colors"
-				>
-					Pay Now
-				</button>
-			</div>
-
-			<div className="mt-6 overflow-hidden rounded-2xl border border-emerald-300">
-				<div className="grid grid-cols-3">
-					<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
-						Need help with package payment? Contact our team now.
-					</div>
-					<Link
-						href="/support"
-						className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+					<button
+						type="button"
+						onClick={handlePayment}
+						className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-white text-lg font-bold hover:bg-emerald-700 transition-colors"
 					>
-						<Headset className="h-5 w-5" />
-						<span>Support</span>
-					</Link>
+						Pay Now
+					</button>
+				</div>
+
+				<div className="mt-6 overflow-hidden rounded-2xl border border-emerald-300">
+					<div className="grid grid-cols-3">
+						<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
+							Need help with package payment? Contact our team now.
+						</div>
+						<Link
+							href="/support"
+							className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+						>
+							<Headset className="h-5 w-5" />
+							<span>Support</span>
+						</Link>
+					</div>
 				</div>
 			</div>
-		</div>
+
+			{/* Logout Confirmation Modal */}
+			{
+				showLogoutModal && (
+					<div className="fixed inset-0 z-[9999] flex items-center justify-center">
+						<div
+							className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+							onClick={() => setShowLogoutModal(false)}
+						/>
+						<div className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl p-6">
+							<div className="flex justify-center mb-4">
+								<div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+									<LogOut className="h-7 w-7 text-red-500" />
+								</div>
+							</div>
+							<div className="text-center mb-6">
+								<h3 className="text-lg font-semibold text-gray-900 mb-1">Logout</h3>
+								<p className="text-sm text-gray-500">Are you sure you want to log out?</p>
+							</div>
+							<div className="flex gap-3">
+								<button
+									onClick={() => setShowLogoutModal(false)}
+									className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+								>
+									Cancel
+								</button>
+								<button
+									onClick={confirmLogout}
+									className="flex-1 rounded-lg bg-[#E5005F] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#c80053] transition-colors shadow-sm"
+								>
+									Yes, Logout
+								</button>
+							</div>
+						</div>
+					</div>
+				)
+			}
+		</>
 	);
 }

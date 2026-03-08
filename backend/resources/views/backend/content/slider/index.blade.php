@@ -178,7 +178,8 @@
                     orderable: false,
                     render: function(data, type, full, meta) {
                         if (data && data.trim() !== '') {
-                            return '<img src=../' + data + ' height="40" style="border-radius:6px;object-fit:cover;width:60px;height:40px;" onerror="this.outerHTML=\'<div style=padding:8px;width:60px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px><i class=bi.bi-image></i></div>\'" />';
+                            var imgSrc = data.startsWith('http') ? data : '../' + data;
+                            return '<img src="' + imgSrc + '" height="40" style="border-radius:6px;object-fit:cover;width:60px;height:40px;" onerror="this.outerHTML=\'<div style=padding:8px;width:60px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px><i class=bi.bi-image></i></div>\'" />';
                         } else {
                             return '<div style="width:60px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px"><i class="bi bi-image"></i></div>';
                         }
@@ -220,7 +221,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.sliders.store') }}',
+                url: '{{ route('admin.sliders.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),
@@ -275,8 +276,9 @@
                     $('#EditSlider').find('#slider_id').val(data.id);
 
                     $('#previmg').html('');
+                    var prevSrc = data.slider_image && data.slider_image.startsWith('http') ? data.slider_image : '../' + data.slider_image;
                     $('#previmg').append(`
-                        <img  src="../` + data.slider_image + `" alt = "" style="height: 80px" />
+                        <img  src="` + prevSrc + `" alt = "" style="height: 80px" />
                     `);
 
                     $('#EditSlider').attr('data-id', data.id);

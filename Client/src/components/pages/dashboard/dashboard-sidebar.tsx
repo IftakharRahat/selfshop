@@ -9,7 +9,6 @@ import {
 	Download,
 	GraduationCap,
 	Home,
-	LogOut,
 	Package,
 	Settings,
 	Shield,
@@ -23,10 +22,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FcSupport } from "react-icons/fc";
 import { MdDeveloperBoard, MdFormatQuote } from "react-icons/md";
-import Swal from "sweetalert2";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
-import { setUser } from "@/redux/features/auth/authSlice";
-import { useAppDispatch } from "@/redux/hooks";
 
 function getInitials(name: string | undefined): string {
 	if (!name) return "U";
@@ -88,38 +84,12 @@ export default function DashboardSidebar({
 	const walletBalance =
 		Number(
 			profile?.account_balance ??
-				data?.data?.walletbalance ??
-				data?.data?.balance ??
-				data?.data?.blance ??
-				0,
+			data?.data?.walletbalance ??
+			data?.data?.balance ??
+			data?.data?.blance ??
+			0,
 		) || 0;
 	const pathname = usePathname();
-	const dispatch = useAppDispatch();
-
-	const handleLogout = async () => {
-		const result = await Swal.fire({
-			title: "Are you sure?",
-			icon: "warning",
-			showCancelButton: true,
-			confirmButtonColor: "#3085d6",
-			cancelButtonColor: "#d33",
-			confirmButtonText: "Yes, Log out",
-		});
-		if (result.isConfirmed) {
-			// await dispatch(logout());
-			await dispatch(
-				setUser({
-					access_token: null,
-				}),
-			);
-			Swal.fire({
-				title: "Logged out!",
-				icon: "success",
-				timer: 1500,
-				showConfirmButton: false,
-			});
-		}
-	};
 
 	return (
 		<aside className="w-full bg-white  sticky top-0 h-full max-h-[calc(100vh-75px)] overflow-hidden">
@@ -179,15 +149,6 @@ export default function DashboardSidebar({
 							</li>
 						);
 					})}
-					<li>
-						<button
-							onClick={() => handleLogout()}
-							className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors cursor-pointer text-gray-700 hover:bg-gray-100 `}
-						>
-							<LogOut className="w-5 h-5" />
-							<span className="font-medium">Logout</span>
-						</button>
-					</li>
 				</ul>
 			</nav>
 		</aside>

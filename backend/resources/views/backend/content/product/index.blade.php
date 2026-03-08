@@ -81,7 +81,8 @@
                     data: 'ProductImage',
                     name: 'ProductImage',
                     render: function(data, type, full, meta) {
-                        return "<img src=../" + data + " height=\"40\" alt='No Image'/>";
+                        var imgSrc = data && data.startsWith('http') ? data : '../' + data;
+                        return "<img src='" + imgSrc + "' height=\"40\" alt='No Image'/>";
                     }
                 },
                 {
@@ -161,7 +162,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.products.store') }}',
+                url: '{{ route('admin.products.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),
@@ -225,8 +226,9 @@
                             $('#editProductDetails').summernote();
                             }); `);
                     $('#previmg').html('');
+                    var prevSrc = data.ProductImage && data.ProductImage.startsWith('http') ? data.ProductImage : '../' + data.ProductImage;
                     $('#previmg').append(`
-                            <img src="../` + data.ProductImage + `" alt="" style="height: 80px" />
+                            <img src="` + prevSrc + `" alt="" style="height: 80px" />
                         `);
 
                     $('#EditProduct').attr('data-id', data.id);

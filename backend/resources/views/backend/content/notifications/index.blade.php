@@ -53,9 +53,9 @@
                 <div class="col-md-6">
                     <label class="form-label">Type <span class="text-danger">*</span></label>
                     <select name="target_type" id="target_type" class="form-select @error('target_type') is-invalid @enderror" required>
-                        <option value="1" @selected(old('target_type', '1') === '1')>1. All User</option>
-                        <option value="2" @selected(old('target_type') === '2')>2. User</option>
-                        <option value="3" @selected(old('target_type') === '3')>3. Supplier</option>
+                        <option value="1" {{ old('target_type', '1') === '1' ? 'selected' : '' }}>1. All User</option>
+                        <option value="2" {{ old('target_type') === '2' ? 'selected' : '' }}>2. User</option>
+                        <option value="3" {{ old('target_type') === '3' ? 'selected' : '' }}>3. Supplier</option>
                     </select>
                     @error('target_type')
                         <div class="invalid-feedback">{{ $message }}</div>

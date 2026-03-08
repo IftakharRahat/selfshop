@@ -146,7 +146,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.attributes.store') }}',
+                url: '{{ route('admin.attributes.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),

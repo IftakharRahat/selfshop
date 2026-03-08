@@ -172,7 +172,7 @@
             <nav>
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url('admin/product') }}">Products</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url('admin/shop/products') }}">Products</a></li>
                     <li class="breadcrumb-item active">Edit — {{ $product->ProductName }}</li>
                 </ol>
             </nav>
@@ -283,7 +283,7 @@
                                     <div class="upload-text"><strong>Click to upload</strong> or drag and drop</div>
                                 </div>
                                 <div class="thumbnail-preview">
-                                    <img id="prevImage" src="{{ asset($product->ProductImage) }}" />
+                                    <img id="prevImage" src="{{ str_starts_with($product->ProductImage ?? '', 'http') ? $product->ProductImage : asset($product->ProductImage) }}" />
                                 </div>
                             </div>
 
@@ -294,16 +294,20 @@
                                     <div class="upload-icon"><i class="bi bi-images"></i></div>
                                     <div class="upload-text"><strong>Click to upload</strong> multiple images</div>
                                 </div>
-                                <div id="prevFile">
+                                <input type="hidden" name="removed_gallery_images" id="removedGalleryImages" value="">
+                                <div id="existingGallery">
                                     @if (isset($product->PostImage))
-                                        @forelse (json_decode($product->PostImage) as $post)
-                                            <div class="postImg" style="width:25%;float:left;position:relative;">
-                                                <img src="../../../public/images/product/slider/{{ $post }}" alt="" id="previewImage"
+                                        @forelse (json_decode($product->PostImage) as $index => $post)
+                                            <div class="postImg existing-gallery-item" id="existingImg{{ $index }}" style="width:25%;float:left;position:relative;">
+                                                <img src="{{ str_starts_with($post, 'http') ? $post : asset('public/images/product/slider/' . $post) }}" alt="" id="previewImage"
                                                     style="border-radius: 10px;width:100%;padding:5px;">
+                                                <span onclick="removeExistingGalleryImage({{ $index }}, '{{ addslashes($post) }}')" style="position: absolute;right: 0;cursor: pointer;font-size: 31px;color: red;margin-top: -8px;margin-right: 8px;top: 0;">&times;</span>
                                             </div>
                                         @empty
                                         @endforelse
                                     @endif
+                                </div>
+                                <div id="prevFile">
                                 </div>
                             </div>
                         </div>
@@ -849,6 +853,13 @@
 
 <script>
     var PostImages = [];
+    var removedGalleryImages = [];
+
+    function removeExistingGalleryImage(index, imageUrl) {
+        document.getElementById('existingImg' + index).style.display = 'none';
+        removedGalleryImages.push(imageUrl);
+        document.getElementById('removedGalleryImages').value = JSON.stringify(removedGalleryImages);
+    }
 
     function prevPost_Img() {
         var PostImage = document.getElementById('PostImage').files;

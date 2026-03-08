@@ -55,6 +55,14 @@
             background: #eff6ff;
             text-decoration: none;
         }
+        .order-status-pill.active {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .order-status-pill.active .pill-count {
+            color: #fff;
+        }
         .order-status-pill .pill-count {
             font-size: 15px;
             font-weight: 700;
@@ -89,34 +97,34 @@
         {{-- Status pills --}}
         <div class="order-status-bar">
             @if ($admin->hasrole('Executive'))
-                <a href="{{ url('user/order') }}" class="order-status-pill">
+                <a href="{{ url('user/order') }}" class="order-status-pill {{ $status == 'orderall' ? 'active' : '' }}">
             @else
-                <a href="{{ url('admin_order/orderall') }}" class="order-status-pill">
+                <a href="{{ url('admin_order/orderall') }}" class="order-status-pill {{ $status == 'orderall' ? 'active' : '' }}">
             @endif
                 <span class="pill-count" id="all">0</span> All
             </a>
-            <a href="{{ url('admin_order/Pending') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Pending') }}" class="order-status-pill {{ $status == 'Pending' ? 'active' : '' }}">
                 <span class="pill-count" id="pending">0</span> Pending
             </a>
-            <a href="{{ url('admin_order/Confirmed') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Confirmed') }}" class="order-status-pill {{ $status == 'Confirmed' ? 'active' : '' }}">
                 <span class="pill-count" id="confirmed">0</span> Confirmed
             </a>
-            <a href="{{ url('admin_order/Processing') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Processing') }}" class="order-status-pill {{ $status == 'Processing' ? 'active' : '' }}">
                 <span class="pill-count" id="processing">0</span> Processing
             </a>
-            <a href="{{ url('admin_order/Packageing') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Packageing') }}" class="order-status-pill {{ $status == 'Packageing' ? 'active' : '' }}">
                 <span class="pill-count" id="packageing">0</span> Packaging
             </a>
-            <a href="{{ url('admin_order/Ontheway') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Ontheway') }}" class="order-status-pill {{ $status == 'Ontheway' ? 'active' : '' }}">
                 <span class="pill-count" id="ontheway">0</span> On the Way
             </a>
-            <a href="{{ url('admin_order/Delivered') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Delivered') }}" class="order-status-pill {{ $status == 'Delivered' ? 'active' : '' }}">
                 <span class="pill-count" id="delivered">0</span> Delivered
             </a>
-            <a href="{{ url('admin_order/Canceled') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Canceled') }}" class="order-status-pill {{ $status == 'Canceled' ? 'active' : '' }}">
                 <span class="pill-count" id="canceled">0</span> Canceled
             </a>
-            <a href="{{ url('admin_order/Return') }}" class="order-status-pill">
+            <a href="{{ url('admin_order/Return') }}" class="order-status-pill {{ $status == 'Return' ? 'active' : '' }}">
                 <span class="pill-count" id="return">0</span> Return
             </a>
         </div>

@@ -156,7 +156,7 @@
         $('#AddServicepackage').submit(function(e) {
             e.preventDefault();
             $.ajax({
-                type: 'POST', uploadUrl: '{{ route('admin.servicepackages.store') }}',
+                type: 'POST', url: '{{ route('admin.servicepackages.store') }}',
                 processData: false, contentType: false, data: new FormData(this),
                 success: function(data) {
                     if (data == 'exist') {

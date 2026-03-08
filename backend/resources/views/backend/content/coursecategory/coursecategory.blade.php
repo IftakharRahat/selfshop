@@ -130,7 +130,8 @@
                     data: 'coursecategory_image',
                     name: 'coursecategory_image',
                     render: function(data, type, full, meta) {
-                        return "<img src=../" + data + " height=\"40\" alt='No Image'/>";
+                        var imgSrc = data && data.startsWith('http') ? data : '../' + data;
+                        return "<img src='" + imgSrc + "' height=\"40\" alt='No Image'/>";
                     }
                 },
                 { data: 'coursecategory_name' },
@@ -151,7 +152,7 @@
         $('#AddCoursecategory').submit(function(e) {
             e.preventDefault();
             $.ajax({
-                type: 'POST', uploadUrl: '{{ route('coursecategories.store') }}',
+                type: 'POST', url: '{{ route('coursecategories.store') }}',
                 processData: false, contentType: false, data: new FormData(this),
                 success: function(data) {
                     $('#coursecategory_name').val(''); $('#youtube_embade').val(''); $('#coursecategory_image').val('');
@@ -171,7 +172,8 @@
                     $('#EditCoursecategory').find('#youtube_embade').val(data.youtube_embade);
                     $('#EditCoursecategory').find('#coursecategory_id').val(data.id);
                     $('#previmg').html('');
-                    $('#previmg').append(`<img src="../` + data.coursecategory_image + `" alt="" style="height: 80px" />`);
+                    var prevSrc = data.coursecategory_image && data.coursecategory_image.startsWith('http') ? data.coursecategory_image : '../' + data.coursecategory_image;
+                    $('#previmg').append(`<img src="` + prevSrc + `" alt="" style="height: 80px" />`);
                     $('#EditCoursecategory').attr('data-id', data.id);
                 },
                 error: function(error) { console.log('error'); }

@@ -143,7 +143,8 @@
                     orderable: false,
                     render: function(data, type, full, meta) {
                         if (data && data.trim() !== '') {
-                            return '<img src=../' + data + ' height="40" style="border-radius:6px;object-fit:cover;width:40px;height:40px;" onerror="this.outerHTML=\'<div style=padding:8px;width:40px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px><i class=bi.bi-image></i></div>\'" />';
+                            var imgSrc = data.startsWith('http') ? data : '../' + data;
+                            return '<img src="' + imgSrc + '" height="40" style="border-radius:6px;object-fit:cover;width:40px;height:40px;" onerror="this.outerHTML=\'<div style=padding:8px;width:40px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px><i class=bi.bi-image></i></div>\'" />';
                         } else {
                             return '<div style="width:40px;height:40px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:16px"><i class="bi bi-image"></i></div>';
                         }
@@ -200,7 +201,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.categorys.store') }}',
+                url: '{{ route('admin.categorys.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),
@@ -235,8 +236,9 @@
                     $('#EditCategory').find('#category_id').val(data.id);
 
                     $('#previmg').html('');
+                    var prevSrc = data.category_icon && data.category_icon.startsWith('http') ? data.category_icon : '../' + data.category_icon;
                     $('#previmg').append(`
-                        <img  src="../` + data.category_icon + `" alt = "" style="height: 80px" />
+                        <img  src="` + prevSrc + `" alt = "" style="height: 80px" />
                     `);
 
                     $('#EditCategory').attr('data-id', data.id);

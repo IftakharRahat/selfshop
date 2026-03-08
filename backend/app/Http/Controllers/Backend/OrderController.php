@@ -762,10 +762,13 @@ class OrderController extends Controller
 
     public function orderdata(Request $request, $abc)
     {
+        \Log::info('[ORDERDATA] Called with status: ' . $abc);
 
         $admin = Admin::where('email', Auth::guard('admin')->user()->email)->first();
         $columns = $request->input('columns') ?? [];
         $status = $request->input('status');
+
+        \Log::info('[ORDERDATA] Admin: ' . ($admin->name ?? 'unknown') . ', role: ' . ($admin->roles->pluck('name')->implode(',') ?? 'none'));
 
         if ($abc == 'orderall') {
             if ($admin->hasrole('Shop')) {
@@ -1596,6 +1599,10 @@ class OrderController extends Controller
                     "name" => "Packageing",
                     "color" => " bg-primary"
                 ),
+                "Shipped" => array(
+                    "name" => "Shipped",
+                    "color" => " bg-info"
+                ),
                 "Ontheway" => array(
                     "name" => "Ontheway",
                     "color" => " bg-ondv"
@@ -1622,6 +1629,12 @@ class OrderController extends Controller
             }
         }
         $args = $allStatus[$temp];
+
+        // Fallback for unknown statuses
+        if (!isset($args[$status])) {
+            return "<span class='badge bg-secondary'>" . e($status) . "</span>";
+        }
+
         $html = '';
         foreach ($args as $value) {
             if ($args[$status]['name'] != $value['name']) {
@@ -2197,6 +2210,10 @@ class OrderController extends Controller
     {
         $order_id = $request['id'];
         $customer = Customer::query()->where('order_id', '=', $order_id)->get()->first();
+
+        if (!$customer) {
+            return json_encode(['data' => []]);
+        }
 
         $orders = DB::table('orders')
             ->select('orders.*', 'customers.*', 'users.name')

@@ -123,7 +123,8 @@
                     data: 'payment_icon',
                     name: 'payment_icon',
                     render: function(data, type, full, meta) {
-                        return "<img src=../" + data + " height=\"40\" alt='No Image'/>";
+                        var imgSrc = data && data.startsWith('http') ? data : '../' + data;
+                        return "<img src='" + imgSrc + "' height=\"40\" alt='No Image'/>";
                     }
                 },
                 {
@@ -162,7 +163,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.paymenticons.store') }}',
+                url: '{{ route('admin.paymenticons.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),
@@ -197,8 +198,9 @@
                     $('#EditPaymenticon').find('#paymenticon_id').val(data.id);
 
                     $('#previmg').html('');
+                    var prevSrc = data.payment_icon && data.payment_icon.startsWith('http') ? data.payment_icon : '../' + data.payment_icon;
                     $('#previmg').append(`
-                        <img  src="../` + data.payment_icon + `" alt = "" style="height: 40px" />
+                        <img  src="` + prevSrc + `" alt = "" style="height: 40px" />
                     `);
 
                     $('#EditPaymenticon').attr('data-id', data.id);
