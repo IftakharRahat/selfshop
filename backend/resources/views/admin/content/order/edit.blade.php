@@ -321,11 +321,12 @@
   @foreach ($order->products as $product)
     @php
         $productModel = App\Models\Product::find($product->product_id);
+        $imgUrl = optional($productModel)->ProductImage;
     @endphp
 
-    {{ optional($productModel)->ProductImage 
-        ? '<img src="'.asset(optional($productModel)->ProductImage).'" style="width:100px;margin-top:10px;">' 
-        : '' }}
+    @if($imgUrl)
+        <img src="{{ str_starts_with($imgUrl, 'http') ? $imgUrl : asset($imgUrl) }}" style="width:100px;margin-top:10px;">
+    @endif
 @endforeach
                  </div>
              </div>
