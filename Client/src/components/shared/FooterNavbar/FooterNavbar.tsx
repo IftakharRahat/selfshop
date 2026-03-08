@@ -99,13 +99,13 @@ const FooterNavbar = () => {
 				<Modal
 					open={isPricingModalOpen}
 					footer={null}
-					width={900}
+					width={520}
 					centered
 					closeIcon={null}
 				>
-					<div className="text-center mb-6 py-[40px] pt-[20px] pb-[40px]">
-						<div className="flex items-center justify-center mb-4">
-							<img src={logo.src} alt="SelfShop Logo" className="w-60" />
+					<div className="text-center pt-2 pb-4">
+						<div className="flex items-center justify-center mb-3">
+							<img src={logo.src} alt="SelfShop Logo" className="w-44" />
 						</div>
 						<PricingPage onInvoiceCreated={handlePackageInvoiceCreated} />
 					</div>
