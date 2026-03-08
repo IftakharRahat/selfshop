@@ -1404,9 +1404,9 @@ public function success(Request $request)
         # Clear session
         Session::forget(['sslcommerz_tran_id', 'sslcommerz_order_id', 'cart_data', 'order_data']);
         
-        return redirect()->route('checkout')->withErrors([
-            'error' => 'Payment failed. Please try again or choose a different payment method.'
-        ]);
+        return redirect()->away($this->frontendUrl('/checkout', [
+            'payment' => 'failed',
+        ]));
     }
     
     public function cancel(Request $request)
@@ -1432,7 +1432,9 @@ public function success(Request $request)
         # Clear session
         Session::forget(['sslcommerz_tran_id', 'sslcommerz_order_id', 'cart_data', 'order_data']);
         
-        return redirect()->route('checkout')->with('warning', 'Payment was canceled. You can try again when ready.');
+        return redirect()->away($this->frontendUrl('/checkout', [
+            'payment' => 'canceled',
+        ]));
     }
     
     public function ipn(Request $request)
