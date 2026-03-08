@@ -29,29 +29,35 @@ const FEATURE_MATRIX: Record<"basic" | "standard", PricingFeature[]> = {
 		{ label: "Dashboard access", enabled: true },
 		{ label: "Order management", enabled: true },
 		{ label: "Referral income", enabled: true },
-		{ label: "Ad top-up removal", enabled: false },
-		{ label: "Order bonus", enabled: false },
-		{ label: "Monthly order report", enabled: false },
 		{ label: "Free video course", enabled: true },
-		{ label: "Fast checker", enabled: false },
-		{ label: "Team member management", enabled: false },
-		{ label: "Product request", enabled: false },
 		{ label: "Ticketing system", enabled: true },
-		{ label: "Order analytics", enabled: false },
+		{ label: "Product request", enabled: true },
+		{ label: "Order analytics", enabled: true },
+		{ label: "Winning Product", enabled: true },
+		{ label: "Bulk Wholesale Order", enabled: true },
+		{ label: "Sales Bonus Campaign", enabled: true },
+		{ label: "Livechat Support", enabled: true },
+		{ label: "Ecommerce Website", enabled: false },
+		{ label: "Free .com domain", enabled: false },
+		{ label: "Free One Year Hosting Support", enabled: false },
+		{ label: "Technical support", enabled: false },
 	],
 	standard: [
 		{ label: "Dashboard access", enabled: true },
 		{ label: "Order management", enabled: true },
 		{ label: "Referral income", enabled: true },
-		{ label: "Ad top-up removal", enabled: true },
-		{ label: "Order bonus", enabled: true },
-		{ label: "Monthly order report", enabled: true },
 		{ label: "Free video course", enabled: true },
-		{ label: "Fast checker", enabled: true },
-		{ label: "Team member management", enabled: true },
-		{ label: "Product request", enabled: true },
 		{ label: "Ticketing system", enabled: true },
+		{ label: "Product request", enabled: true },
 		{ label: "Order analytics", enabled: true },
+		{ label: "Winning Product", enabled: true },
+		{ label: "Bulk Wholesale Order", enabled: true },
+		{ label: "Sales Bonus Campaign", enabled: true },
+		{ label: "Livechat Support", enabled: true },
+		{ label: "Ecommerce Website", enabled: true },
+		{ label: "Free .com domain", enabled: true },
+		{ label: "Free One Year Hosting Support", enabled: true },
+		{ label: "Technical support", enabled: true },
 	],
 };
 
@@ -167,26 +173,30 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 	const discountPrice = normalizePrice(selectedPlan.discount_price);
 	const payablePrice = discountPrice > 0 ? discountPrice : regularPrice;
 
+	const includedFeatures = features.filter((f) => f.enabled);
+	const excludedFeatures = features.filter((f) => !f.enabled);
+
 	return (
-		<div className="w-full max-w-3xl mx-auto">
+		<div className="w-full max-w-md mx-auto">
 			{token ? (
 				<div className="mb-4 flex justify-end">
 					<button
 						type="button"
 						onClick={handleLogout}
-						className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+						className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm hover:bg-gray-50 transition-colors"
 					>
-						<LogOut className="h-4 w-4" />
+						<LogOut className="h-3.5 w-3.5" />
 						Logout
 					</button>
 				</div>
 			) : null}
 
-			<p className="text-center text-sm sm:text-base text-gray-600 mb-5">
-				Thanks for completing registration. Select your reseller package and continue payment.
+			<p className="text-center text-sm text-gray-500 mb-3">
+				Select your reseller package and continue payment.
 			</p>
 
-			<div className="rounded-2xl border border-emerald-300 bg-emerald-500/95 px-3 py-3 flex items-center justify-between gap-2 mb-5">
+			{/* Plan Toggle */}
+			<div className="relative rounded-full bg-gray-100 p-1 flex items-center mb-4">
 				{packagePlans.slice(0, 2).map((plan) => {
 					const isSelected = plan.id === selectedPlan.id;
 					return (
@@ -194,11 +204,10 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 							key={plan.id}
 							type="button"
 							onClick={() => handleSelectPlan(plan.id)}
-							className={`min-w-[140px] rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-								isSelected
-									? "bg-white text-gray-900 shadow"
-									: "bg-transparent text-emerald-50 hover:bg-emerald-600"
-							}`}
+							className={`relative z-10 flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${isSelected
+								? "bg-white text-gray-900 shadow-md"
+								: "text-gray-500 hover:text-gray-700"
+								}`}
 						>
 							{plan.package_name}
 						</button>
@@ -206,63 +215,95 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 				})}
 			</div>
 
-			<div className="rounded-2xl border border-pink-200 bg-white shadow-sm overflow-hidden">
-				<div className="border-b border-pink-100 px-4 sm:px-6 py-4">
-					<div className="text-center">
-						<div className="flex items-center justify-center gap-2 mb-1">
-							{discountPrice > 0 ? (
-								<span className="text-lg text-red-500 line-through">
-									Tk {regularPrice.toLocaleString()}
-								</span>
-							) : null}
-							<span className="text-3xl sm:text-4xl font-bold text-gray-900">
-								Tk {payablePrice.toLocaleString()}
+			{/* Pricing Card */}
+			<div className="rounded-2xl overflow-hidden shadow-lg border border-gray-100">
+				{/* Gradient Price Header */}
+				<div className="bg-gradient-to-br from-[#1e1b4b] to-[#312e81] px-5 py-4 text-center">
+					<p className="text-indigo-300 text-xs font-medium uppercase tracking-wider mb-1">
+						{selectedPlan.package_name} Plan
+					</p>
+					<div className="flex items-baseline justify-center gap-1.5">
+						{discountPrice > 0 ? (
+							<span className="text-base text-indigo-400/70 line-through">
+								৳{regularPrice.toLocaleString()}
 							</span>
-							<span className="text-base text-gray-600">
-								/ {selectedPlan.validity ?? 12} month{Number(selectedPlan.validity ?? 12) > 1 ? "s" : ""}
-							</span>
-						</div>
-						<p className="text-xs sm:text-sm text-gray-500">
-							Package: <span className="font-semibold text-gray-700">{selectedPlan.package_name}</span>
-						</p>
+						) : null}
+						<span className="text-3xl font-bold text-white">
+							৳{payablePrice.toLocaleString()}
+						</span>
 					</div>
+					<p className="text-indigo-300 text-sm mt-1">
+						/ {selectedPlan.validity ?? 12} month{Number(selectedPlan.validity ?? 12) > 1 ? "s" : ""}
+					</p>
 				</div>
 
-				<div className="px-4 sm:px-6 py-5 space-y-2">
-					{features.map((feature) => (
-						<div key={feature.label} className="flex items-start gap-2.5">
-							{feature.enabled ? (
-								<CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-500 flex-shrink-0" />
-							) : (
-								<XCircle className="mt-0.5 h-5 w-5 text-red-500 flex-shrink-0" />
-							)}
-							<span className="text-sm text-gray-700">{feature.label}</span>
+				{/* Features */}
+				<div className="bg-white px-5 py-3">
+					{/* Included Features */}
+					{includedFeatures.length > 0 && (
+						<div className="mb-3">
+							<p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+								What&apos;s included
+							</p>
+							<div className="space-y-1">
+								{includedFeatures.map((feature) => (
+									<div key={feature.label} className="flex items-center gap-2.5">
+										<div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 flex-shrink-0">
+											<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+										</div>
+										<span className="text-sm text-gray-700">{feature.label}</span>
+									</div>
+								))}
+							</div>
 						</div>
-					))}
+					)}
+
+					{/* Excluded Features */}
+					{excludedFeatures.length > 0 && (
+						<div className="pt-2 border-t border-gray-100">
+							<p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+								Not included
+							</p>
+							<div className="space-y-1">
+								{excludedFeatures.map((feature) => (
+									<div key={feature.label} className="flex items-center gap-2.5">
+										<div className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-50 flex-shrink-0">
+											<XCircle className="h-3.5 w-3.5 text-gray-300" />
+										</div>
+										<span className="text-sm text-gray-400">{feature.label}</span>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
 				</div>
 
-				<div className="px-4 sm:px-6 pb-6">
+				{/* CTA */}
+				<div className="bg-white px-5 pb-4">
 					<button
 						type="button"
 						onClick={handlePurchase}
-						className="w-full rounded-xl bg-[#E85A3A] py-3 text-white font-semibold hover:bg-[#da4d2d] transition-colors"
+						className="w-full rounded-xl bg-gradient-to-r from-[#e91e63] to-[#f06292] py-2.5 text-white font-semibold shadow-md hover:shadow-lg hover:from-[#d81b60] hover:to-[#e91e63] transition-all duration-200"
 					>
 						Proceed To Payment
 					</button>
 				</div>
 			</div>
 
-			<div className="mt-6 overflow-hidden rounded-2xl border border-emerald-300">
-				<div className="grid grid-cols-3">
-					<div className="col-span-2 bg-[#FF5C3E] px-4 py-3 text-white text-sm font-semibold">
-						Need help with package payment? Contact our team now.
+			{/* Support Banner */}
+			<div className="mt-5 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+				<div className="flex items-center">
+					<div className="flex-1 bg-gray-50 px-4 py-3">
+						<p className="text-xs text-gray-600">
+							Need help with payment?
+						</p>
 					</div>
 					<Link
 						href="/support"
-						className="bg-emerald-600 px-4 py-3 text-white font-semibold flex items-center justify-center gap-2 hover:bg-emerald-700 transition-colors"
+						className="bg-[#1e1b4b] px-5 py-3 text-white text-sm font-medium flex items-center gap-2 hover:bg-[#312e81] transition-colors"
 					>
-						<Headset className="h-5 w-5" />
-						<span>Support</span>
+						<Headset className="h-4 w-4" />
+						Support
 					</Link>
 				</div>
 			</div>

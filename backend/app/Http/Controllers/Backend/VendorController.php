@@ -175,7 +175,7 @@ class VendorController extends Controller
     public function approve(Request $request, Vendor $vendor)
     {
         $vendor->status = 'approved';
-        $vendor->approval_type = $request->input('approval_type', 'public');
+        $vendor->approval_type = $request->input('approval_type', 'private');
         $vendor->approved_at = now();
         $vendor->rejected_at = null;
         $vendor->save();

@@ -235,8 +235,8 @@ export default function SupplierDetailsComponent({
 										<Star
 											key={star}
 											className={`w-3.5 h-3.5 ${star <= Math.round(vendor.avg_product_rating)
-													? "fill-amber-400 text-amber-400"
-													: "fill-gray-200 text-gray-200"
+												? "fill-amber-400 text-amber-400"
+												: "fill-gray-200 text-gray-200"
 												}`}
 										/>
 									))}
@@ -252,14 +252,20 @@ export default function SupplierDetailsComponent({
 						)}
 					</div>
 
-					{/* Follow Button — right side */}
-					<div className="shrink-0 sm:ml-auto flex flex-col items-center gap-1">
+					{/* Follow Button + Follower Count — right side */}
+					<div className="shrink-0 sm:ml-auto flex items-center gap-3">
+						<div className="flex flex-col items-center px-3">
+							<span className="text-lg sm:text-xl font-bold text-gray-800">{followersCount}</span>
+							<span className="text-xs text-gray-500 font-medium">
+								{followersCount === 1 ? "Follower" : "Followers"}
+							</span>
+						</div>
 						<button
 							onClick={handleFollowToggle}
 							disabled={isFollowing || isUnfollowing}
-							className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors cursor-pointer ${isFollowed
-									? "bg-pink-50 text-[#E5005F] border border-[#E5005F]"
-									: "text-[#E5005F] border border-[#E5005F] hover:bg-pink-50"
+							className={`inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold rounded-full transition-colors cursor-pointer ${isFollowed
+								? "bg-pink-50 text-[#E5005F] border border-[#E5005F] hover:bg-pink-100"
+								: "bg-[#E5005F] text-white hover:bg-[#cc0054]"
 								} ${(isFollowing || isUnfollowing) ? "opacity-60 cursor-wait" : ""}`}
 						>
 							{isFollowed ? (
@@ -274,11 +280,6 @@ export default function SupplierDetailsComponent({
 								</>
 							)}
 						</button>
-						{followersCount > 0 && (
-							<span className="text-xs text-gray-400">
-								{followersCount} {followersCount === 1 ? "follower" : "followers"}
-							</span>
-						)}
 					</div>
 				</div>
 			</div>
@@ -477,8 +478,8 @@ export default function SupplierDetailsComponent({
 														<Star
 															key={star}
 															className={`w-3.5 h-3.5 ${star <= Math.round(vendor.avg_product_rating)
-																	? "fill-amber-400 text-amber-400"
-																	: "fill-gray-200 text-gray-200"
+																? "fill-amber-400 text-amber-400"
+																: "fill-gray-200 text-gray-200"
 																}`}
 														/>
 													))}

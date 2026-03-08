@@ -175,16 +175,21 @@
                 var unreadClass = seen.has(item.id) ? '' : 'unread';
                 var scopeLabel = item.scope === 'supplier' ? 'Supplier' : 'User';
                 var scopeClass = item.scope === 'supplier' ? 'scope-supplier' : 'scope-user';
-                var safeUrl = escapeHtml(item.url || '#');
+                var safeUrl = escapeHtml(item.url || '');
                 return '' +
-                    '<a href="' + safeUrl + '" data-id="' + escapeHtml(item.id) + '" class="admin-activity-item dropdown-item ' + unreadClass + '" style="white-space:normal;">' +
+                    '<div data-id="' + escapeHtml(item.id) + '"' +
+                        ' data-title="' + escapeHtml(item.title || 'Activity') + '"' +
+                        ' data-message="' + escapeHtml(item.message || '') + '"' +
+                        ' data-time="' + escapeHtml(formatTime(item.created_at)) + '"' +
+                        ' data-url="' + safeUrl + '"' +
+                        ' class="admin-activity-item ' + unreadClass + '" style="white-space:normal;cursor:pointer;">' +
                         '<div class="d-flex align-items-start justify-content-between gap-2 mb-1">' +
                             '<div class="activity-title">' + escapeHtml(item.title || 'Activity') + '</div>' +
                             '<span class="activity-scope ' + scopeClass + '">' + scopeLabel + '</span>' +
                         '</div>' +
                         '<div class="activity-message">' + escapeHtml(item.message || '') + '</div>' +
                         '<div class="activity-time">' + escapeHtml(formatTime(item.created_at)) + '</div>' +
-                    '</a>';
+                    '</div>';
             }).join('');
 
             listEl.innerHTML = html;
@@ -219,9 +224,29 @@
             if (!target) {
                 return;
             }
+            event.preventDefault();
             var itemId = target.getAttribute('data-id');
             markSeen(itemId);
+            target.classList.remove('unread');
             updateBadge();
+
+            // Populate and show the notification detail modal
+            var modalEl = document.getElementById('adminNotifDetailModal');
+            if (modalEl) {
+                document.getElementById('adminNotifModalTitle').textContent = target.getAttribute('data-title') || 'Notification';
+                document.getElementById('adminNotifModalMessage').textContent = target.getAttribute('data-message') || '';
+                document.getElementById('adminNotifModalTime').textContent = target.getAttribute('data-time') || '';
+                var linkEl = document.getElementById('adminNotifModalLink');
+                var itemUrl = target.getAttribute('data-url');
+                if (itemUrl) {
+                    linkEl.href = itemUrl;
+                    linkEl.style.display = 'inline-flex';
+                } else {
+                    linkEl.style.display = 'none';
+                }
+                var bsModal = new bootstrap.Modal(modalEl);
+                bsModal.show();
+            }
         });
 
         fetchFeed();
@@ -427,4 +452,69 @@
     .admin-activity-list::-webkit-scrollbar-track {
         background: #f8fafc;
     }
+
+    /* Notification Detail Modal */
+    #adminNotifDetailModal .modal-content {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    }
+    #adminNotifDetailModal .modal-header {
+        border-bottom: 1px solid #f1f5f9;
+        padding: 16px 20px;
+    }
+    #adminNotifDetailModal .modal-body {
+        padding: 20px;
+    }
+    #adminNotifDetailModal .modal-footer {
+        border-top: 1px solid #f1f5f9;
+        padding: 12px 20px;
+    }
+    #adminNotifModalMessage {
+        white-space: pre-line;
+        color: #475569;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    #adminNotifModalTime {
+        color: #94a3b8;
+        font-size: 12px;
+    }
+    #adminNotifModalLink {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #4f46e5;
+        text-decoration: none;
+        margin-top: 8px;
+    }
+    #adminNotifModalLink:hover {
+        color: #3730a3;
+    }
 </style>
+
+<!-- Notification Detail Modal -->
+<div class="modal fade" id="adminNotifDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold" style="font-size:15px;">Notification</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <h5 id="adminNotifModalTitle" class="fw-semibold mb-2" style="font-size:17px;color:#0f172a;"></h5>
+                <p id="adminNotifModalMessage" class="mb-2"></p>
+                <p id="adminNotifModalTime" class="mb-0"></p>
+                <a id="adminNotifModalLink" href="#" target="_self">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    View Details
+                </a>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-dark btn-sm px-4" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>

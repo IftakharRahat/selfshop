@@ -3388,8 +3388,8 @@ public function popularVendors()
         $vendor = Vendor::where('status', 'approved')
             ->where(function ($q) use ($slug) {
                 $q->where('slug', $slug);
-                // Match private vendors by their generated slug pattern (ss-XXXXX)
-                if (preg_match('/^ss-(\d+)$/i', $slug, $matches)) {
+                // Match private vendors by their generated slug pattern (sid-XXXXX)
+                if (preg_match('/^sid-(\d+)$/i', $slug, $matches)) {
                     $vendorId = (int) ltrim($matches[1], '0');
                     $q->orWhere(function ($sub) use ($vendorId) {
                         $sub->where('id', $vendorId)->where('approval_type', 'private');

@@ -173,7 +173,7 @@ export function InvoicePage() {
 					onClick={handlePayment}
 					className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-white text-lg font-bold hover:bg-emerald-700 transition-colors"
 				>
-					Pay Now with Online (bKash, Nagad, Rocket etc)
+					Pay Now
 				</button>
 			</div>
 

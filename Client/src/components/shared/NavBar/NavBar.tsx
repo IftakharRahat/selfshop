@@ -425,17 +425,13 @@ export default function Navbar() {
 					open={isPricingModalOpen}
 					// onCancel={() => setIsPricingModalOpen(false)}
 					footer={null}
-					width={900}
+					width={520}
 					centered
-					// styles={{
-					//   body: { padding: "40px 40px 20px 40px" },
-					// }}
 					closeIcon={null}
 				>
-					{/* Logo + Title */}
-					<div className="text-center mb-6 py-[40px] pt-[20px] pb-[40px]">
-						<div className="flex items-center justify-center mb-4">
-							<img src={logo.src} alt="SelfShop Logo" className="w-60" />
+					<div className="text-center pt-2 pb-4">
+						<div className="flex items-center justify-center mb-3">
+							<img src={logo.src} alt="SelfShop Logo" className="w-44" />
 						</div>
 
 						<PricingPage onInvoiceCreated={handlePackageInvoiceCreated} />

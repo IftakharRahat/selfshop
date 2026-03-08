@@ -50,7 +50,7 @@ class Vendor extends Model
      */
     public function getPrivateIdAttribute(): string
     {
-        return 'SS-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+        return 'SID-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
     }
 
     /**
