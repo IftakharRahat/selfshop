@@ -54,6 +54,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Notifications\DatabaseNotification;
 use Str;
@@ -1172,25 +1173,42 @@ class FrontendApiController extends Controller
 
     public function updateprofile(Request $request)
     {
-        $time = microtime('.') * 10000;
+        $validator = Validator::make($request->all(), [
+            'profile' => ['nullable', 'image', 'max:5120'],
+            'nid' => ['nullable', 'image', 'max:5120'],
+        ], [
+            'profile.max' => 'Profile image must be under 5MB.',
+            'nid.max' => 'NID document must be under 5MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         $id = Auth::user()->id;
         $userprofile = User::findOrfail($id);
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
         $productImg = $request->file('profile');
         if ($productImg) {
-            $imgname = $time . $productImg->getClientOriginalName();
-            $imguploadPath = ('public/images/user/profile/');
-            $productImg->move($imguploadPath, $imgname);
-            $productImgUrl = $imguploadPath . $imgname;
-            $userprofile->profile = $productImgUrl;
+            $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
+            $path = $productImg->storeAs('users/profiles', $safeName, 'r2');
+            $userprofile->profile = $r2BaseUrl . '/' . $path;
         }
+
         $nidImg = $request->file('nid');
         if ($nidImg) {
-            $imgname = $time . $nidImg->getClientOriginalName();
-            $imguploadPath = ('public/images/user/nid/');
-            $nidImg->move($imguploadPath, $imgname);
-            $nidImgUrl = $imguploadPath . $imgname;
-            $userprofile->nid = $nidImgUrl;
+            $safeName = Str::slug(pathinfo($nidImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $nidImg->getClientOriginalExtension();
+            $path = $nidImg->storeAs('users/nid', $safeName, 'r2');
+            $userprofile->nid = $r2BaseUrl . '/' . $path;
         }
+
         $userprofile->name = $request->name;
         $userprofile->dob = $request->dob;
         $userprofile->address = $request->address;
@@ -1464,6 +1482,20 @@ class FrontendApiController extends Controller
 
     public function createticket(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'attachment' => ['nullable', 'file', 'max:5120'],
+        ], [
+            'attachment.max' => 'Attachment must be under 5MB.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         $id = Auth::user()->id;
         $tts = Tikit::where('from_id', $id)->get();
         foreach ($tts as $tt) {
@@ -1480,14 +1512,13 @@ class FrontendApiController extends Controller
         $tikit->priority = $request->priority;
         $tikit->message = $request->message;
 
-        $time = microtime('.') * 10000;
         $productImg = $request->file('attachment');
         if ($productImg) {
-            $imgname = $time . $productImg->getClientOriginalName();
-            $imguploadPath = ('public/images/tikit/');
-            $productImg->move($imguploadPath, $imgname);
-            $productImgUrl = $imguploadPath . $imgname;
-            $tikit->attachment = $productImgUrl;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
+            $path = $productImg->storeAs('tickets', $safeName, 'r2');
+            $tikit->attachment = $r2BaseUrl . '/' . $path;
         }
         $tikit->save();
 
@@ -1658,11 +1689,12 @@ class FrontendApiController extends Controller
         try {
             $product = new Productrequest();
             $productImg = $request->file('attachment');
-            $time = microtime('.') * 10000;
             if ($productImg) {
-                $imgname = $time . $productImg->getClientOriginalName();
-                $storagePath = $productImg->storeAs('images/user/profile', $imgname, 'public');
-                $product->attachment = 'storage/' . $storagePath;
+                $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+                $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
+                    . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
+                $path = $productImg->storeAs('products/images', $safeName, 'r2');
+                $product->attachment = $r2BaseUrl . '/' . $path;
             }
             $id = Auth::user()->id;
             $product->from_id = $id;
