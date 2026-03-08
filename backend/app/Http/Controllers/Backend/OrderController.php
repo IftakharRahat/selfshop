@@ -1596,6 +1596,10 @@ class OrderController extends Controller
                     "name" => "Packageing",
                     "color" => " bg-primary"
                 ),
+                "Shipped" => array(
+                    "name" => "Shipped",
+                    "color" => " bg-info"
+                ),
                 "Ontheway" => array(
                     "name" => "Ontheway",
                     "color" => " bg-ondv"
@@ -1622,6 +1626,12 @@ class OrderController extends Controller
             }
         }
         $args = $allStatus[$temp];
+
+        // Fallback for unknown statuses
+        if (!isset($args[$status])) {
+            return "<span class='badge bg-secondary'>" . e($status) . "</span>";
+        }
+
         $html = '';
         foreach ($args as $value) {
             if ($args[$status]['name'] != $value['name']) {

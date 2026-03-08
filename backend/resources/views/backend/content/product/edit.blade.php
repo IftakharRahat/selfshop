@@ -172,7 +172,7 @@
             <nav>
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url('admin/product') }}">Products</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url('admin/shop/products') }}">Products</a></li>
                     <li class="breadcrumb-item active">Edit — {{ $product->ProductName }}</li>
                 </ol>
             </nav>
