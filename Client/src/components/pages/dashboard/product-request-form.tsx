@@ -3,11 +3,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ConfigProvider, Input, Select } from "antd";
-import { Upload, X } from "lucide-react";
-import type React from "react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+import R2ImageUploader from "@/components/shared/r2-image-uploader";
 import "antd/dist/reset.css";
 import TextArea from "antd/es/input/TextArea";
 import { getImageUrl } from "@/lib/utils";
@@ -48,13 +47,12 @@ export default function ProductRequestForm() {
 		},
 	});
 
-	const [preview, setPreview] = useState<string | null>(null);
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [createRequestProduct] = useCreateRequestProductMutation();
 	const { data } = useGetAllRequestProductsQuery(undefined);
 
 	const onSubmit = async (formDataValues: ProductRequestFormValues) => {
 		if (!formDataValues.image) {
-			alert("Please upload an image before submitting.");
 			return;
 		}
 
@@ -69,23 +67,10 @@ export default function ProductRequestForm() {
 				return createRequestProduct(formData);
 			});
 			reset();
-			setPreview(null);
+			setSelectedFile(null);
 		} catch (error) {
 			console.error("Upload failed:", error);
 		}
-	};
-
-	const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0];
-		if (file) {
-			setValue("image", file, { shouldValidate: true });
-			setPreview(URL.createObjectURL(file));
-		}
-	};
-
-	const handleImageRemove = () => {
-		setValue("image", undefined, { shouldValidate: true });
-		setPreview(null);
 	};
 
 	return (
@@ -187,49 +172,16 @@ export default function ProductRequestForm() {
 						</div>
 
 						<div className="space-y-2">
-							<p className="text-sm font-medium text-gray-700 h-3">
-								Upload image
-							</p>
-							<div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
-								<div className="flex flex-col items-center space-y-4">
-									<Upload className="w-12 h-12 text-gray-400" />
-									<div className="space-y-2">
-										<p className="text-gray-500">Upload image</p>
-										<input
-											type="file"
-											accept="image/*"
-											onChange={handleImageUpload}
-											className="hidden"
-											id="image-upload"
-										/>
-										<button
-											type="button"
-											onClick={() =>
-												document.getElementById("image-upload")?.click()
-											}
-											className="px-4 py-2 border rounded-md text-gray-600 border-gray-300 hover:bg-gray-100"
-										>
-											Choose image
-										</button>
-									</div>
-									{preview && (
-										<div className="relative mt-4">
-											<img
-												src={preview}
-												alt="Preview"
-												className="max-h-32 rounded-lg border"
-											/>
-											<button
-												type="button"
-												onClick={handleImageRemove}
-												className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-											>
-												<X size={14} />
-											</button>
-										</div>
-									)}
-								</div>
-							</div>
+							<R2ImageUploader
+								label="Upload image"
+								value={selectedFile}
+								onChange={(file) => {
+								setSelectedFile(file);
+								setValue("image", file ?? undefined, { shouldValidate: true });
+							}}
+								maxSizeMB={5}
+								accept="image/*"
+							/>
 							{errors.image && (
 								<p className="text-sm text-red-500">{errors.image.message}</p>
 							)}
@@ -278,10 +230,10 @@ export default function ProductRequestForm() {
 												<p className="text-sm font-semibold text-gray-900 truncate mr-2">{item.p_name}</p>
 												<span
 													className={`px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${item.status === "Paid"
-															? "bg-green-50 text-green-700 border border-green-200"
-															: item.status === "Pending"
-																? "bg-amber-50 text-amber-700 border border-amber-200"
-																: "bg-red-50 text-red-700 border border-red-200"
+														? "bg-green-50 text-green-700 border border-green-200"
+														: item.status === "Pending"
+															? "bg-amber-50 text-amber-700 border border-amber-200"
+															: "bg-red-50 text-red-700 border border-red-200"
 														}`}
 												>
 													{item.status}
@@ -368,10 +320,10 @@ export default function ProductRequestForm() {
 											<td className="p-4">
 												<span
 													className={`px-2.5 py-1 rounded-full text-xs font-medium ${item.status === "Paid"
-															? "bg-green-50 text-green-700 border border-green-200"
-															: item.status === "Pending"
-																? "bg-amber-50 text-amber-700 border border-amber-200"
-																: "bg-red-50 text-red-700 border border-red-200"
+														? "bg-green-50 text-green-700 border border-green-200"
+														: item.status === "Pending"
+															? "bg-amber-50 text-amber-700 border border-amber-200"
+															: "bg-red-50 text-red-700 border border-red-200"
 														}`}
 												>
 													{item.status}

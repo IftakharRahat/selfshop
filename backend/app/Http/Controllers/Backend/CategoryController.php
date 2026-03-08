@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Subcategory;
 use App\Models\Minicategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class CategoryController extends Controller
@@ -32,16 +33,12 @@ class CategoryController extends Controller
     {
         $category = new Category();
         $category->category_name = $request->category_name;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
         $category_icon = $request->file('category_icon');
-        $name = time() . "_" . random_int(100000, 999999);
-        $uploadPath = ('public/images/category/');
-        $category_icon->move($uploadPath, $name);
-        $category_iconImgUrl = $uploadPath . $name;
-        $webp = $category_iconImgUrl;
-        $im = imagecreatefromstring(file_get_contents($webp));
-        $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-        imagewebp($im, $new_webp, 50);
-        $category->category_icon = $new_webp;
+        $safeName = Str::slug(pathinfo($category_icon->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $category_icon->getClientOriginalExtension();
+        $path = $category_icon->storeAs('admin/categories', $safeName, 'r2');
+        $category->category_icon = $r2BaseUrl . '/' . $path;
         $category->save();
         return response()->json($category, 200);
     }
@@ -95,36 +92,12 @@ public function update(Request $request, $id)
     $category->category_name = $request->category_name;
     
     if ($request->hasFile('category_icon')) {
-        // Delete old image
-        if (file_exists($category->category_icon)) {
-            unlink($category->category_icon);
-        }
-        
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
         $category_icon = $request->file('category_icon');
-        $name = time() . "_" . random_int(100000, 999999) . '.' . $category_icon->getClientOriginalExtension();
-        $uploadPath = 'public/images/category/';
-        
-        // Create directory if not exists
-        if (!file_exists($uploadPath)) {
-            mkdir($uploadPath, 0777, true);
-        }
-        
-        $category_icon->move($uploadPath, $name);
-        $category_iconImgUrl = $uploadPath . $name;
-        
-        // Convert to webp
-        $webp = $category_iconImgUrl;
-        $im = imagecreatefromstring(file_get_contents($webp));
-        $new_webp = preg_replace('/\.(jpg|jpeg|png|gif)$/', '.webp', $webp);
-        imagewebp($im, $new_webp, 80);
-        imagedestroy($im);
-        
-        // Delete original image if not webp
-        if (!preg_match('/\.webp$/', $webp)) {
-            unlink($webp);
-        }
-        
-        $category->category_icon = $new_webp;
+        $safeName = Str::slug(pathinfo($category_icon->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $category_icon->getClientOriginalExtension();
+        $path = $category_icon->storeAs('admin/categories', $safeName, 'r2');
+        $category->category_icon = $r2BaseUrl . '/' . $path;
     }
     
     $category->save();

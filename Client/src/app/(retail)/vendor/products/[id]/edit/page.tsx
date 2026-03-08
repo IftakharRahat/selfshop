@@ -7,6 +7,8 @@ import Link from "next/link";
 import WithVendorAuth from "../../../WithVendorAuth";
 import { toast } from "sonner";
 import { getImageUrl } from "@/lib/utils";
+import R2ImageUploader from "@/components/shared/r2-image-uploader";
+import R2MultiImageUploader from "@/components/shared/r2-multi-image-uploader";
 import {
 	useGetVendorProductQuery,
 	useUpdateVendorProductMutation,
@@ -101,6 +103,10 @@ export default function VendorEditProductPage() {
 
 	// For inline add-size forms per variant
 	const [newSizeState, setNewSizeState] = useState<Record<number, { size_name: string; price: string; qty: string }>>({});
+
+	// Image state for R2 uploaders
+	const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+	const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
 
 	// Populate state once product arrives
 	useEffect(() => {
@@ -237,13 +243,10 @@ export default function VendorEditProductPage() {
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
 		formData.append("_method", "PUT");
 
-		const form = e.currentTarget;
-		const thumb = (form.querySelector('[name="thumbnail"]') as HTMLInputElement)?.files?.[0];
-		if (thumb) formData.append("ProductImage", thumb);
-		const galleryInput = form.querySelector('[name="gallery_images"]') as HTMLInputElement;
-		if (galleryInput?.files?.length) {
-			for (let i = 0; i < galleryInput.files.length; i++) {
-				formData.append(`PostImage[${i}]`, galleryInput.files[i]);
+		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
+		if (galleryFiles.length > 0) {
+			for (let i = 0; i < galleryFiles.length; i++) {
+				formData.append(`PostImage[${i}]`, galleryFiles[i]);
 			}
 		}
 		try {
@@ -527,22 +530,13 @@ export default function VendorEditProductPage() {
 							<div className="space-y-3">
 								<h2 className="text-sm font-semibold text-gray-900">Product images</h2>
 
-								{/* Current thumbnail preview */}
-								{product.ViewProductImage && (
-									<div>
-										<p className="text-xs text-gray-500 mb-1">Current thumbnail</p>
-										<img
-											src={getImageUrl(product.ViewProductImage as string)}
-											alt="Current thumbnail"
-											className="w-28 h-28 object-cover rounded-lg border border-gray-200"
-											onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-										/>
-									</div>
-								)}
-								<label className="flex flex-col text-xs font-medium text-gray-700">
-									New thumbnail (optional)
-									<input name="thumbnail" type="file" accept="image/*" className="mt-1 block w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-900 file:text-white hover:file:bg-black" />
-								</label>
+								<R2ImageUploader
+									label="Thumbnail image"
+									value={thumbnailFile}
+									existingImageUrl={product.ViewProductImage ? getImageUrl(product.ViewProductImage as string) : undefined}
+									onChange={setThumbnailFile}
+									compact
+								/>
 
 								{/* Current gallery preview */}
 								{(() => {
@@ -569,10 +563,11 @@ export default function VendorEditProductPage() {
 										</div>
 									) : null;
 								})()}
-								<label className="flex flex-col text-xs font-medium text-gray-700">
-									Gallery images (optional, replaces existing)
-									<input name="gallery_images" type="file" multiple accept="image/*" className="mt-1 block w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-900 file:text-white hover:file:bg-black" />
-								</label>
+								<R2MultiImageUploader
+									label="New gallery images (optional, replaces existing)"
+									value={galleryFiles}
+									onChange={setGalleryFiles}
+								/>
 							</div>
 						</div>
 					</div>

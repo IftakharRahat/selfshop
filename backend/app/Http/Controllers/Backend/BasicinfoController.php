@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backend;
 use App\Http\Controllers\Controller;
 use App\Models\Basicinfo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class BasicinfoController extends Controller
 {
@@ -37,25 +38,21 @@ class BasicinfoController extends Controller
         $webinfo->phone_two=$request-> phone_two;
         $webinfo->address=$request-> address;
         if($request->logo){
-            if($webinfo->logo =='public/webview/assets/images/logo.png'){
-            }else{
-                unlink($webinfo->logo);
-            }
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $logo = $request->file('logo');
-            $name = time() . "_" . $logo->getClientOriginalName();
-            $uploadPath = ('public/images/categorybanner/');
-            $logo->move($uploadPath, $name);
-            $logoImgUrl = $uploadPath . $name;
-            $webinfo->logo = $logoImgUrl;
+            $safeName = Str::slug(pathinfo($logo->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $logo->getClientOriginalExtension();
+            $path = $logo->storeAs('admin/site', $safeName, 'r2');
+            $webinfo->logo = $r2BaseUrl . '/' . $path;
         }
         
         if($request->fav_icon){  
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $logof = $request->file('fav_icon');
-            $namef = time() . "_" . $logof->getClientOriginalName();
-            $uploadPathf = ('public/images/fav/');
-            $logof->move($uploadPathf, $namef);
-            $logoImgUrlf = $uploadPathf . $namef;
-            $webinfo->fav_icon = $logoImgUrlf;
+            $safeName = Str::slug(pathinfo($logof->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $logof->getClientOriginalExtension();
+            $path = $logof->storeAs('admin/site', $safeName, 'r2');
+            $webinfo->fav_icon = $r2BaseUrl . '/' . $path;
         }
         $webinfo->save();
         return redirect()->back()->with('message','Info updated successfully');
@@ -231,12 +228,12 @@ class BasicinfoController extends Controller
         }
 
         if($request->meta_image){
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $logo = $request->file('meta_image');
-            $name = time() . "_" . $logo->getClientOriginalName();
-            $uploadPath = ('public/images/meta_image/');
-            $logo->move($uploadPath, $name);
-            $logoImgUrl = $uploadPath . $name;
-            $webinfo->meta_image = $logoImgUrl;
+            $safeName = Str::slug(pathinfo($logo->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $logo->getClientOriginalExtension();
+            $path = $logo->storeAs('admin/site/seo', $safeName, 'r2');
+            $webinfo->meta_image = $r2BaseUrl . '/' . $path;
         }
 
 

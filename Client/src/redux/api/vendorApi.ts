@@ -143,6 +143,7 @@ export interface VendorOrderDetail {
 		tracking_number?: string | null;
 		trackingLink?: string | null;
 		shipped_at?: string | null;
+		parcel_id?: string | number | null;
 	};
 	customer: { customerName: string; customerPhone: string; customerAddress: string } | null;
 	line_items: Array<{

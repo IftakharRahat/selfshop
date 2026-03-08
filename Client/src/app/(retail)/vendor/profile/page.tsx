@@ -9,6 +9,7 @@ import {
 } from "@/redux/api/vendorApi";
 import { toast } from "sonner";
 import WithVendorAuth from "../WithVendorAuth";
+import R2ImageUploader from "@/components/shared/r2-image-uploader";
 
 export default function VendorProfilePage() {
 	const { data, isLoading } = useGetVendorProfileQuery();
@@ -119,23 +120,21 @@ export default function VendorProfilePage() {
 								Account status
 							</span>
 							<span
-								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-									vendorStatus === "approved"
+								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${vendorStatus === "approved"
 										? "bg-emerald-100 text-emerald-700"
 										: vendorStatus === "rejected"
 											? "bg-red-100 text-red-700"
 											: "bg-amber-100 text-amber-700"
-								}`}
+									}`}
 							>
 								{vendorStatus.charAt(0).toUpperCase() +
 									vendorStatus.slice(1)}
 							</span>
 							<span
-								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-									isVerifiedBadge
+								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isVerifiedBadge
 										? "bg-sky-100 text-sky-700"
 										: "bg-gray-100 text-gray-600"
-								}`}
+									}`}
 							>
 								{isVerifiedBadge
 									? "Verified badge enabled"
@@ -269,13 +268,12 @@ export default function VendorProfilePage() {
 							</label>
 							<label className="flex flex-col text-xs font-medium text-gray-700">
 								Document file (image/PDF)
-								<input
-									type="file"
+								<R2ImageUploader
+									value={kycFile}
+									onChange={(file) => setKycFile(file)}
 									accept="image/*,application/pdf"
-									onChange={(e) =>
-										setKycFile(e.target.files?.[0] ?? null)
-									}
-									className="mt-1 block w-full text-xs text-gray-700 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-gray-900 file:text-white hover:file:bg-black"
+									maxSizeMB={2}
+									compact
 								/>
 							</label>
 							<button
@@ -294,9 +292,9 @@ export default function VendorProfilePage() {
 							{isKycLoading ? (
 								<p className="text-xs text-gray-500">Loading...</p>
 							) : !kycData ||
-							  !kycData.data ||
-							  !Array.isArray(kycData.data.documents) ||
-							  kycData.data.documents.length === 0 ? (
+								!kycData.data ||
+								!Array.isArray(kycData.data.documents) ||
+								kycData.data.documents.length === 0 ? (
 								<p className="text-xs text-gray-400">
 									No documents submitted yet.
 								</p>
@@ -321,13 +319,12 @@ export default function VendorProfilePage() {
 												</span>
 											</div>
 											<span
-												className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-													doc.status === "approved"
+												className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${doc.status === "approved"
 														? "bg-emerald-100 text-emerald-700"
 														: doc.status === "rejected"
 															? "bg-red-100 text-red-700"
 															: "bg-amber-100 text-amber-700"
-												}`}
+													}`}
 											>
 												{doc.status}
 											</span>

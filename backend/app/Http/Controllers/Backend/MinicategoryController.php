@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Minicategory;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class MinicategoryController extends Controller
@@ -31,11 +32,11 @@ class MinicategoryController extends Controller
         $minicategory->category_id =$request->category_id;
         $minicategory->subcategory_id =$request->subcategory_id;
         $minicategory_icon = $request->file('minicategory_icon');
-        $name = time() . "_" . $minicategory_icon->getClientOriginalName();
-        $uploadPath = ('public/images/minicategory/');
-        $minicategory_icon->move($uploadPath, $name);
-        $minicategory_iconImgUrl = $uploadPath . $name;
-        $minicategory->minicategory_icon = $minicategory_iconImgUrl;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($minicategory_icon->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $minicategory_icon->getClientOriginalExtension();
+        $path = $minicategory_icon->storeAs('admin/minicategories', $safeName, 'r2');
+        $minicategory->minicategory_icon = $r2BaseUrl . '/' . $path;
         $minicategory->save();
         return response()->json($minicategory, 200);
     }
@@ -78,15 +79,12 @@ class MinicategoryController extends Controller
         $minicategory->category_id =$request->category_id;
 
         if($request->minicategory_icon){
-            if(isset($minicategory->minicategory_icon)){
-                unlink($minicategory->minicategory_icon);
-            }
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $minicategory_icon = $request->file('minicategory_icon');
-            $name = time() . "_" . $minicategory_icon->getClientOriginalName();
-            $uploadPath = ('public/images/category/');
-            $minicategory_icon->move($uploadPath, $name);
-            $minicategory_iconImgUrl = $uploadPath . $name;
-            $minicategory->minicategory_icon = $minicategory_iconImgUrl;
+            $safeName = Str::slug(pathinfo($minicategory_icon->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $minicategory_icon->getClientOriginalExtension();
+            $path = $minicategory_icon->storeAs('admin/minicategories', $safeName, 'r2');
+            $minicategory->minicategory_icon = $r2BaseUrl . '/' . $path;
         }
 
         $minicategory->save();

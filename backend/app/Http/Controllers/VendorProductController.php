@@ -155,10 +155,15 @@ class VendorProductController extends Controller
             $product->selling_type = $request->input('selling_type', 'both');
         }
 
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
         if ($request->hasFile('ProductImage')) {
-            $path = $request->file('ProductImage')->store('products/vendor', 'public');
-            $product->ProductImage = 'storage/' . $path;
-            $product->ViewProductImage = 'storage/' . $path;
+            $img = $request->file('ProductImage');
+            $safeName = Str::slug(pathinfo($img->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $img->getClientOriginalExtension();
+            $path = $img->storeAs('products/vendor', $safeName, 'r2');
+            $product->ProductImage = $r2BaseUrl . '/' . $path;
+            $product->ViewProductImage = $r2BaseUrl . '/' . $path;
         } else {
             $product->ProductImage = 'public/images/product/default.jpg';
             $product->ViewProductImage = 'public/images/product/default.jpg';
@@ -166,9 +171,11 @@ class VendorProductController extends Controller
 
         if ($request->hasFile('PostImage')) {
             $imageData = [];
-            foreach ($request->file('PostImage') as $img) {
-                $path = $img->store('products/vendor/gallery', 'public');
-                $imageData[] = 'storage/' . $path;
+            foreach ($request->file('PostImage') as $galleryImg) {
+                $safeName = Str::slug(pathinfo($galleryImg->getClientOriginalName(), PATHINFO_FILENAME))
+                    . '_' . Str::random(8) . '.' . $galleryImg->getClientOriginalExtension();
+                $path = $galleryImg->storeAs('products/vendor/gallery', $safeName, 'r2');
+                $imageData[] = $r2BaseUrl . '/' . $path;
             }
             $product->PostImage = json_encode($imageData);
         }
@@ -301,16 +308,23 @@ class VendorProductController extends Controller
             $product->selling_type = $data['selling_type'];
         }
 
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
         if ($request->hasFile('ProductImage')) {
-            $path = $request->file('ProductImage')->store('products/vendor', 'public');
-            $product->ProductImage = 'storage/' . $path;
-            $product->ViewProductImage = 'storage/' . $path;
+            $img = $request->file('ProductImage');
+            $safeName = Str::slug(pathinfo($img->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $img->getClientOriginalExtension();
+            $path = $img->storeAs('products/vendor', $safeName, 'r2');
+            $product->ProductImage = $r2BaseUrl . '/' . $path;
+            $product->ViewProductImage = $r2BaseUrl . '/' . $path;
         }
         if ($request->hasFile('PostImage')) {
             $imageData = [];
-            foreach ($request->file('PostImage') as $img) {
-                $path = $img->store('products/vendor/gallery', 'public');
-                $imageData[] = 'storage/' . $path;
+            foreach ($request->file('PostImage') as $galleryImg) {
+                $safeName = Str::slug(pathinfo($galleryImg->getClientOriginalName(), PATHINFO_FILENAME))
+                    . '_' . Str::random(8) . '.' . $galleryImg->getClientOriginalExtension();
+                $path = $galleryImg->storeAs('products/vendor/gallery', $safeName, 'r2');
+                $imageData[] = $r2BaseUrl . '/' . $path;
             }
             $product->PostImage = json_encode($imageData);
         }
@@ -402,8 +416,12 @@ class VendorProductController extends Controller
         $variant->color_code = $this->normalizeColorCode($data['color_code'] ?? null);
         $variant->status = $request->input('status', 'Active');
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products/variants', 'public');
-            $variant->image = 'storage/' . $path;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $img = $request->file('image');
+            $safeName = Str::slug(pathinfo($img->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $img->getClientOriginalExtension();
+            $path = $img->storeAs('products/variants', $safeName, 'r2');
+            $variant->image = $r2BaseUrl . '/' . $path;
         }
         $variant->save();
 
@@ -447,8 +465,12 @@ class VendorProductController extends Controller
             $variant->color_code = $this->normalizeColorCode($data['color_code']);
         }
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products/variants', 'public');
-            $variant->image = 'storage/' . $path;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $img = $request->file('image');
+            $safeName = Str::slug(pathinfo($img->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $img->getClientOriginalExtension();
+            $path = $img->storeAs('products/variants', $safeName, 'r2');
+            $variant->image = $r2BaseUrl . '/' . $path;
         }
         $variant->save();
 

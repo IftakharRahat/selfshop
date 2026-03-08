@@ -170,7 +170,12 @@ class VendorAccountController extends Controller
 
         $path = null;
         if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('vendor-kyc', 'public');
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $file = $request->file('file');
+            $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $storedPath = $file->storeAs('vendor-kyc', $safeName, 'r2');
+            $path = $r2BaseUrl . '/' . $storedPath;
         }
 
         $document = VendorKycDocument::create([

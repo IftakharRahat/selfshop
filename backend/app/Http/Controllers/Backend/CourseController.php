@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Course; 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class CourseController extends Controller
@@ -33,15 +34,11 @@ class CourseController extends Controller
         $course->coursecategory_id =$request->coursecategory_id;
         $course->youtube_embade =$request->youtube_embade;
         $course_image = $request->file('course_image');
-        $name = time() . "_" . $course_image->getClientOriginalName();
-        $uploadPath = ('public/images/course/'); 
-        $course_image->move($uploadPath, $name);
-        $course_imageImgUrl = $uploadPath . $name;
-        $webp = $course_imageImgUrl;
-        $im = imagecreatefromstring(file_get_contents($webp));
-        $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-        imagewebp($im, $new_webp, 50);
-        $course->course_image = $new_webp; 
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($course_image->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $course_image->getClientOriginalExtension();
+        $path = $course_image->storeAs('admin/courses', $safeName, 'r2');
+        $course->course_image = $r2BaseUrl . '/' . $path; 
         $course->save();
         return response()->json($course, 200);
     }
@@ -85,17 +82,12 @@ class CourseController extends Controller
         $course->coursecategory_id =$request->coursecategory_id;
         $course->youtube_embade =$request->youtube_embade;
         if($request->course_image){
-            unlink($course->course_image);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $course_image = $request->file('course_image');
-            $name = time() . "_" . $course_image->getClientOriginalName();
-            $uploadPath = ('public/images/course/'); 
-            $course_image->move($uploadPath, $name);
-            $course_imageImgUrl = $uploadPath . $name; 
-            $webp = $course_imageImgUrl;
-            $im = imagecreatefromstring(file_get_contents($webp));
-            $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-            imagewebp($im, $new_webp, 50);
-            $course->course_image = $new_webp;
+            $safeName = Str::slug(pathinfo($course_image->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $course_image->getClientOriginalExtension();
+            $path = $course_image->storeAs('admin/courses', $safeName, 'r2');
+            $course->course_image = $r2BaseUrl . '/' . $path;
         }
         $course->save();
         return response()->json($course, 200);

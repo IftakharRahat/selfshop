@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Addbanner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AddbannerController extends Controller
 {
@@ -46,21 +47,21 @@ class AddbannerController extends Controller
         $addbanner->text = $request->text;
 
         if ($request->icon) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $icon = $request->file('icon');
-            $iconname = time() . "_" . $icon->getClientOriginalName();
-            $iconuploadPath = ('public/images/addbanner/');
-            $icon->move($iconuploadPath, $iconname);
-            $iconImgUrl = $iconuploadPath . $iconname;
-            $addbanner->icon = $iconImgUrl;
+            $safeName = Str::slug(pathinfo($icon->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $icon->getClientOriginalExtension();
+            $path = $icon->storeAs('admin/banners', $safeName, 'r2');
+            $addbanner->icon = $r2BaseUrl . '/' . $path;
         }
 
         if ($request->bg_img) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $add_image = $request->file('bg_img');
-            $name = time() . "_" . $add_image->getClientOriginalName();
-            $uploadPath = ('public/images/addbanner/');
-            $add_image->move($uploadPath, $name);
-            $add_imageImgUrl = $uploadPath . $name;
-            $addbanner->bg_img = $add_imageImgUrl;
+            $safeName = Str::slug(pathinfo($add_image->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $add_image->getClientOriginalExtension();
+            $path = $add_image->storeAs('admin/banners', $safeName, 'r2');
+            $addbanner->bg_img = $r2BaseUrl . '/' . $path;
         }
         $addbanner->save();
         return redirect()->route('admin.addbanners.index')->with('message', 'Add Banner Created');
@@ -103,21 +104,21 @@ class AddbannerController extends Controller
         $addbanner->text = $request->text;
 
         if ($request->icon) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $icon = $request->file('icon');
-            $iconname = time() . "_" . $icon->getClientOriginalName();
-            $iconuploadPath = ('public/images/addbanner/');
-            $icon->move($iconuploadPath, $iconname);
-            $iconImgUrl = $iconuploadPath . $iconname;
-            $addbanner->icon = $iconImgUrl;
+            $safeName = Str::slug(pathinfo($icon->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $icon->getClientOriginalExtension();
+            $path = $icon->storeAs('admin/banners', $safeName, 'r2');
+            $addbanner->icon = $r2BaseUrl . '/' . $path;
         }
 
         if ($request->bg_img) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $add_image = $request->file('bg_img');
-            $name = time() . "_" . $add_image->getClientOriginalName();
-            $uploadPath = ('public/images/addbanner/');
-            $add_image->move($uploadPath, $name);
-            $add_imageImgUrl = $uploadPath . $name;
-            $addbanner->bg_img = $add_imageImgUrl;
+            $safeName = Str::slug(pathinfo($add_image->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $add_image->getClientOriginalExtension();
+            $path = $add_image->storeAs('admin/banners', $safeName, 'r2');
+            $addbanner->bg_img = $r2BaseUrl . '/' . $path;
         }
         $addbanner->update();
         return redirect()->route('admin.addbanners.index')->with('message', 'Add Banner Updated');

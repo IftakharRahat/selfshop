@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { Button, DatePicker, Input, Modal, message, Upload } from "antd";
+import { Button, DatePicker, Input, Modal, message } from "antd";
 import dayjs from "dayjs";
 import { Copy, Edit, Package, ShoppingBag, TrendingUp, User, Wallet } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import R2ImageUploader from "@/components/shared/r2-image-uploader";
 import { getImageUrl } from "@/lib/utils";
 import {
 	useGetMeQuery,
@@ -20,8 +21,8 @@ type ProfileFormValues = {
 	dob: dayjs.Dayjs | null;
 	address: string;
 	shop_name: string;
-	profile_file: { file: File } | null;
-	nid_file: { file: File } | null;
+	profile_file: File | null;
+	nid_file: File | null;
 };
 
 type BankFormValues = {
@@ -47,7 +48,7 @@ export default function ProfileDashboard() {
 	const soldamount = data?.data?.soldamount || 0;
 	const walletbalance = data?.data?.walletbalance || 0;
 
-	const { control, handleSubmit, reset, watch } = useForm<ProfileFormValues>({
+	const { control, handleSubmit, reset, watch, setValue } = useForm<ProfileFormValues>({
 		defaultValues: {
 			name: profile?.name || "",
 			dob: profile?.dob ? dayjs(profile.dob) : null,
@@ -73,10 +74,10 @@ export default function ProfileDashboard() {
 
 	const profileFile = watch("profile_file");
 
-	if (profileFile?.file && !profilePreview) {
+	if (profileFile instanceof File && !profilePreview) {
 		const reader = new FileReader();
 		reader.onload = (e) => setProfilePreview(e.target?.result as string);
-		reader.readAsDataURL(profileFile.file);
+		reader.readAsDataURL(profileFile);
 	}
 
 	const handleCopyReferralCode = () => {
@@ -109,9 +110,9 @@ export default function ProfileDashboard() {
 			formData.append("address", values.address);
 			formData.append("shop_name", values.shop_name);
 
-			if (values.profile_file?.file)
-				formData.append("profile", values.profile_file.file);
-			if (values.nid_file?.file) formData.append("nid", values.nid_file.file);
+			if (values.profile_file instanceof File)
+				formData.append("profile", values.profile_file);
+			if (values.nid_file instanceof File) formData.append("nid", values.nid_file);
 
 			await handleAsyncWithToast(async () => updateUser(formData));
 
@@ -329,28 +330,27 @@ export default function ProfileDashboard() {
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<label className="font-medium text-gray-700">Profile Image</label>
-						<Controller
-							name="profile_file"
-							control={control}
-							render={({ field }) => (
-								<Upload beforeUpload={() => false} maxCount={1} {...field}>
-									<Button>Upload Image</Button>
-								</Upload>
-							)}
+						<R2ImageUploader
+							label="Profile Image"
+							value={watch("profile_file")}
+							existingImageUrl={profile?.profile ? getImageUrl(profile.profile) : undefined}
+							onChange={(file) => {
+								setValue("profile_file", file);
+								if (file) setProfilePreview(null);
+							}}
+							maxSizeMB={5}
+							compact
 						/>
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<label className="font-medium text-gray-700">NID Document</label>
-						<Controller
-							name="nid_file"
-							control={control}
-							render={({ field }) => (
-								<Upload beforeUpload={() => false} maxCount={1} {...field}>
-									<Button>Upload NID</Button>
-								</Upload>
-							)}
+						<R2ImageUploader
+							label="NID Document"
+							value={watch("nid_file")}
+							existingImageUrl={profile?.nid ? getImageUrl(profile.nid) : undefined}
+							onChange={(file) => setValue("nid_file", file)}
+							maxSizeMB={5}
+							compact
 						/>
 					</div>
 
