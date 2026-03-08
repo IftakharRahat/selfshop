@@ -8,6 +8,7 @@ use App\Http\Controllers\VendorApiController;
 use App\Http\Controllers\VendorAccountController;
 use App\Http\Controllers\VendorAuthController;
 use App\Http\Controllers\VendorProductController;
+use App\Http\Controllers\R2TestController;
 use App\Http\Controllers\VendorOrderController;
 use App\Http\Controllers\VendorCategoryDiscountController;
 use App\Http\Controllers\VendorReviewController;
@@ -321,6 +322,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/product-details/{slug}', [VendorApiController::class, 'productDetails'])->name('api.vendor.product-details');
             Route::post('/bulk-add-to-cart', [VendorApiController::class, 'bulkAddToCart'])->name('api.vendor.bulk-add-to-cart');
         });
+    });
+
+    // R2 Storage Test (temporary — remove after migration)
+    Route::prefix('r2-test')->group(function () {
+        Route::get('/folders', [R2TestController::class, 'folders']);
+        Route::post('/upload', [R2TestController::class, 'upload']);
+        Route::get('/files', [R2TestController::class, 'files']);
+        Route::delete('/files', [R2TestController::class, 'deleteFile']);
     });
 });
 
