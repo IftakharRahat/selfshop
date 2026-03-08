@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Coursecategory; 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class CoursecategoryController extends Controller
@@ -32,15 +33,11 @@ class CoursecategoryController extends Controller
         $coursecategory->coursecategory_name =$request->coursecategory_name;
         $coursecategory->youtube_embade =$request->youtube_embade;
         $coursecategory_image = $request->file('coursecategory_image');
-        $name = time() . "_" . $coursecategory_image->getClientOriginalName();
-        $uploadPath = ('public/images/coursecategory/'); 
-        $coursecategory_image->move($uploadPath, $name);
-        $coursecategory_imageImgUrl = $uploadPath . $name;
-        $webp = $coursecategory_imageImgUrl;
-        $im = imagecreatefromstring(file_get_contents($webp));
-        $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-        imagewebp($im, $new_webp, 50);
-        $coursecategory->coursecategory_image = $new_webp; 
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($coursecategory_image->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $coursecategory_image->getClientOriginalExtension();
+        $path = $coursecategory_image->storeAs('admin/course-categories', $safeName, 'r2');
+        $coursecategory->coursecategory_image = $r2BaseUrl . '/' . $path; 
         $coursecategory->save();
         return response()->json($coursecategory, 200);
     }
@@ -83,17 +80,12 @@ class CoursecategoryController extends Controller
         $coursecategory->coursecategory_name =$request->coursecategory_name;
         $coursecategory->youtube_embade =$request->youtube_embade;
         if($request->coursecategory_image){
-            unlink($coursecategory->coursecategory_image);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $coursecategory_image = $request->file('coursecategory_image');
-            $name = time() . "_" . $coursecategory_image->getClientOriginalName();
-            $uploadPath = ('public/images/coursecategory/'); 
-            $coursecategory_image->move($uploadPath, $name);
-            $coursecategory_imageImgUrl = $uploadPath . $name; 
-            $webp = $coursecategory_imageImgUrl;
-            $im = imagecreatefromstring(file_get_contents($webp));
-            $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-            imagewebp($im, $new_webp, 50);
-            $coursecategory->coursecategory_image = $new_webp;
+            $safeName = Str::slug(pathinfo($coursecategory_image->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $coursecategory_image->getClientOriginalExtension();
+            $path = $coursecategory_image->storeAs('admin/course-categories', $safeName, 'r2');
+            $coursecategory->coursecategory_image = $r2BaseUrl . '/' . $path;
         }
         $coursecategory->save();
         return response()->json($coursecategory, 200);

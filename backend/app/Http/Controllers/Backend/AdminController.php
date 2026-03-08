@@ -11,6 +11,7 @@ use DataTables;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -133,43 +134,31 @@ class AdminController extends Controller
         $adminimg_1 = $request->file('shop_icon');
 
         if ($adminimg_1) {
-            if (empty($admin->shop_icon)) {
-            } else {
-                unlink($admin->shop_icon);
-            }
-            $admin_nameimg_1 = $time . $adminimg_1->getClientOriginalName();
-            $uploadPathimg_1 = ('public/images/shop/image/');
-            $adminimg_1->move($uploadPathimg_1, $admin_nameimg_1);
-            $ImgUrlimg_1 = $uploadPathimg_1 . $admin_nameimg_1;
-            $admin->shop_icon = $ImgUrlimg_1;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($adminimg_1->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $adminimg_1->getClientOriginalExtension();
+            $path = $adminimg_1->storeAs('admin/shops', $safeName, 'r2');
+            $admin->shop_icon = $r2BaseUrl . '/' . $path;
         }
 
         $adminimg_2 = $request->file('trade_licence');
 
         if ($adminimg_2) {
-            if (empty($admin->trade_licence)) {
-            } else {
-                unlink($admin->trade_licence);
-            }
-            $admin_nameimg_2 = $time . $adminimg_2->getClientOriginalName();
-            $uploadPathimg_2 = ('public/images/shop/image/');
-            $adminimg_2->move($uploadPathimg_2, $admin_nameimg_2);
-            $ImgUrlimg_2 = $uploadPathimg_2 . $admin_nameimg_2;
-            $admin->trade_licence = $ImgUrlimg_2;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($adminimg_2->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $adminimg_2->getClientOriginalExtension();
+            $path = $adminimg_2->storeAs('admin/shops', $safeName, 'r2');
+            $admin->trade_licence = $r2BaseUrl . '/' . $path;
         }
 
         $adminimg_3 = $request->file('national_id');
 
         if ($adminimg_3) {
-            if (empty($admin->national_id)) {
-            } else {
-                unlink($admin->national_id);
-            }
-            $admin_nameimg_3 = $time . $adminimg_3->getClientOriginalName();
-            $uploadPathimg_3 = ('public/images/shop/image/');
-            $adminimg_3->move($uploadPathimg_3, $admin_nameimg_3);
-            $ImgUrlimg_3 = $uploadPathimg_3 . $admin_nameimg_3;
-            $admin->national_id = $ImgUrlimg_3;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($adminimg_3->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $adminimg_3->getClientOriginalExtension();
+            $path = $adminimg_3->storeAs('admin/shops', $safeName, 'r2');
+            $admin->national_id = $r2BaseUrl . '/' . $path;
         }
 
         $admin->save();
@@ -200,43 +189,31 @@ class AdminController extends Controller
         $adminimg_1 = $request->file('shop_icon');
 
         if ($adminimg_1) {
-            if (empty($admin->shop_icon)) {
-            } else {
-                unlink($admin->shop_icon);
-            }
-            $admin_nameimg_1 = $time . $adminimg_1->getClientOriginalName();
-            $uploadPathimg_1 = ('public/images/shop/image/');
-            $adminimg_1->move($uploadPathimg_1, $admin_nameimg_1);
-            $ImgUrlimg_1 = $uploadPathimg_1 . $admin_nameimg_1;
-            $admin->shop_icon = $ImgUrlimg_1;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($adminimg_1->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $adminimg_1->getClientOriginalExtension();
+            $path = $adminimg_1->storeAs('admin/shops', $safeName, 'r2');
+            $admin->shop_icon = $r2BaseUrl . '/' . $path;
         }
 
         $adminimg_2 = $request->file('trade_licence');
 
         if ($adminimg_2) {
-            if (empty($admin->trade_licence)) {
-            } else {
-                unlink($admin->trade_licence);
-            }
-            $admin_nameimg_2 = $time . $adminimg_2->getClientOriginalName();
-            $uploadPathimg_2 = ('public/images/shop/image/');
-            $adminimg_2->move($uploadPathimg_2, $admin_nameimg_2);
-            $ImgUrlimg_2 = $uploadPathimg_2 . $admin_nameimg_2;
-            $admin->trade_licence = $ImgUrlimg_2;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($adminimg_2->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $adminimg_2->getClientOriginalExtension();
+            $path = $adminimg_2->storeAs('admin/shops', $safeName, 'r2');
+            $admin->trade_licence = $r2BaseUrl . '/' . $path;
         }
 
         $adminimg_3 = $request->file('national_id');
 
         if ($adminimg_3) {
-            if (empty($admin->national_id)) {
-            } else {
-                unlink($admin->national_id);
-            }
-            $admin_nameimg_3 = $time . $adminimg_3->getClientOriginalName();
-            $uploadPathimg_3 = ('public/images/shop/image/');
-            $adminimg_3->move($uploadPathimg_3, $admin_nameimg_3);
-            $ImgUrlimg_3 = $uploadPathimg_3 . $admin_nameimg_3;
-            $admin->national_id = $ImgUrlimg_3;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($adminimg_3->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $adminimg_3->getClientOriginalExtension();
+            $path = $adminimg_3->storeAs('admin/shops', $safeName, 'r2');
+            $admin->national_id = $r2BaseUrl . '/' . $path;
         }
 
         $admin->save();

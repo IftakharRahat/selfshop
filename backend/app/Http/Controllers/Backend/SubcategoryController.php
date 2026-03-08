@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Subcategory;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class SubcategoryController extends Controller
@@ -30,11 +31,11 @@ class SubcategoryController extends Controller
         $subcategory->sub_category_name = $request->sub_category_name;
         $subcategory->category_id = $request->category_id;
         $subcategory_icon = $request->file('subcategory_icon');
-        $name = time() . "_" . random_int(100000, 999999);
-        $uploadPath = ('public/images/subcategory/');
-        $subcategory_icon->move($uploadPath, $name);
-        $subcategory_iconImgUrl = $uploadPath . $name;
-        $subcategory->subcategory_icon = $subcategory_iconImgUrl;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($subcategory_icon->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $subcategory_icon->getClientOriginalExtension();
+        $path = $subcategory_icon->storeAs('admin/subcategories', $safeName, 'r2');
+        $subcategory->subcategory_icon = $r2BaseUrl . '/' . $path;
         $subcategory->save();
         return response()->json($subcategory, 200);
     }
@@ -77,15 +78,12 @@ class SubcategoryController extends Controller
         $subcategory->category_id = $request->category_id;
 
         if ($request->subcategory_icon) {
-            if (isset($subcategory->subcategory_icon)) {
-                unlink($subcategory->subcategory_icon);
-            }
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $subcategory_icon = $request->file('subcategory_icon');
-            $name = time() . "_" . random_int(100000, 999999);
-            $uploadPath = ('public/images/category/');
-            $subcategory_icon->move($uploadPath, $name);
-            $subcategory_iconImgUrl = $uploadPath . $name;
-            $subcategory->subcategory_icon = $subcategory_iconImgUrl;
+            $safeName = Str::slug(pathinfo($subcategory_icon->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $subcategory_icon->getClientOriginalExtension();
+            $path = $subcategory_icon->storeAs('admin/subcategories', $safeName, 'r2');
+            $subcategory->subcategory_icon = $r2BaseUrl . '/' . $path;
         }
 
         $subcategory->save();

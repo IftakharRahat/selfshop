@@ -7,6 +7,7 @@ use App\Models\FlashSale;
 use App\Models\FlashSaleProduct;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class FlashSaleController extends Controller
@@ -31,10 +32,12 @@ class FlashSaleController extends Controller
         $flashSale->status = 'Active';
 
         if ($request->hasFile('banner_image')) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $file = $request->file('banner_image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/campaigns'), $filename);
-            $flashSale->banner_image = 'uploads/campaigns/' . $filename;
+            $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('admin/campaigns', $safeName, 'r2');
+            $flashSale->banner_image = $r2BaseUrl . '/' . $path;
         }
 
         $flashSale->save();
@@ -94,14 +97,12 @@ class FlashSaleController extends Controller
         }
 
         if ($request->hasFile('banner_image')) {
-            // Delete old banner if exists
-            if ($flashSale->banner_image && file_exists(public_path($flashSale->banner_image))) {
-                unlink(public_path($flashSale->banner_image));
-            }
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $file = $request->file('banner_image');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/campaigns'), $filename);
-            $flashSale->banner_image = 'uploads/campaigns/' . $filename;
+            $safeName = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('admin/campaigns', $safeName, 'r2');
+            $flashSale->banner_image = $r2BaseUrl . '/' . $path;
         }
 
         $flashSale->update();

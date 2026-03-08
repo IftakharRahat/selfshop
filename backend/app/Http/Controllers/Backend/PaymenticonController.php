@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Paymenticon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class PaymenticonController extends Controller
@@ -30,11 +31,11 @@ class PaymenticonController extends Controller
         $paymenticon =new Paymenticon();
         $paymenticon->payment_type_name =$request->payment_type_name;
         $payment_icon = $request->file('payment_icon');
-        $name = time() . "_" . $payment_icon->getClientOriginalName();
-        $uploadPath = ('public/images/paymenticon/');
-        $payment_icon->move($uploadPath, $name);
-        $payment_iconImgUrl = $uploadPath . $name;
-        $paymenticon->payment_icon = $payment_iconImgUrl;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($payment_icon->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $payment_icon->getClientOriginalExtension();
+        $path = $payment_icon->storeAs('admin/paymenticons', $safeName, 'r2');
+        $paymenticon->payment_icon = $r2BaseUrl . '/' . $path;
         $paymenticon->save();
         return response()->json($paymenticon, 200);
     }
@@ -75,13 +76,12 @@ class PaymenticonController extends Controller
         $paymenticon = Paymenticon::findOrfail($id);
         $paymenticon->payment_type_name =$request->payment_type_name;
         if($request->payment_icon){
-            unlink($paymenticon->payment_icon);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $payment_icon = $request->file('payment_icon');
-            $name = time() . "_" . $payment_icon->getClientOriginalName();
-            $uploadPath = ('public/images/paymenticon/');
-            $payment_icon->move($uploadPath, $name);
-            $payment_iconImgUrl = $uploadPath . $name;
-            $paymenticon->payment_icon = $payment_iconImgUrl;
+            $safeName = Str::slug(pathinfo($payment_icon->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $payment_icon->getClientOriginalExtension();
+            $path = $payment_icon->storeAs('admin/paymenticons', $safeName, 'r2');
+            $paymenticon->payment_icon = $r2BaseUrl . '/' . $path;
         }
         $paymenticon->save();
         return response()->json($paymenticon, 200);

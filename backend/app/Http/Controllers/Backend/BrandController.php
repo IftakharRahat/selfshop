@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class BrandController extends Controller
@@ -31,11 +32,11 @@ class BrandController extends Controller
         $brand =new Brand();
         $brand->brand_name =$request->brand_name;
         $brand_icon = $request->file('brand_icon');
-        $name = time() . "_" . $brand_icon->getClientOriginalName();
-        $uploadPath = ('public/images/brand/');
-        $brand_icon->move($uploadPath, $name);
-        $brand_iconImgUrl = $uploadPath . $name;
-        $brand->brand_icon = $brand_iconImgUrl;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($brand_icon->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $brand_icon->getClientOriginalExtension();
+        $path = $brand_icon->storeAs('admin/brands', $safeName, 'r2');
+        $brand->brand_icon = $r2BaseUrl . '/' . $path;
         $brand->save();
         return response()->json($brand, 200);
     }
@@ -76,13 +77,12 @@ class BrandController extends Controller
         $brand = Brand::findOrfail($id);
         $brand->brand_name =$request->brand_name;
         if($request->brand_icon){
-            unlink($brand->brand_icon);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $brand_icon = $request->file('brand_icon');
-            $name = time() . "_" . $brand_icon->getClientOriginalName();
-            $uploadPath = ('public/images/brand/');
-            $brand_icon->move($uploadPath, $name);
-            $brand_iconImgUrl = $uploadPath . $name;
-            $brand->brand_icon = $brand_iconImgUrl;
+            $safeName = Str::slug(pathinfo($brand_icon->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $brand_icon->getClientOriginalExtension();
+            $path = $brand_icon->storeAs('admin/brands', $safeName, 'r2');
+            $brand->brand_icon = $r2BaseUrl . '/' . $path;
         }
         $brand->save();
         return response()->json($brand, 200);

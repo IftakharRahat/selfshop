@@ -16,6 +16,7 @@ use App\Models\ProductPriceTier;
 use App\Models\Varient;
 use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
 
@@ -149,23 +150,22 @@ class ProductController extends Controller
 
         $productImg = $request->file('ProductImage');
         if ($productImg) {
-            $imgname = $time . random_int(100000, 999999);
-            $imguploadPath = ('public/images/product/image/');
-            $productImg->move($imguploadPath, $imgname);
-            $productImgUrl = $imguploadPath . $imgname;
-            $product->ProductImage = $productImgUrl;
-            $webp = $productImgUrl;
-            $im = imagecreatefromstring(file_get_contents($webp));
-            $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-            imagewebp($im, $new_webp, 50);
-            $product->ViewProductImage = $new_webp;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
+            $path = $productImg->storeAs('admin/products', $safeName, 'r2');
+            $fullUrl = $r2BaseUrl . '/' . $path;
+            $product->ProductImage = $fullUrl;
+            $product->ViewProductImage = $fullUrl;
         }
         $product->youtube_link = $request->youtube_link;
         if ($request->hasFile('PostImage')) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             foreach ($request->file('PostImage') as $imgfiles) {
-                $name = time() . "_" . random_int(100000, 999999);
-                $imgfiles->move(public_path() . '/images/product/slider/', $name);
-                $imageData[] = $name;
+                $safeName = Str::slug(pathinfo($imgfiles->getClientOriginalName(), PATHINFO_FILENAME))
+                    . '_' . Str::random(8) . '.' . $imgfiles->getClientOriginalExtension();
+                $path = $imgfiles->storeAs('admin/products/gallery', $safeName, 'r2');
+                $imageData[] = $r2BaseUrl . '/' . $path;
             }
             $product->PostImage = json_encode($imageData);
         };
@@ -188,11 +188,11 @@ class ProductController extends Controller
         $product->MetaDescription = $request->MetaDescription;
         $meta_imageImg = $request->file('meta_image');
         if ($meta_imageImg) {
-            $metaimgname = $time . random_int(100000, 999999);
-            $metaimguploadPath = ('public/images/meta_image/');
-            $meta_imageImg->move($metaimguploadPath, $metaimgname);
-            $meta_imageImgUrl = $metaimguploadPath . $metaimgname;
-            $product->meta_image = $meta_imageImgUrl;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($meta_imageImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $meta_imageImg->getClientOriginalExtension();
+            $path = $meta_imageImg->storeAs('admin/products/meta', $safeName, 'r2');
+            $product->meta_image = $r2BaseUrl . '/' . $path;
         }
 
         $product->ProductSku = $this->sku();
@@ -422,31 +422,23 @@ class ProductController extends Controller
 
         $productImg = $request->file('ProductImage');
         if ($productImg) {
-            // unlink($product->ProductImage);
-            // unlink($product->ViewProductImage);
-            $imgname = $time . random_int(100000, 999999);
-            $imguploadPath = ('public/images/product/image/');
-            $productImg->move($imguploadPath, $imgname);
-            $productImgUrl = $imguploadPath . $imgname;
-            $product->ProductImage = $productImgUrl;
-            $webp = $productImgUrl;
-            $im = imagecreatefromstring(file_get_contents($webp));
-            $new_webp = preg_replace('"\.(jpg|jpeg|png|webp)$"', '.webp', $webp);
-            imagewebp($im, $new_webp, 50);
-            $product->ViewProductImage = $new_webp;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
+            $path = $productImg->storeAs('admin/products', $safeName, 'r2');
+            $fullUrl = $r2BaseUrl . '/' . $path;
+            $product->ProductImage = $fullUrl;
+            $product->ViewProductImage = $fullUrl;
         }
         $product->youtube_link = $request->youtube_link;
 
         if ($request->hasFile('PostImage')) {
-            if ($product->PostImage) {
-                foreach (json_decode($product->PostImage) as $postimg) {
-                    unlink('public/images/product/slider/' . $postimg);
-                }
-            }
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             foreach ($request->file('PostImage') as $imgfiles) {
-                $name = time() . "_" . random_int(100000, 999999);
-                $imgfiles->move(public_path() . '/images/product/slider/', $name);
-                $imageData[] = $name;
+                $safeName = Str::slug(pathinfo($imgfiles->getClientOriginalName(), PATHINFO_FILENAME))
+                    . '_' . Str::random(8) . '.' . $imgfiles->getClientOriginalExtension();
+                $path = $imgfiles->storeAs('admin/products/gallery', $safeName, 'r2');
+                $imageData[] = $r2BaseUrl . '/' . $path;
             }
             $product->PostImage = json_encode($imageData);
         }
@@ -469,11 +461,11 @@ class ProductController extends Controller
         $product->MetaDescription = $request->MetaDescription;
         $meta_imageImg = $request->file('meta_image');
         if ($meta_imageImg) {
-            $metaimgname = $time . $meta_imageImg->getClientOriginalName();
-            $metaimguploadPath = ('public/images/meta_image/');
-            $meta_imageImg->move($metaimguploadPath, $metaimgname);
-            $meta_imageImgUrl = $metaimguploadPath . $metaimgname;
-            $product->meta_image = $meta_imageImgUrl;
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $safeName = Str::slug(pathinfo($meta_imageImg->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $meta_imageImg->getClientOriginalExtension();
+            $path = $meta_imageImg->storeAs('admin/products/meta', $safeName, 'r2');
+            $product->meta_image = $r2BaseUrl . '/' . $path;
         }
 
         // Preserve SKU for vendor products; regenerate for others

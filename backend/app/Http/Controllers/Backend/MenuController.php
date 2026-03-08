@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Menu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class MenuController extends Controller
@@ -31,11 +32,11 @@ class MenuController extends Controller
         $menu =new Menu();
         $menu->menu_name =$request->menu_name;
         $menu_banner = $request->file('menu_banner');
-        $name = time() . "_" . $menu_banner->getClientOriginalName();
-        $uploadPath = ('public/images/menu/');
-        $menu_banner->move($uploadPath, $name);
-        $menu_bannerImgUrl = $uploadPath . $name;
-        $menu->menu_banner = $menu_bannerImgUrl;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($menu_banner->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $menu_banner->getClientOriginalExtension();
+        $path = $menu_banner->storeAs('admin/menus', $safeName, 'r2');
+        $menu->menu_banner = $r2BaseUrl . '/' . $path;
         $menu->save();
         return response()->json($menu, 200);
     }
@@ -76,13 +77,12 @@ class MenuController extends Controller
         $menu = Menu::findOrfail($id);
         $menu->menu_name =$request->menu_name;
         if($request->menu_banner){
-            unlink($menu->menu_banner);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $menu_banner = $request->file('menu_banner');
-            $name = time() . "_" . $menu_banner->getClientOriginalName();
-            $uploadPath = ('public/images/menu/');
-            $menu_banner->move($uploadPath, $name);
-            $menu_bannerImgUrl = $uploadPath . $name;
-            $menu->menu_banner = $menu_bannerImgUrl;
+            $safeName = Str::slug(pathinfo($menu_banner->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $menu_banner->getClientOriginalExtension();
+            $path = $menu_banner->storeAs('admin/menus', $safeName, 'r2');
+            $menu->menu_banner = $r2BaseUrl . '/' . $path;
         }
         $menu->save();
         return response()->json($menu, 200);

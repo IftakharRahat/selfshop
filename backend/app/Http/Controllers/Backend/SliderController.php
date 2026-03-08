@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 
 use App\Models\Slider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use DataTables;
 
 class SliderController extends Controller
@@ -38,11 +39,11 @@ class SliderController extends Controller
         $slider->slider_btn_name =$request->slider_btn_name;
         $slider->slider_btn_link =$request->slider_btn_link;
         $sliderimage = $request->file('slider_image');
-        $name = time() . "_" . $sliderimage->getClientOriginalName();
-        $uploadPath = ('public/images/slider/');
-        $sliderimage->move($uploadPath, $name);
-        $sliderimageImgUrl = $uploadPath . $name;
-        $slider->slider_image = $sliderimageImgUrl;
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $safeName = Str::slug(pathinfo($sliderimage->getClientOriginalName(), PATHINFO_FILENAME))
+            . '_' . Str::random(8) . '.' . $sliderimage->getClientOriginalExtension();
+        $path = $sliderimage->storeAs('admin/sliders', $safeName, 'r2');
+        $slider->slider_image = $r2BaseUrl . '/' . $path;
         $slider->save();
         return response()->json($slider, 200);
     }
@@ -90,13 +91,12 @@ class SliderController extends Controller
         $slider->slider_btn_name =$request->slider_btn_name;
         $slider->slider_btn_link =$request->slider_btn_link;
         if($request->slider_image){
-            unlink($slider->slider_image);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $slider_image = $request->file('slider_image');
-            $name = time() . "_" . $slider_image->getClientOriginalName();
-            $uploadPath = ('public/images/slider/');
-            $slider_image->move($uploadPath, $name);
-            $slider_imageImgUrl = $uploadPath . $name;
-            $slider->slider_image = $slider_imageImgUrl;
+            $safeName = Str::slug(pathinfo($slider_image->getClientOriginalName(), PATHINFO_FILENAME))
+                . '_' . Str::random(8) . '.' . $slider_image->getClientOriginalExtension();
+            $path = $slider_image->storeAs('admin/sliders', $safeName, 'r2');
+            $slider->slider_image = $r2BaseUrl . '/' . $path;
         }
         $slider->update();
         return response()->json($slider, 200);
