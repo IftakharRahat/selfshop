@@ -36,6 +36,7 @@ export default function AuthModal({
 	const dispatch = useAppDispatch();
 	const [isLogin, setIsLogin] = useState(true);
 	const [activeTab, setActiveTab] = useState("reseller");
+	const [showCoupon, setShowCoupon] = useState(false);
 
 	// const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const [form] = Form.useForm();
@@ -115,17 +116,22 @@ export default function AuthModal({
 					colorPrimary: "#e91e63",
 					colorLink: "#e91e63",
 				},
+				components: {
+					Form: {
+						itemMarginBottom: 12,
+					},
+				},
 			}}
 		>
-			<Modal open={open} onCancel={onClose} footer={null} width={700} centered>
-				<div className="md:p-4">
+			<Modal open={open} onCancel={onClose} footer={null} width={460} centered>
+				<div className="md:p-2">
 					{/* Logo + Title */}
-					<div className="text-center mb-6">
-						<div className="flex items-center justify-center mb-4">
-							<img src={logo.src} alt="Logo" className="w-60" />
+					<div className="text-center mb-3">
+						<div className="flex items-center justify-center mb-2">
+							<img src={logo.src} alt="Logo" className="w-44" />
 						</div>
 
-						<p className="text-gray-600 mb-6">
+						<p className="text-gray-600 text-sm mb-3">
 							{isLogin
 								? "Sign in to your account to access dropshipping products and wholesale deals."
 								: "Join our dropshipping and wholesale marketplace to start selling and sourcing products easily."}
@@ -138,8 +144,8 @@ export default function AuthModal({
 						onChange={setActiveTab}
 						items={tabItems}
 						centered
-						tabBarGutter={40}
-						tabBarStyle={{ marginBottom: 24 }}
+						tabBarGutter={24}
+						tabBarStyle={{ marginBottom: 16 }}
 					/>
 
 					{/* Login/Register Form */}
@@ -247,16 +253,25 @@ export default function AuthModal({
 										/>
 									</Form.Item>
 
-									<Form.Item
-										name="refer_by"
-										label="Referral code (optional)"
-										rules={[{ required: false }]}
-									>
-										<Input
-											size="large"
-											placeholder="Enter referral code..."
-										/>
-									</Form.Item>
+									{!showCoupon ? (
+										<p
+											className="text-[#e91e63] cursor-pointer text-sm mb-4 hover:underline"
+											onClick={() => setShowCoupon(true)}
+										>
+											Have a coupon code?
+										</p>
+									) : (
+										<Form.Item
+											name="refer_by"
+											label="Coupon Code"
+											rules={[{ required: false }]}
+										>
+											<Input
+												size="large"
+												placeholder="Enter coupon code..."
+											/>
+										</Form.Item>
+									)}
 
 									<Button type="primary" size="large" htmlType="submit" block>
 										Registration
@@ -267,7 +282,7 @@ export default function AuthModal({
 					) : null}
 
 					{/* Switch Login/Register */}
-					<p className="text-center mt-5">
+					<p className="text-center text-sm mt-3">
 						{isLogin ? (
 							<>
 								If you don't have any account?{" "}
@@ -291,28 +306,28 @@ export default function AuthModal({
 						)}
 					</p>
 
-					<Divider className="my-6">
-						<span className="text-gray-400">Or</span>
+					<Divider className="my-3">
+						<span className="text-gray-400 text-xs">Or</span>
 					</Divider>
 
 					{/* Social Buttons */}
-					<div className="space-y-3">
+					<div className="space-y-2">
 						<Button
-							size="large"
+							size="middle"
 							block
 							icon={<FcGoogle />}
 							onClick={() => handleSocialLogin("google")}
-							className="h-12 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
+							className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
 						>
 							Continue with Google
 						</Button>
 
 						<Button
-							size="large"
+							size="middle"
 							block
 							icon={<FaApple />}
 							onClick={() => handleSocialLogin("apple")}
-							className="h-12 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
+							className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
 						>
 							Continue with Apple
 						</Button>

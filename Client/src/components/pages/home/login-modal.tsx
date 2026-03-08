@@ -35,6 +35,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 	const [activeTab, setActiveTab] = useState("reseller");
 	const [isLogin, setIsLogin] = useState(true);
 	const [isRegistration, setIsRegistration] = useState(false);
+	const [showCoupon, setShowCoupon] = useState(false);
 
 	const [login] = useLoginMutation();
 	const [register] = useRegisterMutation();
@@ -101,26 +102,31 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 					colorPrimary: "#e91e63",
 					colorLink: "#e91e63",
 				},
+				components: {
+					Form: {
+						itemMarginBottom: 12,
+					},
+				},
 			}}
 		>
 			<Modal
 				open={open}
 				onCancel={onCancel}
 				footer={null}
-				width={700}
+				width={460}
 				centered
 				styles={{
-					body: { padding: "40px 40px 20px 40px" },
+					body: { padding: "24px 28px 16px 28px" },
 				}}
 				closeIcon={null}
 			>
 				{/* Logo + Title */}
-				<div className="text-center mb-6">
-					<div className="flex items-center justify-center mb-4">
-						<img src={logo.src} alt="SelfShop Logo" className="w-60" />
+				<div className="text-center mb-3">
+					<div className="flex items-center justify-center mb-2">
+						<img src={logo.src} alt="SelfShop Logo" className="w-44" />
 					</div>
 
-					<p className="text-gray-600 mb-6">
+					<p className="text-gray-600 text-sm mb-3">
 						{isRegistration
 							? "Join our dropshipping and wholesale marketplace to start selling and sourcing products easily."
 							: "Sign in to your account to access dropshipping products and wholesale deals."}
@@ -133,8 +139,8 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 					onChange={setActiveTab}
 					items={tabItems}
 					centered
-					tabBarGutter={40}
-					tabBarStyle={{ marginBottom: 24 }}
+					tabBarGutter={24}
+					tabBarStyle={{ marginBottom: 16 }}
 				/>
 				{activeTab === "reseller" ? (
 					<>
@@ -221,13 +227,22 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 									/>
 								</Form.Item>
 
-								<Form.Item
-									name="refer_by"
-									label="Referral code (optional)"
-									rules={[{ required: false }]}
-								>
-									<Input size="large" placeholder="Enter referral code..." />
-								</Form.Item>
+								{!showCoupon ? (
+									<p
+										className="text-[#e91e63] cursor-pointer text-sm mb-4 hover:underline"
+										onClick={() => setShowCoupon(true)}
+									>
+										Have a coupon code?
+									</p>
+								) : (
+									<Form.Item
+										name="refer_by"
+										label="Coupon Code"
+										rules={[{ required: false }]}
+									>
+										<Input size="large" placeholder="Enter coupon code..." />
+									</Form.Item>
+								)}
 
 								<Form.Item
 									name="c_password"
@@ -284,7 +299,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 				)}
 
 				{isLogin ? (
-					<p className="text-center mt-5">
+					<p className="text-center text-sm mt-3">
 						If you don’t have any account?{" "}
 						<span
 							onClick={() => setIsLogin(false)}
@@ -294,7 +309,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 						</span>
 					</p>
 				) : (
-					<p className="text-center mt-5">
+					<p className="text-center text-sm mt-3">
 						Already have an account?{" "}
 						<span
 							onClick={() => setIsLogin(true)}
@@ -305,27 +320,27 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 					</p>
 				)}
 				{/* Social Logins */}
-				<Divider className="my-6">
-					<span className="text-gray-400">Or</span>
+				<Divider className="my-3">
+					<span className="text-gray-400 text-xs">Or</span>
 				</Divider>
 
-				<div className="space-y-3">
+				<div className="space-y-2">
 					<Button
-						size="large"
+						size="middle"
 						block
 						icon={<FcGoogle />}
 						onClick={() => handleSocialLogin("google")}
-						className="h-12 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
+						className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
 					>
 						Continue with Google
 					</Button>
 
 					<Button
-						size="large"
+						size="middle"
 						block
 						icon={<FaApple />}
 						onClick={() => handleSocialLogin("apple")}
-						className="h-12 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
+						className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
 					>
 						Continue with Apple
 					</Button>
