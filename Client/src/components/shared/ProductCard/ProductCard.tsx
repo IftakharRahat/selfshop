@@ -30,7 +30,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		const sellingPrice = product.ProductSalePrice || product.ProductRegularPrice;
+		const sellingPrice = product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice;
 		formData.append("price", sellingPrice.toString());
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
@@ -74,13 +74,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 				{isResellerActive ? (
 					<div className="flex items-center justify-between w-full">
 						<div className="flex flex-col">
-							{product.ProductRegularPrice > (product.ProductSalePrice || product.ProductRegularPrice) && product.selling_type !== 'dropshipping' && (
-								<span className="text-[10px] text-gray-400 line-through">
-									৳{product.ProductRegularPrice}
+							{product.ProductSalePrice > (product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice) && product.selling_type !== 'dropshipping' && (
+								<span className="text-gray-400 line-through text-xs">
+									৳{product.ProductSalePrice}
 								</span>
 							)}
-							<span className="text-sm sm:text-base font-bold text-gray-900">
-								৳{product.ProductSalePrice || product.ProductRegularPrice}
+							<span className="text-gray-900 font-bold text-sm">
+								৳{product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice}
 							</span>
 						</div>
 						<button

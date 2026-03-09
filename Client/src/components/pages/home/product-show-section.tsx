@@ -28,7 +28,7 @@ export default function ProductShowSection({
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		formData.append("price", product.ProductRegularPrice.toString());
+		formData.append("price", (product.ProductResellerPrice || product.ProductRegularPrice).toString());
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
 

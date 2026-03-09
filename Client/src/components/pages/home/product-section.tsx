@@ -55,11 +55,11 @@ function RowProductCard({ product, onAddToCart, isActive }: { product: any; onAd
 							{isActive ? (
 								<>
 									<span className="text-sm sm:text-base font-bold text-gray-900">
-										৳{product?.ProductSalePrice}
+										৳{product?.ProductResellerPrice || product?.ProductSalePrice}
 									</span>
-									{product?.ProductRegularPrice && product.ProductRegularPrice !== product.ProductSalePrice && (
+									{product?.ProductSalePrice && product.ProductSalePrice !== (product.ProductResellerPrice || product.ProductSalePrice) && (
 										<span className="text-[10px] sm:text-xs text-gray-400 line-through">
-											৳{product?.ProductRegularPrice}
+											৳{product?.ProductSalePrice}
 										</span>
 									)}
 								</>
@@ -124,11 +124,11 @@ function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddT
 						{isActive ? (
 							<>
 								<span className="text-xl lg:text-2xl font-bold text-gray-900">
-									৳{product?.ProductSalePrice}
+									৳{product?.ProductResellerPrice || product?.ProductSalePrice}
 								</span>
-								{product?.ProductRegularPrice && product.ProductRegularPrice !== product.ProductSalePrice && (
+								{product?.ProductSalePrice && product.ProductSalePrice !== (product.ProductResellerPrice || product.ProductSalePrice) && (
 									<span className="text-sm lg:text-base text-gray-400 line-through">
-										৳{product?.ProductRegularPrice}
+										৳{product?.ProductSalePrice}
 									</span>
 								)}
 							</>
@@ -172,7 +172,7 @@ export default function ProductSection({
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		formData.append("price", product.ProductRegularPrice.toString());
+		formData.append("price", (product.ProductResellerPrice || product.ProductRegularPrice).toString());
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
 
