@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="admin-content-card">
                 <div class="admin-card-body text-center">
                     <div class="small text-muted">Total User Account Balance</div>
