@@ -2623,9 +2623,17 @@ class FrontendApiController extends Controller
                 }
             }
         }
+        // Application of Admin Commission markup
+        $commissionService = app(\App\Services\VendorCommissionService::class);
+        $commissionPercent = $commissionService->getRateForProduct(
+            $cartProduct->vendor_id, 
+            $cartProduct->category_id
+        );
+        $commissionFactor = 1 + ($commissionPercent / 100);
+        $costPrice = round($costPrice * $commissionFactor, 2);
 
-        $minAllowedPrice = $costPrice;
-        $submittedPrice = (float) ($request->selling_price ?: $request->price);
+    $minAllowedPrice = $costPrice;
+    $submittedPrice = (float) ($request->selling_price ?: $request->price);
 
         // Validation: If selling price provided, it must be >= cost
         if ($submittedPrice < $minAllowedPrice) {
@@ -2760,7 +2768,14 @@ class FrontendApiController extends Controller
                 }
             }
 
-            $cart->price = $costPrice;
+            // Application of Admin Commission markup
+            $commissionService = app(\App\Services\VendorCommissionService::class);
+            $commissionPercent = $commissionService->getRateForProduct(
+                $product->vendor_id, 
+                $product->category_id
+            );
+            $commissionFactor = 1 + ($commissionPercent / 100);
+            $cart->price = round($costPrice * $commissionFactor, 2);
         }
 
         $cart->save();

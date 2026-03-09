@@ -2173,6 +2173,7 @@ class OrderController extends Controller
         if (!isset($orders->trackingLink)) $orders->trackingLink = null;
         if (!isset($orders->cancel_comment)) $orders->cancel_comment = null;
         if (!isset($orders->order_bonus)) $orders->order_bonus = 0;
+        if (!isset($orders->parcel_id)) $orders->parcel_id = null;
 
         return view('admin.content.order.edit')->with('order', $orders);
     }
