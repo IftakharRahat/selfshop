@@ -663,7 +663,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										</span>
 									) : (
 										<div className="flex flex-col">
-											{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && (
+											{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
 												<span className="text-xs text-gray-400 line-through flex items-center">
 													<TbCurrencyTaka size={14} />
 													{productData.msrpPrice.toFixed(2)}

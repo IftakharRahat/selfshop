@@ -74,7 +74,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 				{isResellerActive ? (
 					<div className="flex items-center justify-between w-full">
 						<div className="flex flex-col">
-							{product.ProductRegularPrice > (product.ProductSalePrice || product.ProductRegularPrice) && (
+							{product.ProductRegularPrice > (product.ProductSalePrice || product.ProductRegularPrice) && product.selling_type !== 'dropshipping' && (
 								<span className="text-[10px] text-gray-400 line-through">
 									৳{product.ProductRegularPrice}
 								</span>

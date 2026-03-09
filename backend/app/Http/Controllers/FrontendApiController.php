@@ -541,7 +541,7 @@ class FrontendApiController extends Controller
         $limit = $request->limit ?? 15;
         $total = Product::visibleOnStorefront()->where('frature', '0')->count();
 
-        $searchcontents = Product::visibleOnStorefront()->where('frature', '0')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('frature', '0')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'selling_type')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -582,7 +582,8 @@ class FrontendApiController extends Controller
                     'ProductSalePrice',
                     'ProductResellerPrice',
                     'Discount',
-                    'ViewProductImage'
+                    'ViewProductImage',
+                    'selling_type'
                 )
                 ->paginate($limit);
 
@@ -610,7 +611,7 @@ class FrontendApiController extends Controller
     {
         $limit = $request->limit ?? 15;
         $total = Product::visibleOnStorefront()->where('top_rated', '1')->count();
-        $searchcontents = Product::visibleOnStorefront()->where('top_rated', '1')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('top_rated', '1')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'selling_type')->paginate($limit);
 
 
         if ($searchcontents->count() == 0) {
@@ -641,7 +642,7 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        $products = Product::visibleOnStorefront()->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at')->get();
+        $products = Product::visibleOnStorefront()->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type')->get();
 
         // Attach avg_rating and review_count to each product
         foreach ($products as $product) {
@@ -663,7 +664,7 @@ class FrontendApiController extends Controller
 
     public function productbysubcategory(Request $request, $slug)
     {
-        $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at'];
+        $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type'];
 
         if (empty($slug)) {
             $products = Product::visibleOnStorefront()->select(...$selects)->latest()->get();
@@ -727,7 +728,7 @@ class FrontendApiController extends Controller
     public function productbybrand($slug)
     {
         $brand = Brand::where('slug', $slug)->first();
-        $brandproducts = Product::visibleOnStorefront()->where('brand_id', $brand->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->get();
+        $brandproducts = Product::visibleOnStorefront()->where('brand_id', $brand->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'selling_type')->get();
 
         if ($brandproducts->count() == 0) {
             return response()->json([
