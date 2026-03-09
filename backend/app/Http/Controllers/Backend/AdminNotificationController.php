@@ -151,7 +151,7 @@ class AdminNotificationController extends Controller
                 'target_type' => ['required', 'in:1,2,3'],
                 'user_ids' => ['required_if:target_type,2', 'array', 'min:1'],
                 'user_ids.*' => ['integer', 'exists:users,id'],
-                'supplier_ids' => ['required_if:target_type,3', 'array', 'min:1'],
+                'supplier_ids' => ['nullable', 'array'],
                 'supplier_ids.*' => ['integer', 'exists:vendors,id'],
             ]);
 
@@ -287,14 +287,25 @@ class AdminNotificationController extends Controller
                     ->unique()
                     ->values();
 
-                $recipientUserIds = Vendor::query()
-                    ->whereIn('id', $supplierIds)
-                    ->whereNotNull('user_id')
-                    ->pluck('user_id')
-                    ->map(fn($id) => (int) $id)
-                    ->filter()
-                    ->unique()
-                    ->values();
+                // If no specific suppliers selected, send to ALL suppliers
+                if ($supplierIds->isEmpty()) {
+                    $recipientUserIds = Vendor::query()
+                        ->whereNotNull('user_id')
+                        ->pluck('user_id')
+                        ->map(fn($id) => (int) $id)
+                        ->filter()
+                        ->unique()
+                        ->values();
+                } else {
+                    $recipientUserIds = Vendor::query()
+                        ->whereIn('id', $supplierIds)
+                        ->whereNotNull('user_id')
+                        ->pluck('user_id')
+                        ->map(fn($id) => (int) $id)
+                        ->filter()
+                        ->unique()
+                        ->values();
+                }
 
                 if ($recipientUserIds->isNotEmpty()) {
                     User::query()

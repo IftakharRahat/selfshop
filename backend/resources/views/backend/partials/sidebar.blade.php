@@ -155,7 +155,9 @@
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-truck"></i> Suppliers</a>
                 <div class="bg-transparent border-0 dropdown-menu">
-                    <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">Supplier Requests</a>
+                    <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">All Suppliers</a>
+                    <a href="{{ route('admin.vendors.index', ['status' => 'approved']) }}" class="dropdown-item">Active Suppliers</a>
+                    <a href="{{ route('admin.vendors.index', ['status' => 'pending']) }}" class="dropdown-item">Supplier Requests</a>
                     <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Supplier Products</a>
                     <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
                     <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Supplier Category Discounts</a>
