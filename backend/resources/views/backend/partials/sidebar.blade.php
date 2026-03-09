@@ -232,6 +232,7 @@
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Withdrew</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
+                    <a href="{{ url('admin/view-withdraws/Pending') }}" class="dropdown-item">Supplier</a>
                 </div>
             </div>
             <div class="nav-item dropdown">

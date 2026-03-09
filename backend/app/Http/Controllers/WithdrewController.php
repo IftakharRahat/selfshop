@@ -39,7 +39,7 @@ class WithdrewController extends Controller
                     if (!$user) {
                         return 'User Deleted';
                     }
-                    return '<a href="../../resellerinvoice/user/view-dashboard/' . $invoices->user_id . '" target="_blank">' . $user->name . '(' . $user->my_referral_code . ')' . '</a><br> Date: ' . $invoices->created_at->format('Y-m-d') . '<br><a class="btn btn-success btn-sm" href="../../user/view-incomehistory/' . $invoices->user_id . '" target="_blank">See History</a>';
+                    return '<a href="../../resellerinvoice/user/view-dashboard/' . $invoices->user_id . '" target="_blank">' . $user->name . '(' . $user->my_referral_code . ')' . '</a><br> Date: ' . $invoices->created_at->format('Y-m-d') . '<br><a class="btn btn-success btn-sm" href="../../user/view-incomehistory/' . $invoices->user_id . '">See History</a>';
                 } else {
                     return 'user not founds';
                 }
@@ -61,6 +61,9 @@ class WithdrewController extends Controller
                     }
                 }
             )
+            ->addColumn('transaction_id', function ($invoices) {
+                return $invoices->transaction_id ?: '—';
+            })
             ->escapeColumns([])->make(true);
     }
 
@@ -156,6 +159,9 @@ class WithdrewController extends Controller
     {
         $withdrew = Withdrew::where('id', $id)->first();
         $withdrew->status = $request->status;
+        if ($request->has('transaction_id')) {
+            $withdrew->transaction_id = $request->transaction_id;
+        }
         $success = $withdrew->update();
         if ($success) {
 
@@ -164,7 +170,7 @@ class WithdrewController extends Controller
                 $user->pending_cashout_balance = $user->pending_cashout_balance - $withdrew->withdrew_amount;
                 $user->cashout_balance = $user->cashout_balance + $withdrew->withdrew_amount;
                 $comment = new Comment();
-                $comment->comment = 'Request Accepted.Payment given successfully for invoice #IN00' . $withdrew->id;
+                $comment->comment = 'Request Accepted.Payment given successfully for invoice #IN00' . $withdrew->id . ($withdrew->transaction_id ? ' (TxnID: ' . $withdrew->transaction_id . ')' : '');
                 $comment->user_id = $withdrew->user_id;
                 $comment->status = 1;
                 $comment->type = 'Withdrawpaid';

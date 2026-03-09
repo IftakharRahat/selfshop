@@ -65,6 +65,10 @@
                                         <option value="Cancel">Cancel</option>
                                     </select>
                                 </div>
+                                <div class="mt-3 form-group" id="transaction_id_group">
+                                    <label for="" class="m-0">Transaction ID</label>
+                                    <input type="text" style="background: #F0F8FF !important;border:1px solid #ccc;border-radius: 6px" class="form-control" name="transaction_id" id="transaction_id" placeholder="Enter transaction ID">
+                                </div>
                                 <br>
                                 <div class="d-flex w-100 justify-content-center">
                                     <button type="submit" style="width: 292px;font-size: 26px;height: 59px;color: #fff;font-weight: bold;background: #14BF7D;border-radius: 30px;"
@@ -121,6 +125,7 @@
                                         <th>Cash Out Option</th>
                                         <th>Account Info</th>
                                         <th>Amount</th>
+                                        <th>Transaction ID</th>
                                         <th>Status</th>
                                         <th>Action</th>
                                     </tr>
@@ -581,6 +586,11 @@
                     data: 'withdrew_amount',
                 },
                 {
+                    data: 'transaction_id',
+                    name: 'transaction_id',
+                    defaultContent: '<span class="text-muted">—</span>',
+                },
+                {
                     data: 'status',
                     name: 'status',
                     orderable: false,
@@ -611,6 +621,7 @@
                     $('#EditMenu').find('#withdrew_amount').val(data.withdrew_amount);
                     $('#copay'+data.paymenttype_id).css('border','3px solid red');
                     $('#EditMenu').find('#withdrew_id').val(data.id);
+                    $('#EditMenu').find('#transaction_id').val(data.transaction_id || '');
 
                     $('#EditMenu').find('#status').val(data.status);
                     $('#EditMenu').attr('data-id', data.id);
@@ -641,6 +652,7 @@
                     $('.copays').css('border','2px solid');
                     $('#EditMenu').find('#withdrew_id').val('');
                     $('#EditMenu').find('#status').val('');
+                    $('#EditMenu').find('#transaction_id').val('');
 
                     swal({
                         title: "Withdrew request update successfully !",

@@ -1038,7 +1038,16 @@ private function createOrderDetails($orderId, $cartData, $request)
                     $quantity = is_object($item) ? $item->qty : $item['qty'];
                     $price = is_object($item) ? $item->price : $item['price'];
                     
-                    $sellprice += $price * $quantity;
+                    // Use selling_price from options if available for correct profit calculation
+                    $itemOptions = is_object($item) ? ($item->options ?? null) : ($item['options'] ?? null);
+                    if (is_string($itemOptions)) {
+                        $itemOptions = json_decode($itemOptions, true);
+                    } elseif (is_object($itemOptions)) {
+                        $itemOptions = (array) $itemOptions;
+                    }
+                    $itemSellingPrice = !empty($itemOptions['selling_price']) ? (float) $itemOptions['selling_price'] : (float) $price;
+                    
+                    $sellprice += $itemSellingPrice * $quantity;
                     $buy += ($product->ProductResellerPrice ?? 0) * $quantity;
                     $bonus += $product->reseller_bonus ?? 0;
                 }

@@ -95,6 +95,10 @@
                                         <option value="Canceled">Canceled</option>
                                     </select>
                                 </div>
+                                <div class="mb-3 form-floating">
+                                    <input type="text" class="form-control" id="transaction_id" name="transaction_id" placeholder="Transaction ID">
+                                    <label for="transaction_id">Transaction ID</label>
+                                </div>
                                 <div class="d-flex justify-content-end mt-3">
                                     <button type="submit" name="btn" class="btn" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">Save</button>
                                 </div>
@@ -113,6 +117,7 @@
                             <th>Payment Info</th>
                             <th>Amount</th>
                             <th>Balance</th>
+                            <th>Transaction ID</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -125,6 +130,7 @@
                                 <td>{{$blance->payment_type}}<br>{{$blance->account_number}}<br>{{$blance->additional_info}}</td>
                                 <td>{{$blance->amount}}</td>
                                 <td>{{$blance->blance}}</td>
+                                <td>{{$blance->transaction_id ?: '—'}}</td>
                                 <td>
                                     @if($blance->status=='Success')
                                         <span class="badge bg-success">{{$blance->status}}</span>
@@ -200,6 +206,7 @@
 
                     $('#EditMenu').find('#withdrew_id').val(data.id);
                     $('#EditMenu').find('#status').val(data.status);
+                    $('#EditMenu').find('#transaction_id').val(data.transaction_id || '');
                     $('#EditMenu').attr('data-id', data.id);
                 },
                 error: function(error) {
@@ -228,6 +235,7 @@
                     $('#EditMenu').find('#amount').val('');
                     $('#EditMenu').find('#withdrew_id').val('');
                     $('#EditMenu').find('#status').val('');
+                    $('#EditMenu').find('#transaction_id').val('');
 
                     swal({
                         title: "Withdrew request update successfully !",

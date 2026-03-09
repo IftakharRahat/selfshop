@@ -57,6 +57,9 @@ class VencommentController extends Controller
     {
         $blances = Vencomment::where('id', $id)->first();
         $blances->status = $request->status;
+        if ($request->has('transaction_id')) {
+            $blances->transaction_id = $request->transaction_id;
+        }
         $blances->update();
         return response()->json($blances);
     }

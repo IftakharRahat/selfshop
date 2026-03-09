@@ -3017,7 +3017,9 @@ class FrontendApiController extends Controller
 
             foreach ($shopproduct as $product) {
                 $productData = Product::find($product->product_id);
-                $sellprice += $product->price * $product->qty;
+                $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
+                $itemSellingPrice = !empty($options['selling_price']) ? (float) $options['selling_price'] : (float) $product->price;
+                $sellprice += $itemSellingPrice * $product->qty;
                 $buy += $productData->ProductResellerPrice * $product->qty;
                 $bonus += $productData->reseller_bonus;
             }
@@ -3028,7 +3030,7 @@ class FrontendApiController extends Controller
             $order->courier_id = 26;
             $order->store_id = $shopproduct[0]->shop_id ?: 1;
             $order->invoiceID = $this->uniqueIDN();
-            $order->subTotal = $request->subTotal;
+            $order->subTotal = $sellprice;
             $order->deliveryCharge = $request->deliveryCharge;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
