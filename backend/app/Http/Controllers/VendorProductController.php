@@ -125,7 +125,7 @@ class VendorProductController extends Controller
         $product->ProductDetails = $data['ProductDetails'] ?? null;
         $product->ProductResellerPrice = $data['ProductResellerPrice'] ?? 0;
 
-        // Auto-calculate storefront price with category commission
+        // Auto-calculate storefront price with category commission (this is what customers pay)
         $commissionService = app(\App\Services\VendorCommissionService::class);
         $displayPrice = $commissionService->getStorefrontPrice(
             (float) $product->ProductResellerPrice,
@@ -133,7 +133,9 @@ class VendorProductController extends Controller
             (int) $product->category_id
         );
 
-        $product->ProductRegularPrice = $displayPrice;
+        // Regular Price is MSRP, can be set manually by vendor. 
+        // If not provided, fallback to displayPrice for consistency.
+        $product->ProductRegularPrice = $data['ProductRegularPrice'] ?? $displayPrice;
         $product->ProductSalePrice = $displayPrice;
         $product->ProductWholesalePrice = $product->ProductResellerPrice;
         $product->min_sell_price = $product->ProductResellerPrice;
@@ -275,20 +277,27 @@ class VendorProductController extends Controller
             ], 422);
         }
 
-        foreach (['ProductName', 'ProductBreaf', 'ProductDetails', 'ProductResellerPrice', 'qty', 'low_stock', 'ProductSku', 'show_stock', 'show_stock_text', 'status', 'MetaKey', 'Discount', 'category_id', 'subcategory_id', 'brand_id'] as $key) {
+        foreach (['ProductName', 'ProductBreaf', 'ProductDetails', 'ProductResellerPrice', 'ProductRegularPrice', 'qty', 'low_stock', 'ProductSku', 'show_stock', 'show_stock_text', 'status', 'MetaKey', 'Discount', 'category_id', 'subcategory_id', 'brand_id'] as $key) {
             if (array_key_exists($key, $data)) {
                 $product->{$key} = $data[$key];
             }
         }
 
-        // Recalculate storefront price with category commission
+        // Always recalculate storefront price (ProductSalePrice) when Reseller Price or category changes
         $commissionService = app(\App\Services\VendorCommissionService::class);
         $displayPrice = $commissionService->getStorefrontPrice(
             (float) $product->ProductResellerPrice,
             (int) $vendor->id,
             (int) $product->category_id
         );
-        $product->ProductRegularPrice = $displayPrice;
+
+        // If regular price was NOT manually updated in this request AND was exactly the old display price, 
+        // we might want to update it. But per user request "it should not automatically update",
+        // we will only update it if it's currently 0 or empty.
+        if (empty($product->ProductRegularPrice) || $product->ProductRegularPrice == 0) {
+            $product->ProductRegularPrice = $displayPrice;
+        }
+
         $product->ProductSalePrice = $displayPrice;
         $product->ProductWholesalePrice = $product->ProductResellerPrice;
         $product->min_sell_price = $product->ProductResellerPrice;

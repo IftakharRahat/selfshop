@@ -49,6 +49,7 @@ export default function VendorNewProductPage() {
 	const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
 	const [selectedMinicategoryId, setSelectedMinicategoryId] = useState<string>("");
 	const [basePrice, setBasePrice] = useState<string>("");
+	const [regularPrice, setRegularPrice] = useState<string>("");
 	const selectedCategoryCommission = selectedCategoryId
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
 			?.commission_percent
@@ -138,6 +139,8 @@ export default function VendorNewProductPage() {
 		if (details) formData.append("ProductDetails", details);
 		const basePrice = (form.querySelector('[name="base_price"]') as HTMLInputElement)?.value;
 		formData.append("ProductResellerPrice", basePrice || "0");
+		const regularPrice = (form.querySelector('[name="regular_price"]') as HTMLInputElement)?.value;
+		formData.append("ProductRegularPrice", regularPrice || "0");
 		formData.append("qty", (form.querySelector('[name="qty"]') as HTMLInputElement)?.value || "0");
 		formData.append("low_stock", (form.querySelector('[name="low_stock"]') as HTMLInputElement)?.value || "0");
 		const sku = (form.querySelector('[name="sku"]') as HTMLInputElement)?.value;
@@ -400,14 +403,15 @@ export default function VendorNewProductPage() {
 											)}
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
-											Regular price (Storefront Price)
+											Regular price (MSRP)
 											<input
-												type="text"
-												readOnly
-												value={basePrice && selectedCategoryCommission !== null && !isNaN(Number(basePrice)) ? (Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2) : ""}
+												type="number"
+												step="0.01"
+												value={regularPrice}
+												onChange={(e) => setRegularPrice(e.target.value)}
 												name="regular_price"
-												placeholder="Auto-calculated"
-												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-100 cursor-not-allowed"
+												placeholder="Manual entry (optional)"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 											/>
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">

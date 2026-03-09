@@ -30,7 +30,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		formData.append("price", product.ProductRegularPrice.toString());
+		const sellingPrice = product.ProductSalePrice || product.ProductRegularPrice;
+		formData.append("price", sellingPrice.toString());
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
 
@@ -72,9 +73,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
 				{isResellerActive ? (
 					<div className="flex items-center justify-between w-full">
-						<span className="text-sm sm:text-base font-bold text-gray-900">
-							৳{product.ProductRegularPrice}
-						</span>
+						<div className="flex flex-col">
+							{product.ProductRegularPrice > (product.ProductSalePrice || product.ProductRegularPrice) && (
+								<span className="text-[10px] text-gray-400 line-through">
+									৳{product.ProductRegularPrice}
+								</span>
+							)}
+							<span className="text-sm sm:text-base font-bold text-gray-900">
+								৳{product.ProductSalePrice || product.ProductRegularPrice}
+							</span>
+						</div>
 						<button
 							className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors shrink-0"
 							onClick={handleAddToCart}

@@ -225,6 +225,7 @@ export default function VendorEditProductPage() {
 		formData.append("ProductBreaf", f.short_description);
 		formData.append("ProductDetails", f.description);
 		formData.append("ProductResellerPrice", f.base_price || "0");
+		formData.append("ProductRegularPrice", f.regular_price || "0");
 		formData.append("qty", f.qty || "0");
 		formData.append("low_stock", f.low_stock || "0");
 		formData.append("ProductSku", f.sku);
@@ -377,8 +378,15 @@ export default function VendorEditProductPage() {
 											)}
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
-											Regular price (Storefront Price)
-											<input type="text" readOnly value={f.base_price && selectedCategoryCommission !== null && !isNaN(Number(f.base_price)) ? (Number(f.base_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2) : ""} placeholder="Auto-calculated" className={`${inputCls} bg-gray-100 cursor-not-allowed`} />
+											Regular price (MSRP)
+											<input
+												type="number"
+												step="0.01"
+												value={f.regular_price}
+												onChange={set("regular_price")}
+												placeholder="Manual entry (optional)"
+												className={inputCls}
+											/>
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
 											Quantity
