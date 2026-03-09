@@ -138,8 +138,9 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		quantity: product.qty,
 		sku: product.ProductSku,
 		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
-		minimumPrice: parseFloat(product.min_sell_price),
-		currentPrice: parseFloat(product.ProductRegularPrice || product.ProductResellerPrice),
+		minimumPrice: parseFloat(product.min_sell_price || "0"),
+		currentPrice: parseFloat(product.ProductResellerPrice || product.ProductRegularPrice || "0"),
+		msrpPrice: parseFloat(product.ProductRegularPrice || "0"),
 		description: product.ProductDetails,
 		images: {
 			main: images,
@@ -653,30 +654,28 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 							</div>
 							<div className="flex items-center">
 								<span className="font-medium text-gray-900">
-									Minimum Sell Price :
+									Price :
 								</span>
-								<span className="ml-2 text-gray-600 flex items-center">
+								<div className="ml-2 flex flex-col">
 									{!isResellerActive ? (
 										<span className="text-pink-600 font-bold flex items-center gap-1.5 bg-pink-50 px-2 py-0.5 rounded border border-pink-100 text-xs shadow-sm">
 											<Lock className="w-3 h-3" /> Active profile required to see price
 										</span>
 									) : (
-										<>
-											<TbCurrencyTaka size={20} />
-											{(() => {
-												const currentVariant = variants[activeVariantIdx];
-												if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
-													const selectedSize = currentVariant.sizes[activeSizeIdx];
-													if (selectedSize) {
-														// Use the same price helper we used for the table
-														return getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0).toFixed(2);
-													}
-												}
-												return productData.minimumPrice.toFixed(2);
-											})()}
-										</>
+										<div className="flex flex-col">
+											{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
+												<span className="text-xs text-gray-400 line-through flex items-center">
+													<TbCurrencyTaka size={14} />
+													{productData.msrpPrice.toFixed(2)}
+												</span>
+											)}
+											<div className="flex items-center text-pink-600 font-bold text-xl">
+												<TbCurrencyTaka size={24} />
+												{effectiveUnitPrice.toFixed(2)}
+											</div>
+										</div>
 									)}
-								</span>
+								</div>
 							</div>
 						</div>
 

@@ -123,7 +123,7 @@
                          <div class="form-group">
                              <label for="parcelID">Parcel ID</label>
                              <input type="text" class="form-control"
-                                 id="parcelID" placeholder="Enter Parcel ID after courier assignment" value="{{ $order->parcel_id }}">
+                                 id="parcelID" placeholder="Enter Parcel ID after courier assignment" value="{{ $order->parcel_id ?? '' }}">
                          </div>
                      </div>
                      <div class="mt-4 col-lg-12">
