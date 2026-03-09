@@ -88,14 +88,26 @@
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-bag-check"></i> Orders</a>
                 <div class="bg-transparent border-0 dropdown-menu">
-                    <a href="{{ url('admin_order/Pending') }}" class="dropdown-item">Pending <span class="badge bg-danger ms-1">{{$orders->where('status','Pending')->get()->count()}}</span></a>
-                    <a href="{{ url('admin_order/Canceled') }}" class="dropdown-item">Canceled</a>
-                    <a href="{{ url('admin_order/Confirmed') }}" class="dropdown-item">Confirmed</a>
-                    <a href="{{ url('admin_order/Processing') }}" class="dropdown-item">Processing</a>
-                    <a href="{{ url('admin_order/Packageing') }}" class="dropdown-item">Packaging</a>
-                    <a href="{{ url('admin_order/Ontheway') }}" class="dropdown-item">On the Way</a>
-                    <a href="{{ url('admin_order/Delivered') }}" class="dropdown-item">Delivered</a>
-                    <a href="{{ url('admin_order/Return') }}" class="dropdown-item">Return</a>
+                    @php
+                        $orderCounts = (clone $orders)->selectRaw("
+                            SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) as pending_count,
+                            SUM(CASE WHEN status = 'Canceled' THEN 1 ELSE 0 END) as canceled_count,
+                            SUM(CASE WHEN status = 'Confirmed' THEN 1 ELSE 0 END) as confirmed_count,
+                            SUM(CASE WHEN status = 'Processing' THEN 1 ELSE 0 END) as processing_count,
+                            SUM(CASE WHEN status = 'Packageing' THEN 1 ELSE 0 END) as packageing_count,
+                            SUM(CASE WHEN status = 'Ontheway' THEN 1 ELSE 0 END) as ontheway_count,
+                            SUM(CASE WHEN status = 'Delivered' THEN 1 ELSE 0 END) as delivered_count,
+                            SUM(CASE WHEN status = 'Return' THEN 1 ELSE 0 END) as return_count
+                        ")->first();
+                    @endphp
+                    <a href="{{ url('admin_order/Pending') }}" class="dropdown-item">Pending @if($orderCounts->pending_count > 0)<span class="badge bg-danger ms-1">{{ $orderCounts->pending_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Canceled') }}" class="dropdown-item">Canceled @if($orderCounts->canceled_count > 0)<span class="badge bg-danger ms-1">{{ $orderCounts->canceled_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Confirmed') }}" class="dropdown-item">Confirmed @if($orderCounts->confirmed_count > 0)<span class="badge bg-success ms-1">{{ $orderCounts->confirmed_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Processing') }}" class="dropdown-item">Processing @if($orderCounts->processing_count > 0)<span class="badge bg-warning text-dark ms-1">{{ $orderCounts->processing_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Packageing') }}" class="dropdown-item">Packaging @if($orderCounts->packageing_count > 0)<span class="badge bg-primary ms-1">{{ $orderCounts->packageing_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Ontheway') }}" class="dropdown-item">On the Way @if($orderCounts->ontheway_count > 0)<span class="badge bg-info ms-1">{{ $orderCounts->ontheway_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Delivered') }}" class="dropdown-item">Delivered @if($orderCounts->delivered_count > 0)<span class="badge bg-success ms-1">{{ $orderCounts->delivered_count }}</span>@endif</a>
+                    <a href="{{ url('admin_order/Return') }}" class="dropdown-item">Return @if($orderCounts->return_count > 0)<span class="badge bg-danger ms-1">{{ $orderCounts->return_count }}</span>@endif</a>
                 </div>
             </div>
 

@@ -148,7 +148,8 @@
                     data: 'course_image',
                     name: 'course_image',
                     render: function(data, type, full, meta) {
-                        return "<img src=../" + data + " height=\"40\" alt='No Image'/>";
+                        var imgSrc = data && data.startsWith('http') ? data : '../' + data;
+                        return "<img src='" + imgSrc + "' height=\"40\" alt='No Image'/>";
                     }
                 },
                 {
@@ -179,7 +180,7 @@
             e.preventDefault();
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('courses.store') }}',
+                url: '{{ route('courses.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),
@@ -205,7 +206,8 @@
                     $('#EditCourse').find('#coursecategory_id').val(data.coursecategory_id);
                     $('#EditCourse').find('#course_id').val(data.id);
                     $('#previmg').html('');
-                    $('#previmg').append(`<img src="../` + data.course_image + `" alt="" style="height: 80px" />`);
+                    var prevSrc = data.course_image && data.course_image.startsWith('http') ? data.course_image : '../' + data.course_image;
+                    $('#previmg').append(`<img src="` + prevSrc + `" alt="" style="height: 80px" />`);
                     $('#EditCourse').attr('data-id', data.id);
                 },
                 error: function(error) { console.log('error'); }

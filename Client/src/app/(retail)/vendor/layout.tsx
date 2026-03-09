@@ -27,7 +27,6 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import VendorNotificationCenter from "@/components/vendor/VendorNotificationCenter";
 import { useGetVendorProfileQuery } from "@/redux/api/vendorApi";
 import { logout } from "@/redux/features/auth/authSlice";
-import Swal from "sweetalert2";
 
 type NavItem = {
 	label: string;
@@ -105,6 +104,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 	const dispatch = useAppDispatch();
 	const pathname = usePathname();
 	const [mobileNavOpen, setMobileNavOpen] = useState(false);
+	const [showLogoutModal, setShowLogoutModal] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 	const isAuthPage =
 		pathname === "/vendor/login" || pathname === "/vendor/register";
@@ -178,24 +178,14 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 			: "text-gray-700 hover:bg-indigo-50 hover:text-[#2d2a5d]"
 		}`;
 
-	const handleLogout = async () => {
-		const result = await Swal.fire({
-			title: "Are you sure?",
-			text: "You will be logged out of your supplier account.",
-			icon: "warning",
-			showCancelButton: true,
-			confirmButtonColor: "#2d2a5d",
-			cancelButtonColor: "#d33",
-			confirmButtonText: "Yes, logout!",
-			customClass: {
-				container: 'z-[9999]'
-			}
-		});
+	const handleLogout = () => {
+		setShowLogoutModal(true);
+	};
 
-		if (result.isConfirmed) {
-			dispatch(logout());
-			router.replace("/vendor/login");
-		}
+	const confirmLogout = () => {
+		setShowLogoutModal(false);
+		dispatch(logout());
+		router.replace("/vendor/login");
 	};
 
 	const renderNavigation = (onItemClick?: () => void) => (
@@ -232,19 +222,6 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 					</div>
 				))}
 			</div>
-
-			<div className="pt-4 border-t border-gray-100 mt-auto">
-				<button
-					onClick={() => {
-						onItemClick?.();
-						handleLogout();
-					}}
-					className="group flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-				>
-					<LogOut className="h-4 w-4 shrink-0 text-red-500 group-hover:text-red-600" />
-					<span className="truncate font-medium">Logout</span>
-				</button>
-			</div>
 		</nav>
 	);
 
@@ -264,9 +241,9 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 				: "Redirecting to vendor profile setup...";
 
 	return (
-		<div className="min-h-screen bg-gray-50 flex">
+		<div className="h-screen bg-gray-50 flex overflow-hidden">
 			{!isAuthPage && (
-				<aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
+				<aside className="hidden md:flex md:flex-col w-64 shrink-0 bg-white border-r border-gray-200 sticky top-0 h-screen overflow-y-auto">
 					<div className="h-14 flex items-center px-5 border-b border-gray-200">
 						<Link
 							href="/vendor"
@@ -314,10 +291,18 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 				</>
 			)}
 
-			<div className="flex-1 min-w-0 flex flex-col">
+			<div className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
 				{!isAuthPage && (
-					<header className="hidden md:flex sticky top-0 z-10 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 sm:px-6 md:px-8 justify-end">
+					<header className="hidden md:flex sticky top-0 z-10 bg-gray-50/95 backdrop-blur border-b border-gray-200 px-4 py-3 sm:px-6 md:px-8 justify-end items-center gap-3">
 						<VendorNotificationCenter disabled={notificationDisabled} />
+						<button
+							type="button"
+							onClick={handleLogout}
+							className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+						>
+							<LogOut className="h-4 w-4" />
+							Logout
+						</button>
 					</header>
 				)}
 
@@ -344,6 +329,14 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 						{!isAuthPage && (
 							<div className="flex items-center gap-2">
 								<VendorNotificationCenter disabled={notificationDisabled} />
+								<button
+									type="button"
+									onClick={handleLogout}
+									className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+									aria-label="Logout"
+								>
+									<LogOut className="h-4 w-4" />
+								</button>
 								<Link
 									href="/vendor/profile"
 									className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
@@ -366,6 +359,50 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 					)}
 				</main>
 			</div>
+
+			{/* Logout Confirmation Modal */}
+			{showLogoutModal && (
+				<div className="fixed inset-0 z-[9999] flex items-center justify-center">
+					{/* Backdrop */}
+					<div
+						className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+						onClick={() => setShowLogoutModal(false)}
+					/>
+					{/* Modal Card */}
+					<div className="relative w-full max-w-sm mx-4 bg-white rounded-2xl shadow-2xl p-6">
+						{/* Icon */}
+						<div className="flex justify-center mb-4">
+							<div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+								<LogOut className="h-7 w-7 text-red-500" />
+							</div>
+						</div>
+						{/* Text */}
+						<div className="text-center mb-6">
+							<h3 className="text-lg font-semibold text-gray-900 mb-1">
+								Logout
+							</h3>
+							<p className="text-sm text-gray-500">
+								Are you sure you want to log out of your supplier account?
+							</p>
+						</div>
+						{/* Buttons */}
+						<div className="flex gap-3">
+							<button
+								onClick={() => setShowLogoutModal(false)}
+								className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+							>
+								Cancel
+							</button>
+							<button
+								onClick={confirmLogout}
+								className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors shadow-sm"
+							>
+								Yes, Logout
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

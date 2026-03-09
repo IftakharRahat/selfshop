@@ -71,16 +71,16 @@
                 <div class="col-md-2">
                     <select name="status" class="form-select form-select-sm">
                         <option value="">All status</option>
-                        <option value="Active" @selected($status === 'Active')>Active</option>
-                        <option value="Inactive" @selected($status === 'Inactive')>Inactive</option>
-                        <option value="Block" @selected($status === 'Block')>Block</option>
+                        <option value="Active" {{ $status === 'Active' ? 'selected' : '' }}>Active</option>
+                        <option value="Inactive" {{ $status === 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="Block" {{ $status === 'Block' ? 'selected' : '' }}>Block</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <select name="membership" class="form-select form-select-sm">
                         <option value="">All membership</option>
-                        <option value="Paid" @selected(strtolower($membership) === 'paid')>Paid</option>
-                        <option value="Unpaid" @selected(strtolower($membership) === 'unpaid')>Unpaid</option>
+                        <option value="Paid" {{ strtolower($membership) === 'paid' ? 'selected' : '' }}>Paid</option>
+                        <option value="Unpaid" {{ strtolower($membership) === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
                     </select>
                 </div>
                 <div class="col-md-2">

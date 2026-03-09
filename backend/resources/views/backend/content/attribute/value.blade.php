@@ -173,7 +173,7 @@
 
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('admin.attrvalues.store') }}',
+                url: '{{ route('admin.attrvalues.store') }}',
                 processData: false,
                 contentType: false,
                 data: new FormData(this),

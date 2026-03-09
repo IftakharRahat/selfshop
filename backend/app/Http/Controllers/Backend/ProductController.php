@@ -432,6 +432,18 @@ class ProductController extends Controller
         }
         $product->youtube_link = $request->youtube_link;
 
+        // Start with existing gallery images
+        $imageData = $product->PostImage ? json_decode($product->PostImage, true) : [];
+
+        // Remove images marked for deletion
+        if ($request->filled('removed_gallery_images')) {
+            $removedImages = json_decode($request->removed_gallery_images, true) ?? [];
+            $imageData = array_values(array_filter($imageData, function ($img) use ($removedImages) {
+                return !in_array($img, $removedImages);
+            }));
+        }
+
+        // Add newly uploaded images
         if ($request->hasFile('PostImage')) {
             $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             foreach ($request->file('PostImage') as $imgfiles) {
@@ -440,8 +452,9 @@ class ProductController extends Controller
                 $path = $imgfiles->storeAs('admin/products/gallery', $safeName, 'r2');
                 $imageData[] = $r2BaseUrl . '/' . $path;
             }
-            $product->PostImage = json_encode($imageData);
         }
+
+        $product->PostImage = !empty($imageData) ? json_encode(array_values($imageData)) : null;
 
         if ($request->color) {
             $product->color = json_encode($request->color);

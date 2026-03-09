@@ -139,7 +139,7 @@
             e.preventDefault();
             $.ajax({
                 type: 'POST',
-                uploadUrl: '{{ route('faqs.store') }}',
+                url: '{{ route('faqs.store') }}',
                 processData: false, contentType: false,
                 data: new FormData(this),
                 success: function(data) {

@@ -79,10 +79,10 @@
                 <div class="col-md-3">
                     <select name="status" class="form-select form-select-sm">
                         <option value="">All status</option>
-                        <option value="approved" @selected($status === 'approved')>Approved</option>
-                        <option value="pending" @selected($status === 'pending')>Pending</option>
-                        <option value="rejected" @selected($status === 'rejected')>Rejected</option>
-                        <option value="suspended" @selected($status === 'suspended')>Suspended</option>
+                        <option value="approved" {{ $status === 'approved' ? 'selected' : '' }}>Approved</option>
+                        <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="rejected" {{ $status === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                        <option value="suspended" {{ $status === 'suspended' ? 'selected' : '' }}>Suspended</option>
                     </select>
                 </div>
                 <div class="col-md-2">
