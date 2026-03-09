@@ -26,7 +26,13 @@ export const useIsActiveReseller = () => {
 
         if (!token || !expireDate) return;
 
-        const expiryTime = new Date(expireDate + "T23:59:59").getTime();
+        // Parse the expire date — handle both YYYY-MM-DD and other formats
+        const parsed = new Date(expireDate);
+        if (isNaN(parsed.getTime())) return; // Invalid date, skip
+
+        // Set expiry to end of day
+        parsed.setHours(23, 59, 59, 999);
+        const expiryTime = parsed.getTime();
         const now = Date.now();
         const timeLeft = expiryTime - now;
 
@@ -64,10 +70,15 @@ export const useIsActiveReseller = () => {
         profileData?.data?.profile?.status ?? "",
     ).toLowerCase();
 
-    // Check if account has expired
-    const isExpired = expireDate
-        ? new Date(expireDate + "T23:59:59").getTime() < Date.now()
-        : false;
+    // Check if account has expired using proper date parsing
+    let isExpired = false;
+    if (expireDate) {
+        const parsed = new Date(expireDate);
+        if (!isNaN(parsed.getTime())) {
+            parsed.setHours(23, 59, 59, 999);
+            isExpired = parsed.getTime() < Date.now();
+        }
+    }
 
     // An active reseller must have a valid (non-expired) paid membership or active status
     const isActive = !isExpired && (membershipStatus === "paid" || accountStatus === "active");
