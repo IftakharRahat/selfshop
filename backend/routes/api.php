@@ -73,6 +73,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [FrontendApiController::class, 'userLogin'])->name('api.user.login');
     // Vendor registration (separate vendor portal)
     Route::post('/vendor/register', [VendorAuthController::class, 'register'])->name('api.vendor.register');
+
+    // Carry Bee courier – pickup point lookup (public, used during registration)
+    Route::get('/carrybee/cities', [\App\Http\Controllers\CarryBeeController::class, 'cities'])->name('api.carrybee.cities');
+    Route::get('/carrybee/cities/{cityId}/zones', [\App\Http\Controllers\CarryBeeController::class, 'zones'])->name('api.carrybee.zones');
+    Route::get('/carrybee/cities/{cityId}/zones/{zoneId}/areas', [\App\Http\Controllers\CarryBeeController::class, 'areas'])->name('api.carrybee.areas');
+
     Route::post('/reset-password', [FrontendApiController::class, 'userResetPassword'])->name('api.user.reset-password');
 
     //Shops
