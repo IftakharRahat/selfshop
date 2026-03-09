@@ -49,7 +49,15 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-2">
+            <div class="admin-content-card">
+                <div class="admin-card-body text-center">
+                    <div class="small text-muted">Expired User</div>
+                    <div style="font-size: 20px; font-weight: 700; color: #dc3545;">{{ number_format($expiredUsers) }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="admin-content-card">
                 <div class="admin-card-body text-center">
                     <div class="small text-muted">Total User Account Balance</div>

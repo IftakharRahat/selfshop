@@ -235,6 +235,7 @@ class CrmDashboardController extends Controller
             'activeUsers' => User::where('status', 'Active')->count(),
             'paidUsers' => User::whereRaw("LOWER(COALESCE(membership_status, '')) = 'paid'")->count(),
             'unpaidUsers' => User::whereRaw("LOWER(COALESCE(membership_status, '')) = 'unpaid'")->count(),
+            'expiredUsers' => User::whereNotNull('expire_date')->where('expire_date', '!=', '')->where('expire_date', '<', date('Y-m-d'))->count(),
             'totalUserAccountBalance' => (float) User::sum('account_balance'),
         ]);
     }
