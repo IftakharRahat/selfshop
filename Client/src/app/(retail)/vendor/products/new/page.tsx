@@ -9,6 +9,8 @@ import R2MultiImageUploader from "@/components/shared/r2-multi-image-uploader";
 import {
 	useCreateVendorProductMutation,
 	useCreateVendorProductVariantMutation,
+	useCreateVendorProductVariantSizeMutation,
+	useCreateVendorProductVariantSizeBulkPriceMutation,
 	useCreateVendorProductPriceTierMutation,
 	useGetVendorCategoryCommissionsQuery,
 	vendorApi,
@@ -49,6 +51,7 @@ export default function VendorNewProductPage() {
 	const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
 	const [selectedMinicategoryId, setSelectedMinicategoryId] = useState<string>("");
 	const [basePrice, setBasePrice] = useState<string>("");
+	const [regularPrice, setRegularPrice] = useState<string>("");
 	const selectedCategoryCommission = selectedCategoryId
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
 			?.commission_percent
@@ -56,7 +59,8 @@ export default function VendorNewProductPage() {
 	const [createVariant] = useCreateVendorProductVariantMutation();
 	const [createTier] = useCreateVendorProductPriceTierMutation();
 
-	const [createVariantSize] = vendorApi.useCreateVendorProductVariantSizeMutation();
+	const [createVariantSize] = useCreateVendorProductVariantSizeMutation();
+	const [createBulkPrice] = useCreateVendorProductVariantSizeBulkPriceMutation();
 
 	// Variants & Sizes State
 	type BulkPriceRow = {
@@ -138,6 +142,8 @@ export default function VendorNewProductPage() {
 		if (details) formData.append("ProductDetails", details);
 		const basePrice = (form.querySelector('[name="base_price"]') as HTMLInputElement)?.value;
 		formData.append("ProductResellerPrice", basePrice || "0");
+		const regularPrice = (form.querySelector('[name="regular_price"]') as HTMLInputElement)?.value;
+		formData.append("ProductRegularPrice", regularPrice || "0");
 		formData.append("qty", (form.querySelector('[name="qty"]') as HTMLInputElement)?.value || "0");
 		formData.append("low_stock", (form.querySelector('[name="low_stock"]') as HTMLInputElement)?.value || "0");
 		const sku = (form.querySelector('[name="sku"]') as HTMLInputElement)?.value;
@@ -177,68 +183,44 @@ export default function VendorNewProductPage() {
 						varFormData.append("price", "0"); // Default for variant-level
 						if (v.imageFile) varFormData.append("image", v.imageFile);
 
-						const state = window.localStorage.getItem('persist:root');
-						let token = "";
-						if (state) {
-							const authStateString = JSON.parse(state).auth;
-							const authState = JSON.parse(authStateString);
-							token = authState?.access_token || "";
-						}
+						// Use RTK mutation instead of manual fetch
+						const variantResult = await createVariant({ id: productId, body: varFormData }).unwrap();
+						const newVariantId = variantResult.data?.variant?.id;
 
-						const resVar = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/vendor/products/${productId}/variants`, {
-							method: "POST",
-							headers: {
-								Accept: "application/json",
-								...(token ? { Authorization: `Bearer ${token}` } : {}),
-							},
-							body: varFormData,
-						});
-
-						if (!resVar.ok) throw new Error("Failed to add variant");
-						const variantData = await resVar.json();
-						const newVariantId = variantData.data.variant.id;
+						if (!newVariantId) throw new Error("Failed to get variant ID");
 
 						// 3. Create Sizes for this variant
 						for (const s of v.sizes) {
 							if (!s.size_name) continue;
-							const resSize = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/vendor/products/${productId}/variants/${newVariantId}/sizes`, {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-									Accept: "application/json",
-									...(token ? { Authorization: `Bearer ${token}` } : {}),
-								},
-								body: JSON.stringify({
-									size_name: s.size_name,
-									qty: parseInt(s.qty, 10) || 0,
-									price: s.price ? parseFloat(s.price) : null,
-									status: "Active"
-								}),
-							});
 
-							if (!resSize.ok) throw new Error("Failed to add size");
-							const sizeData = await resSize.json();
-							const newSizeId = sizeData.data.size.id;
+							const sizeResult = await createVariantSize({
+								id: productId,
+								variantId: newVariantId,
+								size_name: s.size_name,
+								qty: parseInt(s.qty, 10) || 0,
+								price: s.price ? parseFloat(s.price) : null,
+								status: "Active"
+							}).unwrap();
+
+							const newSizeId = (sizeResult.data as any)?.size?.id;
+							if (!newSizeId) continue;
 
 							// 4. Create Bulk Prices for this size
 							for (const bt of s.bulkTiers) {
 								if (!bt.min_qty || !bt.bulk_price) continue;
-								await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/vendor/products/${productId}/variants/${newVariantId}/sizes/${newSizeId}/bulk-prices`, {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/json",
-										Accept: "application/json",
-										...(token ? { Authorization: `Bearer ${token}` } : {}),
-									},
-									body: JSON.stringify({
-										min_qty: parseInt(bt.min_qty, 10),
-										max_qty: bt.max_qty ? parseInt(bt.max_qty, 10) : null,
-										bulk_price: parseFloat(bt.bulk_price),
-									}),
-								});
+
+								await createBulkPrice({
+									id: productId,
+									variantId: newVariantId,
+									sizeId: newSizeId,
+									min_qty: parseInt(bt.min_qty, 10),
+									max_qty: bt.max_qty ? parseInt(bt.max_qty, 10) : null,
+									bulk_price: parseFloat(bt.bulk_price),
+								}).unwrap();
 							}
 						}
 					} catch (err) {
+						console.error("Variant creation failed:", err);
 						toast.error(`Failed to add variant: ${v.color_name || v.title}`);
 					}
 				}
@@ -400,14 +382,15 @@ export default function VendorNewProductPage() {
 											)}
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
-											Regular price (Storefront Price)
+											Regular price (MSRP)
 											<input
-												type="text"
-												readOnly
-												value={basePrice && selectedCategoryCommission !== null && !isNaN(Number(basePrice)) ? (Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2) : ""}
+												type="number"
+												step="0.01"
+												value={regularPrice}
+												onChange={(e) => setRegularPrice(e.target.value)}
 												name="regular_price"
-												placeholder="Auto-calculated"
-												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-100 cursor-not-allowed"
+												placeholder="Manual entry (optional)"
+												className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 											/>
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
