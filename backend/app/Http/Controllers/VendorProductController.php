@@ -949,6 +949,8 @@ class VendorProductController extends Controller
 
     private function refreshProductAggregation(Product $product)
     {
+        // Reload product to ensure relationships are fresh
+        $product->refresh();
         $variants = $product->varients()->with(['sizes.bulkPrices'])->get();
         if ($variants->isEmpty()) {
             return;
@@ -956,38 +958,19 @@ class VendorProductController extends Controller
 
         $totalQty = 0;
         $minPrice = null;
-        $firstSizePrice = null;
+        $firstAvailablePrice = null;
 
-        foreach ($variants as $index => $variant) {
-            // Determine first size price for the default card display
-            if ($index === 0) {
-                if ($variant->sizes->isEmpty()) {
-                    $vPrice = (float) ($variant->price ?: 0);
-                    if ($vPrice > 0) {
-                        $firstSizePrice = $vPrice;
-                    }
-                } else {
-                    $firstSize = $variant->sizes->first();
-                    if ($firstSize) {
-                        $sPrice = (float) ($firstSize->price ?: 0);
-                        $bP = 0;
-                        if ($firstSize->bulkPrices && $firstSize->bulkPrices->isNotEmpty()) {
-                            $bP = (float) ($firstSize->bulkPrices->first()->bulk_price ?: 0);
-                        }
-                        if ($sPrice > 0) {
-                            $firstSizePrice = $sPrice;
-                        } elseif ($bP > 0) {
-                            $firstSizePrice = $bP;
-                        }
-                    }
-                }
-            }
+        foreach ($variants as $variant) {
+            $variantBestPrice = null;
 
             if ($variant->sizes->isEmpty()) {
                 $totalQty += (int) $variant->qty;
                 $vPrice = (float) ($variant->price ?: 0);
-                if ($vPrice > 0 && ($minPrice === null || $vPrice < $minPrice)) {
-                    $minPrice = $vPrice;
+                if ($vPrice > 0) {
+                    $variantBestPrice = $vPrice;
+                    if ($minPrice === null || $vPrice < $minPrice) {
+                        $minPrice = $vPrice;
+                    }
                 }
             } else {
                 foreach ($variant->sizes as $size) {
@@ -1000,7 +983,6 @@ class VendorProductController extends Controller
                         $pricesToCompare[] = $sPrice;
                     }
 
-                    // Check bulk prices as well
                     if ($size->bulkPrices && $size->bulkPrices->isNotEmpty()) {
                         foreach ($size->bulkPrices as $bp) {
                             $bpPrice = (float) ($bp->bulk_price ?: 0);
@@ -1012,11 +994,19 @@ class VendorProductController extends Controller
 
                     if (!empty($pricesToCompare)) {
                         $bestSizePrice = min($pricesToCompare);
+                        if ($variantBestPrice === null || $bestSizePrice < $variantBestPrice) {
+                            $variantBestPrice = $bestSizePrice;
+                        }
                         if ($minPrice === null || $bestSizePrice < $minPrice) {
                             $minPrice = $bestSizePrice;
                         }
                     }
                 }
+            }
+
+            // Capture the first non-zero price we encounter to use as the "Lead" price
+            if ($firstAvailablePrice === null && $variantBestPrice !== null && $variantBestPrice > 0) {
+                $firstAvailablePrice = $variantBestPrice;
             }
         }
 
@@ -1025,15 +1015,22 @@ class VendorProductController extends Controller
             $product->ProductResellerPrice = $minPrice;
         }
         
-        // Apply commission markup for storefront price (ProductRegularPrice)
-        $commissionService = app(\App\Services\VendorCommissionService::class);
-        $rawCardPrice = $firstSizePrice ?? $minPrice ?? $product->ProductResellerPrice;
+        // Use the first non-zero price found for the storefront markup, fallback to minPrice
+        $rawCardPrice = $firstAvailablePrice ?? $minPrice ?? (float) $product->ProductResellerPrice;
+        
         if ($rawCardPrice > 0) {
+            $commissionService = app(\App\Services\VendorCommissionService::class);
             $product->ProductRegularPrice = $commissionService->getStorefrontPrice(
                 (float) $rawCardPrice,
                 (int) $product->vendor_id,
                 (int) $product->category_id
             );
+            
+            // If ProductSalePrice was 0 or unset, sync it or keep it proportional? 
+            // Usually if it's 0 it shows as 0. Let's ensure it's at least the regular price if regular > 0 and sale is 0.
+            if ((float)$product->ProductSalePrice <= 0) {
+                $product->ProductSalePrice = $product->ProductRegularPrice;
+            }
         }
 
         $product->save();

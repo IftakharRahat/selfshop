@@ -9,6 +9,8 @@ import R2MultiImageUploader from "@/components/shared/r2-multi-image-uploader";
 import {
 	useCreateVendorProductMutation,
 	useCreateVendorProductVariantMutation,
+	useCreateVendorProductVariantSizeMutation,
+	useCreateVendorProductVariantSizeBulkPriceMutation,
 	useCreateVendorProductPriceTierMutation,
 	useGetVendorCategoryCommissionsQuery,
 	vendorApi,
@@ -57,7 +59,8 @@ export default function VendorNewProductPage() {
 	const [createVariant] = useCreateVendorProductVariantMutation();
 	const [createTier] = useCreateVendorProductPriceTierMutation();
 
-	const [createVariantSize] = vendorApi.useCreateVendorProductVariantSizeMutation();
+	const [createVariantSize] = useCreateVendorProductVariantSizeMutation();
+	const [createBulkPrice] = useCreateVendorProductVariantSizeBulkPriceMutation();
 
 	// Variants & Sizes State
 	type BulkPriceRow = {
@@ -180,68 +183,44 @@ export default function VendorNewProductPage() {
 						varFormData.append("price", "0"); // Default for variant-level
 						if (v.imageFile) varFormData.append("image", v.imageFile);
 
-						const state = window.localStorage.getItem('persist:root');
-						let token = "";
-						if (state) {
-							const authStateString = JSON.parse(state).auth;
-							const authState = JSON.parse(authStateString);
-							token = authState?.access_token || "";
-						}
+						// Use RTK mutation instead of manual fetch
+						const variantResult = await createVariant({ id: productId, body: varFormData }).unwrap();
+						const newVariantId = variantResult.data?.variant?.id;
 
-						const resVar = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/vendor/products/${productId}/variants`, {
-							method: "POST",
-							headers: {
-								Accept: "application/json",
-								...(token ? { Authorization: `Bearer ${token}` } : {}),
-							},
-							body: varFormData,
-						});
-
-						if (!resVar.ok) throw new Error("Failed to add variant");
-						const variantData = await resVar.json();
-						const newVariantId = variantData.data.variant.id;
+						if (!newVariantId) throw new Error("Failed to get variant ID");
 
 						// 3. Create Sizes for this variant
 						for (const s of v.sizes) {
 							if (!s.size_name) continue;
-							const resSize = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/vendor/products/${productId}/variants/${newVariantId}/sizes`, {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-									Accept: "application/json",
-									...(token ? { Authorization: `Bearer ${token}` } : {}),
-								},
-								body: JSON.stringify({
-									size_name: s.size_name,
-									qty: parseInt(s.qty, 10) || 0,
-									price: s.price ? parseFloat(s.price) : null,
-									status: "Active"
-								}),
-							});
 
-							if (!resSize.ok) throw new Error("Failed to add size");
-							const sizeData = await resSize.json();
-							const newSizeId = sizeData.data.size.id;
+							const sizeResult = await createVariantSize({
+								id: productId,
+								variantId: newVariantId,
+								size_name: s.size_name,
+								qty: parseInt(s.qty, 10) || 0,
+								price: s.price ? parseFloat(s.price) : null,
+								status: "Active"
+							}).unwrap();
+
+							const newSizeId = (sizeResult.data as any)?.size?.id;
+							if (!newSizeId) continue;
 
 							// 4. Create Bulk Prices for this size
 							for (const bt of s.bulkTiers) {
 								if (!bt.min_qty || !bt.bulk_price) continue;
-								await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/vendor/products/${productId}/variants/${newVariantId}/sizes/${newSizeId}/bulk-prices`, {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/json",
-										Accept: "application/json",
-										...(token ? { Authorization: `Bearer ${token}` } : {}),
-									},
-									body: JSON.stringify({
-										min_qty: parseInt(bt.min_qty, 10),
-										max_qty: bt.max_qty ? parseInt(bt.max_qty, 10) : null,
-										bulk_price: parseFloat(bt.bulk_price),
-									}),
-								});
+
+								await createBulkPrice({
+									id: productId,
+									variantId: newVariantId,
+									sizeId: newSizeId,
+									min_qty: parseInt(bt.min_qty, 10),
+									max_qty: bt.max_qty ? parseInt(bt.max_qty, 10) : null,
+									bulk_price: parseFloat(bt.bulk_price),
+								}).unwrap();
 							}
 						}
 					} catch (err) {
+						console.error("Variant creation failed:", err);
 						toast.error(`Failed to add variant: ${v.color_name || v.title}`);
 					}
 				}
