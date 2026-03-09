@@ -18,25 +18,25 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" style="font-weight: 600;">Edit Withdrew Request</h5>
+                    <h5 class="modal-title" style="font-weight: 600;">Edit Withdraw Request</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
 
-                    <form name="form" id="EditMenu" enctype="multipart/form-data" class="from-prevent-multiple-submits">
+                    <form name="form" id="EditMenu" enctype="multipart/form-data">
                         @csrf
                         <div class="row justify-content-center align-items-center">
                             <div class="col-md-10 justify-content-center align-items-center">
                                 <div class="mt-3 form-group">
-                                    <label for="" class="m-0">আপনি কতো টাকা নিতে চাচ্ছেন ?</label>
+                                    <label for="" class="m-0">How much do you want to withdraw?</label>
                                     <div class="d-flex">
-                                        <input type="text" style="background: #FFF3DE !important;border:none;border-radius: 6px" class="form-control" name="withdrew_amount" id="withdrew_amount" placeholder="এখানে টাকার পরিমান লিখুন" required>
-                                        <button style="padding: 0px 10px;border: 2px solid #D6CFFF;font-weight: bold;margin-left: -8px;border-radius: 6px;background: #D6CFFF;">৳</button>
+                                        <input type="text" style="background: #FFF3DE !important;border:none;border-radius: 6px" class="form-control" name="withdrew_amount" id="withdrew_amount" placeholder="Enter amount" required>
+                                        <button type="button" style="padding: 0px 10px;border: 2px solid #D6CFFF;font-weight: bold;margin-left: -8px;border-radius: 6px;background: #D6CFFF;">৳</button>
                                     </div>
                                 </div>
 
                                 <div class="mt-3 form-group">
-                                    <label for="" class="m-0">উত্তোলনের মাধ্যম সিলেক্ট করুন</label>
+                                    <label for="" class="m-0">Select Withdrawal Method</label>
                                     <div class="d-flex justify-content-between">
                                         @forelse (App\Models\Paymenttype::where('status','Active')->get() as $pay)
                                             <input hidden type="radio" id="pay{{ $pay->id }}" name="paymenttype_id" value="{{ $pay->id }}">
@@ -50,10 +50,10 @@
                                 </div>
                                 <input type="text" name="withdrew_id" id="withdrew_id" hidden>
                                 <div class="mt-3 form-group">
-                                    <label for="" class="m-0">একাউন্ট নাম্বার মিলিয়ে নিন</label>
+                                    <label for="" class="m-0">Verify Account Number</label>
                                     <div class="d-flex justify-content-between">
-                                        <button id="account" style="padding: 0px 10px;border: 2px solid #FAE2FE !important;font-weight: bold;margin-left: -8px;border-radius: 6px;background: #FAE2FE;margin-right:30px;"></button>
-                                        <input type="text" style="background: #E2136E !important;border:none;border-radius: 6px;color: white;" class="form-control" name="to_account_number" id="to_account_number" placeholder="এখানে নম্বর লিখুন" required>
+                                        <button type="button" id="account" style="padding: 0px 10px;border: 2px solid #FAE2FE !important;font-weight: bold;margin-left: -8px;border-radius: 6px;background: #FAE2FE;margin-right:30px;"></button>
+                                        <input type="text" style="background: #f8f9fa !important;border:1px solid #ccc;border-radius: 6px;" class="form-control" name="to_account_number" id="to_account_number" placeholder="Enter account number" required>
                                     </div>
                                 </div>
                                 <br>
@@ -71,10 +71,9 @@
                                 </div>
                                 <br>
                                 <div class="d-flex w-100 justify-content-center">
-                                    <button type="submit" style="width: 292px;font-size: 26px;height: 59px;color: #fff;font-weight: bold;background: #14BF7D;border-radius: 30px;"
-                                        class="btn btn-primary from-prevent-multiple-submits">
-                                        <i class="spinner fa fa-spinner fa-spin"></i>
-                                        আপডেট করুন
+                                    <button type="submit" style="width: 100%;font-size: 16px;padding: 10px 20px;color: #fff;font-weight: 600;background: #14BF7D;border-radius: 8px;border: none;"
+                                        class="btn btn-primary">
+                                        Update
                                     </button>
                                 </div>
                             </div>
