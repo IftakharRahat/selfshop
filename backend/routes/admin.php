@@ -58,6 +58,7 @@ use App\Http\Controllers\Backend\SalesTargetController;
 use App\Http\Controllers\Backend\CrmDashboardController;
 use App\Http\Controllers\Backend\AdminNotificationController;
 use App\Http\Controllers\Backend\AdminActivityController;
+use App\Http\Controllers\Backend\PromotionalSectionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -198,6 +199,12 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::resource('addbanners', AddbannerController::class, ['names' => 'admin.addbanners']);
     Route::post('addbanner/{id}', [AddbannerController::class, 'update']);
     Route::put('addbanner/status/{id}', [AddbannerController::class, 'statusupdate']);
+
+    // Promotional Sections
+    Route::resource('promotional-sections', PromotionalSectionController::class, ['names' => 'admin.promotional-sections']);
+    Route::put('promotional-sections/{id}/toggle-status', [PromotionalSectionController::class, 'toggleStatus'])->name('admin.promotional-sections.toggle-status');
+    Route::post('promotional-sections/update-order', [PromotionalSectionController::class, 'updateOrder'])->name('admin.promotional-sections.update-order');
+    Route::get('promotional-sections/search-products', [PromotionalSectionController::class, 'searchProducts'])->name('admin.promotional-sections.search-products');
 
     //Brands
     Route::resource('brands', BrandController::class, ['names' => 'admin.brands']);

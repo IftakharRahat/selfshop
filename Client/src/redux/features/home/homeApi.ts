@@ -73,6 +73,13 @@ const homeApi = baseApi.injectEndpoints({
 			},
 			providesTags: ["categories"],
 		}),
+		getPromotionalSections: builder.query({
+			query: () => ({
+				url: `/promotional-sections`,
+				method: "GET",
+			}),
+			providesTags: ["categories"],
+		}),
 		getAllFeaturedProducts: builder.query({
 			query: () => {
 				// const params = new URLSearchParams();
@@ -233,6 +240,7 @@ export const {
 	useGetAllSliderBottomBannersQuery,
 	useGetAllBrandsQuery,
 	useGetAllCollectionsQuery,
+	useGetPromotionalSectionsQuery,
 	useGetAllBigSellingQuery,
 	useGetAllNewProductsQuery,
 	useGetBasicInfoQuery,

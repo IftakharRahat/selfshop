@@ -87,6 +87,7 @@ export const baseApi = createApi({
 		"vendorCampaigns",
 		"vendorFollow",
 		"reviews",
+		"shopProducts",
 	],
 	endpoints: () => ({}),
 });
