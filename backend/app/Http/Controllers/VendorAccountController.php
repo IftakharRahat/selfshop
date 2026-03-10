@@ -63,6 +63,8 @@ class VendorAccountController extends Controller
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'pickup_location_label' => ['nullable', 'string', 'max:255'],
+            'logo_path' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'banner_path' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
         if ($validator->fails()) {
@@ -88,6 +90,28 @@ class VendorAccountController extends Controller
                 $slug = $base . '-' . $i++;
             }
             $data['slug'] = $slug;
+        }
+
+        // Handle logo upload
+        if ($request->hasFile('logo_path')) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $file = $request->file('logo_path');
+            $safeName = 'logo_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $storedPath = $file->storeAs('vendor-branding', $safeName, 'r2');
+            $data['logo_path'] = $r2BaseUrl . '/' . $storedPath;
+        } else {
+            unset($data['logo_path']);
+        }
+
+        // Handle banner upload
+        if ($request->hasFile('banner_path')) {
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+            $file = $request->file('banner_path');
+            $safeName = 'banner_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
+            $storedPath = $file->storeAs('vendor-branding', $safeName, 'r2');
+            $data['banner_path'] = $r2BaseUrl . '/' . $storedPath;
+        } else {
+            unset($data['banner_path']);
         }
 
         $vendor = Vendor::updateOrCreate(

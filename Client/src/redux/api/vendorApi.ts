@@ -21,6 +21,8 @@ export interface VendorProfile {
 	is_verified_badge?: boolean;
 	verified_badge_at?: string | null;
 	verified_badge_by?: number | null;
+	logo_path?: string | null;
+	banner_path?: string | null;
 }
 
 export interface VendorKycDocument {
@@ -303,7 +305,7 @@ export const vendorApi = baseApi.injectEndpoints({
 		}),
 		upsertVendorProfile: build.mutation<
 			{ status: boolean; data?: { vendor: VendorProfile } },
-			Partial<VendorProfile> & { company_name: string }
+			FormData
 		>({
 			query: (body) => ({
 				url: "/vendor/profile",
