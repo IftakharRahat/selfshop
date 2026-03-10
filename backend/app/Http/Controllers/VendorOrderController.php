@@ -457,8 +457,39 @@ class VendorOrderController extends Controller
         $order->save();
 
         // ── Carry Bee order creation (non-blocking) ──
-        // If the vendor has a registered Carry Bee store, create a delivery order
+        // Auto-create a Carry Bee store if vendor doesn't have one yet
         $carrybeeResult = null;
+        if (empty($vendor->carrybee_store_id)) {
+            try {
+                $carryBee = app(\App\Services\CarryBeeService::class);
+                $storeResult = $carryBee->createStore([
+                    'name' => (string) ($vendor->company_name ?: 'Store ' . $vendor->id),
+                    'contact_person_name' => (string) ($vendor->contact_name ?: $vendor->company_name),
+                    'contact_person_number' => (string) ($vendor->contact_phone ?: '01700000000'),
+                    'address' => (string) ($vendor->pickup_address ?: $vendor->company_name . ', Dhaka'),
+                    'city_id' => (int) ($vendor->pickup_city_id ?: 14),  // default: Dhaka
+                    'zone_id' => (int) ($vendor->pickup_zone_id ?: 1),
+                    'area_id' => (int) ($vendor->pickup_area_id ?: 1),
+                ]);
+
+                \Log::info('CarryBee auto store creation result', [
+                    'vendor_id' => $vendor->id,
+                    'result'    => $storeResult,
+                ]);
+
+                if (!empty($storeResult['data']['store']['id'])) {
+                    $vendor->carrybee_store_id = $storeResult['data']['store']['id'];
+                    $vendor->save();
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('CarryBee auto store creation failed (non-blocking)', [
+                    'vendor_id' => $vendor->id,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // If the vendor has a registered Carry Bee store, create a delivery order
         if (!empty($vendor->carrybee_store_id)) {
             try {
                 $carryBee = app(\App\Services\CarryBeeService::class);
