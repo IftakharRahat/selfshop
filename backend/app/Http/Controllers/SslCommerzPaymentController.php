@@ -1316,7 +1316,7 @@ public function success(Request $request)
         DB::table('orders')
             ->where('id', $sessionOrderId)
             ->update([
-                'status' => 'Processing',
+                'status' => 'Pending',
                 'data' => json_encode($dataArray),
                 'updated_at' => now(),
             ]);
@@ -1345,7 +1345,29 @@ public function success(Request $request)
         // Add user_id to order data
         $orderRequestData['user_id'] = $userIdFromPayment;
         
-        // Create detailed order records
+        // Create customer record for the main order
+        try {
+            $custName  = $orderRequestData['customer_name']  ?? 'Customer';
+            $custPhone = $orderRequestData['customer_phone'] ?? '';
+            $custAddr  = $orderRequestData['customer_address'] ?? '';
+
+            $mainCustomer = new Customer();
+            $mainCustomer->order_id = $sessionOrderId;
+            $mainCustomer->customerName = $custName;
+            $mainCustomer->customerPhone = $custPhone;
+            $mainCustomer->customerAddress = $custAddr;
+            $mainCustomer->save();
+
+            Log::info('Main order customer created', [
+                'order_id' => $sessionOrderId,
+                'name'     => $custName,
+                'phone'    => $custPhone,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating main customer: ' . $e->getMessage());
+        }
+
+        // Create detailed order records (per-store sub-orders)
         try {
             $this->createOrderDetails($sessionOrderId, $cartData, new Request($orderRequestData));
             Log::info('Order details created successfully.');
@@ -1373,11 +1395,9 @@ public function success(Request $request)
         
         Log::info('Redirecting to order-received page...');
         
-        return redirect('/order-received')->with([
-            'success' => 'Payment completed successfully! Your order is being processed.',
+        return redirect($this->frontendUrl('/order-received', [
             'order_id' => $sessionOrderId,
-            'payment_completed' => true
-        ]);
+        ]));
         
     } catch (\Exception $e) {
         Log::error('Payment success error: ' . $e->getMessage());
