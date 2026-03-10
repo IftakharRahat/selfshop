@@ -402,52 +402,58 @@ class VendorOrderController extends Controller
         $order->status = 'Ontheway';
         $order->save();
 
-        // ── Carry Bee parcel creation (non-blocking) ──
-        // If the vendor has a registered Carry Bee store, create a parcel for pickup→delivery
+        // ── Carry Bee order creation (non-blocking) ──
+        // If the vendor has a registered Carry Bee store, create a delivery order
         $carrybeeResult = null;
         if (!empty($vendor->carrybee_store_id)) {
             try {
                 $carryBee = app(\App\Services\CarryBeeService::class);
-                $parcelData = [
-                    'store_id'          => (int) $vendor->carrybee_store_id,
-                    'merchant_order_id' => (string) $order->invoiceID,
-                    'recipient_name'    => (string) $customer->customerName,
-                    'recipient_phone'   => (string) $customer->customerPhone,
-                    'recipient_address' => (string) $customer->customerAddress,
-                    'recipient_city'    => (int) ($order->city_id ?? 14),  // default Dhaka
-                    'recipient_zone'    => (int) ($order->zone_id ?? 1),
-                    'recipient_area'    => (int) ($order->area_id ?? 1),
-                    'delivery_type'     => 48,       // Normal delivery
-                    'item_type'         => 'parcel',
+
+                // Ensure recipient_address is 10-200 chars (API requirement)
+                $recipientAddress = (string) $customer->customerAddress;
+                if (strlen($recipientAddress) < 10) {
+                    $recipientAddress = str_pad($recipientAddress, 10, ', Dhaka');
+                }
+
+                $orderData = [
+                    'store_id'            => (string) $vendor->carrybee_store_id,
+                    'merchant_order_id'   => (string) $order->invoiceID,
+                    'delivery_type'       => 1,  // 1=Normal, 2=Express
+                    'product_type'        => 1,  // 1=Parcel, 2=Book, 3=Document
+                    'recipient_name'      => (string) $customer->customerName,
+                    'recipient_phone'     => (string) $customer->customerPhone,
+                    'recipient_address'   => substr($recipientAddress, 0, 200),
+                    'city_id'             => (int) ($order->city_id ?? 14),  // default Dhaka
+                    'zone_id'             => (int) ($order->zone_id ?? 1),
                     'special_instruction' => (string) ($order->customerNote ?? ''),
-                    'item_weight'       => 0.5,
-                    'amount_to_collect' => (float) ($order->subTotal ?? 0),
+                    'item_weight'         => 500,  // grams (default 500g)
+                    'item_quantity'       => 1,
+                    'collectable_amount'  => (int) ($order->subTotal ?? 0),  // COD in Taka
                 ];
 
-                $carrybeeResult = $carryBee->createParcel($parcelData);
+                // Only include area_id if available
+                if (!empty($order->area_id)) {
+                    $orderData['area_id'] = (int) $order->area_id;
+                }
 
-                // Store Carry Bee parcel details on order
-                $parcel = $carrybeeResult['data']['parcel'] ?? $carrybeeResult['data'] ?? null;
-                if (is_array($parcel)) {
-                    if (!empty($parcel['parcel_id'])) {
-                        $order->carrybee_parcel_id = (string) $parcel['parcel_id'];
-                    }
-                    if (!empty($parcel['tracking_code'])) {
-                        $order->carrybee_tracking_code = (string) $parcel['tracking_code'];
-                    }
-                    if (!empty($parcel['status'])) {
-                        $order->carrybee_status = (string) $parcel['status'];
-                    }
+                $carrybeeResult = $carryBee->createOrder($orderData);
+
+                // Store Carry Bee order details — response: data.order.consignment_id
+                $cbOrder = $carrybeeResult['data']['order'] ?? null;
+                if (is_array($cbOrder) && !empty($cbOrder['consignment_id'])) {
+                    $order->carrybee_parcel_id = (string) $cbOrder['consignment_id'];
+                    $order->carrybee_tracking_code = (string) $cbOrder['consignment_id'];
+                    $order->carrybee_status = 'created';
                     $order->save();
                 }
 
-                \Log::info('CarryBee parcel created', [
+                \Log::info('CarryBee order created', [
                     'order_id' => $order->id,
                     'invoice'  => $order->invoiceID,
                     'result'   => $carrybeeResult,
                 ]);
             } catch (\Throwable $e) {
-                \Log::warning('CarryBee parcel creation failed (non-blocking)', [
+                \Log::warning('CarryBee order creation failed (non-blocking)', [
                     'order_id' => $order->id,
                     'error'    => $e->getMessage(),
                 ]);

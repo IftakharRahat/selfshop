@@ -61,16 +61,35 @@ class CarryBeeService
     }
 
     /**
-     * POST /api/v2/parcels — Create a delivery parcel in Carry Bee.
+     * POST /api/v2/orders — Create a delivery order in Carry Bee.
      *
-     * Required fields from Carry Bee:
-     *  store_id, merchant_order_id, recipient_name, recipient_phone,
-     *  recipient_address, recipient_city, recipient_zone, recipient_area,
-     *  delivery_type, item_type, amount_to_collect, item_weight
+     * Required: store_id (string), delivery_type (1=Normal,2=Express),
+     * product_type (1=Parcel,2=Book,3=Document), recipient_phone, recipient_name,
+     * recipient_address (10-200 chars), city_id, zone_id, item_weight (GRAMS, 1-25000)
+     * Optional: merchant_order_id, area_id, special_instruction, product_description,
+     * item_quantity, collectable_amount (Taka, 0-100000), is_closed
      */
-    public function createParcel(array $data): array
+    public function createOrder(array $data): array
     {
-        return $this->post('/api/v2/parcels', $data);
+        return $this->post('/api/v2/orders', $data);
+    }
+
+    /**
+     * GET /api/v2/orders/{consignment_id}/details — Get order tracking details.
+     */
+    public function getOrderDetails(string $consignmentId): array
+    {
+        return $this->get("/api/v2/orders/{$consignmentId}/details");
+    }
+
+    /**
+     * POST /api/v2/orders/{consignment_id}/cancel — Cancel an order.
+     */
+    public function cancelOrder(string $consignmentId, string $reason = ''): array
+    {
+        return $this->post("/api/v2/orders/{$consignmentId}/cancel", [
+            'cancellation_reason' => $reason,
+        ]);
     }
 
     /**
