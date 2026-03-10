@@ -402,6 +402,58 @@ class VendorOrderController extends Controller
         $order->status = 'Ontheway';
         $order->save();
 
+        // ── Carry Bee parcel creation (non-blocking) ──
+        // If the vendor has a registered Carry Bee store, create a parcel for pickup→delivery
+        $carrybeeResult = null;
+        if (!empty($vendor->carrybee_store_id)) {
+            try {
+                $carryBee = app(\App\Services\CarryBeeService::class);
+                $parcelData = [
+                    'store_id'          => (int) $vendor->carrybee_store_id,
+                    'merchant_order_id' => (string) $order->invoiceID,
+                    'recipient_name'    => (string) $customer->customerName,
+                    'recipient_phone'   => (string) $customer->customerPhone,
+                    'recipient_address' => (string) $customer->customerAddress,
+                    'recipient_city'    => (int) ($order->city_id ?? 14),  // default Dhaka
+                    'recipient_zone'    => (int) ($order->zone_id ?? 1),
+                    'recipient_area'    => (int) ($order->area_id ?? 1),
+                    'delivery_type'     => 48,       // Normal delivery
+                    'item_type'         => 'parcel',
+                    'special_instruction' => (string) ($order->customerNote ?? ''),
+                    'item_weight'       => 0.5,
+                    'amount_to_collect' => (float) ($order->subTotal ?? 0),
+                ];
+
+                $carrybeeResult = $carryBee->createParcel($parcelData);
+
+                // Store Carry Bee parcel details on order
+                $parcel = $carrybeeResult['data']['parcel'] ?? $carrybeeResult['data'] ?? null;
+                if (is_array($parcel)) {
+                    if (!empty($parcel['parcel_id'])) {
+                        $order->carrybee_parcel_id = (string) $parcel['parcel_id'];
+                    }
+                    if (!empty($parcel['tracking_code'])) {
+                        $order->carrybee_tracking_code = (string) $parcel['tracking_code'];
+                    }
+                    if (!empty($parcel['status'])) {
+                        $order->carrybee_status = (string) $parcel['status'];
+                    }
+                    $order->save();
+                }
+
+                \Log::info('CarryBee parcel created', [
+                    'order_id' => $order->id,
+                    'invoice'  => $order->invoiceID,
+                    'result'   => $carrybeeResult,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('CarryBee parcel creation failed (non-blocking)', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
+        }
+
         Orderproduct::whereIn('id', $vendorItems->pluck('id')->all())
             ->update([
                 'fulfillment_status' => 'shipped',
@@ -434,6 +486,9 @@ class VendorOrderController extends Controller
                 'tracking_number' => $order->tracking_number,
                 'tracking_link' => $order->trackingLink,
                 'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
+                'carrybee_parcel_id' => $order->carrybee_parcel_id,
+                'carrybee_tracking_code' => $order->carrybee_tracking_code,
+                'carrybee_status' => $order->carrybee_status,
             ],
         ]);
     }

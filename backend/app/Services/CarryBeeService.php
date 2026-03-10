@@ -57,15 +57,36 @@ class CarryBeeService
      */
     public function createStore(array $data): array
     {
+        return $this->post('/api/v2/stores', $data);
+    }
+
+    /**
+     * POST /api/v2/parcels — Create a delivery parcel in Carry Bee.
+     *
+     * Required fields from Carry Bee:
+     *  store_id, merchant_order_id, recipient_name, recipient_phone,
+     *  recipient_address, recipient_city, recipient_zone, recipient_area,
+     *  delivery_type, item_type, amount_to_collect, item_weight
+     */
+    public function createParcel(array $data): array
+    {
+        return $this->post('/api/v2/parcels', $data);
+    }
+
+    /**
+     * Generic POST helper.
+     */
+    protected function post(string $path, array $data): array
+    {
         try {
             $response = Http::withHeaders(array_merge($this->headers, [
                 'Content-Type' => 'application/json',
-            ]))->post("{$this->baseUrl}/api/v2/stores", $data);
+            ]))->post("{$this->baseUrl}{$path}", $data);
 
             $body = $response->json() ?? [];
 
             if (!$response->successful()) {
-                Log::warning('CarryBee createStore failed', [
+                Log::warning("CarryBee POST {$path} failed", [
                     'status' => $response->status(),
                     'body'   => $body,
                     'data'   => $data,
@@ -74,7 +95,7 @@ class CarryBeeService
 
             return $body;
         } catch (\Throwable $e) {
-            Log::error('CarryBee createStore exception', [
+            Log::error("CarryBee POST {$path} exception", [
                 'message' => $e->getMessage(),
                 'data'    => $data,
             ]);
