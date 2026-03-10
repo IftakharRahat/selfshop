@@ -1135,6 +1135,14 @@ private function createOrderDetails($orderId, $cartData, $request)
                 $orderProduct->productPrice = is_object($item) ? $item->price : $item['price'];
                 $orderProduct->save();
                 
+                // Reduce product stock
+                $orderedQty = is_object($item) ? $item->qty : $item['qty'];
+                $productId = is_object($item) ? $item->id : $item['id'];
+                DB::table('products')
+                    ->where('id', $productId)
+                    ->where('qty', '>', 0)
+                    ->decrement('qty', (int) $orderedQty);
+                
                 # Create notification
                 $notification = new Comment();
                 $notification->order_id = $storeOrder->id;
