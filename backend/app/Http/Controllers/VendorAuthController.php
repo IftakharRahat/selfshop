@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\CarryBeeService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -108,6 +109,21 @@ class VendorAuthController extends Controller
                         'error' => $e->getMessage(),
                     ]);
                 }
+            }
+
+            // Notify admin(s) about new pending vendor
+            try {
+                $pushService = app(PushNotificationService::class);
+                $pushService->notifyAdmins(
+                    '🏪 New Supplier Registration',
+                    "{$data['company_name']} ({$data['name']}) has registered and is pending approval.",
+                    'info',
+                    ['event' => 'vendor_registered', 'vendor_id' => $vendor->id]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Vendor registration push notification failed (non-blocking)', [
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             return response()->json([
