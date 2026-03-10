@@ -42,6 +42,15 @@ const authApi = baseApi.injectEndpoints({
 				};
 			},
 		}),
+		verifyOtp: builder.mutation({
+			query: (data: { phone: string; otp: string }) => {
+				return {
+					url: "verify-otp",
+					method: "POST",
+					body: data,
+				};
+			},
+		}),
 		resetPassword: builder.mutation({
 			query: (data: {
 				phone: string;
@@ -99,6 +108,7 @@ export const {
 	useLoginMutation,
 	useLoginWithGoogleMutation,
 	useForgotPasswordMutation,
+	useVerifyOtpMutation,
 	useResetPasswordMutation,
 	useRegisterMutation,
 	useUpdateUserMutation,

@@ -20,6 +20,7 @@ import {
 	useLoginMutation,
 	useRegisterMutation,
 	useResetPasswordMutation,
+	useVerifyOtpMutation,
 } from "@/redux/features/auth/authApi";
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
@@ -42,6 +43,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 	const [login] = useLoginMutation();
 	const [register] = useRegisterMutation();
 	const [forgotPassword, { isLoading: isSendingOtp }] = useForgotPasswordMutation();
+	const [verifyOtp, { isLoading: isVerifyingOtp }] = useVerifyOtpMutation();
 	const [resetPassword, { isLoading: isResetting }] = useResetPasswordMutation();
 	const dispatch = useAppDispatch();
 
@@ -97,9 +99,19 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 		}
 	};
 
-	const handleVerifyOtp = (values: { otp: string }) => {
-		form.setFieldsValue({ otp: values.otp });
-		setViewMode("forgot-reset");
+	const handleVerifyOtp = async (values: { otp: string }) => {
+		try {
+			const res = await verifyOtp({ phone: forgotPhone, otp: values.otp }).unwrap();
+			if (res?.status) {
+				message.success(res.message || "OTP verified!");
+				form.setFieldsValue({ otp: values.otp });
+				setViewMode("forgot-reset");
+			}
+		} catch (err: any) {
+			message.error(
+				err?.data?.message || "Invalid OTP. Please try again.",
+			);
+		}
 	};
 
 	const handleResetPassword = async (values: {
@@ -424,7 +436,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 									/>
 								</Form.Item>
 
-								<Button type="primary" size="large" htmlType="submit" block>
+								<Button type="primary" size="large" htmlType="submit" block loading={isVerifyingOtp}>
 									Verify OTP
 								</Button>
 

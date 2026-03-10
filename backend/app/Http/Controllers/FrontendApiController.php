@@ -1093,7 +1093,7 @@ class FrontendApiController extends Controller
             } else {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Failed to send OTP',
+                    'message' => 'Failed to send OTP. Please try again.',
                 ], 400);
             }
         } else {
@@ -1101,6 +1101,37 @@ class FrontendApiController extends Controller
                 'status' => false,
                 'message' => 'No account found with this phone number',
             ], 404);
+        }
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'string'],
+            'otp' => ['required', 'string'],
+        ]);
+
+        $phone = $request->phone;
+
+        if (strlen($phone) == '11') {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+            if (!$user) {
+                $user = User::where('email', '88' . $phone)->where('otp', $request->otp)->first();
+            }
+        } else {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+        }
+
+        if (isset($user)) {
+            return response()->json([
+                'status' => true,
+                'message' => 'OTP verified successfully.',
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid OTP. Please try again.',
+            ], 400);
         }
     }
 

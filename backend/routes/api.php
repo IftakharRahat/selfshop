@@ -74,6 +74,7 @@ Route::middleware('guest')->group(function () {
     // Vendor registration (separate vendor portal)
     Route::post('/vendor/register', [VendorAuthController::class, 'register'])->name('api.vendor.register');
     Route::post('/forgot-password', [FrontendApiController::class, 'userResetPassword'])->name('api.user.forgot-password');
+    Route::post('/verify-otp', [FrontendApiController::class, 'verifyOtp'])->name('api.user.verify-otp');
     Route::post('/reset-password', [FrontendApiController::class, 'verifyOtpAndResetPassword'])->name('api.user.reset-password');
 
     //Shops
