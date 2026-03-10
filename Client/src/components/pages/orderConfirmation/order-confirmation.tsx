@@ -58,8 +58,11 @@ export default function OrderConfirmation() {
 	const [selected, setSelected] = useState("account");
 	const [agreedToTerms, setAgreedToTerms] = useState(false);
 	const [advanceDelivery, setAdvanceDelivery] = useState<"yes" | "no">("no");
+	const [deliveryZone, setDeliveryZone] = useState<"inside" | "outside">("inside");
 	const { data: basicInfoData } = useGetBasicInfoQuery(undefined);
-	const deliveryCharge: number = basicInfoData?.data?.deliveryCharge ?? 60;
+	const insideDhakaCharge: number = Number(basicInfoData?.data?.inside_dhaka_charge) || 60;
+	const outsideDhakaCharge: number = Number(basicInfoData?.data?.outside_dhaka_charge) || 130;
+	const deliveryCharge: number = deliveryZone === "inside" ? insideDhakaCharge : outsideDhakaCharge;
 	const [customerData, setCustomerData] = useState({
 		name: "",
 		address: "",
@@ -155,6 +158,7 @@ export default function OrderConfirmation() {
 		formData.append("customerAddress", customerData.address);
 		formData.append("subTotal", subtotal.toString());
 		formData.append("deliveryCharge", deliveryCharge.toString());
+		formData.append("delivery_zone", deliveryZone === "inside" ? "Inside Dhaka" : "Outside Dhaka");
 		formData.append("advance_delivery", advanceDelivery);
 		formData.append(
 			"balance_from",
@@ -350,6 +354,53 @@ export default function OrderConfirmation() {
 									</div>
 								);
 							})()}
+						</div>
+
+						{/* Delivery Zone Selector */}
+						<div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+							<p className="text-sm font-semibold text-gray-800 mb-3">
+								Delivery Zone
+							</p>
+							<div className="flex items-center gap-3">
+								<label
+									className={`flex items-center justify-between border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${deliveryZone === "inside"
+										? "border-pink-500 bg-pink-50 text-pink-700"
+										: "border-gray-300 text-gray-600 hover:border-gray-400"
+										}`}
+								>
+									<div className="flex items-center gap-2">
+										<input
+											type="radio"
+											name="deliveryZone"
+											value="inside"
+											checked={deliveryZone === "inside"}
+											onChange={() => setDeliveryZone("inside")}
+											className="accent-pink-500"
+										/>
+										Inside Dhaka
+									</div>
+									<span className="text-xs font-semibold">৳{insideDhakaCharge}</span>
+								</label>
+								<label
+									className={`flex items-center justify-between border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${deliveryZone === "outside"
+										? "border-pink-500 bg-pink-50 text-pink-700"
+										: "border-gray-300 text-gray-600 hover:border-gray-400"
+										}`}
+								>
+									<div className="flex items-center gap-2">
+										<input
+											type="radio"
+											name="deliveryZone"
+											value="outside"
+											checked={deliveryZone === "outside"}
+											onChange={() => setDeliveryZone("outside")}
+											className="accent-pink-500"
+										/>
+										Outside Dhaka
+									</div>
+									<span className="text-xs font-semibold">৳{outsideDhakaCharge}</span>
+								</label>
+							</div>
 						</div>
 
 						{/* Advance Delivery Toggle */}

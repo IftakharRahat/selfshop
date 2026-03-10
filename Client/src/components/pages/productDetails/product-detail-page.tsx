@@ -800,20 +800,18 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 															height={40}
 															className="w-10 h-10 rounded object-cover"
 														/>
-													) : productData.images.main[idx] ? (
-														<Image
-															src={getImageUrl(productData.images.main[idx]) || "/placeholder.svg"}
-															alt={v.title || `Variant ${idx + 1}`}
-															width={40}
-															height={40}
-															className="w-10 h-10 rounded object-cover"
+													) : colorCode ? (
+														<div
+															className="w-10 h-10 rounded-full border-2 border-gray-200 shadow-inner"
+															style={{ backgroundColor: colorCode }}
+															title={v.color_name || v.title || colorCode}
 														/>
 													) : (
-														<div className="w-10 h-10 rounded bg-gray-300 flex items-center justify-center text-[10px] font-bold text-white">
-															{(v.title || '?')[0]}
+														<div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500 border border-gray-300">
+															{(v.color_name || v.title || '?').slice(0, 2)}
 														</div>
 													)}
-													{colorCode && (
+													{v.image && colorCode && (
 														<span
 															className="mt-1 inline-block h-2.5 w-2.5 rounded-full border border-gray-300"
 															style={{ backgroundColor: colorCode }}
@@ -1088,8 +1086,8 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										onClick={handleToggleShop}
 										disabled={isShopLoading}
 										className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium cursor-pointer transition-colors border ${isInShop
-												? "border-pink-500 bg-pink-50 text-pink-600 hover:bg-pink-100"
-												: "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+											? "border-pink-500 bg-pink-50 text-pink-600 hover:bg-pink-100"
+											: "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
 											}`}
 									>
 										<Store className="w-4 h-4" />

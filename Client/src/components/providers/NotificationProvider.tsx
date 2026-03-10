@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import Pusher from "pusher-js";
 import Echo from "laravel-echo";
 import type { RootState } from "@/redux/store";
+import { useAppDispatch } from "@/redux/hooks";
+import { baseApi } from "@/redux/api/baseApi";
 
 // Extend window type for Pusher
 declare global {
@@ -26,6 +28,7 @@ export default function NotificationProvider({
     const user = useSelector((state: RootState) => state.auth.user);
     const echoRef = useRef<Echo<"pusher"> | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const dispatch = useAppDispatch();
     const [userId, setUserId] = useState<number | null>(null);
 
     // Fetch user ID when token is available but user object has no ID
@@ -130,6 +133,9 @@ export default function NotificationProvider({
             type: string;
             meta?: Record<string, unknown>;
         }) => {
+            // Refetch notification list from database in real-time
+            dispatch(baseApi.util.invalidateTags(["userNotifications", "vendorNotifications"]));
+
             playNotificationSound();
 
             const iconMap: Record<string, string> = {
@@ -147,7 +153,7 @@ export default function NotificationProvider({
                 icon,
             });
         },
-        [playNotificationSound],
+        [playNotificationSound, dispatch],
     );
 
     useEffect(() => {
@@ -217,25 +223,8 @@ export default function NotificationProvider({
             },
         );
 
-        console.log("[Pusher] Subscribing to private-user.0 (admin channel)");
-
-        // Also listen on admin broadcast channel (user.0) for admin notifications
-        echo.private("user.0").listen(
-            ".order.notification",
-            (data: {
-                title: string;
-                message: string;
-                type: string;
-                meta?: Record<string, unknown>;
-            }) => {
-                console.log("[Pusher] 🔔 Notification received on user.0", data);
-                showNotification(data);
-            },
-        );
-
         return () => {
             echo.leave(`user.${userId}`);
-            echo.leave("user.0");
             echo.disconnect();
             echoRef.current = null;
         };

@@ -22,8 +22,8 @@ Broadcast::channel('user.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
 
-// Admin channel — userId 0 is broadcast to all admins
+// Admin channel — userId 0 is used for admin-panel broadcasts only.
+// Regular API users must NOT subscribe to this channel.
 Broadcast::channel('user.0', function ($user) {
-    // Any authenticated user can listen to admin broadcast channel
-    return true;
+    return false;
 });
