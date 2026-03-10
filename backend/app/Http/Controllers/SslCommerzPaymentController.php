@@ -818,6 +818,20 @@ public function initiatePayment(Request $request)
         $subTotal = Cart::subtotalFloat();
         $deliveryCharge = $request->delivery_charge;
         
+        // Calculate profit: selling price - reseller buy price
+        $profit = 0;
+        $orderBonus = 0;
+        foreach ($cartContent as $item) {
+            $productId = $item->options->product_id ?? $item->id;
+            $product = DB::table('products')->where('id', $productId)->first();
+            if ($product) {
+                $buyPrice = (float) ($product->ProductResellerPrice ?? 0);
+                $sellPrice = (float) $item->price;
+                $profit += ($sellPrice - $buyPrice) * $item->qty;
+                $orderBonus += (float) ($product->reseller_bonus ?? 0);
+            }
+        }
+        
         // Calculate total amount LIKE payViaAjax: shop count * delivery charge
         $totalAmount = $shopCount * $deliveryCharge;
         
@@ -885,14 +899,17 @@ public function initiatePayment(Request $request)
             'invoiceID' => $this->uniqueID(),
             'user_id' => $request->user_id ?? null,
             'customerNote' => $request->customer_note ?? null,
-            'courier_id' => 26, // Default courier
+            'courier_id' => 27, // Carry Bee courier
             'subTotal' => $subTotal,
+            'profit' => $profit,
+            'order_bonus' => $orderBonus,
             'deliveryCharge' => $deliveryCharge,
             'paymentAmount' => $totalAmount, // Store delivery charge total
             'orderDate' => date('Y-m-d'),
             'status' => 'Pending',
             'admin_id' => 1, // Default admin/store ID
             'store_id' => 1, // Default store
+            'payment_type_id' => 6, // SSLCommerz
             'transaction_id' => $post_data['tran_id'],
             'data' => json_encode([
                 'customer_name' => $request->customer_name,
@@ -1290,6 +1307,23 @@ public function success(Request $request)
         
         Log::info('Payment validation successful. Processing order...');
         
+        // FIRST: Read the original order data (has customer info from initiatePayment)
+        $originalData = DB::table('orders')
+            ->where('id', $sessionOrderId)
+            ->value('data');
+        $originalDataArray = $originalData ? json_decode($originalData, true) : [];
+        
+        // Extract customer info before we modify the data column
+        $savedCustomerName = $originalDataArray['customer_name'] ?? null;
+        $savedCustomerPhone = $originalDataArray['customer_phone'] ?? null;
+        $savedCustomerAddress = $originalDataArray['customer_address'] ?? null;
+        
+        Log::info('Customer data from saved order:', [
+            'name' => $savedCustomerName,
+            'phone' => $savedCustomerPhone,
+            'address' => $savedCustomerAddress,
+        ]);
+        
         // Update the main order with user_id if missing
         if ($userIdFromPayment && $userIdFromPayment != '0') {
             DB::table('orders')
@@ -1301,23 +1335,20 @@ public function success(Request $request)
             Log::info('Updated main order with user_id: ' . $userIdFromPayment);
         }
         
-        // Payment successful - Update order
-        $currentData = DB::table('orders')
-            ->where('id', $sessionOrderId)
-            ->value('data');
-        
-        $dataArray = $currentData ? json_decode($currentData, true) : [];
-        $dataArray['payment_status'] = 'Paid';
-        $dataArray['payment_date'] = now()->toDateTimeString();
-        $dataArray['sslcommerz_response'] = $request->all();
-        $dataArray['paid_amount'] = $paid_amount;
-        $dataArray['user_id'] = $userIdFromPayment;
+        // Payment successful - Update order status and payment info
+        $originalDataArray['payment_status'] = 'Paid';
+        $originalDataArray['payment_date'] = now()->toDateTimeString();
+        $originalDataArray['paid_amount'] = $paid_amount;
+        $originalDataArray['user_id'] = $userIdFromPayment;
+        // Don't store entire sslcommerz response to avoid bloating and corruption
+        $originalDataArray['sslcommerz_tran_id'] = $tran_id;
+        $originalDataArray['sslcommerz_val_id'] = $val_id;
         
         DB::table('orders')
             ->where('id', $sessionOrderId)
             ->update([
                 'status' => 'Pending',
-                'data' => json_encode($dataArray),
+                'data' => json_encode($originalDataArray),
                 'updated_at' => now(),
             ]);
         
@@ -1328,17 +1359,16 @@ public function success(Request $request)
         if ($orderData && is_array($orderData)) {
             $orderRequestData = $orderData;
         } else {
-            // Create order data from request or database
             $orderRequestData = [
                 'user_id' => $userIdFromPayment,
-                'customer_name' => $request->input('cus_name') ?? ($valueDData['customer_name'] ?? 'Customer'),
-                'customer_phone' => $request->input('cus_phone') ?? ($valueDData['customer_phone'] ?? ''),
-                'customer_address' => $request->input('cus_add1') ?? ($valueDData['customer_address'] ?? ''),
-                'delivery_charge' => $request->input('value_c') ?? 0,
-                'deliveryCharge' => $request->input('value_c') ?? 0,
-                'customer_note' => $valueDData['customer_note'] ?? '',
-                'sub_total' => $valueDData['subtotal'] ?? 0,
-                'subTotal' => $valueDData['subtotal'] ?? 0
+                'customer_name' => $savedCustomerName ?? 'Customer',
+                'customer_phone' => $savedCustomerPhone ?? '',
+                'customer_address' => $savedCustomerAddress ?? '',
+                'delivery_charge' => $originalDataArray['delivery_charge_per_shop'] ?? ($request->input('value_c') ?? 0),
+                'deliveryCharge' => $originalDataArray['delivery_charge_per_shop'] ?? ($request->input('value_c') ?? 0),
+                'customer_note' => $originalDataArray['customer_note'] ?? '',
+                'sub_total' => $originalDataArray['cart_subtotal'] ?? 0,
+                'subTotal' => $originalDataArray['cart_subtotal'] ?? 0,
             ];
         }
         
@@ -1365,6 +1395,40 @@ public function success(Request $request)
             ]);
         } catch (\Exception $e) {
             Log::error('Error creating main customer: ' . $e->getMessage());
+        }
+
+        // Create order products for the MAIN order directly from cart
+        try {
+            $mainCartData = $cartData;
+            if (!$mainCartData) {
+                $rawCart = DB::table('orders')->where('id', $sessionOrderId)->value('cart');
+                $mainCartData = $rawCart ? json_decode($rawCart, true) : [];
+            }
+            if (is_array($mainCartData)) {
+                foreach ($mainCartData as $key => $value) {
+                    // Handle nested structure {"1.00": [items]} or flat [items]
+                    $items = (is_array($value) && !isset($value['id'])) ? $value : [$value];
+                    foreach ($items as $item) {
+                        if (!is_array($item)) continue;
+                        // Cart stores 'id' as cart row ID, 'product_id' as the actual product ID
+                        $productId = $item['product_id'] ?? $item['id'] ?? null;
+                        if (!$productId) continue;
+                        $op = new Orderproduct();
+                        $op->order_id = $sessionOrderId;
+                        $op->product_id = $productId;
+                        $op->productName = $item['name'] ?? 'Product';
+                        $op->quantity = $item['qty'] ?? 1;
+                        $op->productPrice = $item['price'] ?? 0;
+                        $op->productCode = $item['options']['code'] ?? '';
+                        $op->color = $item['options']['color'] ?? null;
+                        $op->size = $item['options']['size'] ?? null;
+                        $op->save();
+                        Log::info('Main order product created: ' . $op->productName . ' (product_id: ' . $productId . ')');
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error creating main order products: ' . $e->getMessage());
         }
 
         // Create detailed order records (per-store sub-orders)

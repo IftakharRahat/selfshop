@@ -268,6 +268,13 @@ class VendorOrderController extends Controller
                         'ViewProductImage' => $op->product->ViewProductImage,
                     ] : null,
                 ]),
+                'customer' => $customer ? [
+                    'customerName' => $customer->customerName,
+                    'customerPhone' => $customer->customerPhone
+                        ? str_repeat('*', max(0, strlen($customer->customerPhone) - 4)) . substr($customer->customerPhone, -4)
+                        : null,
+                    'customerAddress' => $customer->customerAddress,
+                ] : null,
                 'vendor_subtotal' => round($vendorSubtotal, 2),
             ],
         ]);
@@ -404,37 +411,46 @@ class VendorOrderController extends Controller
             ], 422);
         }
 
-        $created = $this->steadfastService->createConsignment(
-            $order,
-            (string) $customer->customerName,
-            (string) $customer->customerAddress,
-            (string) $customer->customerPhone
-        );
+        // ── Steadfast consignment (non-blocking) ──
+        $steadfastOk = false;
+        $steadfastMessage = null;
+        try {
+            $created = $this->steadfastService->createConsignment(
+                $order,
+                (string) $customer->customerName,
+                (string) $customer->customerAddress,
+                (string) $customer->customerPhone
+            );
 
-        if (!$created['ok']) {
-            return response()->json([
-                'status' => false,
-                'message' => $created['message'] ?? 'Failed to send order to warehouse',
-                'data' => [
-                    'provider_payload' => $created['payload'] ?? null,
-                ],
-            ], 502);
+            if ($created['ok']) {
+                $steadfastOk = true;
+                if (!empty($created['tracking_code'])) {
+                    $order->tracking_number = (string) $created['tracking_code'];
+                    $order->trackingLink = 'https://steadfast.com.bd/t/' . $created['tracking_code'];
+                }
+                if (!empty($created['consignment_id'])) {
+                    $order->steadfast_consignment_id = (string) $created['consignment_id'];
+                }
+                if (!empty($created['raw_status'])) {
+                    $order->steadfast_status = (string) $created['raw_status'];
+                }
+                $order->steadfast_payload = json_encode($created['payload'] ?? []);
+                $order->steadfast_last_synced_at = now();
+            } else {
+                $steadfastMessage = $created['message'] ?? 'Steadfast failed';
+                \Log::warning('Steadfast create_order failed (non-blocking)', [
+                    'order_id' => $order->id,
+                    'message' => $steadfastMessage,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            $steadfastMessage = $e->getMessage();
+            \Log::warning('Steadfast create_order exception (non-blocking)', [
+                'order_id' => $order->id,
+                'error' => $steadfastMessage,
+            ]);
         }
 
-        if (!empty($created['tracking_code'])) {
-            $order->tracking_number = (string) $created['tracking_code'];
-            $order->trackingLink = 'https://steadfast.com.bd/t/' . $created['tracking_code'];
-        }
-
-        if (!empty($created['consignment_id'])) {
-            $order->steadfast_consignment_id = (string) $created['consignment_id'];
-        }
-        if (!empty($created['raw_status'])) {
-            $order->steadfast_status = (string) $created['raw_status'];
-        }
-
-        $order->steadfast_payload = json_encode($created['payload'] ?? []);
-        $order->steadfast_last_synced_at = now();
         $order->warehouse_sent_at = now();
         $order->shipped_at = $order->shipped_at ?? now();
         $order->status = 'Ontheway';
@@ -482,6 +498,7 @@ class VendorOrderController extends Controller
                     $order->carrybee_parcel_id = (string) $cbOrder['consignment_id'];
                     $order->carrybee_tracking_code = (string) $cbOrder['consignment_id'];
                     $order->carrybee_status = 'created';
+                    $order->trackingLink = 'https://merchant.carrybee.com/order-track/' . $cbOrder['consignment_id'];
                     $order->save();
                 }
 

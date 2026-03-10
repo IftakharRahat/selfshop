@@ -3,95 +3,57 @@ require __DIR__ . '/vendor/autoload.php';
 $app = require __DIR__ . '/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-// Fix existing SSLCommerz orders that have wrong status and no customer
-$orders = DB::table('orders')
-    ->where('status', 'Processing')
-    ->where('transaction_id', 'LIKE', 'SELFSHOP_%')
-    ->get();
+// Check how profit is calculated for product Ata
+$product = DB::table('products')->where('id', 366)->first();
+echo "Product Ata (#366):\n";
+echo "  ProductResellerPrice (buy): " . ($product->ProductResellerPrice ?? 'NULL') . "\n";
+echo "  selling_price: " . ($product->selling_price ?? 'NULL') . "\n";
+echo "  reseller_bonus: " . ($product->reseller_bonus ?? 'NULL') . "\n";
 
-echo "Found " . $orders->count() . " SSLCommerz orders with Processing status\n\n";
+// Check order 384
+$order = DB::table('orders')->where('id', 384)->first();
+echo "\nOrder #384:\n";
+echo "  profit: " . ($order->profit ?? 'NULL') . "\n";
+echo "  subTotal: " . ($order->subTotal ?? 'NULL') . "\n";
+echo "  order_bonus: " . ($order->order_bonus ?? 'NULL') . "\n";
 
-foreach ($orders as $order) {
-    echo "Fixing Order #{$order->id} ({$order->invoiceID}):\n";
-    
-    // Fix status to Pending
-    DB::table('orders')->where('id', $order->id)->update(['status' => 'Pending']);
-    echo "  Status: Processing -> Pending\n";
-    
-    // Check if customer exists
-    $customer = DB::table('customers')->where('order_id', $order->id)->first();
-    if (!$customer) {
-        // Try to get customer data from the 'data' JSON field
-        $data = json_decode($order->data ?? '{}', true);
-        $name = $data['customer_name'] ?? null;
-        $phone = $data['customer_phone'] ?? null;
-        $address = $data['customer_address'] ?? null;
-        
-        if ($name || $phone) {
-            DB::table('customers')->insert([
-                'order_id' => $order->id,
-                'customerName' => $name ?? 'Customer',
-                'customerPhone' => $phone ?? '',
-                'customerAddress' => $address ?? '',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            echo "  Created customer: {$name} | {$phone}\n";
-        } else {
-            echo "  No customer data in order JSON to recover\n";
-        }
-    } else {
-        echo "  Customer already exists: {$customer->customerName}\n";
+// Calculate actual profit
+// profit = sellPrice - buyPrice  
+$ops = DB::table('orderproducts')->where('order_id', 384)->get();
+$sellTotal = 0;
+$buyTotal = 0;
+$bonus = 0;
+foreach ($ops as $op) {
+    $p = DB::table('products')->where('id', $op->product_id)->first();
+    $sell = $op->productPrice * $op->quantity;
+    $buy = ($p->ProductResellerPrice ?? 0) * $op->quantity;
+    $b = $p->reseller_bonus ?? 0;
+    $sellTotal += $sell;
+    $buyTotal += $buy;
+    $bonus += $b;
+    echo "  Product: {$op->productName} | sell: {$sell} | buy: {$buy} | bonus: {$b}\n";
+}
+$profit = $sellTotal - $buyTotal;
+echo "\nCalculated: sellTotal={$sellTotal} buyTotal={$buyTotal} profit={$profit} bonus={$bonus}\n";
+
+// Fix all SSLCommerz orders
+$ids = [384, 385, 386, 387];
+foreach ($ids as $id) {
+    $orderOps = DB::table('orderproducts')->where('order_id', $id)->get();
+    $s = 0; $b = 0; $bn = 0;
+    foreach ($orderOps as $op) {
+        $p = DB::table('products')->where('id', $op->product_id)->first();
+        $s += $op->productPrice * $op->quantity;
+        $b += ($p->ProductResellerPrice ?? 0) * $op->quantity;
+        $bn += $p->reseller_bonus ?? 0;
     }
-    
-    // Check order products
-    $opsCount = DB::table('orderproducts')->where('order_id', $order->id)->count();
-    if ($opsCount == 0 && $order->cart) {
-        // Create order products from cart data
-        $cartData = json_decode($order->cart, true);
-        if (is_array($cartData)) {
-            foreach ($cartData as $key => $item) {
-                // Handle nested structure (items might be in sub-arrays)
-                if (is_array($item) && !isset($item['id'])) {
-                    // It's a grouping - iterate sub items
-                    foreach ($item as $subItem) {
-                        if (is_array($subItem) && isset($subItem['id'])) {
-                            DB::table('orderproducts')->insert([
-                                'order_id' => $order->id,
-                                'product_id' => $subItem['id'],
-                                'productName' => $subItem['name'] ?? 'Product',
-                                'quantity' => $subItem['qty'] ?? 1,
-                                'productPrice' => $subItem['price'] ?? 0,
-                                'productCode' => $subItem['options']['code'] ?? '',
-                                'color' => $subItem['options']['color'] ?? null,
-                                'size' => $subItem['options']['size'] ?? null,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ]);
-                            echo "  Created orderproduct: {$subItem['name']}\n";
-                        }
-                    }
-                } elseif (is_array($item) && isset($item['id'])) {
-                    DB::table('orderproducts')->insert([
-                        'order_id' => $order->id,
-                        'product_id' => $item['id'],
-                        'productName' => $item['name'] ?? 'Product',
-                        'quantity' => $item['qty'] ?? 1,
-                        'productPrice' => $item['price'] ?? 0,
-                        'productCode' => $item['options']['code'] ?? '',
-                        'color' => $item['options']['color'] ?? null,
-                        'size' => $item['options']['size'] ?? null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    echo "  Created orderproduct: {$item['name']}\n";
-                }
-            }
-        }
-    } elseif ($opsCount > 0) {
-        echo "  Already has {$opsCount} order products\n";
-    }
-    echo "\n";
+    $pr = $s - $b;
+    DB::table('orders')->where('id', $id)->update([
+        'profit' => $pr,
+        'subTotal' => $s,
+        'order_bonus' => $bn,
+    ]);
+    echo "Order #{$id}: subTotal={$s}, profit={$pr}, bonus={$bn}\n";
 }
 
-echo "Done!\n";
+echo "\nDone!\n";
