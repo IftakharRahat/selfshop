@@ -34,26 +34,27 @@ const authApi = baseApi.injectEndpoints({
 			invalidatesTags: ["user"],
 		}),
 		forgotPassword: builder.mutation({
-			query: (userInfo) => {
-				console.log({ userInfo });
+			query: (data: { phone: string }) => {
 				return {
 					url: "forgot-password",
 					method: "POST",
-					body: userInfo,
+					body: data,
 				};
 			},
-			invalidatesTags: ["user"],
 		}),
 		resetPassword: builder.mutation({
-			query: (userInfo) => {
-				console.log({ userInfo });
+			query: (data: {
+				phone: string;
+				otp: string;
+				password: string;
+				password_confirmation: string;
+			}) => {
 				return {
 					url: "reset-password",
 					method: "POST",
-					body: userInfo,
+					body: data,
 				};
 			},
-			invalidatesTags: ["user"],
 		}),
 		updateUser: builder.mutation({
 			query: (userInfo) => {

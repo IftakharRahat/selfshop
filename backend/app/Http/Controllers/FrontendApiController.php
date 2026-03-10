@@ -1063,46 +1063,79 @@ class FrontendApiController extends Controller
 
     public function userResetPassword(Request $request)
     {
-        // Validate the email field
         $request->validate([
-            'email' => ['required', 'email'],
+            'phone' => ['required', 'string'],
         ]);
 
-        if (strlen($request->phone) == '11') {
-            $user = User::where('email', $request->phone)->first();
-            if ($user) {
-                $user = User::where('email', $request->phone)->first();
-            } else {
-                $ema = '88' . $request->phone;
-                $user = User::where('email', $ema)->first();
+        $phone = $request->phone;
+
+        if (strlen($phone) == '11') {
+            $user = User::where('email', $phone)->first();
+            if (!$user) {
+                $user = User::where('email', '88' . $phone)->first();
             }
         } else {
-            $user = User::where('email', $request->phone)->first();
+            $user = User::where('email', $phone)->first();
         }
 
         if (isset($user)) {
             $otp = random_int(100000, 999999);
             $user->otp = $otp;
             $user->update();
-            $otpcode = $otp;
-            Session::put('phone', $request->phone);
-            $status = Http::get('http://bulksmsbd.net/api/smsapi?api_key=PwokJ9JcGrHVqm0Vmqp9&type=text&number=' . $user->email . '&senderid=8809604902839&message=Dear ' . $user->name . ' Your password reset OTP is : ' . $otpcode . '');
-            // Return a JSON response based on the status
-            if ($status) {
+
+            $status = Http::get('http://bulksmsbd.net/api/smsapi?api_key=' . env('BULKSMS_API_KEY') . '&type=text&number=' . $user->email . '&senderid=' . env('BULKSMS_SENDER_ID') . '&message=Dear ' . $user->name . ' Your password reset OTP is : ' . $otp . '');
+
+            if ($status->successful()) {
                 return response()->json([
                     'status' => true,
-                    'message' => __($status),
+                    'message' => 'OTP sent successfully to your phone number',
                 ], 200);
             } else {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Failed to send otp',
+                    'message' => 'Failed to send OTP',
                 ], 400);
             }
         } else {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to send otp',
+                'message' => 'No account found with this phone number',
+            ], 404);
+        }
+    }
+
+    public function verifyOtpAndResetPassword(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'string'],
+            'otp' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $phone = $request->phone;
+
+        if (strlen($phone) == '11') {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+            if (!$user) {
+                $user = User::where('email', '88' . $phone)->where('otp', $request->otp)->first();
+            }
+        } else {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+        }
+
+        if (isset($user)) {
+            $user->password = Hash::make($request->password);
+            $user->otp = null;
+            $user->update();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password reset successfully. Please login with your new password.',
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid OTP. Please try again.',
             ], 400);
         }
     }
