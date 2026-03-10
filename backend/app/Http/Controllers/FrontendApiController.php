@@ -813,6 +813,7 @@ class FrontendApiController extends Controller
             'varients.sizes.bulkPrices',
             'priceTiers',
             'vendor:id,user_id,company_name,slug,approval_type,is_verified_badge',
+            'categories',
         ])->where('ProductSlug', $slug)->first();
         if (!$product) {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);

@@ -158,20 +158,24 @@ export default function VendorProductsPage() {
 												{p.ProductResellerPrice ?? 0}
 											</td>
 											<td className="px-3 py-2 align-middle text-center">
-												<button
-													type="button"
-													disabled={updatingStatus}
-													onClick={() => handleToggleStatus(p.id, p.status ?? "Inactive")}
-													className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.status === "Active"
-														? "bg-emerald-500 border-emerald-500"
-														: "bg-gray-200 border-gray-300"
-														}`}
-												>
-													<span
-														className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.status === "Active" ? "translate-x-5" : "translate-x-1"
+												{p.vendor_approval_status === "approved" ? (
+													<button
+														type="button"
+														disabled={updatingStatus}
+														onClick={() => handleToggleStatus(p.id, p.status ?? "Inactive")}
+														className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.status === "Active"
+															? "bg-emerald-500 border-emerald-500"
+															: "bg-gray-200 border-gray-300"
 															}`}
-													/>
-												</button>
+													>
+														<span
+															className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.status === "Active" ? "translate-x-5" : "translate-x-1"
+																}`}
+														/>
+													</button>
+												) : (
+													<span className="text-[10px] text-gray-400 font-medium">Awaiting approval</span>
+												)}
 											</td>
 											<td className="px-3 py-2 align-middle text-center">
 												<button
@@ -219,5 +223,3 @@ export default function VendorProductsPage() {
 		</WithVendorAuth>
 	);
 }
-
-

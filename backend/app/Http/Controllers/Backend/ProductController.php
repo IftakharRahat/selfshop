@@ -340,7 +340,12 @@ class ProductController extends Controller
     }
     public function productshopdata()
     {
-        $products = Product::where('shop_id', '!=', Auth::guard('admin')->user()->id)->get();
+        $products = Product::where('shop_id', '!=', Auth::guard('admin')->user()->id)
+            ->where(function ($query) {
+                $query->whereNull('vendor_id')
+                      ->orWhere('vendor_approval_status', 'approved');
+            })
+            ->get();
         return Datatables::of($products)
             ->addColumn('action', function ($products) {
                 return '<a href="../product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a>

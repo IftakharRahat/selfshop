@@ -134,7 +134,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 
 	const productData = {
 		name: product.ProductName,
-		category: `Category #${product.category_id}`,
+		category: product.categories?.category_name || `Category #${product.category_id}`,
 		quantity: product.qty,
 		sku: product.ProductSku,
 		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
