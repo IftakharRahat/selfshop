@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\CarryBeeService;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -16,6 +19,7 @@ class VendorAuthController extends Controller
      * POST /api/vendor/register
      *
      * Creates a user + pending vendor profile. Admin must approve later.
+     * Also creates a pickup store in Carry Bee if pickup point fields are supplied.
      */
     public function register(Request $request)
     {
@@ -25,8 +29,11 @@ class VendorAuthController extends Controller
             'password' => ['required', 'string', 'min:6'],
             'company_name' => ['required', 'string', 'max:255'],
             'business_type' => ['nullable', 'string', 'max:255'],
-            'country' => ['nullable', 'string', 'max:100'],
-            'city' => ['nullable', 'string', 'max:100'],
+            // Carry Bee pickup point fields
+            'pickup_city_id' => ['nullable', 'integer'],
+            'pickup_zone_id' => ['nullable', 'integer'],
+            'pickup_area_id' => ['nullable', 'integer'],
+            'pickup_address' => ['nullable', 'string', 'max:500'],
         ]);
 
         if ($validator->fails()) {
@@ -67,11 +74,57 @@ class VendorAuthController extends Controller
                 'user_id' => $user->id,
                 'company_name' => $data['company_name'],
                 'business_type' => $data['business_type'] ?? null,
-                'country' => $data['country'] ?? null,
-                'city' => $data['city'] ?? null,
                 'status' => 'pending',
                 'slug' => $slug,
+                'pickup_city_id' => $data['pickup_city_id'] ?? null,
+                'pickup_zone_id' => $data['pickup_zone_id'] ?? null,
+                'pickup_area_id' => $data['pickup_area_id'] ?? null,
+                'pickup_address' => $data['pickup_address'] ?? null,
             ]);
+
+            // Create a pickup store in Carry Bee
+            $carrybeeStoreId = null;
+            if (!empty($data['pickup_city_id']) && !empty($data['pickup_zone_id']) && !empty($data['pickup_area_id'])) {
+                try {
+                    $carryBee = app(CarryBeeService::class);
+                    $storeResult = $carryBee->createStore([
+                        'name' => $data['company_name'],
+                        'contact_person_name' => $data['name'],
+                        'contact_person_number' => $data['email'], // phone/email field
+                        'address' => $data['pickup_address'] ?? $data['company_name'],
+                        'city_id' => (int) $data['pickup_city_id'],
+                        'zone_id' => (int) $data['pickup_zone_id'],
+                        'area_id' => (int) $data['pickup_area_id'],
+                    ]);
+
+                    if (!empty($storeResult['data']['store']['id'])) {
+                        $carrybeeStoreId = $storeResult['data']['store']['id'];
+                        $vendor->update(['carrybee_store_id' => $carrybeeStoreId]);
+                    }
+
+                    Log::info('CarryBee store creation result', ['vendor_id' => $vendor->id, 'result' => $storeResult]);
+                } catch (\Throwable $e) {
+                    Log::warning('CarryBee store creation failed (non-blocking)', [
+                        'vendor_id' => $vendor->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Notify admin(s) about new pending vendor
+            try {
+                $pushService = app(PushNotificationService::class);
+                $pushService->notifyAdmins(
+                    '🏪 New Supplier Registration',
+                    "{$data['company_name']} ({$data['name']}) has registered and is pending approval.",
+                    'info',
+                    ['event' => 'vendor_registered', 'vendor_id' => $vendor->id]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Vendor registration push notification failed (non-blocking)', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'status' => true,
@@ -79,6 +132,7 @@ class VendorAuthController extends Controller
                 'data' => [
                     'user_id' => $user->id,
                     'vendor_id' => $vendor->id,
+                    'carrybee_store_id' => $carrybeeStoreId,
                 ],
             ], 201);
         } catch (\Throwable $e) {
@@ -100,4 +154,3 @@ class VendorAuthController extends Controller
         return 'SS00' . ($last ? $last->id + 1 : 1);
     }
 }
-

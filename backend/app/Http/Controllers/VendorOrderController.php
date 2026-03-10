@@ -70,6 +70,38 @@ class VendorOrderController extends Controller
     }
 
     /**
+     * Sync Carry Bee order status from their API.
+     * Non-blocking — if the call fails, the existing status is kept.
+     */
+    private function syncCarryBeeStatus(Order $order): void
+    {
+        if (empty($order->carrybee_parcel_id)) {
+            return;
+        }
+
+        // Don't re-sync terminal statuses
+        $terminal = ['delivered', 'returned', 'returned-to-merchant', 'cancelled'];
+        if (in_array(strtolower($order->carrybee_status ?? ''), $terminal, true)) {
+            return;
+        }
+
+        try {
+            $carryBee = app(\App\Services\CarryBeeService::class);
+            $details = $carryBee->getOrderDetails((string) $order->carrybee_parcel_id);
+
+            if (!empty($details['data']['transfer_status'])) {
+                $order->carrybee_status = (string) $details['data']['transfer_status'];
+                $order->save();
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('CarryBee status sync failed', [
+                'order_id' => $order->id,
+                'error'    => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Orders that contain at least one product from this vendor.
      * Returns order list with vendor item count and vendor subtotal per order.
      */
@@ -184,6 +216,9 @@ class VendorOrderController extends Controller
         // Pull fresh courier status when opening detail page.
         $meta = $this->touchStatusSync($order, false);
 
+        // Sync Carry Bee status if order has a carrybee parcel
+        $this->syncCarryBeeStatus($order);
+
         $vendorSubtotal = $vendorOrderProducts->sum(fn($op) => (float) $op->productPrice * (int) $op->quantity);
         $customer = $order->customer;
 
@@ -209,6 +244,9 @@ class VendorOrderController extends Controller
                     'customerNote' => $order->customerNote,
                     'tracking_number' => $order->tracking_number,
                     'trackingLink' => $order->trackingLink,
+                    'carrybee_parcel_id' => $order->carrybee_parcel_id,
+                    'carrybee_tracking_code' => $order->carrybee_tracking_code,
+                    'carrybee_status' => $order->carrybee_status,
                     'shipped_at' => $order->shipped_at?->toIso8601String(),
                 ],
 
@@ -230,6 +268,13 @@ class VendorOrderController extends Controller
                         'ViewProductImage' => $op->product->ViewProductImage,
                     ] : null,
                 ]),
+                'customer' => $customer ? [
+                    'customerName' => $customer->customerName,
+                    'customerPhone' => $customer->customerPhone
+                        ? str_repeat('*', max(0, strlen($customer->customerPhone) - 4)) . substr($customer->customerPhone, -4)
+                        : null,
+                    'customerAddress' => $customer->customerAddress,
+                ] : null,
                 'vendor_subtotal' => round($vendorSubtotal, 2),
             ],
         ]);
@@ -366,41 +411,109 @@ class VendorOrderController extends Controller
             ], 422);
         }
 
-        $created = $this->steadfastService->createConsignment(
-            $order,
-            (string) $customer->customerName,
-            (string) $customer->customerAddress,
-            (string) $customer->customerPhone
-        );
+        // ── Steadfast consignment (non-blocking) ──
+        $steadfastOk = false;
+        $steadfastMessage = null;
+        try {
+            $created = $this->steadfastService->createConsignment(
+                $order,
+                (string) $customer->customerName,
+                (string) $customer->customerAddress,
+                (string) $customer->customerPhone
+            );
 
-        if (!$created['ok']) {
-            return response()->json([
-                'status' => false,
-                'message' => $created['message'] ?? 'Failed to send order to warehouse',
-                'data' => [
-                    'provider_payload' => $created['payload'] ?? null,
-                ],
-            ], 502);
+            if ($created['ok']) {
+                $steadfastOk = true;
+                if (!empty($created['tracking_code'])) {
+                    $order->tracking_number = (string) $created['tracking_code'];
+                    $order->trackingLink = 'https://steadfast.com.bd/t/' . $created['tracking_code'];
+                }
+                if (!empty($created['consignment_id'])) {
+                    $order->steadfast_consignment_id = (string) $created['consignment_id'];
+                }
+                if (!empty($created['raw_status'])) {
+                    $order->steadfast_status = (string) $created['raw_status'];
+                }
+                $order->steadfast_payload = json_encode($created['payload'] ?? []);
+                $order->steadfast_last_synced_at = now();
+            } else {
+                $steadfastMessage = $created['message'] ?? 'Steadfast failed';
+                \Log::warning('Steadfast create_order failed (non-blocking)', [
+                    'order_id' => $order->id,
+                    'message' => $steadfastMessage,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            $steadfastMessage = $e->getMessage();
+            \Log::warning('Steadfast create_order exception (non-blocking)', [
+                'order_id' => $order->id,
+                'error' => $steadfastMessage,
+            ]);
         }
 
-        if (!empty($created['tracking_code'])) {
-            $order->tracking_number = (string) $created['tracking_code'];
-            $order->trackingLink = 'https://steadfast.com.bd/t/' . $created['tracking_code'];
-        }
-
-        if (!empty($created['consignment_id'])) {
-            $order->steadfast_consignment_id = (string) $created['consignment_id'];
-        }
-        if (!empty($created['raw_status'])) {
-            $order->steadfast_status = (string) $created['raw_status'];
-        }
-
-        $order->steadfast_payload = json_encode($created['payload'] ?? []);
-        $order->steadfast_last_synced_at = now();
         $order->warehouse_sent_at = now();
         $order->shipped_at = $order->shipped_at ?? now();
         $order->status = 'Ontheway';
         $order->save();
+
+        // ── Carry Bee order creation (non-blocking) ──
+        // If the vendor has a registered Carry Bee store, create a delivery order
+        $carrybeeResult = null;
+        if (!empty($vendor->carrybee_store_id)) {
+            try {
+                $carryBee = app(\App\Services\CarryBeeService::class);
+
+                // Ensure recipient_address is 10-200 chars (API requirement)
+                $recipientAddress = (string) $customer->customerAddress;
+                if (strlen($recipientAddress) < 10) {
+                    $recipientAddress = str_pad($recipientAddress, 10, ', Dhaka');
+                }
+
+                $orderData = [
+                    'store_id'            => (string) $vendor->carrybee_store_id,
+                    'merchant_order_id'   => (string) $order->invoiceID,
+                    'delivery_type'       => 1,  // 1=Normal, 2=Express
+                    'product_type'        => 1,  // 1=Parcel, 2=Book, 3=Document
+                    'recipient_name'      => (string) $customer->customerName,
+                    'recipient_phone'     => (string) $customer->customerPhone,
+                    'recipient_address'   => substr($recipientAddress, 0, 200),
+                    'city_id'             => (int) ($order->city_id ?? 14),  // default Dhaka
+                    'zone_id'             => (int) ($order->zone_id ?? 1),
+                    'special_instruction' => (string) ($order->customerNote ?? ''),
+                    'item_weight'         => 500,  // grams (default 500g)
+                    'item_quantity'       => 1,
+                    'collectable_amount'  => (int) ($order->subTotal ?? 0),  // COD in Taka
+                ];
+
+                // Only include area_id if available
+                if (!empty($order->area_id)) {
+                    $orderData['area_id'] = (int) $order->area_id;
+                }
+
+                $carrybeeResult = $carryBee->createOrder($orderData);
+
+                // Store Carry Bee order details — response: data.order.consignment_id
+                $cbOrder = $carrybeeResult['data']['order'] ?? null;
+                if (is_array($cbOrder) && !empty($cbOrder['consignment_id'])) {
+                    $order->carrybee_parcel_id = (string) $cbOrder['consignment_id'];
+                    $order->carrybee_tracking_code = (string) $cbOrder['consignment_id'];
+                    $order->carrybee_status = 'created';
+                    $order->trackingLink = 'https://merchant.carrybee.com/order-track/' . $cbOrder['consignment_id'];
+                    $order->save();
+                }
+
+                \Log::info('CarryBee order created', [
+                    'order_id' => $order->id,
+                    'invoice'  => $order->invoiceID,
+                    'result'   => $carrybeeResult,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('CarryBee order creation failed (non-blocking)', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
+            }
+        }
 
         Orderproduct::whereIn('id', $vendorItems->pluck('id')->all())
             ->update([
@@ -434,6 +547,9 @@ class VendorOrderController extends Controller
                 'tracking_number' => $order->tracking_number,
                 'tracking_link' => $order->trackingLink,
                 'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
+                'carrybee_parcel_id' => $order->carrybee_parcel_id,
+                'carrybee_tracking_code' => $order->carrybee_tracking_code,
+                'carrybee_status' => $order->carrybee_status,
             ],
         ]);
     }

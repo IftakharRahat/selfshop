@@ -46,6 +46,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return response()->json($request->user());
 });
 
+// Carry Bee courier – pickup point lookup (public, no auth needed)
+Route::get('/carrybee/cities', [\App\Http\Controllers\CarryBeeController::class, 'cities'])->name('api.carrybee.cities');
+Route::get('/carrybee/cities/{cityId}/zones', [\App\Http\Controllers\CarryBeeController::class, 'zones'])->name('api.carrybee.zones');
+Route::get('/carrybee/cities/{cityId}/zones/{zoneId}/areas', [\App\Http\Controllers\CarryBeeController::class, 'areas'])->name('api.carrybee.areas');
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');

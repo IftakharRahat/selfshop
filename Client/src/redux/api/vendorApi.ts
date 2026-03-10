@@ -283,8 +283,10 @@ export const vendorApi = baseApi.injectEndpoints({
 				password: string;
 				company_name: string;
 				business_type?: string;
-				country?: string;
-				city?: string;
+				pickup_city_id?: number;
+				pickup_zone_id?: number;
+				pickup_area_id?: number;
+				pickup_address?: string;
 			}
 		>({
 			query: (body) => ({
@@ -1211,6 +1213,26 @@ export const vendorApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ["vendorNotifications"],
 		}),
+
+		// ── Carry Bee pickup point lookup ──
+		getCarryBeeCities: build.query<
+			{ error: boolean; message: string; data?: { cities: { id: number; name: string }[] } },
+			void
+		>({
+			query: () => ({ url: "/carrybee/cities" }),
+		}),
+		getCarryBeeZones: build.query<
+			{ error: boolean; message: string; data?: { zones: { id: number; name: string; city_id: number }[] } },
+			number
+		>({
+			query: (cityId) => ({ url: `/carrybee/cities/${cityId}/zones` }),
+		}),
+		getCarryBeeAreas: build.query<
+			{ error: boolean; message: string; data?: { areas: { id: number; name: string; zone_id: number }[] } },
+			{ cityId: number; zoneId: number }
+		>({
+			query: ({ cityId, zoneId }) => ({ url: `/carrybee/cities/${cityId}/zones/${zoneId}/areas` }),
+		}),
 	}),
 });
 
@@ -1283,4 +1305,8 @@ export const {
 	useDeleteVendorProductVariantSizeMutation,
 	useCreateVendorProductVariantSizeBulkPriceMutation,
 	useDeleteVendorProductVariantSizeBulkPriceMutation,
+	// Carry Bee
+	useGetCarryBeeCitiesQuery,
+	useGetCarryBeeZonesQuery,
+	useGetCarryBeeAreasQuery,
 } = vendorApi;

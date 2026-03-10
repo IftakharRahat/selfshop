@@ -6,11 +6,11 @@ export const useIsActiveReseller = () => {
     const { data: profileData, isLoading, isFetching } = useGetMeQuery(undefined, { skip: !token });
 
     if (!token) {
-        return { isActive: false, isLoading: false, isLoggedIn: false };
+        return { isActive: false, isLoading: false, isLoggedIn: false, isExpired: false };
     }
 
     if (isLoading || isFetching) {
-        return { isActive: false, isLoading: true, isLoggedIn: true };
+        return { isActive: false, isLoading: true, isLoggedIn: true, isExpired: false };
     }
 
     const membershipStatus = String(
@@ -19,10 +19,21 @@ export const useIsActiveReseller = () => {
     const accountStatus = String(
         profileData?.data?.profile?.status ?? "",
     ).toLowerCase();
+    const expireDate = profileData?.data?.profile?.expire_date;
 
-    // An active reseller is a user with 'paid' membership or 'active' status
-    // (Matching logic in WithAuthForAdmin.tsx)
-    const isActive = membershipStatus === "paid" || accountStatus === "active";
+    // Check if account has expired using proper date parsing
+    let isExpired = false;
+    if (expireDate) {
+        const parsed = new Date(expireDate);
+        if (!isNaN(parsed.getTime())) {
+            parsed.setHours(23, 59, 59, 999);
+            isExpired = parsed.getTime() < Date.now();
+        }
+    }
 
-    return { isActive, isLoading: false, isLoggedIn: true };
+    // An active reseller must have a valid (non-expired) paid membership or active status
+    // The backend userProfile() endpoint also auto-marks expired users as Inactive/Unpaid
+    const isActive = !isExpired && (membershipStatus === "paid" || accountStatus === "active");
+
+    return { isActive, isLoading: false, isLoggedIn: true, isExpired };
 };

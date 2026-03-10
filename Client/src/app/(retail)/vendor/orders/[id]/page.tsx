@@ -214,13 +214,36 @@ export default function VendorOrderDetailPage() {
 									<dd className="font-medium">{order.shipped_at ? new Date(order.shipped_at).toLocaleString() : "—"}</dd>
 								</>
 							)}
-							{order.trackingLink && (
+							{/* Tracking link hidden from supplier — exposes customer details */}
+							{order.carrybee_parcel_id && (
 								<>
-									<dt className="text-gray-500">Tracking link</dt>
+									<dt className="text-gray-500">Carry Bee delivery</dt>
 									<dd>
-										<a className="text-blue-600 hover:underline" href={order.trackingLink} target="_blank" rel="noreferrer">
-											Open tracking page
-										</a>
+										<span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-semibold ${(order.carrybee_status ?? '').toLowerCase().includes('deliver') ? 'bg-green-50 text-green-700' :
+											(order.carrybee_status ?? '').toLowerCase().includes('transit') || (order.carrybee_status ?? '').toLowerCase().includes('picked') ? 'bg-blue-50 text-blue-700' :
+												(order.carrybee_status ?? '').toLowerCase().includes('fail') || (order.carrybee_status ?? '').toLowerCase().includes('return') ? 'bg-red-50 text-red-700' :
+													'bg-amber-50 text-amber-700'
+											}`}>
+											🚚 {order.carrybee_status ?? 'Pending'}
+										</span>
+									</dd>
+									<dt className="text-gray-500">Carry Bee consignment</dt>
+									<dd>
+										<div className="flex items-center gap-2 mt-1">
+											<span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-800 font-mono text-base font-bold tracking-wide border border-indigo-200">
+												📦 {order.carrybee_parcel_id}
+											</span>
+											<button
+												type="button"
+												onClick={() => {
+													navigator.clipboard.writeText(order.carrybee_parcel_id ?? "");
+													toast.success("Consignment ID copied!");
+												}}
+												className="p-1.5 rounded-md hover:bg-indigo-50 text-indigo-600 transition-colors" title="Copy consignment ID"
+											>
+												<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+											</button>
+										</div>
 									</dd>
 								</>
 							)}
@@ -250,7 +273,11 @@ export default function VendorOrderDetailPage() {
 								<dt className="text-gray-500">Name</dt>
 								<dd className="font-medium">{customer.customerName}</dd>
 								<dt className="text-gray-500">Phone</dt>
-								<dd className="font-medium">{customer.customerPhone}</dd>
+								<dd className="font-medium">
+									{customer.customerPhone
+										? `${'*'.repeat(Math.max(0, customer.customerPhone.length - 4))}${customer.customerPhone.slice(-4)}`
+										: '—'}
+								</dd>
 								<dt className="text-gray-500">Address</dt>
 								<dd className="text-gray-700">{customer.customerAddress}</dd>
 							</dl>
@@ -288,8 +315,8 @@ export default function VendorOrderDetailPage() {
 										<td className="px-3 py-2 text-center">{item.quantity}</td>
 										<td className="px-3 py-2 text-center">
 											<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${(item.fulfillment_status ?? "pending") === "shipped" ? "bg-blue-100 text-blue-800" :
-													(item.fulfillment_status ?? "pending") === "delivered" ? "bg-green-100 text-green-800" :
-														"bg-gray-100 text-gray-700"
+												(item.fulfillment_status ?? "pending") === "delivered" ? "bg-green-100 text-green-800" :
+													"bg-gray-100 text-gray-700"
 												}`}>
 												{(item.fulfillment_status ?? "pending").replace(/^\w/, (c) => c.toUpperCase())}
 											</span>

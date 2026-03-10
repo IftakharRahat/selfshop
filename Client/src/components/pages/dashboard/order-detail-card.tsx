@@ -62,7 +62,7 @@ export default function OrderDetailCard({
 				</span>
 			</div>
 
-			{(orderData.tracking_number || orderData.shipped_at) && (
+			{(orderData.tracking_number || orderData.shipped_at || orderData.carrybee_tracking_code) && (
 				<div className="py-3 border-t border-gray-200">
 					<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Tracking and shipment</p>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
@@ -76,6 +76,24 @@ export default function OrderDetailCard({
 							<div>
 								<p className="text-xs text-gray-400">Shipped on</p>
 								<p className="font-medium text-gray-900">{formatDate(orderData.shipped_at)}</p>
+							</div>
+						)}
+						{orderData.carrybee_tracking_code && (
+							<div className="col-span-1 sm:col-span-2">
+								<p className="text-xs text-gray-400 mb-1">Carry Bee Delivery</p>
+								<div className="flex items-center gap-2">
+									<span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded text-xs font-medium">
+										🚚 {orderData.carrybee_status ?? "Pending"}
+									</span>
+									<a
+										href={orderData.trackingLink || `https://merchant.carrybee.com/order-track/${orderData.carrybee_tracking_code}`}
+										target="_blank"
+										rel="noreferrer"
+										className="inline-flex items-center gap-1 px-3 py-1 bg-[#2d2a5d] text-white text-xs font-medium rounded-lg hover:bg-[#252947] transition-colors"
+									>
+										📦 Track Delivery
+									</a>
+								</div>
 							</div>
 						)}
 					</div>
