@@ -7,6 +7,7 @@ use App\Models\Vendor;
 use App\Models\VendorKycDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
@@ -92,8 +93,17 @@ class VendorAccountController extends Controller
             $data['slug'] = $slug;
         }
 
+        // Get existing vendor to clean up old files
+        $existingVendor = Vendor::where('user_id', $user->id)->first();
+
         // Handle logo upload
         if ($request->hasFile('logo_path')) {
+            // Delete old logo from R2 if exists
+            if ($existingVendor && $existingVendor->logo_path) {
+                $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+                $oldPath = str_replace($r2BaseUrl . '/', '', $existingVendor->logo_path);
+                Storage::disk('r2')->delete($oldPath);
+            }
             $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $file = $request->file('logo_path');
             $safeName = 'logo_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
@@ -105,6 +115,12 @@ class VendorAccountController extends Controller
 
         // Handle banner upload
         if ($request->hasFile('banner_path')) {
+            // Delete old banner from R2 if exists
+            if ($existingVendor && $existingVendor->banner_path) {
+                $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+                $oldPath = str_replace($r2BaseUrl . '/', '', $existingVendor->banner_path);
+                Storage::disk('r2')->delete($oldPath);
+            }
             $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             $file = $request->file('banner_path');
             $safeName = 'banner_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
