@@ -477,8 +477,8 @@ class VendorOrderController extends Controller
                     'result'    => $storeResult,
                 ]);
 
-                if (!empty($storeResult['data']['store']['id'])) {
-                    $vendor->carrybee_store_id = $storeResult['data']['store']['id'];
+                if (!empty($storeResult['data']['id'])) {
+                    $vendor->carrybee_store_id = $storeResult['data']['id'];
                     $vendor->save();
                 }
             } catch (\Throwable $e) {

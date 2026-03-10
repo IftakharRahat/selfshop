@@ -97,8 +97,8 @@ class VendorAuthController extends Controller
                         'area_id' => (int) $data['pickup_area_id'],
                     ]);
 
-                    if (!empty($storeResult['data']['store']['id'])) {
-                        $carrybeeStoreId = $storeResult['data']['store']['id'];
+                    if (!empty($storeResult['data']['id'])) {
+                        $carrybeeStoreId = $storeResult['data']['id'];
                         $vendor->update(['carrybee_store_id' => $carrybeeStoreId]);
                     }
 
