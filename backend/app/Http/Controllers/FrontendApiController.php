@@ -642,23 +642,51 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        $products = Product::visibleOnStorefront()->where('category_id', $category->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type')->get();
+        $perPage = $request->input('limit', 20);
+        $sort = $request->input('sort', 'rating');
+
+        $query = Product::visibleOnStorefront()
+            ->where('category_id', $category->id)
+            ->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type');
+
+        // Apply DB-level sorting
+        switch ($sort) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'price_asc':
+                $query->orderBy('ProductSalePrice', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('ProductSalePrice', 'desc');
+                break;
+            case 'rating':
+            default:
+                $query->selectSub(
+                    Review::selectRaw('COALESCE(AVG(rating), 0)')
+                        ->whereColumn('product_id', 'products.id')
+                        ->where('status', 'Active'),
+                    'avg_rating'
+                )->orderBy('avg_rating', 'desc');
+                break;
+        }
+
+        $paginated = $query->paginate($perPage);
 
         // Attach avg_rating and review_count to each product
-        foreach ($products as $product) {
+        foreach ($paginated->items() as $product) {
             $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
             $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
             $product->review_count = $reviews->count();
         }
 
-        // Sort
-        $sort = $request->input('sort', 'rating');
-        $sorted = $this->sortProducts($products, $sort);
-
         return response()->json([
             'status' => true,
             'message' => 'Products found with this category successfully',
-            'data' => $sorted->values()
+            'data' => $paginated
         ], 200);
     }
 
@@ -666,44 +694,61 @@ class FrontendApiController extends Controller
     {
         $selects = ['id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type'];
 
+        $perPage = $request->input('limit', 20);
+        $sort = $request->input('sort', 'rating');
+
         if (empty($slug)) {
-            $products = Product::visibleOnStorefront()->select(...$selects)->latest()->get();
-            foreach ($products as $product) {
-                $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
-                $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
-                $product->review_count = $reviews->count();
+            $query = Product::visibleOnStorefront()->select(...$selects);
+        } else {
+            $subcategory = Subcategory::where('slug', $slug)->first();
+            if (!$subcategory) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'No products found',
+                    'data' => []
+                ], 200);
             }
-            $sort = $request->input('sort', 'rating');
-            $sorted = $this->sortProducts($products, $sort);
-            return response()->json([
-                'status' => true,
-                'message' => 'All products',
-                'data' => $sorted->values()
-            ], 200);
+            $query = Product::visibleOnStorefront()->where('subcategory_id', $subcategory->id)->select(...$selects);
         }
 
-        $subcategory = Subcategory::where('slug', $slug)->first();
-        if (!$subcategory) {
-            return response()->json([
-                'status' => true,
-                'message' => 'No products found',
-                'data' => []
-            ], 200);
+        // Apply DB-level sorting
+        switch ($sort) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'price_asc':
+                $query->orderBy('ProductSalePrice', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('ProductSalePrice', 'desc');
+                break;
+            case 'rating':
+            default:
+                $query->selectSub(
+                    Review::selectRaw('COALESCE(AVG(rating), 0)')
+                        ->whereColumn('product_id', 'products.id')
+                        ->where('status', 'Active'),
+                    'avg_rating'
+                )->orderBy('avg_rating', 'desc');
+                break;
         }
 
-        $products = Product::visibleOnStorefront()->where('subcategory_id', $subcategory->id)->select(...$selects)->get();
-        foreach ($products as $product) {
+        $paginated = $query->paginate($perPage);
+
+        // Attach avg_rating and review_count to each product
+        foreach ($paginated->items() as $product) {
             $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
             $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
             $product->review_count = $reviews->count();
         }
-        $sort = $request->input('sort', 'rating');
-        $sorted = $this->sortProducts($products, $sort);
 
         return response()->json([
             'status' => true,
-            'message' => 'Products found with this sub-category successfully',
-            'data' => $sorted->values()
+            'message' => empty($slug) ? 'All products' : 'Products found with this sub-category successfully',
+            'data' => $paginated
         ], 200);
     }
 
@@ -1063,46 +1108,110 @@ class FrontendApiController extends Controller
 
     public function userResetPassword(Request $request)
     {
-        // Validate the email field
         $request->validate([
-            'email' => ['required', 'email'],
+            'phone' => ['required', 'string'],
         ]);
 
-        if (strlen($request->phone) == '11') {
-            $user = User::where('email', $request->phone)->first();
-            if ($user) {
-                $user = User::where('email', $request->phone)->first();
-            } else {
-                $ema = '88' . $request->phone;
-                $user = User::where('email', $ema)->first();
+        $phone = $request->phone;
+
+        if (strlen($phone) == '11') {
+            $user = User::where('email', $phone)->first();
+            if (!$user) {
+                $user = User::where('email', '88' . $phone)->first();
             }
         } else {
-            $user = User::where('email', $request->phone)->first();
+            $user = User::where('email', $phone)->first();
         }
 
         if (isset($user)) {
             $otp = random_int(100000, 999999);
             $user->otp = $otp;
             $user->update();
-            $otpcode = $otp;
-            Session::put('phone', $request->phone);
-            $status = Http::get('http://bulksmsbd.net/api/smsapi?api_key=PwokJ9JcGrHVqm0Vmqp9&type=text&number=' . $user->email . '&senderid=8809604902839&message=Dear ' . $user->name . ' Your password reset OTP is : ' . $otpcode . '');
-            // Return a JSON response based on the status
-            if ($status) {
+
+            $status = Http::get('http://bulksmsbd.net/api/smsapi?api_key=' . env('BULKSMS_API_KEY') . '&type=text&number=' . $user->email . '&senderid=' . env('BULKSMS_SENDER_ID') . '&message=Dear ' . $user->name . ' Your password reset OTP is : ' . $otp . '');
+
+            if ($status->successful()) {
                 return response()->json([
                     'status' => true,
-                    'message' => __($status),
+                    'message' => 'OTP sent successfully to your phone number',
                 ], 200);
             } else {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Failed to send otp',
+                    'message' => 'Failed to send OTP. Please try again.',
                 ], 400);
             }
         } else {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to send otp',
+                'message' => 'No account found with this phone number',
+            ], 404);
+        }
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'string'],
+            'otp' => ['required', 'string'],
+        ]);
+
+        $phone = $request->phone;
+
+        if (strlen($phone) == '11') {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+            if (!$user) {
+                $user = User::where('email', '88' . $phone)->where('otp', $request->otp)->first();
+            }
+        } else {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+        }
+
+        if (isset($user)) {
+            return response()->json([
+                'status' => true,
+                'message' => 'OTP verified successfully.',
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid OTP. Please try again.',
+            ], 400);
+        }
+    }
+
+    public function verifyOtpAndResetPassword(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'string'],
+            'otp' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $phone = $request->phone;
+
+        if (strlen($phone) == '11') {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+            if (!$user) {
+                $user = User::where('email', '88' . $phone)->where('otp', $request->otp)->first();
+            }
+        } else {
+            $user = User::where('email', $phone)->where('otp', $request->otp)->first();
+        }
+
+        if (isset($user)) {
+            $user->password = Hash::make($request->password);
+            $user->otp = null;
+            $user->update();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Password reset successfully. Please login with your new password.',
+            ], 200);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid OTP. Please try again.',
             ], 400);
         }
     }

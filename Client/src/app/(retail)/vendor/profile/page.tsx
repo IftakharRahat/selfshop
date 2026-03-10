@@ -10,6 +10,8 @@ import {
 import { toast } from "sonner";
 import WithVendorAuth from "../WithVendorAuth";
 import R2ImageUploader from "@/components/shared/r2-image-uploader";
+import Image from "next/image";
+import { getImageUrl } from "@/lib/utils";
 
 export default function VendorProfilePage() {
 	const { data, isLoading } = useGetVendorProfileQuery();
@@ -33,6 +35,12 @@ export default function VendorProfilePage() {
 	const [vendorStatus, setVendorStatus] = useState<null | string>(null);
 	const [isVerifiedBadge, setIsVerifiedBadge] = useState(false);
 
+	// Logo & banner
+	const [logoFile, setLogoFile] = useState<File | null>(null);
+	const [bannerFile, setBannerFile] = useState<File | null>(null);
+	const [existingLogo, setExistingLogo] = useState<string>("");
+	const [existingBanner, setExistingBanner] = useState<string>("");
+
 	const [kycType, setKycType] = useState("");
 	const [kycNumber, setKycNumber] = useState("");
 	const [kycFile, setKycFile] = useState<File | null>(null);
@@ -54,8 +62,9 @@ export default function VendorProfilePage() {
 			setAddressLine1(vendor.address_line_1 ?? "");
 			setVendorStatus(vendor.status ?? null);
 			setIsVerifiedBadge(Boolean(vendor.is_verified_badge));
+			setExistingLogo(vendor.logo_path ?? "");
+			setExistingBanner(vendor.banner_path ?? "");
 		} else if (user) {
-			// Fallback right after registration – prefill from user info
 			setContactName(user.name ?? "");
 			setContactEmail(user.email ?? "");
 			setContactPhone(user.phone ?? "");
@@ -66,16 +75,21 @@ export default function VendorProfilePage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		try {
-			await saveProfile({
-				company_name: companyName,
-				business_type: businessType,
-				contact_name: contactName,
-				contact_email: contactEmail,
-				contact_phone: contactPhone,
-				country,
-				city,
-				address_line_1: addressLine1,
-			}).unwrap();
+			const formData = new FormData();
+			formData.append("company_name", companyName);
+			if (businessType) formData.append("business_type", businessType);
+			if (contactName) formData.append("contact_name", contactName);
+			if (contactEmail) formData.append("contact_email", contactEmail);
+			if (contactPhone) formData.append("contact_phone", contactPhone);
+			if (country) formData.append("country", country);
+			if (city) formData.append("city", city);
+			if (addressLine1) formData.append("address_line_1", addressLine1);
+			if (logoFile) formData.append("logo_path", logoFile);
+			if (bannerFile) formData.append("banner_path", bannerFile);
+
+			await saveProfile(formData).unwrap();
+			setLogoFile(null);
+			setBannerFile(null);
 			toast.success("Vendor profile saved");
 		} catch (err: unknown) {
 			console.error(err);
@@ -121,10 +135,10 @@ export default function VendorProfilePage() {
 							</span>
 							<span
 								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${vendorStatus === "approved"
-										? "bg-emerald-100 text-emerald-700"
-										: vendorStatus === "rejected"
-											? "bg-red-100 text-red-700"
-											: "bg-amber-100 text-amber-700"
+									? "bg-emerald-100 text-emerald-700"
+									: vendorStatus === "rejected"
+										? "bg-red-100 text-red-700"
+										: "bg-amber-100 text-amber-700"
 									}`}
 							>
 								{vendorStatus.charAt(0).toUpperCase() +
@@ -132,8 +146,8 @@ export default function VendorProfilePage() {
 							</span>
 							<span
 								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isVerifiedBadge
-										? "bg-sky-100 text-sky-700"
-										: "bg-gray-100 text-gray-600"
+									? "bg-sky-100 text-sky-700"
+									: "bg-gray-100 text-gray-600"
 									}`}
 							>
 								{isVerifiedBadge
@@ -142,6 +156,74 @@ export default function VendorProfilePage() {
 							</span>
 						</div>
 					)}
+				</div>
+
+				{/* Shop Branding — Logo & Banner */}
+				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
+					<div>
+						<h2 className="text-lg font-semibold text-gray-900 mb-1">
+							Shop branding
+						</h2>
+						<p className="text-sm text-gray-500">
+							Upload your shop logo and cover banner. These are displayed on your public storefront.
+						</p>
+					</div>
+
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						{/* Logo */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Shop logo
+								<span className="text-gray-400 font-normal ml-1">(max 5MB)</span>
+							</label>
+							{existingLogo && !logoFile && (
+								<div className="mb-3 w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-50">
+									<Image
+										src={getImageUrl(existingLogo)}
+										alt="Current logo"
+										width={96}
+										height={96}
+										className="w-full h-full object-cover"
+									/>
+								</div>
+							)}
+							<R2ImageUploader
+								value={logoFile}
+								existingImageUrl={existingLogo ? getImageUrl(existingLogo) : undefined}
+								onChange={(file) => setLogoFile(file)}
+								accept="image/*"
+								maxSizeMB={5}
+								compact
+							/>
+						</div>
+
+						{/* Banner */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Cover banner
+								<span className="text-gray-400 font-normal ml-1">(max 5MB, recommended 1200×300)</span>
+							</label>
+							{existingBanner && !bannerFile && (
+								<div className="mb-3 w-full h-24 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+									<Image
+										src={getImageUrl(existingBanner)}
+										alt="Current banner"
+										width={600}
+										height={150}
+										className="w-full h-full object-cover"
+									/>
+								</div>
+							)}
+							<R2ImageUploader
+								value={bannerFile}
+								existingImageUrl={existingBanner ? getImageUrl(existingBanner) : undefined}
+								onChange={(file) => setBannerFile(file)}
+								accept="image/*"
+								maxSizeMB={5}
+								compact
+							/>
+						</div>
+					</div>
 				</div>
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -320,10 +402,10 @@ export default function VendorProfilePage() {
 											</div>
 											<span
 												className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${doc.status === "approved"
-														? "bg-emerald-100 text-emerald-700"
-														: doc.status === "rejected"
-															? "bg-red-100 text-red-700"
-															: "bg-amber-100 text-amber-700"
+													? "bg-emerald-100 text-emerald-700"
+													: doc.status === "rejected"
+														? "bg-red-100 text-red-700"
+														: "bg-amber-100 text-amber-700"
 													}`}
 											>
 												{doc.status}
@@ -339,5 +421,3 @@ export default function VendorProfilePage() {
 		</WithVendorAuth>
 	);
 }
-
-

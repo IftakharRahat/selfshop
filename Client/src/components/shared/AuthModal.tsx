@@ -9,14 +9,18 @@ import {
 	Input,
 	Modal,
 	Tabs,
+	message,
 } from "antd";
 import { useState } from "react";
 import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import logo from "@/assets/icons/NavLogo.png";
 import {
+	useForgotPasswordMutation,
 	useLoginMutation,
 	useRegisterMutation,
+	useResetPasswordMutation,
+	useVerifyOtpMutation,
 } from "@/redux/features/auth/authApi";
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
@@ -28,22 +32,28 @@ interface AuthModalProps {
 	setIsPricingModalOpen: (isOpen: boolean) => void;
 }
 
+type ViewMode = "login" | "register" | "forgot-phone" | "forgot-otp" | "forgot-reset";
+
 export default function AuthModal({
 	open,
 	onClose,
 	setIsPricingModalOpen,
 }: AuthModalProps) {
 	const dispatch = useAppDispatch();
-	const [isLogin, setIsLogin] = useState(true);
+	const [viewMode, setViewMode] = useState<ViewMode>("login");
 	const [activeTab, setActiveTab] = useState("reseller");
 	const [showCoupon, setShowCoupon] = useState(false);
+	const [forgotPhone, setForgotPhone] = useState("");
 
-	// const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const [form] = Form.useForm();
 	const tabItems = [{ key: "reseller", label: "Log in as Reseller" }];
 
 	const [login] = useLoginMutation();
 	const [register] = useRegisterMutation();
+	const [forgotPassword, { isLoading: isSendingOtp }] = useForgotPasswordMutation();
+	const [verifyOtp, { isLoading: isVerifyingOtp }] = useVerifyOtpMutation();
+	const [resetPassword, { isLoading: isResetting }] = useResetPasswordMutation();
+
 	const handleLogin = async (values: any) => {
 		const response = await handleAsyncWithToast(async () => {
 			return login(values);
@@ -88,7 +98,6 @@ export default function AuthModal({
 	};
 
 	const handleRegistration = async (values: any) => {
-		console.log("Registration data:", values);
 		const response = await handleAsyncWithToast(async () => {
 			return register(values);
 		});
@@ -108,6 +117,111 @@ export default function AuthModal({
 		console.log("Social login:", provider);
 		// TODO: social login logic
 	};
+
+	const handleSendOtp = async (values: { phone: string }) => {
+		try {
+			const res = await forgotPassword({ phone: values.phone }).unwrap();
+			if (res?.status) {
+				message.success(res.message || "OTP sent successfully!");
+				setForgotPhone(values.phone);
+				form.resetFields();
+				setViewMode("forgot-otp");
+			}
+		} catch (err: any) {
+			message.error(
+				err?.data?.message || "Failed to send OTP. Please try again.",
+			);
+		}
+	};
+
+	const handleVerifyOtp = async (values: { otp: string }) => {
+		try {
+			const res = await verifyOtp({ phone: forgotPhone, otp: values.otp }).unwrap();
+			if (res?.status) {
+				message.success(res.message || "OTP verified!");
+				form.setFieldsValue({ otp: values.otp });
+				setViewMode("forgot-reset");
+			}
+		} catch (err: any) {
+			message.error(
+				err?.data?.message || "Invalid OTP. Please try again.",
+			);
+		}
+	};
+
+	const handleResetPassword = async (values: {
+		otp: string;
+		password: string;
+		password_confirmation: string;
+	}) => {
+		try {
+			const res = await resetPassword({
+				phone: forgotPhone,
+				otp: values.otp,
+				password: values.password,
+				password_confirmation: values.password_confirmation,
+			}).unwrap();
+			if (res?.status) {
+				message.success(res.message || "Password reset successfully!");
+				form.resetFields();
+				setForgotPhone("");
+				setViewMode("login");
+			}
+		} catch (err: any) {
+			message.error(
+				err?.data?.message || "Failed to reset password. Please try again.",
+			);
+		}
+	};
+
+	const handleResendOtp = async () => {
+		try {
+			const res = await forgotPassword({ phone: forgotPhone }).unwrap();
+			if (res?.status) {
+				message.success("OTP resent successfully!");
+			}
+		} catch (err: any) {
+			message.error(
+				err?.data?.message || "Failed to resend OTP.",
+			);
+		}
+	};
+
+	const resetToLogin = () => {
+		form.resetFields();
+		setForgotPhone("");
+		setViewMode("login");
+	};
+
+	const getTitle = () => {
+		switch (viewMode) {
+			case "forgot-phone":
+				return "Forgot Password";
+			case "forgot-otp":
+				return "Verify OTP";
+			case "forgot-reset":
+				return "Set New Password";
+			default:
+				return null;
+		}
+	};
+
+	const getDescription = () => {
+		switch (viewMode) {
+			case "forgot-phone":
+				return "Enter your registered phone number to receive a password reset OTP.";
+			case "forgot-otp":
+				return `We've sent a 6-digit OTP to ${forgotPhone}. Please enter it below.`;
+			case "forgot-reset":
+				return "Enter your new password below.";
+			case "register":
+				return "Join our dropshipping and wholesale marketplace to start selling and sourcing products easily.";
+			default:
+				return "Sign in to your account to access dropshipping products and wholesale deals.";
+		}
+	};
+
+	const isForgotFlow = viewMode.startsWith("forgot");
 
 	return (
 		<ConfigProvider
@@ -131,27 +245,31 @@ export default function AuthModal({
 							<img src={logo.src} alt="Logo" className="w-44" />
 						</div>
 
+						{isForgotFlow && (
+							<h3 className="text-lg font-semibold mb-1">{getTitle()}</h3>
+						)}
+
 						<p className="text-gray-600 text-sm mb-3">
-							{isLogin
-								? "Sign in to your account to access dropshipping products and wholesale deals."
-								: "Join our dropshipping and wholesale marketplace to start selling and sourcing products easily."}
+							{getDescription()}
 						</p>
 					</div>
 
-					{/* Tabs */}
-					<Tabs
-						activeKey={activeTab}
-						onChange={setActiveTab}
-						items={tabItems}
-						centered
-						tabBarGutter={24}
-						tabBarStyle={{ marginBottom: 16 }}
-					/>
+					{/* Tabs - only show for login/register */}
+					{!isForgotFlow && (
+						<Tabs
+							activeKey={activeTab}
+							onChange={setActiveTab}
+							items={tabItems}
+							centered
+							tabBarGutter={24}
+							tabBarStyle={{ marginBottom: 16 }}
+						/>
+					)}
 
-					{/* Login/Register Form */}
+					{/* Login/Register/Forgot Forms */}
 					{activeTab === "reseller" ? (
 						<>
-							{isLogin ? (
+							{viewMode === "login" && (
 								<Form form={form} layout="vertical" onFinish={handleLogin}>
 									<Form.Item
 										name="email"
@@ -185,11 +303,25 @@ export default function AuthModal({
 										/>
 									</Form.Item>
 
+									<div className="flex justify-end mb-3">
+										<span
+											className="text-[#e91e63] cursor-pointer text-sm hover:underline"
+											onClick={() => {
+												form.resetFields();
+												setViewMode("forgot-phone");
+											}}
+										>
+											Forgot Password?
+										</span>
+									</div>
+
 									<Button type="primary" size="large" htmlType="submit" block>
 										Log in
 									</Button>
 								</Form>
-							) : (
+							)}
+
+							{viewMode === "register" && (
 								<Form
 									form={form}
 									layout="vertical"
@@ -278,60 +410,223 @@ export default function AuthModal({
 									</Button>
 								</Form>
 							)}
+
+							{/* Forgot Password Step 1: Enter Phone */}
+							{viewMode === "forgot-phone" && (
+								<Form form={form} layout="vertical" onFinish={handleSendOtp}>
+									<Form.Item
+										name="phone"
+										label="Phone Number"
+										rules={[
+											{
+												required: true,
+												message: "Please enter your phone number!",
+											},
+										]}
+									>
+										<Input
+											size="large"
+											placeholder="Enter your registered phone number..."
+										/>
+									</Form.Item>
+
+									<Button
+										type="primary"
+										size="large"
+										htmlType="submit"
+										block
+										loading={isSendingOtp}
+									>
+										Send OTP
+									</Button>
+								</Form>
+							)}
+
+							{/* Forgot Password Step 2: Enter OTP */}
+							{viewMode === "forgot-otp" && (
+								<Form form={form} layout="vertical" onFinish={handleVerifyOtp}>
+									<Form.Item
+										name="otp"
+										label="OTP Code"
+										rules={[
+											{
+												required: true,
+												message: "Please enter the OTP!",
+											},
+											{
+												len: 6,
+												message: "OTP must be 6 digits!",
+											},
+										]}
+									>
+										<Input
+											size="large"
+											placeholder="Enter 6-digit OTP..."
+											maxLength={6}
+										/>
+									</Form.Item>
+
+									<Button type="primary" size="large" htmlType="submit" block loading={isVerifyingOtp}>
+										Verify OTP
+									</Button>
+
+									<p className="text-center text-sm mt-3">
+										Didn&apos;t receive the OTP?{" "}
+										<span
+											className="text-[#e91e63] cursor-pointer hover:underline"
+											onClick={handleResendOtp}
+										>
+											Resend OTP
+										</span>
+									</p>
+								</Form>
+							)}
+
+							{/* Forgot Password Step 3: New Password */}
+							{viewMode === "forgot-reset" && (
+								<Form
+									form={form}
+									layout="vertical"
+									onFinish={handleResetPassword}
+								>
+									<Form.Item name="otp" hidden>
+										<Input />
+									</Form.Item>
+
+									<Form.Item
+										name="password"
+										label="New Password"
+										rules={[
+											{
+												required: true,
+												message: "Please enter your new password!",
+											},
+											{
+												min: 6,
+												message: "Password must be at least 6 characters!",
+											},
+										]}
+									>
+										<Input.Password
+											size="large"
+											placeholder="Enter new password..."
+										/>
+									</Form.Item>
+
+									<Form.Item
+										name="password_confirmation"
+										label="Confirm New Password"
+										dependencies={["password"]}
+										rules={[
+											{
+												required: true,
+												message: "Please confirm your new password!",
+											},
+											({ getFieldValue }) => ({
+												validator(_, value) {
+													if (
+														!value ||
+														getFieldValue("password") === value
+													) {
+														return Promise.resolve();
+													}
+													return Promise.reject(
+														new Error("Passwords do not match!"),
+													);
+												},
+											}),
+										]}
+									>
+										<Input.Password
+											size="large"
+											placeholder="Confirm new password..."
+										/>
+									</Form.Item>
+
+									<Button
+										type="primary"
+										size="large"
+										htmlType="submit"
+										block
+										loading={isResetting}
+									>
+										Reset Password
+									</Button>
+								</Form>
+							)}
 						</>
 					) : null}
 
-					{/* Switch Login/Register */}
-					<p className="text-center text-sm mt-3">
-						{isLogin ? (
-							<>
-								If you don't have any account?{" "}
-								<span
-									className="text-[#E5005F] cursor-pointer"
-									onClick={() => setIsLogin(false)}
+					{/* Switch Login/Register or Back to Login */}
+					{isForgotFlow ? (
+						<p className="text-center text-sm mt-3">
+							Remember your password?{" "}
+							<span
+								className="text-[#E5005F] cursor-pointer"
+								onClick={resetToLogin}
+							>
+								Back to Login
+							</span>
+						</p>
+					) : (
+						<p className="text-center text-sm mt-3">
+							{viewMode === "login" ? (
+								<>
+									If you don&apos;t have any account?{" "}
+									<span
+										className="text-[#E5005F] cursor-pointer"
+										onClick={() => {
+											form.resetFields();
+											setViewMode("register");
+										}}
+									>
+										register now
+									</span>
+								</>
+							) : (
+								<>
+									Already have an account?{" "}
+									<span
+										className="text-[#E5005F] cursor-pointer"
+										onClick={resetToLogin}
+									>
+										log in
+									</span>
+								</>
+							)}
+						</p>
+					)}
+
+					{!isForgotFlow && (
+						<>
+							<Divider className="my-3">
+								<span className="text-gray-400 text-xs">Or</span>
+							</Divider>
+
+							{/* Social Buttons */}
+							<div className="space-y-2">
+								<Button
+									size="middle"
+									block
+									icon={<FcGoogle />}
+									onClick={() => handleSocialLogin("google")}
+									className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
 								>
-									register now
-								</span>
-							</>
-						) : (
-							<>
-								Already have an account?{" "}
-								<span
-									className="text-[#E5005F] cursor-pointer"
-									onClick={() => setIsLogin(true)}
+									Continue with Google
+								</Button>
+
+								<Button
+									size="middle"
+									block
+									icon={<FaApple />}
+									onClick={() => handleSocialLogin("apple")}
+									className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
 								>
-									log in
-								</span>
-							</>
-						)}
-					</p>
-
-					<Divider className="my-3">
-						<span className="text-gray-400 text-xs">Or</span>
-					</Divider>
-
-					{/* Social Buttons */}
-					<div className="space-y-2">
-						<Button
-							size="middle"
-							block
-							icon={<FcGoogle />}
-							onClick={() => handleSocialLogin("google")}
-							className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
-						>
-							Continue with Google
-						</Button>
-
-						<Button
-							size="middle"
-							block
-							icon={<FaApple />}
-							onClick={() => handleSocialLogin("apple")}
-							className="h-10 rounded-md border-gray-300 text-gray-600 hover:border-gray-400"
-						>
-							Continue with Apple
-						</Button>
-					</div>
+									Continue with Apple
+								</Button>
+							</div>
+						</>
+					)}
 				</div>
 			</Modal>
 		</ConfigProvider>

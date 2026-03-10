@@ -78,8 +78,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [FrontendApiController::class, 'userLogin'])->name('api.user.login');
     // Vendor registration (separate vendor portal)
     Route::post('/vendor/register', [VendorAuthController::class, 'register'])->name('api.vendor.register');
-
-    Route::post('/reset-password', [FrontendApiController::class, 'userResetPassword'])->name('api.user.reset-password');
+    Route::post('/forgot-password', [FrontendApiController::class, 'userResetPassword'])->name('api.user.forgot-password');
+    Route::post('/verify-otp', [FrontendApiController::class, 'verifyOtp'])->name('api.user.verify-otp');
+    Route::post('/reset-password', [FrontendApiController::class, 'verifyOtpAndResetPassword'])->name('api.user.reset-password');
 
     //Shops
     Route::get('/shops', [FrontendApiController::class, 'shopPage'])->name('api.shop');

@@ -50,7 +50,7 @@ class PasswordResetLinkController extends Controller
             $user->update();
             $otpcode=$otp;
             Session::put('phone',$request->phone);
-            Http::get('http://bulksmsbd.net/api/smsapi?api_key=PwokJ9JcGrHVqm0Vmqp9&type=text&number='.$user->email.'&senderid=8809604902839&message=Dear '.$user->name.' Your password reset OTP is : '.$otpcode.'');
+            Http::get('http://bulksmsbd.net/api/smsapi?api_key='.env('BULKSMS_API_KEY').'&type=text&number='.$user->email.'&senderid='.env('BULKSMS_SENDER_ID').'&message=Dear '.$user->name.' Your password reset OTP is : '.$otpcode.'');
             return redirect('reset-password');
         }else{
             return redirect()->back()->withErrors('OPPS ! something went wrong. Please try again.');
