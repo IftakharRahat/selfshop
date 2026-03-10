@@ -146,6 +146,9 @@ export interface VendorOrderDetail {
 		trackingLink?: string | null;
 		shipped_at?: string | null;
 		parcel_id?: string | number | null;
+		carrybee_parcel_id?: string | null;
+		carrybee_tracking_code?: string | null;
+		carrybee_status?: string | null;
 	};
 	customer: { customerName: string; customerPhone: string; customerAddress: string } | null;
 	line_items: Array<{
