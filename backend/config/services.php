@@ -30,4 +30,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'carrybee' => [
+        'base_url' => env('CARRYBEE_BASE_URL', 'https://developers.carrybee.com'),
+        'client_id' => env('CARRYBEE_CLIENT_ID', ''),
+        'client_secret' => env('CARRYBEE_CLIENT_SECRET', ''),
+        'client_context' => env('CARRYBEE_CLIENT_CONTEXT', ''),
+    ],
+
 ];
