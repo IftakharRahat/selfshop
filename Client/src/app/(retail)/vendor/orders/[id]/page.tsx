@@ -224,6 +224,26 @@ export default function VendorOrderDetailPage() {
 									</dd>
 								</>
 							)}
+							{order.carrybee_parcel_id && (
+								<>
+									<dt className="text-gray-500">Carry Bee delivery</dt>
+									<dd>
+										<span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-sm font-semibold ${(order.carrybee_status ?? '').toLowerCase().includes('deliver') ? 'bg-green-50 text-green-700' :
+												(order.carrybee_status ?? '').toLowerCase().includes('transit') || (order.carrybee_status ?? '').toLowerCase().includes('picked') ? 'bg-blue-50 text-blue-700' :
+													(order.carrybee_status ?? '').toLowerCase().includes('fail') || (order.carrybee_status ?? '').toLowerCase().includes('return') ? 'bg-red-50 text-red-700' :
+														'bg-amber-50 text-amber-700'
+											}`}>
+											🚚 {order.carrybee_status ?? 'Pending'}
+										</span>
+									</dd>
+									<dt className="text-gray-500">Carry Bee consignment</dt>
+									<dd>
+										<span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-mono text-sm font-semibold">
+											📦 {order.carrybee_parcel_id}
+										</span>
+									</dd>
+								</>
+							)}
 							{order.parcel_id && (
 								<>
 									<dt className="text-gray-500">Parcel ID</dt>
@@ -288,8 +308,8 @@ export default function VendorOrderDetailPage() {
 										<td className="px-3 py-2 text-center">{item.quantity}</td>
 										<td className="px-3 py-2 text-center">
 											<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${(item.fulfillment_status ?? "pending") === "shipped" ? "bg-blue-100 text-blue-800" :
-													(item.fulfillment_status ?? "pending") === "delivered" ? "bg-green-100 text-green-800" :
-														"bg-gray-100 text-gray-700"
+												(item.fulfillment_status ?? "pending") === "delivered" ? "bg-green-100 text-green-800" :
+													"bg-gray-100 text-gray-700"
 												}`}>
 												{(item.fulfillment_status ?? "pending").replace(/^\w/, (c) => c.toUpperCase())}
 											</span>

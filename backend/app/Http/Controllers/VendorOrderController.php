@@ -70,6 +70,38 @@ class VendorOrderController extends Controller
     }
 
     /**
+     * Sync Carry Bee order status from their API.
+     * Non-blocking — if the call fails, the existing status is kept.
+     */
+    private function syncCarryBeeStatus(Order $order): void
+    {
+        if (empty($order->carrybee_parcel_id)) {
+            return;
+        }
+
+        // Don't re-sync terminal statuses
+        $terminal = ['delivered', 'returned', 'returned-to-merchant', 'cancelled'];
+        if (in_array(strtolower($order->carrybee_status ?? ''), $terminal, true)) {
+            return;
+        }
+
+        try {
+            $carryBee = app(\App\Services\CarryBeeService::class);
+            $details = $carryBee->getOrderDetails((string) $order->carrybee_parcel_id);
+
+            if (!empty($details['data']['transfer_status'])) {
+                $order->carrybee_status = (string) $details['data']['transfer_status'];
+                $order->save();
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('CarryBee status sync failed', [
+                'order_id' => $order->id,
+                'error'    => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Orders that contain at least one product from this vendor.
      * Returns order list with vendor item count and vendor subtotal per order.
      */
@@ -184,6 +216,9 @@ class VendorOrderController extends Controller
         // Pull fresh courier status when opening detail page.
         $meta = $this->touchStatusSync($order, false);
 
+        // Sync Carry Bee status if order has a carrybee parcel
+        $this->syncCarryBeeStatus($order);
+
         $vendorSubtotal = $vendorOrderProducts->sum(fn($op) => (float) $op->productPrice * (int) $op->quantity);
         $customer = $order->customer;
 
@@ -209,6 +244,9 @@ class VendorOrderController extends Controller
                     'customerNote' => $order->customerNote,
                     'tracking_number' => $order->tracking_number,
                     'trackingLink' => $order->trackingLink,
+                    'carrybee_parcel_id' => $order->carrybee_parcel_id,
+                    'carrybee_tracking_code' => $order->carrybee_tracking_code,
+                    'carrybee_status' => $order->carrybee_status,
                     'shipped_at' => $order->shipped_at?->toIso8601String(),
                 ],
 
