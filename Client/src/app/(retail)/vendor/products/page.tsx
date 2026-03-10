@@ -25,9 +25,9 @@ export default function VendorProductsPage() {
 		if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
 		try {
 			await deleteProduct(id).unwrap();
-			toast.success("Product deleted");
+			toast.success("Product deleted successfully.");
 		} catch {
-			toast.error("Failed to delete product");
+			toast.error("Unable to delete product. Please try again.");
 		}
 	};
 
@@ -35,9 +35,9 @@ export default function VendorProductsPage() {
 		const next = current === "Active" ? "Inactive" : "Active";
 		try {
 			await updateStatus({ id, status: next }).unwrap();
-			toast.success(next === "Active" ? "Published" : "Unpublished");
+			toast.success(next === "Active" ? "Product published successfully." : "Product unpublished.");
 		} catch {
-			toast.error("Failed to update status");
+			toast.error("Unable to update product status. Please try again.");
 		}
 	};
 
@@ -45,9 +45,9 @@ export default function VendorProductsPage() {
 		const next = current ? 0 : 1;
 		try {
 			await updateStockStatus({ id, in_stock: next as 0 | 1 }).unwrap();
-			toast.success(next ? "Marked as In Stock" : "Marked as Stock Out");
+			toast.success(next ? "Product marked as in stock." : "Product marked as out of stock.");
 		} catch {
-			toast.error("Failed to update stock status");
+			toast.error("Unable to update stock status. Please try again.");
 		}
 	};
 
@@ -158,20 +158,24 @@ export default function VendorProductsPage() {
 												{p.ProductResellerPrice ?? 0}
 											</td>
 											<td className="px-3 py-2 align-middle text-center">
-												<button
-													type="button"
-													disabled={updatingStatus}
-													onClick={() => handleToggleStatus(p.id, p.status ?? "Inactive")}
-													className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.status === "Active"
-														? "bg-emerald-500 border-emerald-500"
-														: "bg-gray-200 border-gray-300"
-														}`}
-												>
-													<span
-														className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.status === "Active" ? "translate-x-5" : "translate-x-1"
+												{p.vendor_approval_status === "approved" ? (
+													<button
+														type="button"
+														disabled={updatingStatus}
+														onClick={() => handleToggleStatus(p.id, p.status ?? "Inactive")}
+														className={`inline-flex h-5 w-10 items-center rounded-full border focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 disabled:opacity-50 ${p.status === "Active"
+															? "bg-emerald-500 border-emerald-500"
+															: "bg-gray-200 border-gray-300"
 															}`}
-													/>
-												</button>
+													>
+														<span
+															className={`inline-block h-4 w-4 rounded-full bg-white transform transition-transform ${p.status === "Active" ? "translate-x-5" : "translate-x-1"
+																}`}
+														/>
+													</button>
+												) : (
+													<span className="text-[10px] text-gray-400 font-medium">Awaiting approval</span>
+												)}
 											</td>
 											<td className="px-3 py-2 align-middle text-center">
 												<button
@@ -219,5 +223,3 @@ export default function VendorProductsPage() {
 		</WithVendorAuth>
 	);
 }
-
-

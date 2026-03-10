@@ -279,6 +279,13 @@ class VendorProductController extends Controller
 
         foreach (['ProductName', 'ProductBreaf', 'ProductDetails', 'ProductResellerPrice', 'ProductRegularPrice', 'qty', 'low_stock', 'ProductSku', 'show_stock', 'show_stock_text', 'status', 'MetaKey', 'Discount', 'category_id', 'subcategory_id', 'brand_id', 'selling_type', 'allow_dropship'] as $key) {
             if (array_key_exists($key, $data)) {
+                // Prevent activating unapproved products
+                if ($key === 'status' && $data[$key] === 'Active' && ($product->vendor_approval_status ?? '') !== 'approved') {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Product must be approved by admin before it can be activated.',
+                    ], 403);
+                }
                 $product->{$key} = $data[$key];
             }
         }
@@ -352,6 +359,15 @@ class VendorProductController extends Controller
         }
         $request->validate(['status' => 'required|in:Active,Inactive']);
         $product = Product::where('vendor_id', $vendor->id)->findOrFail($id);
+
+        // Prevent activating products that haven't been approved by admin
+        if ($request->status === 'Active' && ($product->vendor_approval_status ?? '') !== 'approved') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Product must be approved by admin before it can be activated.',
+            ], 403);
+        }
+
         $product->status = $request->status;
         $product->save();
         return response()->json(['status' => true, 'message' => 'Status updated', 'data' => ['product' => $product]]);

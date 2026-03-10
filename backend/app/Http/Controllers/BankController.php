@@ -43,7 +43,7 @@ class BankController extends Controller
         $bank->account_number=$request->account_number;
         $bank->routing_number=$request->routing_number;
         $bank->save();
-        return redirect()->back()->with('success','Bank info added successfully');
+        return redirect()->back()->with('success','Bank information added successfully.');
     }
 
     /**
@@ -83,7 +83,7 @@ class BankController extends Controller
         $bank->account_number=$request->account_number;
         $bank->routing_number=$request->routing_number;
         $bank->update();
-        return redirect()->back()->with('success','Bank info update successfully');
+        return redirect()->back()->with('success','Bank information updated successfully.');
     }
 
     /**

@@ -37,15 +37,15 @@ export default function VendorPayoutsPage() {
 	const handleRequest = async () => {
 		const num = parseFloat(amount);
 		if (isNaN(num) || num <= 0) {
-			toast.error("Enter a valid amount");
+			toast.error("Please enter a valid amount.");
 			return;
 		}
 		if (num > availableBalance) {
-			toast.error("Amount cannot exceed available balance");
+			toast.error("Amount cannot exceed your available balance.");
 			return;
 		}
 		if (pendingRequestAmount > 0) {
-			toast.error("You already have a pending payout request");
+			toast.error("You already have a pending payout request.");
 			return;
 		}
 		try {
@@ -53,7 +53,7 @@ export default function VendorPayoutsPage() {
 				amount: num,
 				payout_account_id: payoutAccountId === "" ? (defaultAccount?.id ?? undefined) : (payoutAccountId as number),
 			}).unwrap();
-			toast.success("Payout request submitted");
+			toast.success("Payout request submitted successfully.");
 			setAmount("");
 		} catch (err: unknown) {
 			const msg = (err as { data?: { message?: string } })?.data?.message || "Failed to submit request";
@@ -162,11 +162,10 @@ export default function VendorPayoutsPage() {
 													{r.payout_account ? `${r.payout_account.account_name} •••${String(r.payout_account.account_number).slice(-4)}` : "—"}
 												</td>
 												<td className="px-3 py-2 text-center">
-													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-														r.status === "approved" ? "bg-green-100 text-green-700" :
-														r.status === "rejected" ? "bg-red-100 text-red-700" :
-														"bg-amber-100 text-amber-700"
-													}`}>
+													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${r.status === "approved" ? "bg-green-100 text-green-700" :
+															r.status === "rejected" ? "bg-red-100 text-red-700" :
+																"bg-amber-100 text-amber-700"
+														}`}>
 														{r.status}
 													</span>
 												</td>
@@ -222,9 +221,8 @@ export default function VendorPayoutsPage() {
 												<td className="px-3 py-2 text-right font-medium">৳{Number(p.amount).toLocaleString()}</td>
 												<td className="px-3 py-2 text-gray-600">{p.reference ?? "—"}</td>
 												<td className="px-3 py-2 text-center">
-													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-														p.status === "paid" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-													}`}>
+													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${p.status === "paid" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+														}`}>
 														{p.status}
 													</span>
 												</td>

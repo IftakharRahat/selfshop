@@ -94,7 +94,7 @@ function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddT
 		<div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
 			<div className="flex flex-row">
 				{/* Product Image */}
-				<div className="flex-shrink-0 w-52 lg:w-64 overflow-hidden">
+				<div className="flex-shrink-0 w-52 lg:w-64 h-52 lg:h-64 overflow-hidden">
 					<Link href={`/product/${product?.ProductSlug}`}>
 						<Image
 							src={

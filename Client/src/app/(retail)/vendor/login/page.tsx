@@ -39,7 +39,7 @@ const VendorLoginPage = () => {
 				}),
 			);
 
-			toast.success("Logged in successfully");
+			toast.success("Logged in successfully.");
 			router.replace("/vendor");
 		} catch (error: any) {
 			console.error("Login Error details:", JSON.stringify(error, null, 2));

@@ -2,6 +2,7 @@
 
 import money from "@/assets/images/dashboard/Group (3).png";
 import profit from "@/assets/images/dashboard/Group 1321314506.png";
+import pendingIcon from "@/assets/images/dashboard/Group 1321314506 (3).png";
 import balance from "@/assets/images/dashboard/Group 1321314506 (1).png";
 import withdraw from "@/assets/images/dashboard/Group 1321314506 (2).png";
 import MetricCard from "@/components/pages/dashboard/metric-card";
@@ -21,7 +22,7 @@ export default function Dashboard() {
 	return (
 		<main className="flex-1 p-3 sm:p-5 lg:p-6 pb-24">
 			{/* Metrics Cards */}
-			<div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5 mb-4 lg:mb-8">
+			<div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-5 mb-4 lg:mb-8">
 				<MetricCard
 					title="Total Sale"
 					value={`৳ ${metrics.total_sales ?? 0}`}
@@ -33,6 +34,14 @@ export default function Dashboard() {
 					title="Total Profit"
 					value={`৳ ${metrics.total_profit ?? 0}`}
 					icon={profit}
+					iconColor="bg-pink-500"
+				/>
+
+				<MetricCard
+					title="Pending Amount"
+					value={`৳ ${metrics.pending_amount ?? 0}`}
+					subtitle="Orders processing or awaiting delivery"
+					icon={pendingIcon}
 					iconColor="bg-pink-500"
 				/>
 

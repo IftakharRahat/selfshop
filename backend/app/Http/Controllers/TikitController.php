@@ -67,7 +67,7 @@ class TikitController extends Controller
             $tikit->attachment = $productImgUrl;
         }
         $tikit->save();
-        return redirect()->back()->with('success', 'Tikit submit successfully');
+        return redirect()->back()->with('success', 'Ticket submitted successfully.');
     }
 
     /**
@@ -115,7 +115,7 @@ class TikitController extends Controller
         $tikit = Tikit::where('id', $id)->first();
         $tikit->status = $request->department;
         $tikit->save();
-        return redirect()->back()->with('message', 'Status Changed Successfully');
+        return redirect()->back()->with('message', 'Status changed successfully.');
     }
 
     public function replay(Request $request, $id)
@@ -150,7 +150,7 @@ class TikitController extends Controller
         }
 
         $replay->save();
-        return redirect()->back()->with('message', 'Tikit replay send successfully');
+        return redirect()->back()->with('message', 'Ticket reply sent successfully.');
     }
 
     /**

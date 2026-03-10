@@ -68,7 +68,7 @@ export default function VendorPayoutAccountsPage() {
 
 	const handleSubmit = async () => {
 		if (!form.account_name.trim() || !form.account_number.trim()) {
-			toast.error("Account name and account number are required");
+			toast.error("Please enter an account name and account number.");
 			return;
 		}
 		try {
@@ -82,7 +82,7 @@ export default function VendorPayoutAccountsPage() {
 					routing_number: form.routing_number || undefined,
 					is_default: form.is_default,
 				}).unwrap();
-				toast.success("Payout account updated");
+				toast.success("Payout account updated successfully.");
 			} else {
 				await createAccount({
 					channel_type: form.channel_type,
@@ -92,7 +92,7 @@ export default function VendorPayoutAccountsPage() {
 					routing_number: form.routing_number || undefined,
 					is_default: form.is_default,
 				}).unwrap();
-				toast.success("Payout account added");
+				toast.success("Payout account added successfully.");
 			}
 			setModal({ open: false, editId: null });
 		} catch (err: unknown) {
@@ -105,7 +105,7 @@ export default function VendorPayoutAccountsPage() {
 		if (!confirm("Remove payout account \"" + label + "\"?")) return;
 		try {
 			await deleteAccount(id).unwrap();
-			toast.success("Payout account removed");
+			toast.success("Payout account removed successfully.");
 		} catch (err: unknown) {
 			const msg = (err as { data?: { message?: string } })?.data?.message || "Failed to delete";
 			toast.error(msg);

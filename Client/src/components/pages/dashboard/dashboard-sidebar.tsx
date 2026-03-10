@@ -13,6 +13,7 @@ import {
 	Settings,
 	Shield,
 	ShoppingBag,
+	Store,
 	Ticket,
 	TrainTrack,
 	Users,
@@ -45,6 +46,7 @@ const menuItems = [
 		href: "/dashboard/referral-income",
 	},
 	{ icon: CreditCard, label: "Order Income", href: "/dashboard/order-income" },
+	{ icon: Store, label: "My Shop", href: "/dashboard/my-shop" },
 	{
 		icon: ArrowUpDown,
 		label: "Balance transfer",

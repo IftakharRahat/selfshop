@@ -46,10 +46,12 @@ export default function VendorEditProductPage() {
 	// Category / brand data
 	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
 	const { data: brandData } = useGetAllBrandsQuery(undefined);
+
 	const { data: commissionData } = useGetVendorCategoryCommissionsQuery();
 	const categories = (catData as { data?: CatItem[] })?.data ?? [];
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
 	const commissionRows = commissionData?.data?.categories ?? [];
+
 
 	// ── Controlled form state ──
 	const [f, setF] = useState({
@@ -77,6 +79,7 @@ export default function VendorEditProductPage() {
 		? commissionRows.find((row) => row.category_id === Number(f.category_id))
 			?.commission_percent
 		: null;
+
 	const [initialized, setInitialized] = useState(false);
 
 	// Variants & price tiers
@@ -376,6 +379,7 @@ export default function VendorEditProductPage() {
 													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
 												</p>
 											)}
+
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
 											Regular price (MSRP)
@@ -532,6 +536,8 @@ export default function VendorEditProductPage() {
 										)}
 									</div>
 								</div>
+
+
 							</div>
 
 							{/* Product images */}
@@ -689,6 +695,7 @@ export default function VendorEditProductPage() {
 																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
 																		</div>
 																	)}
+
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Qty</label>
@@ -717,6 +724,7 @@ export default function VendorEditProductPage() {
 																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
 																			</div>
 																		)}
+
 																	</div>
 																	<button
 																		type="button"

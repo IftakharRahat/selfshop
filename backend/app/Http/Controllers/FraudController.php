@@ -77,7 +77,7 @@ class FraudController extends Controller
         $product->phone=$request->phone;
         $product->message=$request->message;
         $product->save();
-        return redirect()->back()->with('success','Fraud check request give successfully');
+        return redirect()->back()->with('success','Fraud check request submitted successfully.');
     }
 
     /**

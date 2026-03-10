@@ -162,7 +162,7 @@ class AdminController extends Controller
         }
 
         $admin->save();
-        return redirect()->back()->with('message', 'Shop Profile Update Successfully');
+        return redirect()->back()->with('message', 'Shop profile updated successfully.');
     }
 
     public function updateprofile(Request $request)
@@ -275,7 +275,7 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Something went wrong');
         } else {
             $admin->delete();
-            return redirect()->back()->with('message', 'Admin Deleted Successfully');
+            return redirect()->back()->with('message', 'Admin deleted successfully.');
         }
     }
 }

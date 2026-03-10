@@ -61,6 +61,8 @@ Route::middleware('guest')->group(function () {
     Route::get('/slider-bottom-banners', [FrontendApiController::class, 'bottombanners'])->name('api.user.bottombanners');
     Route::get('/brands', [FrontendApiController::class, 'brands'])->name('api.user.brands');
     Route::get('/flash-sale', [FrontendApiController::class, 'flashSale'])->name('api.user.flashsale');
+    Route::get('/promotional-sections', [FrontendApiController::class, 'promotionalSections'])->name('api.user.promotional-sections');
+    Route::get('/promotional-sections/{slug}', [FrontendApiController::class, 'promotionalSectionBySlug'])->name('api.user.promotional-section');
     Route::get('/collection/{slug}', [FrontendApiController::class, 'collection'])->name('api.user.collection');
     Route::get('/new-arrivels', [FrontendApiController::class, 'newarrivels'])->name('api.user.newarrivels');
     Route::get('/new-products', [FrontendApiController::class, 'newproducts'])->name('api.user.newarrivels');
@@ -89,6 +91,9 @@ Route::middleware('guest')->group(function () {
     // Popular suppliers (vendors) – storefront homepage
     Route::get('/popular-vendors', [FrontendApiController::class, 'popularVendors'])->name('api.popular-vendors');
     Route::get('/supplier/{slug}', [FrontendApiController::class, 'supplierDetails'])->name('api.supplier-details');
+
+    // Public reseller shop
+    Route::get('/reseller-shop/{userId}', [FrontendApiController::class, 'publicShop'])->name('api.reseller-shop');
 
     // Cart Operations
     Route::post('/guest-add-to-cart', [FrontendApiController::class, 'guestAddToCart'])->name('api.guest-add-to-cart.store');
@@ -152,6 +157,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('shop-products', [FrontendApiController::class, 'shopproducts']);
     Route::get('add-to-shop/{id}', [FrontendApiController::class, 'addtoshop']);
     Route::get('remove-from-shop/{id}', [FrontendApiController::class, 'removefromshop']);
+    Route::get('check-in-shop/{id}', [FrontendApiController::class, 'checkInShop']);
 
     // others
     Route::get('teams', [FrontendApiController::class, 'teams']);

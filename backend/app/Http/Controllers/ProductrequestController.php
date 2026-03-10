@@ -89,7 +89,7 @@ class ProductrequestController extends Controller
             $product->message = $request->p_description ?? $request->message;
         }
         $product->save();
-        return redirect()->back()->with('success','Product request give successfully');
+        return redirect()->back()->with('success','Product request submitted successfully.');
     }
 
     /**

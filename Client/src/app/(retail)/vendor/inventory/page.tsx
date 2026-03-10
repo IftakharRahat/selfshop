@@ -65,7 +65,7 @@ export default function VendorInventoryPage() {
                 type: adjustType,
                 note: adjustNote || undefined,
             }).unwrap();
-            toast.success("Stock adjusted successfully");
+            toast.success("Stock adjusted successfully.");
             setAdjustModal({ open: false, productId: 0, productName: "" });
             setAdjustQty("");
             setAdjustNote("");
@@ -86,7 +86,7 @@ export default function VendorInventoryPage() {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            toast.success("Inventory exported");
+            toast.success("Inventory exported successfully.");
         } catch {
             toast.error("Export failed. Make sure you are logged in.");
         }

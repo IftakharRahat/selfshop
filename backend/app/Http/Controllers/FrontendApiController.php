@@ -440,6 +440,67 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    public function promotionalSections()
+    {
+        $sections = \App\Models\PromotionalSection::active()
+            ->orderBy('sort_order')
+            ->with(['products' => function ($query) {
+                $query->where('status', 'Active')
+                    ->select('products.id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')
+                    ->orderByPivot('sort_order');
+            }])
+            ->get()
+            ->map(function ($section) {
+                return [
+                    'id' => $section->id,
+                    'title' => $section->title,
+                    'slug' => $section->slug,
+                    'banner_image' => $section->banner_image,
+                    'layout_type' => $section->layout_type ?? 'card',
+                    'bg_color' => $section->bg_color,
+                    'products' => $section->products,
+                ];
+            });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Promotional sections',
+            'data' => $sections,
+        ], 200);
+    }
+
+    public function promotionalSectionBySlug(Request $request, $slug)
+    {
+        $section = \App\Models\PromotionalSection::where('slug', $slug)->first();
+
+        if (!$section) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Section not found',
+                'data' => [],
+            ], 404);
+        }
+
+        $limit = $request->input('limit', 20);
+
+        $products = $section->products()
+            ->where('status', 'Active')
+            ->select('products.id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')
+            ->paginate($limit);
+
+        return response()->json([
+            'status' => true,
+            'message' => $section->title,
+            'section' => [
+                'id' => $section->id,
+                'title' => $section->title,
+                'slug' => $section->slug,
+                'banner_image' => $section->banner_image,
+            ],
+            'data' => $products,
+        ], 200);
+    }
+
     public function collection(Request $request, $slug)
     {
         $limit = $request->limit ?? 15;
@@ -462,7 +523,7 @@ class FrontendApiController extends Controller
         } elseif ($slug == 'new_arrivel') {
             $title = 'New Arrivel Products';
             $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+            $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->latest('id')->paginate($limit);
         } elseif ($slug == 'limited_offer') {
             $title = 'Limited Offer Products';
             $total = Product::visibleOnStorefront()->where('limited', 'On')->count();
@@ -518,7 +579,7 @@ class FrontendApiController extends Controller
         $limit = $request->limit ?? 15;
         $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
 
-        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->latest('id')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -813,6 +874,7 @@ class FrontendApiController extends Controller
             'varients.sizes.bulkPrices',
             'priceTiers',
             'vendor:id,user_id,company_name,slug,approval_type,is_verified_badge',
+            'categories',
         ])->where('ProductSlug', $slug)->first();
         if (!$product) {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
@@ -2480,6 +2542,7 @@ class FrontendApiController extends Controller
             'data' => [
                 'total_sales' => Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('subTotal') + Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('paymentAmount') - Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('deliveryCharge'),
                 'total_profit' => Order::where('user_id', $id)->where('status', 'Delivered')->get()->sum('profit'),
+            'pending_amount' => Order::where('user_id', $id)->whereNotIn('status', ['Delivered', 'Canceled', 'Cancelled'])->get()->sum('profit'),
                 'blance' => Auth::user()->account_balance,
                 'withdraw' => Auth::user()->cashout_balance,
                 'shop_products' => Shopproduct::where('user_id', $id)->get()->count(),
@@ -2492,7 +2555,32 @@ class FrontendApiController extends Controller
 
     public function shopproducts()
     {
-        $products = Shopproduct::where('user_id', Auth::user()->id)->get();
+        $products = Shopproduct::where('user_id', Auth::user()->id)
+            ->with(['product' => function ($q) {
+                $q->select('id', 'ProductName', 'ProductSlug', 'ProductSku', 'ProductImage', 'ViewProductImage', 'ProductResellerPrice', 'ProductRegularPrice', 'qty', 'status', 'category_id');
+            }])
+            ->get()
+            ->map(function ($item) {
+                $p = $item->product;
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'status' => $item->status,
+                    'added_at' => $item->created_at,
+                    'product' => $p ? [
+                        'id' => $p->id,
+                        'name' => $p->ProductName,
+                        'slug' => $p->ProductSlug,
+                        'sku' => $p->ProductSku,
+                        'image' => $p->ViewProductImage ?? $p->ProductImage,
+                        'reseller_price' => $p->ProductResellerPrice,
+                        'regular_price' => $p->ProductRegularPrice,
+                        'qty' => $p->qty,
+                        'product_status' => $p->status,
+                    ] : null,
+                ];
+            });
+
         return response()->json([
             'status' => true,
             'message' => 'Shop product list',
@@ -2536,6 +2624,59 @@ class FrontendApiController extends Controller
                 'message' => 'Product not found in your shop',
             ], 404);
         }
+    }
+
+    public function checkInShop($id)
+    {
+        $exists = Shopproduct::where('product_id', $id)
+            ->where('user_id', Auth::user()->id)
+            ->exists();
+
+        return response()->json([
+            'status' => true,
+            'in_shop' => $exists,
+        ], 200);
+    }
+
+    public function publicShop($userId)
+    {
+        $user = User::find($userId);
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $products = Shopproduct::where('user_id', $userId)
+            ->where('status', 'Active')
+            ->with(['product' => function ($q) {
+                $q->where('status', 'Active')
+                  ->select('id', 'ProductName', 'ProductSlug', 'ProductSku', 'ProductImage', 'ViewProductImage', 'ProductResellerPrice', 'ProductRegularPrice', 'qty', 'status', 'category_id');
+            }])
+            ->get()
+            ->filter(fn($item) => $item->product !== null)
+            ->map(function ($item) {
+                $p = $item->product;
+                return [
+                    'id' => $p->id,
+                    'name' => $p->ProductName,
+                    'slug' => $p->ProductSlug,
+                    'image' => $p->ViewProductImage ?? $p->ProductImage,
+                    'regular_price' => $p->ProductRegularPrice,
+                    'qty' => $p->qty,
+                ];
+            })->values();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Public shop products',
+            'data' => [
+                'shop_name' => $user->shop_name ?? $user->name,
+                'user_id' => (int) $userId,
+                'products' => $products,
+            ],
+        ], 200);
     }
 
     // guest cart

@@ -54,14 +54,14 @@ class AdminVendorProductController extends Controller
             $this->vendorNotificationService->notifyVendor(
                 $product->vendor,
                 'Product approved',
-                'Admin approved your product "' . $product->ProductName . '". It is now visible on the storefront.',
+                'Your product "' . $product->ProductName . '" has been approved by SelfShop and is now visible on the storefront.',
                 'success',
                 ['event' => 'vendor_product_approved', 'product_id' => $product->id, 'product_name' => $product->ProductName],
                 '/vendor/products'
             );
         }
 
-        return redirect()->back()->with('message', 'Product approved. It is now visible on the storefront.');
+        return redirect()->back()->with('message', 'Product approved successfully.');
     }
 
     /**
@@ -79,7 +79,7 @@ class AdminVendorProductController extends Controller
             $this->vendorNotificationService->notifyVendor(
                 $product->vendor,
                 'Product rejected',
-                'Admin rejected your product "' . $product->ProductName . '". Please review and update it.',
+                'Your product "' . $product->ProductName . '" has been reviewed by SelfShop and could not be approved at this time. Please review and update it.',
                 'warning',
                 ['event' => 'vendor_product_rejected', 'product_id' => $product->id, 'product_name' => $product->ProductName],
                 '/vendor/products'

@@ -71,12 +71,12 @@ export default function VendorShippingPage() {
 
     const handleSubmit = async () => {
         if (!form.name.trim()) {
-            toast.error("Name is required");
+            toast.error("Please enter a shipping method name.");
             return;
         }
         const rate = parseFloat(form.rate);
         if (isNaN(rate) || rate < 0) {
-            toast.error("Enter a valid rate");
+            toast.error("Please enter a valid shipping rate.");
             return;
         }
         const payload = {
@@ -93,10 +93,10 @@ export default function VendorShippingPage() {
         try {
             if (modal.edit) {
                 await updateMethod({ id: modal.edit.id, ...payload }).unwrap();
-                toast.success("Shipping method updated");
+                toast.success("Shipping method updated successfully.");
             } else {
                 await createMethod(payload).unwrap();
-                toast.success("Shipping method created");
+                toast.success("Shipping method created successfully.");
             }
             setModal({ open: false, edit: null });
         } catch (err: unknown) {
@@ -109,7 +109,7 @@ export default function VendorShippingPage() {
         if (!confirm(`Delete "${name}"?`)) return;
         try {
             await deleteMethod(id).unwrap();
-            toast.success("Shipping method deleted");
+            toast.success("Shipping method deleted successfully.");
         } catch (err: unknown) {
             const msg = (err as { data?: { message?: string } })?.data?.message || "Failed to delete";
             toast.error(msg);

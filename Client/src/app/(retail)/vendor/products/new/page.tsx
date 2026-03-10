@@ -27,6 +27,7 @@ export default function VendorNewProductPage() {
 	const { data: catData } = useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
 	const { data: brandData } = useGetAllBrandsQuery(undefined);
 	const { data: commissionData } = useGetVendorCategoryCommissionsQuery();
+
 	type MiniCategoryItem = {
 		id: number;
 		mini_category_name: string;
@@ -47,6 +48,7 @@ export default function VendorNewProductPage() {
 	const brands = (brandData as { data?: Array<{ id: number; brand_name: string }> })?.data ?? [];
 	const commissionRows = commissionData?.data?.categories ?? [];
 
+
 	const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 	const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<string>("");
 	const [selectedMinicategoryId, setSelectedMinicategoryId] = useState<string>("");
@@ -56,6 +58,7 @@ export default function VendorNewProductPage() {
 		? commissionRows.find((r) => r.category_id === Number(selectedCategoryId))
 			?.commission_percent
 		: null;
+
 	const [createVariant] = useCreateVendorProductVariantMutation();
 	const [createTier] = useCreateVendorProductPriceTierMutation();
 
@@ -380,6 +383,7 @@ export default function VendorNewProductPage() {
 													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
 												</p>
 											)}
+
 										</label>
 										<label className="flex flex-col text-sm font-medium text-gray-700">
 											Regular price (MSRP)
@@ -568,6 +572,8 @@ export default function VendorNewProductPage() {
 										)}
 									</div>
 								</div>
+
+
 							</div>
 							<div className="space-y-2">
 								<h2 className="text-sm font-semibold text-gray-900">
@@ -704,6 +710,7 @@ export default function VendorNewProductPage() {
 																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
 																		</div>
 																	)}
+
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Qty</label>
@@ -736,6 +743,7 @@ export default function VendorNewProductPage() {
 																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
 																			</div>
 																		)}
+
 																	</div>
 																	<button
 																		type="button"

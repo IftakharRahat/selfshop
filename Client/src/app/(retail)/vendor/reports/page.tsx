@@ -81,6 +81,7 @@ export default function VendorReportsPage() {
 										<th className="px-3 py-2 text-left font-medium">Period</th>
 										<th className="px-3 py-2 text-right font-medium">Sales</th>
 										<th className="px-3 py-2 text-right font-medium">Commission</th>
+
 										<th className="px-3 py-2 text-right font-medium">Net</th>
 										<th className="px-3 py-2 text-right font-medium">Orders</th>
 									</tr>

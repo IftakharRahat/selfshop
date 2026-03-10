@@ -57,7 +57,7 @@ class NewPasswordController extends Controller
             $user->password=Hash::make($request->password);
             $user->update();
             $request->session()->forget('phone');
-            return redirect('login')->with('success','Password updated ! please login here');
+            return redirect('login')->with('success','Password updated successfully. Please log in.');
         }else{
             return redirect()->back()->withErrors('OTP not match')->withInput();
         }

@@ -61,7 +61,7 @@ export default function VendorCategoryDiscountPage() {
 				start_date: e.start_date || null,
 				end_date: e.end_date || null,
 			}).unwrap();
-			toast.success("Discount updated");
+			toast.success("Discount updated successfully.");
 		} catch {
 			toast.error("Failed to update discount");
 		} finally {

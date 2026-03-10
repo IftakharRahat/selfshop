@@ -27,6 +27,8 @@ import { useAppSelector } from "@/redux/hooks";
 import OrderNowModal from "./OrderNowModal";
 import ProductReviewsSection from "./ProductReviewsSection";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
+import { useCheckInShopQuery, useAddToShopMutation, useRemoveFromShopMutation } from "@/redux/api/shopApi";
+import { Store } from "lucide-react";
 
 type ColorOption = {
 	id: string | number;
@@ -126,6 +128,31 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 
 	const [addToCart, { isLoading }] = useAddToCartMutation();
 
+	// ---- Shop Hooks ----
+	const { data: shopStatus } = useCheckInShopQuery(product.id, { skip: !token });
+	const [addToShop, { isLoading: isAddingToShop }] = useAddToShopMutation();
+	const [removeFromShop, { isLoading: isRemovingFromShop }] = useRemoveFromShopMutation();
+	const isInShop = shopStatus?.in_shop ?? false;
+	const isShopLoading = isAddingToShop || isRemovingFromShop;
+
+	const handleToggleShop = async () => {
+		if (!token) {
+			Swal.fire({ icon: "error", title: "Unauthorized", text: "Please log in to add products to your shop." });
+			return;
+		}
+		try {
+			if (isInShop) {
+				await removeFromShop(product.id).unwrap();
+				toast.success("Product removed from your shop.");
+			} else {
+				await addToShop(product.id).unwrap();
+				toast.success("Product added to your shop!");
+			}
+		} catch {
+			toast.error("Something went wrong. Please try again.");
+		}
+	};
+
 	// ---- Transform Backend Data ----
 	const images = [
 		product.ViewProductImage,
@@ -134,7 +161,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 
 	const productData = {
 		name: product.ProductName,
-		category: `Category #${product.category_id}`,
+		category: product.categories?.category_name || `Category #${product.category_id}`,
 		quantity: product.qty,
 		sku: product.ProductSku,
 		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
@@ -1057,6 +1084,17 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 								</button>
 							) : (
 								<>
+									<button
+										onClick={handleToggleShop}
+										disabled={isShopLoading}
+										className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium cursor-pointer transition-colors border ${isInShop
+												? "border-pink-500 bg-pink-50 text-pink-600 hover:bg-pink-100"
+												: "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+											}`}
+									>
+										<Store className="w-4 h-4" />
+										{isShopLoading ? "..." : isInShop ? "Remove from Shop" : "Add to Shop"}
+									</button>
 									<button
 										onClick={handleAddToCart}
 										className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium cursor-pointer"

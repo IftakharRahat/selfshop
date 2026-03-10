@@ -81,7 +81,7 @@ class ComplainController extends Controller
             return back()->with('error', 'Duplicate entry');
         }
 
-        return back()->with('message','Complain create successfully;');
+        return back()->with('message','Complaint submitted successfully.');
     }
 
     /**
