@@ -297,9 +297,9 @@ class ProductController extends Controller
             }
         }
         if (isset($request->shop_id)) {
-            return redirect('admin/shop/products')->with('success', 'Product update successfully');
+            return redirect('admin/shop/products')->with('success', 'Product updated successfully.');
         } else {
-            return redirect('admin/products')->with('success', 'Product update successfully');
+            return redirect('admin/products')->with('success', 'Product updated successfully.');
         }
     }
 
@@ -601,8 +601,8 @@ class ProductController extends Controller
             if (!empty($messages) && $product->vendor) {
                 $this->vendorNotificationService->notifyVendor(
                     $product->vendor,
-                    'Product updated by admin',
-                    'Admin updated your product "' . $product->ProductName . '". ' . implode('. ', $messages) . '.',
+                    'Product updated by SelfShop',
+                    'Your product "' . $product->ProductName . '" has been updated by SelfShop. ' . implode('. ', $messages) . '.',
                     'info',
                     [
                         'event' => 'vendor_product_updated_by_admin',
@@ -617,12 +617,12 @@ class ProductController extends Controller
 
         if ($product) {
             if (isset($request->shop_id)) {
-                return redirect()->back()->with('success', 'Product update successfully');
+                return redirect()->back()->with('success', 'Product updated successfully.');
             } else {
-                return redirect()->back()->with('success', 'Product update successfully');
+                return redirect()->back()->with('success', 'Product updated successfully.');
             }
         } else {
-            return redirect()->back()->with('success', 'something went wrong');
+            return redirect()->back()->with('success', 'Something went wrong. Please try again.');
         }
     }
 

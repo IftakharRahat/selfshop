@@ -90,10 +90,10 @@ export default function VendorProfilePage() {
 			await saveProfile(formData).unwrap();
 			setLogoFile(null);
 			setBannerFile(null);
-			toast.success("Vendor profile saved");
+			toast.success("Profile saved successfully.");
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to save profile");
+			toast.error("Unable to save profile. Please try again.");
 		}
 	};
 
@@ -108,10 +108,10 @@ export default function VendorProfilePage() {
 			setKycType("");
 			setKycNumber("");
 			setKycFile(null);
-			toast.success("KYC document submitted");
+			toast.success("KYC document submitted successfully.");
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to submit KYC document");
+			toast.error("Unable to submit KYC document. Please try again.");
 		}
 	};
 

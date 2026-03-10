@@ -69,16 +69,16 @@ export default function VendorWarehousesPage() {
 
     const handleSubmit = async () => {
         if (!form.name.trim()) {
-            toast.error("Warehouse name is required");
+            toast.error("Please enter a warehouse name.");
             return;
         }
         try {
             if (modal.editId) {
                 await updateWarehouse({ id: modal.editId, ...form }).unwrap();
-                toast.success("Warehouse updated");
+                toast.success("Warehouse updated successfully.");
             } else {
                 await createWarehouse(form).unwrap();
-                toast.success("Warehouse created");
+                toast.success("Warehouse created successfully.");
             }
             setModal({ open: false, editId: null });
         } catch (err: unknown) {
@@ -91,7 +91,7 @@ export default function VendorWarehousesPage() {
         if (!confirm(`Delete warehouse "${name}"?`)) return;
         try {
             await deleteWarehouse(id).unwrap();
-            toast.success("Warehouse deleted");
+            toast.success("Warehouse deleted successfully.");
         } catch (err: unknown) {
             const msg = (err as { data?: { message?: string } })?.data?.message || "Failed to delete";
             toast.error(msg);

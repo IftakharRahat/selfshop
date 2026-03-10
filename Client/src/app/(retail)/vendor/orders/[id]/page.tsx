@@ -77,10 +77,10 @@ export default function VendorOrderDetailPage() {
 	const handleAccept = async () => {
 		try {
 			await updateStatus({ orderId: id, action: "accept" }).unwrap();
-			toast.success("Order accepted");
+			toast.success("Order accepted successfully.");
 		} catch (err: unknown) {
 			const e = err as { data?: { message?: string } };
-			toast.error(e?.data?.message ?? "Failed to accept order");
+			toast.error(e?.data?.message ?? "Unable to accept order. Please try again.");
 		}
 	};
 
@@ -89,20 +89,20 @@ export default function VendorOrderDetailPage() {
 
 		try {
 			await updateStatus({ orderId: id, action: "cancel", cancel_reason: reason }).unwrap();
-			toast.success("Order rejected");
+			toast.success("Order rejected.");
 		} catch (err: unknown) {
 			const e = err as { data?: { message?: string } };
-			toast.error(e?.data?.message ?? "Failed to reject order");
+			toast.error(e?.data?.message ?? "Unable to reject order. Please try again.");
 		}
 	};
 
 	const handleSendWarehouse = async () => {
 		try {
 			await sendToWarehouse({ orderId: id }).unwrap();
-			toast.success("Order sent to warehouse");
+			toast.success("Order forwarded to warehouse.");
 		} catch (err: unknown) {
 			const e = err as { data?: { message?: string } };
-			toast.error(e?.data?.message ?? "Failed to send order to warehouse");
+			toast.error(e?.data?.message ?? "Unable to send order to warehouse. Please try again.");
 		}
 	};
 
@@ -125,7 +125,7 @@ export default function VendorOrderDetailPage() {
 					}))
 					: undefined,
 			}).unwrap();
-			toast.success("Tracking updated");
+			toast.success("Tracking information updated.");
 			setTrackingModal(false);
 		} catch (err: unknown) {
 			const e = err as { data?: { message?: string }; status?: number };
@@ -237,7 +237,7 @@ export default function VendorOrderDetailPage() {
 												type="button"
 												onClick={() => {
 													navigator.clipboard.writeText(order.carrybee_parcel_id ?? "");
-													toast.success("Consignment ID copied!");
+													toast.success("Consignment ID copied to clipboard.");
 												}}
 												className="p-1.5 rounded-md hover:bg-indigo-50 text-indigo-600 transition-colors" title="Copy consignment ID"
 											>

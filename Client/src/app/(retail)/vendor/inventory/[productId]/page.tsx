@@ -61,7 +61,7 @@ export default function VendorProductStockPage() {
         }
         try {
             const res = await adjustStock({ productId, quantity: qty, type: adjustType, note: adjustNote || undefined }).unwrap();
-            toast.success(`Stock adjusted. New qty: ${res.data.new_qty}`);
+            toast.success(`Stock adjusted successfully. New quantity: ${res.data.new_qty}.`);
             setShowAdjust(false);
             setAdjustQty("");
             setAdjustNote("");
@@ -79,7 +79,7 @@ export default function VendorProductStockPage() {
         }
         try {
             await updateThreshold({ productId, low_stock: val }).unwrap();
-            toast.success("Low stock threshold updated");
+            toast.success("Low stock threshold updated successfully.");
             setEditThreshold(false);
         } catch {
             toast.error("Failed to update threshold");
@@ -95,7 +95,7 @@ export default function VendorProductStockPage() {
         }
         try {
             await allocateStock({ productId, warehouse_id: warehouseId, quantity: qty }).unwrap();
-            toast.success("Stock allocated to warehouse");
+            toast.success("Stock allocated to warehouse successfully.");
             setShowAllocate(false);
             setAllocateWarehouseId("");
             setAllocateQty("");

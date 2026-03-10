@@ -154,7 +154,7 @@ class AdminVendorPayoutController extends Controller
             $this->vendorNotificationService->notifyVendor(
                 $payoutRequest->vendor,
                 'Payout request approved',
-                'Admin approved your payout request of ' . number_format($amount, 2) . '.',
+                'Your payout request of ৳' . number_format($amount, 2) . ' has been approved by SelfShop.',
                 'success',
                 [
                     'event' => 'vendor_payout_approved',
@@ -192,7 +192,7 @@ class AdminVendorPayoutController extends Controller
             $this->vendorNotificationService->notifyVendor(
                 $payoutRequest->vendor,
                 'Payout request rejected',
-                'Admin rejected your payout request of ' . number_format((float) $payoutRequest->amount, 2) . '.' . ($payoutRequest->admin_notes ? ' Note: ' . $payoutRequest->admin_notes : ''),
+                'Your payout request of ৳' . number_format((float) $payoutRequest->amount, 2) . ' has been reviewed by SelfShop and could not be approved at this time.' . ($payoutRequest->admin_notes ? ' Note: ' . $payoutRequest->admin_notes : ''),
                 'warning',
                 [
                     'event' => 'vendor_payout_rejected',

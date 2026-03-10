@@ -190,7 +190,7 @@ class VendorController extends Controller
         $this->vendorNotificationService->notifyVendor(
             $vendor,
             'Supplier account approved',
-            'Your supplier account has been approved by admin. You can now manage your products and orders.',
+            'Your supplier account has been approved by SelfShop. You can now manage your products and orders.',
             'success',
             ['event' => 'vendor_account_approved', 'vendor_id' => $vendor->id],
             '/vendor/profile'
@@ -225,7 +225,7 @@ class VendorController extends Controller
         $this->vendorNotificationService->notifyVendor(
             $vendor,
             'Supplier account rejected',
-            'Your supplier account was rejected by admin.' . ($vendor->notes ? ' Reason: ' . $vendor->notes : ''),
+            'Your supplier account application has been reviewed by SelfShop and could not be approved at this time.' . ($vendor->notes ? ' Reason: ' . $vendor->notes : ''),
             'warning',
             ['event' => 'vendor_account_rejected', 'vendor_id' => $vendor->id, 'reason' => $vendor->notes],
             '/vendor/profile'
@@ -259,7 +259,7 @@ class VendorController extends Controller
         $this->vendorNotificationService->notifyVendor(
             $vendor,
             'Verified badge granted',
-            'Admin granted your supplier account a verified badge.',
+            'Congratulations! Your supplier account has been awarded a verified badge by SelfShop.',
             'success',
             ['event' => 'vendor_badge_granted', 'vendor_id' => $vendor->id],
             '/vendor/profile'
@@ -285,7 +285,7 @@ class VendorController extends Controller
         $this->vendorNotificationService->notifyVendor(
             $vendor,
             'Verified badge removed',
-            'Admin removed the verified badge from your supplier account.',
+            'The verified badge has been removed from your supplier account by SelfShop.',
             'warning',
             ['event' => 'vendor_badge_removed', 'vendor_id' => $vendor->id],
             '/vendor/profile'

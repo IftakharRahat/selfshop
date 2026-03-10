@@ -61,13 +61,13 @@ class InformationController extends Controller
         if (isset($value)) {
             $value->value = $request->value;
             $value->update();
-            return redirect()->back()->with('message', 'Info Update Successfully.');
+            return redirect()->back()->with('message', 'Information updated successfully.');
         } else {
             $valuenew = new Information();
             $valuenew->key = $request->key;
             $valuenew->value = $request->value;
             $valuenew->save();
-            return redirect()->back()->with('message', 'Info created Successfully.');
+            return redirect()->back()->with('message', 'Information created successfully.');
         }
     }
 
@@ -113,7 +113,7 @@ class InformationController extends Controller
         $value = Information::where('key', $slug)->first();
         $value->value = $request->value;
         $value->update();
-        return redirect()->back()->with('message', 'Info Update Successfully.');
+        return redirect()->back()->with('message', 'Information updated successfully.');
     }
 
     /**
