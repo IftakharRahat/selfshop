@@ -29,20 +29,32 @@
                         <table class="table" id="sectionsTable" width="100%">
                             <thead>
                                 <tr>
-                                    <th style="width:60px">Order</th>
+                                    <th>Order</th>
                                     <th>Banner</th>
                                     <th>Title</th>
-                                    <th>Slug</th>
+                                    <th>Layout</th>
                                     <th>Products</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($sections as $section)
+                                @forelse ($sections as $index => $section)
                                     <tr data-id="{{ $section->id }}">
-                                        <td>
-                                            <span class="badge bg-secondary">{{ $section->sort_order }}</span>
+                                        <td style="text-align:center;white-space:nowrap;">
+                                            @if($index > 0)
+                                                <form action="{{ route('admin.promotional-sections.move', ['id' => $section->id, 'direction' => 'up']) }}" method="POST" style="display:inline;margin:0;">
+                                                    @csrf
+                                                    <button type="submit" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:10px;vertical-align:middle;" title="Move up">▲</button>
+                                                </form>
+                                            @endif
+                                            <span style="background:#4f46e5;color:#fff;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:600;vertical-align:middle;">{{ $section->sort_order }}</span>
+                                            @if($index < $sections->count() - 1)
+                                                <form action="{{ route('admin.promotional-sections.move', ['id' => $section->id, 'direction' => 'down']) }}" method="POST" style="display:inline;margin:0;">
+                                                    @csrf
+                                                    <button type="submit" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:10px;vertical-align:middle;" title="Move down">▼</button>
+                                                </form>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($section->banner_image)
@@ -56,7 +68,13 @@
                                             @endif
                                         </td>
                                         <td><strong>{{ $section->title }}</strong></td>
-                                        <td><code>{{ $section->slug }}</code></td>
+                                        <td>
+                                            @if($section->layout_type == 'slider')
+                                                <span class="badge bg-primary">Slider</span>
+                                            @else
+                                                <span class="badge bg-warning text-dark">Card</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <span class="badge bg-info">{{ $section->products_count }} products</span>
                                         </td>
@@ -88,7 +106,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-4">
+                                         <td colspan="7" class="text-center text-muted py-4">
                                             No promotional sections found. Click "Create Section" to add one.
                                         </td>
                                     </tr>

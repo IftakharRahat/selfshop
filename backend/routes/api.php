@@ -62,6 +62,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/brands', [FrontendApiController::class, 'brands'])->name('api.user.brands');
     Route::get('/flash-sale', [FrontendApiController::class, 'flashSale'])->name('api.user.flashsale');
     Route::get('/promotional-sections', [FrontendApiController::class, 'promotionalSections'])->name('api.user.promotional-sections');
+    Route::get('/promotional-sections/{slug}', [FrontendApiController::class, 'promotionalSectionBySlug'])->name('api.user.promotional-section');
     Route::get('/collection/{slug}', [FrontendApiController::class, 'collection'])->name('api.user.collection');
     Route::get('/new-arrivels', [FrontendApiController::class, 'newarrivels'])->name('api.user.newarrivels');
     Route::get('/new-products', [FrontendApiController::class, 'newproducts'])->name('api.user.newarrivels');

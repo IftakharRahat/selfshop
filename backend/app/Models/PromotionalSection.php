@@ -13,6 +13,8 @@ class PromotionalSection extends Model
         'title',
         'slug',
         'banner_image',
+        'layout_type',
+        'bg_color',
         'sort_order',
         'is_active',
     ];

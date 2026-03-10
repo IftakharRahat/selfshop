@@ -1,10 +1,13 @@
 import order from "@/assets/images/dashboard/order.png";
 import reseller from "@/assets/images/dashboard/reseller.png";
 import shop from "@/assets/images/dashboard/shop.png";
+import pendingIcon from "@/assets/images/dashboard/Group 1321314506 (3).png";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
+import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
 
 export default function OrderInsightCards() {
 	const { data } = useGetMeQuery(undefined);
+	const { data: dashboardData } = useGetAllDashboardDataQuery(undefined);
 
 	const insights = [
 		{
@@ -22,6 +25,11 @@ export default function OrderInsightCards() {
 			value: data?.data?.soldamount,
 			icon: reseller,
 		},
+		{
+			title: "Pending amount",
+			value: `৳ ${dashboardData?.data?.pending_amount ?? 0}`,
+			icon: pendingIcon,
+		},
 	];
 
 	return (
@@ -29,7 +37,7 @@ export default function OrderInsightCards() {
 			<h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
 				Order Insight
 			</h2>
-			<div className="grid grid-cols-3 gap-2 sm:gap-4">
+			<div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
 				{insights.map((insight, index) => (
 					<div
 						key={index}
@@ -58,3 +66,4 @@ export default function OrderInsightCards() {
 		</div>
 	);
 }
+

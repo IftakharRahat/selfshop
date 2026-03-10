@@ -24,7 +24,7 @@ class PromotionalSectionController extends Controller
      */
     public function create()
     {
-        $products = Product::where('ProductStatus', 'Active')
+        $products = Product::where('status', 'Active')
             ->select('id', 'ProductName', 'ViewProductImage')
             ->orderBy('ProductName')
             ->get();
@@ -51,7 +51,9 @@ class PromotionalSectionController extends Controller
             $section->banner_image = $this->uploadBanner($request->file('banner_image'));
         }
 
-        $section->sort_order = PromotionalSection::max('sort_order') + 1;
+        $section->sort_order = $request->input('sort_order', PromotionalSection::max('sort_order') + 1);
+        $section->layout_type = $request->input('layout_type', 'card');
+        $section->bg_color = $request->input('bg_color');
         $section->is_active = $request->has('is_active');
         $section->save();
 
@@ -74,7 +76,7 @@ class PromotionalSectionController extends Controller
     public function edit($id)
     {
         $section = PromotionalSection::with('products')->findOrFail($id);
-        $products = Product::where('ProductStatus', 'Active')
+        $products = Product::where('status', 'Active')
             ->select('id', 'ProductName', 'ViewProductImage')
             ->orderBy('ProductName')
             ->get();
@@ -111,6 +113,9 @@ class PromotionalSectionController extends Controller
         }
 
         $section->is_active = $request->has('is_active');
+        $section->sort_order = $request->input('sort_order', $section->sort_order);
+        $section->layout_type = $request->input('layout_type', $section->layout_type);
+        $section->bg_color = $request->input('bg_color');
         $section->save();
 
         // Sync products
@@ -163,6 +168,32 @@ class PromotionalSectionController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Move a section up or down.
+     */
+    public function moveOrder($id, $direction)
+    {
+        $section = PromotionalSection::findOrFail($id);
+
+        if ($direction === 'up') {
+            $swap = PromotionalSection::where('sort_order', '<', $section->sort_order)
+                ->orderBy('sort_order', 'desc')->first();
+        } else {
+            $swap = PromotionalSection::where('sort_order', '>', $section->sort_order)
+                ->orderBy('sort_order', 'asc')->first();
+        }
+
+        if ($swap) {
+            $tempOrder = $section->sort_order;
+            $section->sort_order = $swap->sort_order;
+            $swap->sort_order = $tempOrder;
+            $section->save();
+            $swap->save();
+        }
+
+        return redirect()->route('admin.promotional-sections.index');
     }
 
     /**

@@ -57,7 +57,7 @@ class VendorDashboardController extends Controller
             // Pending amount (Earnings synced but order not delivered yet)
             $pending_amount = (float) VendorEarning::where('vendor_id', $vendorId)
                 ->where('status', 'pending')
-                ->sum('line_total');
+                ->sum('net_amount');
 
             // Total sales & last month / this month from vendor_earnings (ONLY available/delivered)
             $total_sales = (float) VendorEarning::where('vendor_id', $vendorId)

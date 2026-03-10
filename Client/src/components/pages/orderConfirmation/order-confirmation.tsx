@@ -597,7 +597,7 @@ export default function OrderConfirmation() {
 								</div>
 								<div className="border-t pt-4">
 									<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
-										<span>Grand Total</span>
+										<span>Total</span>
 										<span className="flex items-center">
 											<TbCurrencyTaka size={20} />
 											{grandTotal.toFixed(2)}

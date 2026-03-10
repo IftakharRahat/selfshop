@@ -222,11 +222,7 @@ export default function VendorHomePage() {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<div className="rounded-xl bg-white p-5 border border-gray-100">
-						<h2 className="text-xl font-semibold text-gray-900 mb-2">Commission Type &amp; Rate</h2>
-						<p className="text-sm text-gray-600">Currently No Commission System is Set by Admin</p>
-					</div>
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 					<div className="rounded-xl bg-[#f2f2fa] p-5 border border-gray-100 text-center">
 						<h2 className="text-xl font-semibold text-gray-900 mb-3">Money Withdraw</h2>
 						<Wallet className="w-10 h-10 text-[#2d2a5d] mx-auto mb-3" />

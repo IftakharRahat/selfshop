@@ -31,7 +31,7 @@ export default function VendorEarningsPage() {
 					<div>
 						<h1 className="text-2xl font-bold text-gray-900 mb-1">Earnings & balance</h1>
 						<p className="text-sm text-gray-600">
-							Total sales, commission, and available balance.
+							Total sales and available balance.
 						</p>
 					</div>
 					<Link
@@ -54,10 +54,7 @@ export default function VendorEarningsPage() {
 							<p className="text-sm font-medium text-blue-600">Total sales</p>
 							<p className="text-2xl font-bold text-blue-800 mt-1">৳{Number(summary.total_sales).toLocaleString()}</p>
 						</div>
-						<div className="rounded-xl border p-4 bg-amber-50 border-amber-200">
-							<p className="text-sm font-medium text-amber-600">Commission</p>
-							<p className="text-2xl font-bold text-amber-800 mt-1">৳{Number(summary.total_commission).toLocaleString()}</p>
-						</div>
+
 						<div className="rounded-xl border p-4 bg-emerald-50 border-emerald-200">
 							<p className="text-sm font-medium text-emerald-600">Net earnings</p>
 							<p className="text-2xl font-bold text-emerald-800 mt-1">৳{Number(summary.net_earnings).toLocaleString()}</p>
@@ -122,7 +119,7 @@ export default function VendorEarningsPage() {
 											<th className="px-3 py-2 text-left font-medium">Order</th>
 											<th className="px-3 py-2 text-left font-medium">Product</th>
 											<th className="px-3 py-2 text-right font-medium">Line total</th>
-											<th className="px-3 py-2 text-right font-medium">Commission</th>
+
 											<th className="px-3 py-2 text-right font-medium">Net</th>
 											<th className="px-3 py-2 text-center font-medium">Status</th>
 										</tr>
@@ -133,14 +130,13 @@ export default function VendorEarningsPage() {
 												<td className="px-3 py-2 text-gray-600">{e.order?.invoiceID ?? "—"}</td>
 												<td className="px-3 py-2">{e.product_name}</td>
 												<td className="px-3 py-2 text-right">৳{Number(e.line_total).toLocaleString()}</td>
-												<td className="px-3 py-2 text-right text-amber-600">-৳{Number(e.commission_amount).toLocaleString()}</td>
+
 												<td className="px-3 py-2 text-right font-medium">৳{Number(e.net_amount).toLocaleString()}</td>
 												<td className="px-3 py-2 text-center">
-													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-														e.status === "paid" ? "bg-green-100 text-green-700" :
-														e.status === "available" ? "bg-blue-100 text-blue-700" :
-														"bg-gray-100 text-gray-700"
-													}`}>
+													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${e.status === "paid" ? "bg-green-100 text-green-700" :
+															e.status === "available" ? "bg-blue-100 text-blue-700" :
+																"bg-gray-100 text-gray-700"
+														}`}>
 														{e.status}
 													</span>
 												</td>

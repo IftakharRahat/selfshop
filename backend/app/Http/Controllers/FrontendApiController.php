@@ -445,7 +445,7 @@ class FrontendApiController extends Controller
         $sections = \App\Models\PromotionalSection::active()
             ->orderBy('sort_order')
             ->with(['products' => function ($query) {
-                $query->where('ProductStatus', 'Active')
+                $query->where('status', 'Active')
                     ->select('products.id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')
                     ->orderByPivot('sort_order');
             }])
@@ -456,6 +456,8 @@ class FrontendApiController extends Controller
                     'title' => $section->title,
                     'slug' => $section->slug,
                     'banner_image' => $section->banner_image,
+                    'layout_type' => $section->layout_type ?? 'card',
+                    'bg_color' => $section->bg_color,
                     'products' => $section->products,
                 ];
             });
@@ -464,6 +466,38 @@ class FrontendApiController extends Controller
             'status' => true,
             'message' => 'Promotional sections',
             'data' => $sections,
+        ], 200);
+    }
+
+    public function promotionalSectionBySlug(Request $request, $slug)
+    {
+        $section = \App\Models\PromotionalSection::where('slug', $slug)->first();
+
+        if (!$section) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Section not found',
+                'data' => [],
+            ], 404);
+        }
+
+        $limit = $request->input('limit', 20);
+
+        $products = $section->products()
+            ->where('status', 'Active')
+            ->select('products.id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')
+            ->paginate($limit);
+
+        return response()->json([
+            'status' => true,
+            'message' => $section->title,
+            'section' => [
+                'id' => $section->id,
+                'title' => $section->title,
+                'slug' => $section->slug,
+                'banner_image' => $section->banner_image,
+            ],
+            'data' => $products,
         ], 200);
     }
 
@@ -545,7 +579,7 @@ class FrontendApiController extends Controller
         $limit = $request->limit ?? 15;
         $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
 
-        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage')->latest('id')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -2508,6 +2542,7 @@ class FrontendApiController extends Controller
             'data' => [
                 'total_sales' => Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('subTotal') + Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('paymentAmount') - Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('deliveryCharge'),
                 'total_profit' => Order::where('user_id', $id)->where('status', 'Delivered')->get()->sum('profit'),
+            'pending_amount' => Order::where('user_id', $id)->whereNotIn('status', ['Delivered', 'Canceled', 'Cancelled'])->get()->sum('profit'),
                 'blance' => Auth::user()->account_balance,
                 'withdraw' => Auth::user()->cashout_balance,
                 'shop_products' => Shopproduct::where('user_id', $id)->get()->count(),

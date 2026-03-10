@@ -203,6 +203,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     // Promotional Sections
     Route::resource('promotional-sections', PromotionalSectionController::class, ['names' => 'admin.promotional-sections']);
     Route::put('promotional-sections/{id}/toggle-status', [PromotionalSectionController::class, 'toggleStatus'])->name('admin.promotional-sections.toggle-status');
+    Route::post('promotional-sections/{id}/move/{direction}', [PromotionalSectionController::class, 'moveOrder'])->name('admin.promotional-sections.move');
     Route::post('promotional-sections/update-order', [PromotionalSectionController::class, 'updateOrder'])->name('admin.promotional-sections.update-order');
     Route::get('promotional-sections/search-products', [PromotionalSectionController::class, 'searchProducts'])->name('admin.promotional-sections.search-products');
 
