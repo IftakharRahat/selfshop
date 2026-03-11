@@ -173,15 +173,7 @@ export default function VendorOrderDetailPage() {
 								{sendingWarehouse ? "Sending..." : "Send to warehouse"}
 							</button>
 						)}
-						{canAddTracking && (
-							<button
-								type="button"
-								onClick={openTrackingModal}
-								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] sm:w-auto"
-							>
-								Add / update tracking
-							</button>
-						)}
+						{/* Add / update tracking button hidden */}
 						<Link href="/vendor/orders" className="inline-flex w-full items-center justify-center text-sm font-medium text-gray-600 hover:text-gray-900 sm:w-auto">Back to orders</Link>
 					</div>
 				</div>
