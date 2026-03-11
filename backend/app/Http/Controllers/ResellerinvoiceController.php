@@ -79,16 +79,17 @@ public function incomeHistoryOrders(Request $request, $id)
 }
     public function autologin($id)
     {
-        $credentials = User::where('id', $id)->first();
-        if (Auth::guard('web')->check()) {
-            return redirect()->back()->with('error', 'Already Login to an another account');
-        } else {
-            if (Auth::guard('web')->loginUsingId($credentials->id)) {
-                return redirect('user/dashboard')->with('success', 'You have successfully use Auto login');
-            }
-
-            return redirect()->back()->with('error', 'Oppes! You have entered invalid credentials');
+        $user = User::where('id', $id)->first();
+        if (!$user) {
+            return redirect()->back()->with('error', 'User not found');
         }
+
+        // Generate a Sanctum token for the target user
+        $token = $user->createToken('admin-impersonate')->plainTextToken;
+
+        // Redirect to the Next.js frontend with the token
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'https://selfshop.com.bd'), '/');
+        return redirect($frontendUrl . '/impersonate?token=' . urlencode($token));
     }
 
 

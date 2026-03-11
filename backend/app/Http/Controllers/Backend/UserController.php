@@ -53,7 +53,8 @@ class UserController extends Controller
         return Datatables::of($users)
 
             ->editColumn('user', function ($users) {
-                return '<a href="../../resellerinvoice/user/view-dashboard/' . $users->id . '" target="_blank">' . User::where('id', $users->id)->first()->name . '( <span style="color:#613EEA">' . User::where('id', $users->id)->first()->my_referral_code . ' </span>)</a>';
+                $u = User::where('id', $users->id)->first();
+                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
             })
             ->addColumn('type', function ($users) {
                 if ($users->vendor) {
@@ -98,7 +99,8 @@ class UserController extends Controller
 
         return Datatables::of($users)
             ->editColumn('user', function ($users) {
-                return '<a href="../../resellerinvoice/user/view-dashboard/' . $users->id . '" target="_blank">' . User::where('id', $users->id)->first()->name . '( <span style="color:#613EEA">' . User::where('id', $users->id)->first()->my_referral_code . ' </span>)</a>';
+                $u = User::where('id', $users->id)->first();
+                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
             })
             ->addColumn('action', function ($users) {
                 return '<a href="../users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>';

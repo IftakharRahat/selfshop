@@ -174,15 +174,7 @@ export default function VendorOrderDetailPage() {
 								{sendingWarehouse ? "Sending..." : "Send to warehouse"}
 							</button>
 						)}
-						{canAddTracking && (
-							<button
-								type="button"
-								onClick={openTrackingModal}
-								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] sm:w-auto"
-							>
-								Add / update tracking
-							</button>
-						)}
+						{/* Add / update tracking button hidden */}
 						<Link href="/vendor/orders" className="inline-flex w-full items-center justify-center text-sm font-medium text-gray-600 hover:text-gray-900 sm:w-auto">Back to orders</Link>
 					</div>
 				</div>
@@ -269,18 +261,14 @@ export default function VendorOrderDetailPage() {
 
 					{customer && (
 						<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
-							<h2 className="text-sm font-semibold text-gray-900 mb-3">Shipping / Customer</h2>
+							<h2 className="text-sm font-semibold text-gray-900 mb-3">Customer</h2>
 							<dl className="space-y-2 text-sm">
-								<dt className="text-gray-500">Name</dt>
-								<dd className="font-medium">{customer.customerName}</dd>
 								<dt className="text-gray-500">Phone</dt>
 								<dd className="font-medium">
 									{customer.customerPhone
 										? `${'*'.repeat(Math.max(0, customer.customerPhone.length - 4))}${customer.customerPhone.slice(-4)}`
 										: '—'}
 								</dd>
-								<dt className="text-gray-500">Address</dt>
-								<dd className="text-gray-700">{customer.customerAddress}</dd>
 							</dl>
 						</div>
 					)}

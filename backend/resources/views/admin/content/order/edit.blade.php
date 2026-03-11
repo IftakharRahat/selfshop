@@ -19,6 +19,37 @@
                          </div>
                       </div>
                   </div>
+
+                 {{-- Supplier Information --}}
+                 @php
+                     $suppliers = collect();
+                     foreach ($order->products as $p) {
+                         $prod = App\Models\Product::find($p->product_id);
+                         if ($prod && $prod->vendor_id) {
+                             $vendor = App\Models\Vendor::find($prod->vendor_id);
+                             if ($vendor && !$suppliers->contains('id', $vendor->id)) {
+                                 $suppliers->push($vendor);
+                             }
+                         }
+                     }
+                 @endphp
+                 @if($suppliers->count() > 0)
+                 <div class="row mt-2">
+                     <div class="col-12">
+                         <div class="card card-body p-2" style="background: #f8f9fa; border: 1px solid #e9ecef;">
+                             <strong style="font-size: 13px; margin-bottom: 4px;">Supplier Info</strong>
+                             @foreach($suppliers as $supplier)
+                             <div style="font-size: 12px; {{ !$loop->last ? 'border-bottom: 1px solid #dee2e6; padding-bottom: 4px; margin-bottom: 4px;' : '' }}">
+                                 <span style="color: #613EEA; font-weight: 600;">{{ $supplier->company_name }}</span><br>
+                                 {{ $supplier->contact_name ?? '' }}
+                                 @if($supplier->contact_phone) | {{ $supplier->contact_phone }} @endif
+                                 @if($supplier->contact_email) | {{ $supplier->contact_email }} @endif
+                             </div>
+                             @endforeach
+                         </div>
+                     </div>
+                 </div>
+                 @endif
                  <div class="row">
                      <div class="col-lg-6" hidden>
                          <div class="form-group" id="storenamepart">
