@@ -3211,6 +3211,9 @@ class FrontendApiController extends Controller
                 'user_id' => Auth::id(),
                 'advance_delivery' => $request->advance_delivery,
                 'balance_from' => 'online_pay',
+                'customer_name' => $request->customerName,
+                'customer_phone' => $request->customerPhone,
+                'customer_address' => $request->customerAddress,
             ]);
 
             #Before  going to initiate the payment order status need to update as Pending.
@@ -3222,7 +3225,16 @@ class FrontendApiController extends Controller
                     'subTotal' => $request->subTotal,
                     'deliveryCharge' => $request->deliveryCharge,
                     'advance_delivery' => $request->advance_delivery === 'yes' ? 1 : 0,
-                    'data' => json_encode($request),
+                    'data' => json_encode([
+                        'customer_name' => $request->customerName,
+                        'customer_phone' => $request->customerPhone,
+                        'customer_address' => $request->customerAddress,
+                        'customer_note' => $request->customerNote ?? '',
+                        'delivery_charge_per_shop' => $request->deliveryCharge,
+                        'cart_subtotal' => $request->subTotal,
+                        'advance_delivery' => $request->advance_delivery,
+                        'balance_from' => $request->balance_from,
+                    ]),
                     'cart' => json_encode($shopproducts),
                     'orderDate' => date('Y-m-d'),
                     'courier_id' => 26,

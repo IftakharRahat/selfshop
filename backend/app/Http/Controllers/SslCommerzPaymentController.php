@@ -1322,9 +1322,16 @@ public function success(Request $request)
         $originalDataArray = $originalData ? json_decode($originalData, true) : [];
         
         // Extract customer info before we modify the data column
-        $savedCustomerName = $originalDataArray['customer_name'] ?? null;
-        $savedCustomerPhone = $originalDataArray['customer_phone'] ?? null;
-        $savedCustomerAddress = $originalDataArray['customer_address'] ?? null;
+        $savedCustomerName = $originalDataArray['customer_name'] ?? ($originalDataArray['customerName'] ?? null);
+        $savedCustomerPhone = $originalDataArray['customer_phone'] ?? ($originalDataArray['customerPhone'] ?? null);
+        $savedCustomerAddress = $originalDataArray['customer_address'] ?? ($originalDataArray['customerAddress'] ?? null);
+        
+        // Fallback: try to get customer info from value_d (SSLCommerz callback data)
+        if ((!$savedCustomerName || !$savedCustomerPhone) && !empty($valueDData)) {
+            $savedCustomerName = $savedCustomerName ?: ($valueDData['customer_name'] ?? null);
+            $savedCustomerPhone = $savedCustomerPhone ?: ($valueDData['customer_phone'] ?? null);
+            $savedCustomerAddress = $savedCustomerAddress ?: ($valueDData['customer_address'] ?? null);
+        }
         
         Log::info('Customer data from saved order:', [
             'name' => $savedCustomerName,
