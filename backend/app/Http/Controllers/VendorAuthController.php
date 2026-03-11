@@ -100,10 +100,12 @@ class VendorAuthController extends Controller
             if (!empty($data['pickup_city_id']) && !empty($data['pickup_zone_id']) && !empty($data['pickup_area_id'])) {
                 try {
                     $carryBee = app(CarryBeeService::class);
+                    // Use email as phone if it looks like a phone number, else use a default
+                    $contactPhone = preg_match('/^[\d\+]/', $data['email']) ? $data['email'] : '01700000000';
                     $storeResult = $carryBee->createStore([
                         'name' => $data['company_name'],
                         'contact_person_name' => $data['name'],
-                        'contact_person_number' => $data['email'], // phone/email field
+                        'contact_person_number' => $contactPhone,
                         'address' => $data['pickup_address'] ?? $data['company_name'],
                         'city_id' => (int) $data['pickup_city_id'],
                         'zone_id' => (int) $data['pickup_zone_id'],
