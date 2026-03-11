@@ -54,8 +54,7 @@ class UserController extends Controller
 
             ->editColumn('user', function ($users) {
                 $u = User::where('id', $users->id)->first();
-                $siteUrl = rtrim(env('FRONTEND_URL', 'https://selfshop.com.bd'), '/');
-                return $u->name . '( <a href="' . $siteUrl . '/shop/' . $u->my_referral_code . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
+                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
             })
             ->addColumn('type', function ($users) {
                 if ($users->vendor) {
@@ -101,8 +100,7 @@ class UserController extends Controller
         return Datatables::of($users)
             ->editColumn('user', function ($users) {
                 $u = User::where('id', $users->id)->first();
-                $siteUrl = rtrim(env('FRONTEND_URL', 'https://selfshop.com.bd'), '/');
-                return $u->name . '( <a href="' . $siteUrl . '/shop/' . $u->my_referral_code . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
+                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
             })
             ->addColumn('action', function ($users) {
                 return '<a href="../users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>';
