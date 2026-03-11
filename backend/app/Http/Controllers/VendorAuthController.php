@@ -84,6 +84,19 @@ class VendorAuthController extends Controller
 
             // Create a pickup store in Carry Bee
             $carrybeeStoreId = null;
+
+            // DEBUG: Log what we received
+            Log::info('CarryBee registration debug', [
+                'vendor_id' => $vendor->id,
+                'pickup_city_id' => $data['pickup_city_id'] ?? 'NOT SET',
+                'pickup_zone_id' => $data['pickup_zone_id'] ?? 'NOT SET',
+                'pickup_area_id' => $data['pickup_area_id'] ?? 'NOT SET',
+                'city_empty' => empty($data['pickup_city_id']),
+                'zone_empty' => empty($data['pickup_zone_id']),
+                'area_empty' => empty($data['pickup_area_id']),
+                'condition_result' => !empty($data['pickup_city_id']) && !empty($data['pickup_zone_id']) && !empty($data['pickup_area_id']),
+            ]);
+
             if (!empty($data['pickup_city_id']) && !empty($data['pickup_zone_id']) && !empty($data['pickup_area_id'])) {
                 try {
                     $carryBee = app(CarryBeeService::class);
@@ -97,18 +110,28 @@ class VendorAuthController extends Controller
                         'area_id' => (int) $data['pickup_area_id'],
                     ]);
 
+                    Log::info('CarryBee store creation raw result', [
+                        'vendor_id' => $vendor->id,
+                        'storeResult' => $storeResult,
+                        'data_id' => $storeResult['data']['id'] ?? 'NOT FOUND',
+                    ]);
+
                     if (!empty($storeResult['data']['id'])) {
                         $carrybeeStoreId = $storeResult['data']['id'];
                         $vendor->update(['carrybee_store_id' => $carrybeeStoreId]);
+                        Log::info('CarryBee store ID saved', ['vendor_id' => $vendor->id, 'store_id' => $carrybeeStoreId]);
                     }
-
-                    Log::info('CarryBee store creation result', ['vendor_id' => $vendor->id, 'result' => $storeResult]);
                 } catch (\Throwable $e) {
                     Log::warning('CarryBee store creation failed (non-blocking)', [
                         'vendor_id' => $vendor->id,
                         'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
+            } else {
+                Log::warning('CarryBee store creation SKIPPED - missing pickup fields', [
+                    'vendor_id' => $vendor->id,
+                ]);
             }
 
             // Notify admin(s) about new pending vendor
