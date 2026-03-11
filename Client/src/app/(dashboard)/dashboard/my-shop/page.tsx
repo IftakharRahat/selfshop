@@ -12,6 +12,7 @@ import {
 } from "@/redux/api/shopApi";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { useAppSelector } from "@/redux/hooks";
+import { formatBDT } from "@/lib/format-currency";
 
 export default function MyShopPage() {
     const token = useAppSelector((state) => state.auth.access_token);
@@ -178,9 +179,9 @@ export default function MyShopPage() {
                                     <div className="flex items-center justify-between mt-2">
                                         <span className="text-sm font-bold text-pink-600">
                                             ৳{" "}
-                                            {parseFloat(
-                                                product.regular_price,
-                                            ).toFixed(0)}
+                                            {formatBDT(
+                                                parseFloat(product.regular_price), 0
+                                            )}
                                         </span>
                                         <button
                                             onClick={() =>

@@ -293,6 +293,22 @@
     @yield('subjs')
 
     <script>
+        /**
+         * Format a number using Bangladesh / Indian grouping (lakh, crore).
+         * Example: formatBDT(35575)  → "35,575"
+         *          formatBDT(124356) → "1,24,356"
+         */
+        function formatBDT(n, decimals) {
+            if (typeof decimals === 'undefined') decimals = 0;
+            var num = typeof n === 'string' ? parseFloat(n) || 0 : (n || 0);
+            return new Intl.NumberFormat('en-IN', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            }).format(num);
+        }
+    </script>
+
+    <script>
         toastr.options = {
             "closeButton": true,
             "progressBar": true,

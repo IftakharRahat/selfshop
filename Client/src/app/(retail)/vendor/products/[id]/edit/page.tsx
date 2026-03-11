@@ -690,7 +690,7 @@ export default function VendorEditProductPage() {
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
-																	<div className="font-semibold text-indigo-600">৳{sz.price || 'Inherited'}</div>
+																	<div className="font-semibold text-indigo-600">৳{sz.price ? formatBDT(Number(sz.price)) : 'Inherited'}</div>
 																	{sz.price && selectedCategoryCommission !== null && (
 																		<div className="text-[9px] text-green-600 font-medium digit-font">
 																			Store: ৳{formatBDT(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100))}
@@ -719,7 +719,7 @@ export default function VendorEditProductPage() {
 																<div key={bt.id} className="flex items-center gap-3 text-xs bg-white p-1.5 rounded border border-indigo-50">
 																	<span className="flex-1 font-medium">Qty: {bt.min_qty} - {bt.max_qty || '∞'}</span>
 																	<div className="text-right">
-																		<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																		<span className="font-bold text-indigo-600">৳{formatBDT(Number(bt.bulk_price))}</span>
 																		{selectedCategoryCommission !== null && (
 																			<div className="text-[9px] text-green-600 font-medium digit-font">
 																				Store: ৳{formatBDT(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100))}

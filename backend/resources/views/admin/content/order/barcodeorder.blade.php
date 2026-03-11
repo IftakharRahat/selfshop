@@ -271,7 +271,8 @@ $couriers = Courier::where('status', 'Active')->get();
                     },
                     {
                         data: "subTotal",
-                        width: "5%"
+                        width: "5%",
+                        render: function(data) { return formatBDT(data); }
                     },
                     {
                         data: "courier",
@@ -312,7 +313,7 @@ $couriers = Courier::where('status', 'Active')->get();
                     }).data().reduce(function(a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    $(api.column(4).footer()).html(pageTotal + " Tk");
+                    $(api.column(4).footer()).html(formatBDT(pageTotal) + " Tk");
                 }
 
             });
@@ -351,7 +352,8 @@ $couriers = Courier::where('status', 'Active')->get();
                     },
                     {
                         data: "subTotal",
-                        width: "5%"
+                        width: "5%",
+                        render: function(data) { return formatBDT(data); }
                     },
                     {
                         data: "courier",
@@ -397,7 +399,7 @@ $couriers = Courier::where('status', 'Active')->get();
                     }).data().reduce(function(a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    $(api.column(4).footer()).html(pageTotal + " Tk");
+                    $(api.column(4).footer()).html(formatBDT(pageTotal) + " Tk");
                 }
 
             });
@@ -1114,9 +1116,10 @@ $couriers = Courier::where('status', 'Active')->get();
                             subtotal = subtotal + +$(this).find(".productPrice")
                                 .text() * +$(this).find(".productQuantity").val();
                         });
-                        $("#subtotal").text(subtotal);
-                        $("#total").text(subtotal + deliveryCharge - paymentAmount -
-                            discountCharge);
+                        $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                        var totalDue = subtotal + deliveryCharge - paymentAmount -
+                            discountCharge;
+                        $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
                     }
 
                     $(document).on("click", ".delete-btn", function() {
@@ -1137,7 +1140,7 @@ $couriers = Courier::where('status', 'Active')->get();
             var customerPhone = $("#customerPhone");
             var customerAddress = $("#customerAddress");
             var storeID = $("#storeID");
-            var total = +$("#total").text();
+            var total = +$("#total").attr('data-raw') || +$("#total").text();
             var deliveryCharge = +$("#deliveryCharge").val();
             var discountCharge = +$("#discountCharge").val();
             var paymentTypeID = $("#paymentTypeID").val();

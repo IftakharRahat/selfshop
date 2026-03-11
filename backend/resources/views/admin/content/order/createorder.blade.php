@@ -224,7 +224,7 @@
                 var customerPhone = $("#customerPhone");
                 var customerAddress = $("#customerAddress");
                 var storeID = $("#storeID");
-                var total = +$("#total").text();
+                var total = +$("#total").attr('data-raw') || +$("#total").text();
                 var deliveryCharge = +$("#deliveryCharge").val();
                 var discountCharge = +$("#discountCharge").val();
                 var paymentTypeID = $("#paymentTypeID").val();
@@ -592,8 +592,9 @@
                     subtotal = subtotal + +$(this).find(".productPrice").text() * +$(this).find(
                         ".productQuantity").val();
                 });
-                $("#subtotal").text(subtotal);
-                $("#total").text(subtotal + deliveryCharge - paymentAmount - discountCharge);
+                $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                var totalDue = subtotal + deliveryCharge - paymentAmount - discountCharge;
+                $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
             }
             //delete select order
             $(document).on("click", ".delete-btn", function() {

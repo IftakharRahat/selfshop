@@ -2,6 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Store } from "lucide-react";
+import { formatBDT } from "@/lib/format-currency";
 
 interface PageProps {
     params: Promise<{
@@ -118,9 +119,9 @@ export default async function PublicShopPage({ params }: PageProps) {
                                     </h3>
                                     <p className="mt-1.5 text-sm font-bold text-pink-600">
                                         ৳{" "}
-                                        {parseFloat(
-                                            product.regular_price,
-                                        ).toFixed(0)}
+                                        {formatBDT(
+                                            parseFloat(product.regular_price), 0
+                                        )}
                                     </p>
                                 </div>
                             </Link>

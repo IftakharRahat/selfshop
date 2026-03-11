@@ -200,7 +200,7 @@
                         {data: 'invoice',width: "20%"},
                         {data: 'customerInfo',width: "25%",className: "customerInfo"},
                         {data: "products",width: "15%",},
-                        {data: "subTotal",width: "5%"},
+                        {data: "subTotal",width: "5%", render: function(data) { return formatBDT(data); }},
                         {data: "courier",width: "20%",searchable:false},
                         {data: "orderDate",width: "20%"},
                         {data: 'statusButton',width: "10%"},
@@ -220,7 +220,7 @@
                         pageTotal = api.column(4, { page: "current" }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
-                        $(api.column(4).footer()).html(pageTotal + " Tk");
+                        $(api.column(4).footer()).html(formatBDT(pageTotal) + " Tk");
                     }
 
                 });
@@ -247,7 +247,7 @@
                         {data: 'invoice',width: "20%"},
                         {data: 'customerInfo',width: "25%",className: "customerInfo"},
                         {data: "products",width: "15%",},
-                        {data: "subTotal",width: "5%"},
+                        {data: "subTotal",width: "5%", render: function(data) { return formatBDT(data); }},
                         {data: "courier",width: "20%",searchable:false},
                         {data: "orderDate",width: "20%"},
                         {data: 'statusButton',width: "10%"},
@@ -267,7 +267,7 @@
                         pageTotal = api.column(4, { page: "current" }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
-                        $(api.column(4).footer()).html(pageTotal + " Tk");
+                        $(api.column(4).footer()).html(formatBDT(pageTotal) + " Tk");
                     }
 
                 });
@@ -936,8 +936,9 @@
                             $("#productTable tbody tr").each(function (index) {
                                 subtotal = subtotal + +$(this).find(".productPrice").text() * +$(this).find(".productQuantity").val();
                             });
-                            $("#subtotal").text(subtotal);
-                            $("#total").text(subtotal + deliveryCharge - paymentAmount - discountCharge);
+                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            var totalDue = subtotal + deliveryCharge - paymentAmount - discountCharge;
+                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
                         }
 
                         $(document).on("click", ".delete-btn", function () {
@@ -958,7 +959,7 @@
                 var customerPhone = $("#customerPhone");
                 var customerAddress = $("#customerAddress");
                 var storeID = $("#storeID");
-                var total = +$("#total").text();
+                var total = +$("#total").attr('data-raw') || +$("#total").text();
                 var deliveryCharge = +$("#deliveryCharge").val();
                 var discountCharge = +$("#discountCharge").val();
                 var paymentTypeID = $("#paymentTypeID").val();

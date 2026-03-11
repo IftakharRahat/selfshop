@@ -853,9 +853,10 @@
                                 subtotal = subtotal + +$(this).find(".productPrice")
                                     .text() * +$(this).find(".productQuantity").val();
                             });
-                            $("#subtotal").text(subtotal);
-                            $("#total").text(subtotal + deliveryCharge - paymentAmount -
-                                discountCharge);
+                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            var totalDue = subtotal + deliveryCharge - paymentAmount -
+                                discountCharge;
+                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
                         }
 
                         $(document).on("click", ".delete-btn", function() {

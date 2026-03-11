@@ -192,7 +192,7 @@
                         pageTotal = api.column(4, { page: "current" }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
                         }, 0);
-                        $(api.column(4).footer()).html(pageTotal + " Tk");
+                        $(api.column(4).footer()).html(formatBDT(pageTotal) + " Tk");
 
                         deliveryTotal = api.column(5, { page: "current" }).data().reduce(function (a, b) {
                             return intVal(a) + intVal(b);
@@ -444,7 +444,7 @@
                     pageTotal = api.column(4, { page: "current" }).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
-                    $(api.column(4).footer()).html(pageTotal + " Tk");
+                    $(api.column(4).footer()).html(formatBDT(pageTotal) + " Tk");
 
                     deliveryTotal = api.column(5, { page: "current" }).data().reduce(function (a, b) {
                         return intVal(a) + intVal(b);
