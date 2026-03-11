@@ -19,6 +19,7 @@ import {
 	useGetAllNavbarCategoryDropdownOptionsQuery,
 	useGetAllBrandsQuery,
 } from "@/redux/features/home/homeApi";
+import { formatBDT } from "@/lib/format-currency";
 
 export default function VendorNewProductPage() {
 	const router = useRouter();
@@ -379,7 +380,7 @@ export default function VendorNewProductPage() {
 											/>
 											{basePrice && selectedCategoryCommission !== null && !isNaN(Number(basePrice)) && (
 												<p className="text-xs text-green-600 mt-1 font-semibold">
-													Storefront price: ৳{(Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+													Storefront price: ৳{formatBDT(Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100))}
 													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
 												</p>
 											)}
@@ -704,10 +705,10 @@ export default function VendorNewProductPage() {
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
-																	<div className="font-semibold text-indigo-600">৳{sz.price}</div>
+																	<div className="font-semibold text-indigo-600">৳{formatBDT(Number(sz.price))}</div>
 																	{sz.price && selectedCategoryCommission !== null && (
 																		<div className="text-[9px] text-green-600 font-medium">
-																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																			Store: ৳{formatBDT(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100))}
 																		</div>
 																	)}
 
@@ -737,10 +738,10 @@ export default function VendorNewProductPage() {
 																<div key={btIdx} className="flex items-center gap-3 text-xs bg-white p-1.5 rounded border border-indigo-50">
 																	<span className="flex-1 font-medium">Qty: {bt.min_qty} - {bt.max_qty || '∞'}</span>
 																	<div className="text-right">
-																		<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
+																		<span className="font-bold text-indigo-600">৳{formatBDT(Number(bt.bulk_price))}</span>
 																		{selectedCategoryCommission !== null && (
 																			<div className="text-[9px] text-green-600 font-medium">
-																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																				Store: ৳{formatBDT(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100))}
 																			</div>
 																		)}
 

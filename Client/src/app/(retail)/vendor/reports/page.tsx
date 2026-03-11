@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { useState } from "react";
 import WithVendorAuth from "../WithVendorAuth";
@@ -90,9 +91,9 @@ export default function VendorReportsPage() {
 									{sales.series.map((row: { period: string; total_sales: number; total_commission: number; net_earnings: number; order_count: number }) => (
 										<tr key={row.period} className="hover:bg-gray-50">
 											<td className="px-3 py-2">{row.period}</td>
-											<td className="px-3 py-2 text-right">৳{Number(row.total_sales).toLocaleString()}</td>
-											<td className="px-3 py-2 text-right text-amber-600">-৳{Number(row.total_commission).toLocaleString()}</td>
-											<td className="px-3 py-2 text-right font-medium">৳{Number(row.net_earnings).toLocaleString()}</td>
+											<td className="px-3 py-2 text-right">৳{formatBDT(row.total_sales)}</td>
+											<td className="px-3 py-2 text-right text-amber-600">-৳{formatBDT(row.total_commission)}</td>
+											<td className="px-3 py-2 text-right font-medium">৳{formatBDT(row.net_earnings)}</td>
 											<td className="px-3 py-2 text-right">{row.order_count}</td>
 										</tr>
 									))}
@@ -125,7 +126,7 @@ export default function VendorReportsPage() {
 										<tr key={p.product_id} className="hover:bg-gray-50">
 											<td className="px-3 py-2">{p.product_name}</td>
 											<td className="px-3 py-2 text-right">{p.total_quantity}</td>
-											<td className="px-3 py-2 text-right font-medium">৳{Number(p.total_sales).toLocaleString()}</td>
+											<td className="px-3 py-2 text-right font-medium">৳{formatBDT(p.total_sales)}</td>
 											<td className="px-3 py-2 text-right">{p.order_count}</td>
 										</tr>
 									))}
@@ -148,8 +149,8 @@ export default function VendorReportsPage() {
 							{Object.entries(breakdown).map(([type, row]: [string, { total_sales: number; net_earnings: number; order_count: number }]) => (
 								<div key={type} className="border rounded-lg p-4 bg-gray-50 border-gray-200">
 									<p className="text-sm font-medium text-gray-700 capitalize">{type}</p>
-									<p className="text-lg font-bold text-gray-900 mt-1">৳{Number(row.total_sales).toLocaleString()}</p>
-									<p className="text-xs text-gray-500">Net: ৳{Number(row.net_earnings).toLocaleString()} · {row.order_count} orders</p>
+									<p className="text-lg digit-font text-gray-900 mt-1">৳{formatBDT(row.total_sales)}</p>
+									<p className="text-xs text-gray-500">Net: ৳{formatBDT(row.net_earnings)} · {row.order_count} orders</p>
 								</div>
 							))}
 						</div>

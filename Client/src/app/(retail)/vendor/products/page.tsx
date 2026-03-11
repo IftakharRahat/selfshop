@@ -10,6 +10,7 @@ import {
 	useUpdateVendorProductStockStatusMutation,
 } from "@/redux/api/vendorApi";
 import { toast } from "sonner";
+import { formatBDT } from "@/lib/format-currency";
 
 export default function VendorProductsPage() {
 	const [search, setSearch] = useState("");
@@ -154,8 +155,8 @@ export default function VendorProductsPage() {
 											<td className="px-3 py-2 align-middle text-right text-gray-700">
 												{p.qty ?? 0}
 											</td>
-											<td className="px-3 py-2 align-middle text-right text-gray-700">
-												{p.ProductResellerPrice ?? 0}
+											<td className="px-3 py-2 align-middle text-right text-gray-700 digit-font">
+												৳{formatBDT(Number(p.ProductResellerPrice ?? 0))}
 											</td>
 											<td className="px-3 py-2 align-middle text-center">
 												{p.vendor_approval_status === "approved" ? (

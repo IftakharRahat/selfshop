@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { Minus, Plus } from "lucide-react";
 import Image from "next/image";
@@ -186,7 +187,7 @@ export default function BulkOrderMatrix({
 						<span>Total</span>
 						<span>
 							<TbCurrencyTaka className="inline" />
-							{total.toLocaleString("en-BD")} BDT
+							{formatBDT(total)} BDT
 						</span>
 					</div>
 					<div className="grid grid-cols-2 gap-2 pt-2">

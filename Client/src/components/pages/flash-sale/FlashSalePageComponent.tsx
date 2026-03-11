@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Zap } from "lucide-react";
 import { useGetFlashSaleQuery } from "@/redux/features/home/homeApi";
 import { getImageUrl } from "@/lib/utils";
+import { formatBDT } from "@/lib/format-currency";
 
 interface TimeLeft {
     days: number;
@@ -187,12 +188,12 @@ function FlashProductCard({ product }: { product: any }) {
 
                     <div className="mt-auto flex items-center justify-between">
                         <div className="flex flex-col">
-                            <span className="text-sm sm:text-base font-bold text-gray-900">
-                                ৳{product.FlashPrice}
+                            <span className="text-sm sm:text-base font-bold text-gray-900 digit-font">
+                                ৳{formatBDT(product.FlashPrice)}
                             </span>
                             {hasDiscount && (
-                                <span className="text-[10px] sm:text-xs text-gray-400 line-through">
-                                    ৳{product.SalePrice}
+                                <span className="text-[10px] sm:text-xs text-gray-400 line-through digit-font">
+                                    ৳{formatBDT(product.SalePrice)}
                                 </span>
                             )}
                         </div>

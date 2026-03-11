@@ -40,7 +40,7 @@ export default function Dashboard() {
 				<MetricCard
 					title="Pending Amount"
 					value={`৳ ${metrics.pending_amount ?? 0}`}
-					subtitle="Orders processing or awaiting delivery"
+					subtitle="Awaiting delivery"
 					icon={pendingIcon}
 					iconColor="bg-pink-500"
 				/>

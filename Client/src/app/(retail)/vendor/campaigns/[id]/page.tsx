@@ -19,6 +19,7 @@ import {
     X,
     Zap,
 } from "lucide-react";
+import { formatBDT } from "@/lib/format-currency";
 
 /* ── Countdown hook ───────────────────────────────────────────────────── */
 function useCountdown(target: string | null) {
@@ -328,10 +329,10 @@ export default function CampaignDetailPage() {
                                                 {fsp.seller_sku || p?.ProductSku || "—"}
                                             </td>
                                             <td className="px-5 py-3 text-gray-600">
-                                                ৳{p?.ProductRegularPrice ?? 0}
+                                                ৳{formatBDT(p?.ProductRegularPrice ?? 0)}
                                             </td>
                                             <td className="px-5 py-3 font-semibold text-indigo-600">
-                                                ৳{fsp.campaign_price}
+                                                ৳{formatBDT(fsp.campaign_price)}
                                             </td>
                                             <td className="px-5 py-3">
                                                 <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700">
@@ -444,7 +445,7 @@ export default function CampaignDetailPage() {
                                                 {p.ProductName}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                ৳{p.ProductRegularPrice} · Stock: {p.qty}
+                                                ৳{formatBDT(p.ProductRegularPrice)} · Stock: {p.qty}
                                             </p>
                                         </div>
                                         {alreadySubmitted && (
@@ -508,7 +509,7 @@ export default function CampaignDetailPage() {
                                             )}
                                             % OFF
                                         </span>{" "}
-                                        (from ৳{selectedProduct.ProductRegularPrice})
+                                        (from ৳{formatBDT(selectedProduct.ProductRegularPrice)})
                                     </p>
                                 )}
                             </div>

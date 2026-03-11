@@ -13,6 +13,7 @@ import { TbCurrencyTaka } from "react-icons/tb";
 import Swal from "sweetalert2";
 import { z } from "zod";
 import { getImageUrl } from "@/lib/utils";
+import { formatBDT } from "@/lib/format-currency";
 import {
 	useCreateOrderMutation,
 	useDeleteCartItemMutation,
@@ -379,7 +380,7 @@ export default function OrderConfirmation() {
 										/>
 										Inside Dhaka
 									</div>
-									<span className="text-xs font-semibold">৳{insideDhakaCharge}</span>
+								<span className="text-xs font-semibold digit-font">৳{formatBDT(insideDhakaCharge, 0)}</span>
 								</label>
 								<label
 									className={`flex items-center justify-between border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${deliveryZone === "outside"
@@ -398,7 +399,7 @@ export default function OrderConfirmation() {
 										/>
 										Outside Dhaka
 									</div>
-									<span className="text-xs font-semibold">৳{outsideDhakaCharge}</span>
+								<span className="text-xs font-semibold digit-font">৳{formatBDT(outsideDhakaCharge, 0)}</span>
 								</label>
 							</div>
 						</div>
@@ -445,12 +446,12 @@ export default function OrderConfirmation() {
 							{advanceDelivery === "yes" ? (
 								<p className="flex items-center gap-2 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
 									<FaCheckCircle size={16} />
-									Customer paid ৳{deliveryCharge} advance delivery
+									Customer paid <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> advance delivery
 								</p>
 							) : (
 								<p className="flex items-center gap-2 text-amber-700 text-sm font-medium p-3 rounded-lg mt-3 bg-amber-50">
 									<IoMdInformationCircleOutline size={18} />
-									৳{deliveryCharge} delivery charge will be added to total
+									<span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> delivery charge will be added to total
 								</p>
 							)}
 						</div>
@@ -458,7 +459,7 @@ export default function OrderConfirmation() {
 						{/* Delivery Fee Payment Info */}
 						<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
 							<IoMdInformationCircleOutline size={20} />
-							Please pay ৳{deliveryCharge} delivery fee to confirm the order.
+							Please pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> delivery fee to confirm the order.
 						</p>
 
 						{/* Delivery Fee Payment Method */}
@@ -527,7 +528,7 @@ export default function OrderConfirmation() {
 								: "bg-gray-300 text-gray-500 cursor-not-allowed"
 								}`}
 						>
-							Pay ৳{deliveryCharge} & Confirm Order
+							Pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> & Confirm Order
 						</button>
 					</div>
 
@@ -560,9 +561,9 @@ export default function OrderConfirmation() {
 													{item.name}
 												</h3>
 												<p className="text-sm text-gray-500">{item.code}</p>
-												<p className="font-semibold text-gray-900 flex items-center">
+												<p className="font-semibold text-gray-900 flex items-center digit-font">
 													<TbCurrencyTaka size={20} />
-													{item.price}
+													{formatBDT(item.price)}
 												</p>
 											</div>
 
@@ -610,17 +611,17 @@ export default function OrderConfirmation() {
 							<div className="space-y-4">
 								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
 									<span>Subtotal</span>
-									<span className="flex items-center">
+									<span className="flex items-center digit-font">
 										<TbCurrencyTaka size={20} />
-										{subtotal.toFixed(2)}
+										{formatBDT(subtotal)}
 									</span>
 								</div>
 								{totalProfit > 0 && (
 									<div className="flex flex-col sm:flex-row justify-between text-pink-600 font-medium">
 										<span>Profit amount</span>
-										<span className="flex items-center">
+										<span className="flex items-center digit-font">
 											<TbCurrencyTaka size={20} />
-											{totalProfit.toFixed(2)}
+											{formatBDT(totalProfit)}
 										</span>
 									</div>
 								)}
@@ -639,28 +640,28 @@ export default function OrderConfirmation() {
 										{advanceDelivery === "yes" ? (
 											<span className="text-green-600 text-sm font-medium">Paid by customer</span>
 										) : (
-											<>
+											<span className="digit-font flex items-center">
 												<TbCurrencyTaka size={20} />
-												{deliveryCharge}
-											</>
+												{formatBDT(deliveryCharge, 0)}
+											</span>
 										)}
 									</span>
 								</div>
 								<div className="border-t pt-4">
 									<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
 										<span>Total</span>
-										<span className="flex items-center">
+										<span className="flex items-center digit-font">
 											<TbCurrencyTaka size={20} />
-											{grandTotal.toFixed(2)}
+											{formatBDT(grandTotal)}
 										</span>
 									</div>
 								</div>
 								<div className="border-t pt-4">
 									<div className="flex flex-col sm:flex-row justify-between text-sm font-semibold text-pink-700 bg-pink-50 p-3 rounded-lg">
 										<span>Delivery fee (pay now)</span>
-										<span className="flex items-center">
+										<span className="flex items-center digit-font">
 											<TbCurrencyTaka size={18} />
-											{deliveryCharge}
+											{formatBDT(deliveryCharge, 0)}
 										</span>
 									</div>
 								</div>

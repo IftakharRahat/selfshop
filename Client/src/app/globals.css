@@ -13,7 +13,19 @@
   --breakpoint-xs: 540px;
 }
 
+/* Global digit font styling — clean, consistent numeric rendering */
+body {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum";
+  font-feature-settings: "tnum";
+}
 
+/* Reusable digit-font class — matches the reseller-dashboard number style */
+.digit-font {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Override Tailwind's container utility */
 .container {

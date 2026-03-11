@@ -42,7 +42,7 @@ export default function MetricCard({
 					<h3 className="text-xs sm:text-sm font-medium text-gray-500 leading-tight">{title}</h3>
 				</div>
 
-				<p className="text-lg sm:text-2xl font-bold text-gray-900">{value}</p>
+				<p className="text-xl sm:text-2xl digit-font text-gray-900">{value}</p>
 
 				{change && (
 					<div className="flex items-center gap-1 mt-2">

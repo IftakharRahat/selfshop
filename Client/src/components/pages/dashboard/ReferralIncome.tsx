@@ -6,6 +6,7 @@ import myReferralIcon from "@/assets/images/dashboard/Group 1321314503 (2).png";
 import activeMemberIcon from "@/assets/images/dashboard/Group 1321314504.png";
 import paidMemberIcon from "@/assets/images/dashboard/Group 1321314505.png";
 import { useGetAllReferralDataQuery } from "@/redux/features/dashboardApi";
+import { formatBDT } from "@/lib/format-currency";
 
 const ReferralIncome = () => {
 	const { data } = useGetAllReferralDataQuery(undefined);
@@ -60,8 +61,8 @@ const ReferralIncome = () => {
 							</div>
 							<div>
 								<p className="text-xs text-gray-500">{stat.title}</p>
-								<p className="text-lg sm:text-xl font-bold text-gray-900">
-									{stat.value}
+								<p className="text-lg sm:text-xl font-bold text-gray-900 digit-font">
+									{stat.title === "Referral Bonus" ? `৳${formatBDT(stat.value)}` : stat.value}
 								</p>
 							</div>
 						</div>
@@ -86,8 +87,8 @@ const ReferralIncome = () => {
 								<p className="text-sm font-semibold text-gray-900 truncate mr-2">
 									{row.message_for}
 								</p>
-								<span className="text-sm font-semibold text-green-600 flex-shrink-0">
-									৳{row.amount}
+								<span className="text-sm font-semibold text-green-600 flex-shrink-0 digit-font">
+									৳{formatBDT(row.amount)}
 								</span>
 							</div>
 							<p className="text-xs text-gray-500 mb-1.5 line-clamp-2">{row.message}</p>
@@ -140,8 +141,8 @@ const ReferralIncome = () => {
 									</td>
 									<td className="p-4 text-sm text-gray-600">{row.message}</td>
 									<td className="p-4 text-sm text-gray-500">{row.date}</td>
-									<td className="p-4 text-sm font-semibold text-green-600">
-										৳{row.amount}
+									<td className="p-4 text-sm font-semibold text-green-600 digit-font">
+										৳{formatBDT(row.amount)}
 									</td>
 								</tr>
 							))

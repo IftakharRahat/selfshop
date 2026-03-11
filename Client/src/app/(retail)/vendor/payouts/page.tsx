@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -84,9 +85,9 @@ export default function VendorPayoutsPage() {
 					<div className="flex flex-col sm:flex-row sm:items-end gap-4">
 						<div className="flex-1">
 							<p className="text-sm font-medium text-gray-600 mb-1">Available balance</p>
-							<p className="text-2xl font-bold text-green-700">৳{availableBalance.toLocaleString()}</p>
+							<p className="text-2xl digit-font text-green-700">৳{formatBDT(availableBalance)}</p>
 							{pendingRequestAmount > 0 && (
-								<p className="text-xs text-amber-600 mt-1">Pending request: ৳{pendingRequestAmount.toLocaleString()}</p>
+								<p className="text-xs text-amber-600 mt-1">Pending request: ৳{formatBDT(pendingRequestAmount)}</p>
 							)}
 						</div>
 						<div className="flex flex-col sm:flex-row gap-3 flex-wrap">
@@ -157,7 +158,7 @@ export default function VendorPayoutsPage() {
 										{requests.map((r: { id: number; amount: number; status: string; created_at: string; payout_account?: { account_name: string; account_number: string } | null }) => (
 											<tr key={r.id} className="hover:bg-gray-50">
 												<td className="px-3 py-2 text-gray-600">{new Date(r.created_at).toLocaleDateString()}</td>
-												<td className="px-3 py-2 text-right font-medium">৳{Number(r.amount).toLocaleString()}</td>
+												<td className="px-3 py-2 text-right font-medium">৳{formatBDT(r.amount)}</td>
 												<td className="px-3 py-2 text-gray-600">
 													{r.payout_account ? `${r.payout_account.account_name} •••${String(r.payout_account.account_number).slice(-4)}` : "—"}
 												</td>
@@ -218,7 +219,7 @@ export default function VendorPayoutsPage() {
 										{payouts.map((p: { id: number; amount: number; status: string; reference: string | null; paid_at: string | null; created_at: string }) => (
 											<tr key={p.id} className="hover:bg-gray-50">
 												<td className="px-3 py-2 text-gray-600">{new Date(p.created_at).toLocaleDateString()}</td>
-												<td className="px-3 py-2 text-right font-medium">৳{Number(p.amount).toLocaleString()}</td>
+												<td className="px-3 py-2 text-right font-medium">৳{formatBDT(p.amount)}</td>
 												<td className="px-3 py-2 text-gray-600">{p.reference ?? "—"}</td>
 												<td className="px-3 py-2 text-center">
 													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${p.status === "paid" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"

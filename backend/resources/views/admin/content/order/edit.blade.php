@@ -294,19 +294,19 @@
                          <div class="mb-2 form-group row">
                              <label for="fname" class="text-right col-sm-4 control-label col-form-label">Resell Price</label>
                              <div class="col-sm-8">
-                                 <span class="form-control" style="cursor: not-allowed;">{{ $order->subTotal-$order->profit }}</span>
+                                 <span class="form-control" style="cursor: not-allowed;">{{ number_format($order->subTotal - $order->profit, 2) }}</span>
                              </div>
                          </div>
                          <div class="mb-2 form-group row">
                              <label for="fname" class="text-right col-sm-4 control-label col-form-label">Seller Profit</label>
                              <div class="col-sm-8">
-                                 <span class="form-control" style="cursor: not-allowed;">{{ $order->profit }}</span>
+                                 <span class="form-control" style="cursor: not-allowed;">{{ number_format($order->profit, 2) }}</span>
                              </div>
                          </div>
                          <div class="mb-2 form-group row">
                              <label for="fname" class="text-right col-sm-4 control-label col-form-label">Order Bonus</label>
                              <div class="col-sm-8">
-                                 <span class="form-control" style="cursor: not-allowed;">{{ $order->order_bonus ?? 0 }}</span>
+                                 <span class="form-control" style="cursor: not-allowed;">{{ number_format($order->order_bonus ?? 0, 2) }}</span>
                              </div>
                          </div>
                          <div class="mb-2 form-group row">
@@ -314,7 +314,7 @@
                                  Total</label>
                              <div class="col-sm-8">
                                  <span class="form-control" id="subtotal"
-                                     style="cursor: not-allowed;">{{ $order->subTotal }}</span>
+                                     style="cursor: not-allowed;">{{ number_format($order->subTotal, 2) }}</span>
                              </div>
                          </div>
                          <div class="mb-2 form-group row">

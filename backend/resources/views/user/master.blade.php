@@ -39,6 +39,14 @@
             padding-top: 4px;
         }
 
+        /* Digit font — matches the Next.js dashboard number style */
+        .digit-font {
+            font-family: "Poppins", sans-serif;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            font-variant-numeric: tabular-nums;
+        }
+
         .vendor-item {
             padding: 6px;
             border: 1px solid;
