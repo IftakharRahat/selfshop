@@ -459,6 +459,7 @@ class VendorOrderController extends Controller
         // ── Carry Bee order creation (non-blocking) ──
         // Auto-create a Carry Bee store if vendor doesn't have one yet
         $carrybeeResult = null;
+        $carrybeeError = null;
         if (empty($vendor->carrybee_store_id)) {
             try {
                 $carryBee = app(\App\Services\CarryBeeService::class);
@@ -480,8 +481,15 @@ class VendorOrderController extends Controller
                 if (!empty($storeResult['data']['id'])) {
                     $vendor->carrybee_store_id = $storeResult['data']['id'];
                     $vendor->save();
+                } else {
+                    $carrybeeError = 'Store creation failed: ' . json_encode($storeResult);
+                    \Log::warning('CarryBee store creation returned no ID', [
+                        'vendor_id' => $vendor->id,
+                        'response'  => $storeResult,
+                    ]);
                 }
             } catch (\Throwable $e) {
+                $carrybeeError = 'Store creation exception: ' . $e->getMessage();
                 \Log::warning('CarryBee auto store creation failed (non-blocking)', [
                     'vendor_id' => $vendor->id,
                     'error'     => $e->getMessage(),
@@ -521,7 +529,19 @@ class VendorOrderController extends Controller
                     $orderData['area_id'] = (int) $order->area_id;
                 }
 
+                \Log::info('CarryBee order creation request', [
+                    'order_id' => $order->id,
+                    'invoice'  => $order->invoiceID,
+                    'data'     => $orderData,
+                ]);
+
                 $carrybeeResult = $carryBee->createOrder($orderData);
+
+                \Log::info('CarryBee order creation response', [
+                    'order_id' => $order->id,
+                    'invoice'  => $order->invoiceID,
+                    'result'   => $carrybeeResult,
+                ]);
 
                 // Store Carry Bee order details — response: data.order.consignment_id
                 $cbOrder = $carrybeeResult['data']['order'] ?? null;
@@ -531,19 +551,36 @@ class VendorOrderController extends Controller
                     $order->carrybee_status = 'created';
                     $order->trackingLink = 'https://merchant.carrybee.com/order-track/' . $cbOrder['consignment_id'];
                     $order->save();
-                }
+                } else {
+                    // Try alternative response structures
+                    $cbConsignment = $carrybeeResult['data']['consignment_id']
+                        ?? $carrybeeResult['consignment_id']
+                        ?? $carrybeeResult['data']['id']
+                        ?? null;
 
-                \Log::info('CarryBee order created', [
-                    'order_id' => $order->id,
-                    'invoice'  => $order->invoiceID,
-                    'result'   => $carrybeeResult,
-                ]);
+                    if ($cbConsignment) {
+                        $order->carrybee_parcel_id = (string) $cbConsignment;
+                        $order->carrybee_tracking_code = (string) $cbConsignment;
+                        $order->carrybee_status = 'created';
+                        $order->trackingLink = 'https://merchant.carrybee.com/order-track/' . $cbConsignment;
+                        $order->save();
+                    } else {
+                        $carrybeeError = 'Order created but no consignment_id in response: ' . json_encode($carrybeeResult);
+                        \Log::warning('CarryBee order response missing consignment_id', [
+                            'order_id' => $order->id,
+                            'response' => $carrybeeResult,
+                        ]);
+                    }
+                }
             } catch (\Throwable $e) {
+                $carrybeeError = 'Order creation exception: ' . $e->getMessage();
                 \Log::warning('CarryBee order creation failed (non-blocking)', [
                     'order_id' => $order->id,
                     'error'    => $e->getMessage(),
                 ]);
             }
+        } elseif (!$carrybeeError) {
+            $carrybeeError = 'Vendor has no carrybee_store_id and store creation was not attempted or failed.';
         }
 
         Orderproduct::whereIn('id', $vendorItems->pluck('id')->all())
@@ -567,21 +604,27 @@ class VendorOrderController extends Controller
             \Log::warning('Push notification failed for warehouse sent', ['error' => $e->getMessage()]);
         }
 
+        $responseData = [
+            'order_id' => $order->id,
+            'status' => $order->status,
+            'customer_status' => $meta['customer_status'],
+            'steadfast_status' => $meta['steadfast_status'],
+            'tracking_number' => $order->tracking_number,
+            'tracking_link' => $order->trackingLink,
+            'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
+            'carrybee_parcel_id' => $order->carrybee_parcel_id,
+            'carrybee_tracking_code' => $order->carrybee_tracking_code,
+            'carrybee_status' => $order->carrybee_status,
+        ];
+
+        if ($carrybeeError) {
+            $responseData['carrybee_warning'] = $carrybeeError;
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Order sent to warehouse',
-            'data' => [
-                'order_id' => $order->id,
-                'status' => $order->status,
-                'customer_status' => $meta['customer_status'],
-                'steadfast_status' => $meta['steadfast_status'],
-                'tracking_number' => $order->tracking_number,
-                'tracking_link' => $order->trackingLink,
-                'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
-                'carrybee_parcel_id' => $order->carrybee_parcel_id,
-                'carrybee_tracking_code' => $order->carrybee_tracking_code,
-                'carrybee_status' => $order->carrybee_status,
-            ],
+            'data' => $responseData,
         ]);
     }
 

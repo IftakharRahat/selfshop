@@ -129,10 +129,16 @@ export default function OrderConfirmation() {
 			0,
 		) || 0;
 	const discount = 0;
+	const totalProfit =
+		cartItems?.data?.reduce((total: number, item: any) => {
+			const sellingPrice = parseFloat(item.options?.selling_price || item.price);
+			const costPrice = parseFloat(item.price);
+			return total + (sellingPrice - costPrice) * item.qty;
+		}, 0) || 0;
 	const grandTotal =
 		advanceDelivery === "yes"
-			? subtotal - discount // customer already paid delivery
-			: subtotal - discount + deliveryCharge; // delivery added
+			? subtotal + totalProfit - discount // customer already paid delivery
+			: subtotal + totalProfit - discount + deliveryCharge; // delivery added
 
 	// ✅ Form Validation Before Submission
 	const validateForm = () => {
@@ -216,12 +222,7 @@ export default function OrderConfirmation() {
 		);
 	};
 
-	const totalProfit =
-		cartItems?.data?.reduce((total: number, item: any) => {
-			const sellingPrice = parseFloat(item.options?.selling_price || item.price);
-			const costPrice = parseFloat(item.price);
-			return total + (sellingPrice - costPrice) * item.qty;
-		}, 0) || 0;
+
 
 	return (
 		<div className="min-h-screen py-8">
