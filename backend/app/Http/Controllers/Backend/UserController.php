@@ -28,8 +28,8 @@ class UserController extends Controller
 
     public function userdata(Request $request)
     {
-        // Base query with vendor relation so we can distinguish vendor users
-        $users = User::with('vendor');
+        // Base query – exclude vendor accounts so only customers/users appear
+        $users = User::with('vendor')->doesntHave('vendor');
 
         $statusFilter = trim((string) $request->input('status_filter', $request->input('status', '')));
         $membershipFilter = trim((string) $request->input('membership_filter', $request->input('membership', '')));
@@ -54,18 +54,14 @@ class UserController extends Controller
 
             ->editColumn('user', function ($users) {
                 $u = User::where('id', $users->id)->first();
-                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
+                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#2d2a5d; font-weight:600;">' . $u->my_referral_code . '</a> )';
             })
             ->addColumn('type', function ($users) {
-                if ($users->vendor) {
-                    return '<span class="badge bg-primary">Vendor</span>';
-                }
-
                 if ($users->is_verified_wholesaler) {
                     return '<span class="badge bg-success">Wholesaler</span>';
                 }
 
-                return '<span class="badge bg-secondary">Customer</span>';
+                return '<span class="badge" style="background:#2d2a5d;color:#fff;">User</span>';
             })
             ->addColumn('action', function ($users) {
                 return '<a href="../admin/users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>

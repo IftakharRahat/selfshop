@@ -848,14 +848,18 @@
                             var subtotal = 0;
                             var deliveryCharge = +$("#deliveryCharge").val();
                             var discountCharge = +$("#discountCharge").val();
-                            var paymentAmount = +$("#paymentAmount").val();
+                            var profit = +$("#orderProfit").val() || 0;
+                            var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
                                 subtotal = subtotal + +$(this).find(".productPrice")
                                     .text() * +$(this).find(".productQuantity").val();
                             });
+                            subtotal = subtotal + profit;
                             $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
-                            var totalDue = subtotal + deliveryCharge - paymentAmount -
-                                discountCharge;
+                            var totalDue = subtotal - discountCharge;
+                            if (advanceDelivery == 0) {
+                                totalDue = totalDue + deliveryCharge;
+                            }
                             $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
                         }
 
