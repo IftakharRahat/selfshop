@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { Button, DatePicker, Input, Modal, message } from "antd";
 import dayjs from "dayjs";
@@ -260,19 +261,19 @@ export default function ProfileDashboard() {
 					<div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100">
 						<div className="p-4 sm:p-6">
 							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Products</p>
-							<p className="text-2xl sm:text-3xl font-bold text-gray-900">{shopproducts}</p>
+							<p className="text-2xl sm:text-3xl digit-font text-gray-900">{shopproducts}</p>
 						</div>
 						<div className="p-4 sm:p-6">
 							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Orders</p>
-							<p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalorders}</p>
+							<p className="text-2xl sm:text-3xl digit-font text-gray-900">{totalorders}</p>
 						</div>
 						<div className="p-4 sm:p-6">
 							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Sold</p>
-							<p className="text-2xl sm:text-3xl font-bold text-gray-900">৳{soldamount.toLocaleString()}</p>
+							<p className="text-2xl sm:text-3xl digit-font text-gray-900">৳{formatBDT(soldamount)}</p>
 						</div>
 						<div className="p-4 sm:p-6">
 							<p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Wallet</p>
-							<p className="text-2xl sm:text-3xl font-bold text-gray-900">৳{walletbalance.toLocaleString()}</p>
+							<p className="text-2xl sm:text-3xl digit-font text-gray-900">৳{formatBDT(walletbalance)}</p>
 						</div>
 					</div>
 				</div>

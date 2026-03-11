@@ -23,6 +23,7 @@ import { MdOutlineFileDownload } from "react-icons/md";
 import Swal from "sweetalert2";
 import { z } from "zod";
 import { cn, getImageUrl } from "@/lib/utils";
+import { formatBDT } from "@/lib/format-currency";
 import { useAppSelector } from "@/redux/hooks";
 import OrderNowModal from "./OrderNowModal";
 import ProductReviewsSection from "./ProductReviewsSection";
@@ -329,7 +330,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		.number({ required_error: "Selling price is required" })
 		.min(
 			effectiveUnitPrice,
-			`Price must be at least ৳${effectiveUnitPrice.toFixed(2)}.`,
+			`Price must be at least ৳${formatBDT(effectiveUnitPrice)}.`,
 		);
 
 
@@ -693,12 +694,12 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 											{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
 												<span className="text-xs text-gray-400 line-through flex items-center">
 													<TbCurrencyTaka size={14} />
-													{productData.msrpPrice.toFixed(2)}
+													{formatBDT(productData.msrpPrice)}
 												</span>
 											)}
 											<div className="flex items-center text-pink-600 font-bold text-xl">
 												<TbCurrencyTaka size={24} />
-												{effectiveUnitPrice.toFixed(2)}
+												{formatBDT(effectiveUnitPrice)}
 											</div>
 										</div>
 									)}
@@ -706,6 +707,39 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 							</div>
 						</div>
 
+						{/* ── Bulk Discounts for Active Size (moved here from below) ── */}
+						{(() => {
+							const cv = variants[activeVariantIdx];
+							const cvId = cv?.id ?? 0;
+							const ss = cv?.sizes?.[activeSizeIdx];
+							const ssQty = ss ? (variantQuantities[cvId]?.[ss.size_name] || 0) : 0;
+							const bulkPrices = ss?.bulkPrices || ss?.bulk_prices || [];
+							if (bulkPrices.length === 0) return null;
+							return (
+								<div className="p-3 bg-pink-50/50 border border-pink-100 rounded-xl space-y-2">
+									<h4 className="text-xs font-bold text-pink-700 uppercase tracking-tight flex items-center gap-1.5">
+										<Tag className="w-3 h-3" /> Bulk Discounts for size {ss.size_name}
+									</h4>
+									<div className="flex flex-wrap gap-2">
+										{bulkPrices.map((tier: any, tIdx: number) => {
+											const isActiveBulkTier = ssQty >= tier.min_qty && (!tier.max_qty || ssQty <= tier.max_qty);
+											return (
+												<div
+													key={tIdx}
+													className={`px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold shadow-sm transition-all duration-200 ${
+														isActiveBulkTier
+															? 'bg-pink-600 text-white border-pink-600 scale-105 ring-2 ring-pink-300'
+															: 'bg-white text-pink-600 border-pink-200'
+													}`}
+												>
+													{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className={isActiveBulkTier ? 'font-bold' : 'text-pink-700 font-bold'}>{isResellerActive ? `৳${formatBDT(Number(tier.bulk_price || tier.unit_price) * commissionFactor)}` : '***'}</span>
+												</div>
+											);
+										})}
+									</div>
+								</div>
+							);
+						})()}
 
 
 						{/* Bulk (Variants) */}
@@ -739,7 +773,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 														) : (
 															<>
 																<TbCurrencyTaka size={20} />
-																{(parseFloat(tier.unit_price) * commissionFactor).toFixed(2)}
+																{formatBDT(parseFloat(tier.unit_price) * commissionFactor)}
 															</>
 														)}
 													</span>
@@ -889,7 +923,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																{isResellerActive ? (
 																	<>
 																		<TbCurrencyTaka size={14} />
-																		{displayPrice.toFixed(2)}
+																		{formatBDT(displayPrice)}
 																	</>
 																) : (
 																	<span className="text-xs text-gray-400">Locked</span>
@@ -940,7 +974,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 															{isResellerActive ? (
 																<>
 																	<TbCurrencyTaka size={16} />
-																	{totalPrice.toFixed(2)}
+																	{formatBDT(totalPrice)}
 																</>
 															) : (
 																"***"
@@ -976,11 +1010,11 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 								<div className="space-y-4">
 									<div className="space-y-1">
 										<div className="flex items-baseline gap-3">
-											<div className="text-3xl font-bold text-gray-900 flex items-center">
+											<div className="text-3xl font-bold text-gray-900 flex items-center digit-font">
 												{isResellerActive ? (
 													<>
 														<TbCurrencyTaka size={35} />
-														{unitPrice.toFixed(2)}
+														{formatBDT(unitPrice)}
 													</>
 												) : (
 													"***"
@@ -989,7 +1023,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 											{flashSale && isResellerActive && (
 												<div className="text-lg text-gray-400 line-through flex items-center">
 													<TbCurrencyTaka size={20} />
-													{parseFloat(flashSale.original_price).toFixed(2)}
+													{formatBDT(parseFloat(flashSale.original_price))}
 												</div>
 											)}
 											{isResellerActive && <span className="text-sm font-normal text-gray-500">/pc</span>}
@@ -997,11 +1031,11 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										{totalQuantity > 0 && (
 											<div className="flex items-center gap-2 text-sm">
 												<span className="text-gray-500">Total ({totalQuantity} pcs):</span>
-												<span className="font-bold text-lg text-pink-600 flex items-center">
+												<span className="font-bold text-lg text-pink-600 flex items-center digit-font">
 													{isResellerActive ? (
 														<>
 															<TbCurrencyTaka size={20} />
-															{totalPrice.toFixed(2)}
+															{formatBDT(totalPrice)}
 														</>
 													) : (
 														"***"
@@ -1011,20 +1045,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										)}
 									</div>
 
-									{sizeBulkPrices.length > 0 && (
-										<div className="p-3 bg-pink-50/50 border border-pink-100 rounded-xl space-y-2">
-											<h4 className="text-xs font-bold text-pink-700 uppercase tracking-tight flex items-center gap-1.5">
-												<Tag className="w-3 h-3" /> Bulk Discounts for size {selectedSize.size_name}
-											</h4>
-											<div className="flex flex-wrap gap-2">
-												{sizeBulkPrices.map((tier: any, tIdx: number) => (
-													<div key={tIdx} className="bg-white px-2.5 py-1.5 rounded-lg border border-pink-200 text-[11px] text-pink-600 font-semibold shadow-sm">
-														{tier.min_qty}{tier.max_qty ? `-${tier.max_qty}` : '+'} pcs: <span className="text-pink-700 font-bold">{isResellerActive ? `৳${(Number(tier.bulk_price || tier.unit_price) * commissionFactor).toFixed(2)}` : '***'}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
+
 								</div>
 							);
 						})()}
@@ -1050,21 +1071,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 									<p
 										className={cn(
 											"text-green-600 text-sm mt-1",
-											Number(
-												(
-													(Number(sellingPrice) - effectiveUnitPrice) *
-													(totalQuantity || 1)
-												).toFixed(2),
-											) > 0
+											(Number(sellingPrice) - effectiveUnitPrice) * (totalQuantity || 1) > 0
 												? ""
 												: "hidden",
 										)}
 									>
 										Your total earn{" "}
-										{(
+										{formatBDT(
 											(Number(sellingPrice) - effectiveUnitPrice) *
 											(totalQuantity || 1)
-										).toFixed(2)}{" "}
+										)}{" "}
 										TK
 									</p>
 								)}

@@ -12,6 +12,7 @@ import {
 } from "@/redux/features/balanceTransferlistsApi";
 import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { formatBDT } from "@/lib/format-currency";
 
 // ✅ Zod Schema
 const transferSchema = z.object({
@@ -34,12 +35,7 @@ const transferSchema = z.object({
 // ✅ Infer Type
 type TransferFormValues = z.infer<typeof transferSchema>;
 
-const formatMoney = (value: number) => {
-	if (!Number.isFinite(value)) return "0";
-	return new Intl.NumberFormat("en-BD", {
-		maximumFractionDigits: 2,
-	}).format(value);
-};
+
 
 export function TransferForm() {
 	const {
@@ -110,16 +106,16 @@ export function TransferForm() {
 					<div className="flex items-start justify-between">
 						<div>
 								<p className="text-sm text-gray-600">Your total balance</p>
-								<p className="text-2xl font-semibold text-[#E5005F] mb-4">
+								<p className="text-2xl font-semibold text-[#E5005F] mb-4 digit-font">
 									{isBalanceLoading
 										? "Loading..."
-										: "Tk " + formatMoney(walletBalance)}
+										: "Tk " + formatBDT(walletBalance)}
 								</p>
-								<p className="text-sm text-green-600">
+								<p className="text-sm text-green-600 digit-font">
 									Your last transfer:{" "}
 									{isBalanceLoading
 										? "Loading..."
-										: "Tk " + formatMoney(lastTransferAmount)}
+										: "Tk " + formatBDT(lastTransferAmount)}
 								</p>
 						</div>
 						<img src={money.src} alt="Money" className="w-6 h-6" />

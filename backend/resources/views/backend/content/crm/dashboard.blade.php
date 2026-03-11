@@ -54,19 +54,19 @@
                 <div class="col-md-4">
                     <div class="p-3 rounded" style="border: 1px solid var(--admin-border, #e2e8f0); background: #f8fafc;">
                         <div class="small text-muted mb-1">Total Sales Revenue</div>
-                        <div style="font-size: 24px; font-weight: 700;">{{ number_format($totalSalesRevenue, 2) }}</div>
+                        <div class="digit-font" style="font-size: 24px;">{{ number_format($totalSalesRevenue, 2) }}</div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="p-3 rounded" style="border: 1px solid var(--admin-border, #e2e8f0); background: #f8fafc;">
                         <div class="small text-muted mb-1">Total Revenue by Commission</div>
-                        <div style="font-size: 24px; font-weight: 700;">{{ number_format($totalCommissionRevenue, 2) }}</div>
+                        <div class="digit-font" style="font-size: 24px;">{{ number_format($totalCommissionRevenue, 2) }}</div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="p-3 rounded" style="border: 1px solid var(--admin-border, #e2e8f0); background: #f8fafc;">
                         <div class="small text-muted mb-1">Total Revenue by Subscription</div>
-                        <div style="font-size: 24px; font-weight: 700;">{{ number_format($totalSubscriptionRevenue, 2) }}</div>
+                        <div class="digit-font" style="font-size: 24px;">{{ number_format($totalSubscriptionRevenue, 2) }}</div>
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                     <a href="{{ route('admin.crm.users') }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">All User</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($allUsers) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($allUsers) }}</div>
                         </div>
                     </a>
                 </div>
@@ -91,7 +91,7 @@
                     <a href="{{ route('admin.crm.users', ['status' => 'Active']) }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Active User</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($activeUsers) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($activeUsers) }}</div>
                         </div>
                     </a>
                 </div>
@@ -99,7 +99,7 @@
                     <a href="{{ route('admin.crm.users', ['membership' => 'Paid']) }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Total Paid User</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($paidUsers) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($paidUsers) }}</div>
                         </div>
                     </a>
                 </div>
@@ -107,7 +107,7 @@
                     <a href="{{ route('admin.crm.users', ['membership' => 'Unpaid']) }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Total Unpaid User</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($unpaidUsers) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($unpaidUsers) }}</div>
                         </div>
                     </a>
                 </div>
@@ -115,7 +115,7 @@
                     <a href="{{ route('admin.crm.users') }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Total User Account Balance</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($totalUserAccountBalance, 2) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($totalUserAccountBalance, 2) }}</div>
                         </div>
                     </a>
                 </div>
@@ -173,7 +173,7 @@
                     <a href="{{ route('admin.crm.suppliers', ['status' => 'approved']) }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Active Supplier</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($activeSuppliers) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($activeSuppliers) }}</div>
                         </div>
                     </a>
                 </div>
@@ -181,7 +181,7 @@
                     <a href="{{ route('admin.crm.suppliers', ['status' => 'pending']) }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Pending Supplier</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($pendingSuppliers) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($pendingSuppliers) }}</div>
                         </div>
                     </a>
                 </div>
@@ -189,7 +189,7 @@
                     <a href="{{ url('admin/view-vendor-payout-requests/approved') }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Total Payment</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($totalSupplierPayment, 2) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($totalSupplierPayment, 2) }}</div>
                         </div>
                     </a>
                 </div>
@@ -197,7 +197,7 @@
                     <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">Pending Payment</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($pendingSupplierPayment, 2) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($pendingSupplierPayment, 2) }}</div>
                         </div>
                     </a>
                 </div>
@@ -205,7 +205,7 @@
                     <a href="{{ route('admin.crm.suppliers') }}" class="text-decoration-none">
                         <div class="p-3 rounded h-100" style="border: 1px solid #e2e8f0; background: #f8fafc;">
                             <div class="small text-muted">All Supplier Account Balance</div>
-                            <div style="font-size: 22px; font-weight: 700;">{{ number_format($totalSupplierAccountBalance, 2) }}</div>
+                            <div class="digit-font" style="font-size: 22px;">{{ number_format($totalSupplierAccountBalance, 2) }}</div>
                         </div>
                     </a>
                 </div>

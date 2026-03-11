@@ -106,7 +106,7 @@
                     <div class="card-body d-flex justify-content-between" style="border-radius: 8px;border: 1px solid #EBEDF2;">
                         <div class="info">
                             <p class="p-0 mb-2 text-dark"><b>Total Sale</b></p>
-                            <h4 class="p-0 m-0 text-dark">৳{{ App\Models\Order::where('user_id',Auth::user()->id)->where('status','!=','Canceled')->get()->sum('subTotal') + App\Models\Order::where('user_id',Auth::user()->id)->where('status','!=','Canceled')->get()->sum('paymentAmount') - App\Models\Order::where('user_id',Auth::user()->id)->where('status','!=','Canceled')->get()->sum('deliveryCharge')  }}</h4>
+                            <h4 class="p-0 m-0 text-dark digit-font">৳{{ App\Models\Order::where('user_id',Auth::user()->id)->where('status','!=','Canceled')->get()->sum('subTotal') + App\Models\Order::where('user_id',Auth::user()->id)->where('status','!=','Canceled')->get()->sum('paymentAmount') - App\Models\Order::where('user_id',Auth::user()->id)->where('status','!=','Canceled')->get()->sum('deliveryCharge')  }}</h4>
                         </div>
                         <img src="{{ asset('public/salse.png') }}" alt="" id="icoimg">
                     </div>
@@ -117,7 +117,7 @@
                     <div class="card-body d-flex justify-content-between" style="border-radius: 8px;border: 1px solid #EBEDF2;">
                         <div class="info">
                             <p class="p-0 mb-2 text-dark"><b>Total Profit</b></p>
-                            <h4 class="p-0 m-0 text-dark">৳{{ App\Models\Order::where('user_id',Auth::user()->id)->where('status','Delivered')->get()->sum('profit') }}</h4>
+                            <h4 class="p-0 m-0 text-dark digit-font">৳{{ App\Models\Order::where('user_id',Auth::user()->id)->where('status','Delivered')->get()->sum('profit') }}</h4>
                         </div>
                         <img src="{{ asset('public/profit2.png') }}" alt="" id="icoimg">
                     </div>
@@ -128,7 +128,7 @@
                     <div class="card-body d-flex justify-content-between" style="padding: 8px 20px;border-radius: 8px;border: 1px solid #EBEDF2;">
                         <div class="info">
                             <p class="p-0 mb-2 text-dark"><b>Balance</b></p>
-                            <h4 class="p-0 m-0 text-white text-dark">৳{{ Auth::user()->account_balance }}</h4>
+                            <h4 class="p-0 m-0 text-white text-dark digit-font">৳{{ Auth::user()->account_balance }}</h4>
                             <small class="text-dark">Last withdrew : ৳@if(App\Models\Withdrew::where('user_id',Auth::user()->id)->where('status','Paid')->get()->reverse()->first()) {{ App\Models\Withdrew::where('user_id',Auth::user()->id)->where('status','Paid')->get()->reverse()->first()->withdrew_amount }} @endif</small>
                         </div>
                         <img src="{{ asset('public/blance.png') }}" alt="" id="icoimg">
@@ -140,7 +140,7 @@
                     <div class="card-body d-flex justify-content-between" style="border-radius: 8px;border: 1px solid #EBEDF2;">
                         <div class="info">
                             <p class="p-0 mb-2 text-dark"><b>Withdrew</b></p>
-                            <h4 class="p-0 m-0 text-dark">৳{{ Auth::user()->cashout_balance }}</h4>
+                            <h4 class="p-0 m-0 text-dark digit-font">৳{{ Auth::user()->cashout_balance }}</h4>
                         </div>
                         <img src="{{ asset('public/with.png') }}" alt="" id="icoimg">
                     </div>
@@ -156,7 +156,7 @@
                             <div class="card-body d-flex justify-content-between" style="border-radius: 8px;border: 1px solid #EBEDF2;">
                                 <div class="info">
                                     <p class="p-0 mb-2 text-dark"><b>My Shop</b></p>
-                                    <h4 class="p-0 m-0 text-dark">{{ App\Models\Shopproduct::where('user_id',Auth::user()->id)->get()->count() }}</h4>
+                                    <h4 class="p-0 m-0 text-dark digit-font">{{ App\Models\Shopproduct::where('user_id',Auth::user()->id)->get()->count() }}</h4>
                                 </div>
                                 <img src="{{ asset('public/myshop.png') }}" alt="" id="icoimg">
                             </div>
@@ -169,7 +169,7 @@
                             <div class="card-body d-flex justify-content-between" style="border-radius: 8px;border: 1px solid #EBEDF2;">
                                 <div class="info">
                                     <p class="p-0 mb-2 text-dark"><b>Total Order</b></p>
-                                    <h4 class="p-0 m-0 text-dark">{{ App\Models\Order::where('user_id',Auth::user()->id)->get()->count() }}</h4>
+                                    <h4 class="p-0 m-0 text-dark digit-font">{{ App\Models\Order::where('user_id',Auth::user()->id)->get()->count() }}</h4>
                                 </div>
                                 <img src="{{ asset('public/totalorder.png') }}" alt="" id="icoimg">
                             </div>
@@ -181,7 +181,7 @@
                         <div class="card-body d-flex justify-content-between" style="border-radius: 8px;">
                             <div class="info">
                                 <p class="p-0 mb-2 text-dark"><b>Reseller Point</b></p>
-                                <h4 class="p-0 m-0 text-dark">0</h4>
+                                <h4 class="p-0 m-0 text-dark digit-font">0</h4>
                             </div>
                             <img src="{{ asset('public/respoint.png') }}" alt="" id="icoimg">
                         </div>

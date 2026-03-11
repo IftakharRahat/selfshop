@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { CheckCircle2, Headset, LogOut, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -221,11 +222,11 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 						<div className="flex items-baseline justify-center gap-1.5">
 							{discountPrice > 0 ? (
 								<span className="text-base text-indigo-400/70 line-through">
-									৳{regularPrice.toLocaleString()}
+									৳{formatBDT(regularPrice, 0)}
 								</span>
 							) : null}
 							<span className="text-3xl font-bold text-white">
-								৳{payablePrice.toLocaleString()}
+								৳{formatBDT(payablePrice, 0)}
 							</span>
 						</div>
 						<p className="text-indigo-300 text-sm mt-1">

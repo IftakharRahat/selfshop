@@ -12,6 +12,7 @@ import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
+import { formatBDT } from "@/lib/format-currency";
 
 interface ProductCardProps {
 	product: any;
@@ -75,12 +76,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 					<div className="flex items-center justify-between w-full">
 						<div className="flex flex-col">
 							{product.ProductSalePrice > (product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice) && product.selling_type !== 'dropshipping' && (
-								<span className="text-gray-400 line-through text-xs">
-									৳{product.ProductSalePrice}
+								<span className="text-gray-400 line-through text-xs digit-font">
+									৳{formatBDT(product.ProductSalePrice)}
 								</span>
 							)}
-							<span className="text-gray-900 font-bold text-sm">
-								৳{product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice}
+							<span className="text-gray-900 font-bold text-sm digit-font">
+								৳{formatBDT(product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice)}
 							</span>
 						</div>
 						<button

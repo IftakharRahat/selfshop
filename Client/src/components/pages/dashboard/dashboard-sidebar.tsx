@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import {
 	ArrowUpDown,
@@ -122,7 +123,7 @@ export default function DashboardSidebar({
 					<div className="flex items-center gap-1 bg-white/15 px-2.5 py-1 rounded-full">
 						<Wallet className="w-3.5 h-3.5 text-white/80" />
 						<span className="text-[12px] font-semibold text-white">
-							{walletBalance.toLocaleString()}TK
+							{formatBDT(walletBalance)}TK
 						</span>
 					</div>
 				</div>

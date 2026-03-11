@@ -187,6 +187,17 @@
 
     </style>
     <style>
+        /* Digit font — matches the Next.js storefront number style */
+        .digit-font {
+            font-family: "Poppins", "Roboto", sans-serif;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            font-variant-numeric: tabular-nums;
+            -webkit-font-feature-settings: "tnum";
+            font-feature-settings: "tnum";
+        }
+    </style>
+    <style>
         .card-box {
             position: relative;
             display: flex;

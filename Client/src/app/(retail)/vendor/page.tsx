@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { formatBDT } from "@/lib/format-currency";
 import WithVendorAuth from "./WithVendorAuth";
 import { useGetVendorDashboardQuery } from "@/redux/api/vendorApi";
 import { getImageUrl } from "@/lib/utils";
@@ -25,13 +26,7 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 
-function formatMoney(value: number) {
-	return new Intl.NumberFormat("en-BD", {
-		style: "currency",
-		currency: "BDT",
-		minimumFractionDigits: 2,
-	}).format(value);
-}
+
 
 export default function VendorHomePage() {
 	const carouselRef = useRef<HTMLDivElement>(null);
@@ -63,7 +58,7 @@ export default function VendorHomePage() {
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm">Products</p>
-								<p className="text-2xl font-bold mt-1">
+								<p className="text-2xl digit-font mt-1">
 									{isLoading ? "—" : dashboard?.product_count ?? 0}
 								</p>
 								<Link
@@ -82,7 +77,7 @@ export default function VendorHomePage() {
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm">Rating</p>
-								<p className="text-2xl font-bold mt-1">
+								<p className="text-2xl digit-font mt-1">
 									{isLoading ? "—" : (dashboard?.avg_rating && dashboard.avg_rating > 0 ? dashboard.avg_rating : "No rating")}
 								</p>
 								<p className="text-xs text-gray-200 mt-3">
@@ -98,7 +93,7 @@ export default function VendorHomePage() {
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm">Total Order</p>
-								<p className="text-2xl font-bold mt-1">
+								<p className="text-2xl digit-font mt-1">
 									{isLoading ? "—" : dashboard?.total_orders ?? 0}
 								</p>
 								<Link
@@ -117,11 +112,11 @@ export default function VendorHomePage() {
 						<div className="flex items-start justify-between">
 							<div>
 								<p className="text-sm">Total Sales</p>
-								<p className="text-2xl font-bold mt-1">
-									{isLoading ? "—" : formatMoney(dashboard?.total_sales ?? 0)}
+								<p className="text-2xl digit-font mt-1">
+									{isLoading ? "—" : "৳" + formatBDT(dashboard?.total_sales ?? 0)}
 								</p>
 								<p className="text-xs text-gray-200 mt-3">
-									Last Month: {isLoading ? "—" : formatMoney(dashboard?.last_month_sales ?? 0)}
+									Last Month: {isLoading ? "—" : "৳" + formatBDT(dashboard?.last_month_sales ?? 0)}
 								</p>
 							</div>
 							<TrendingUp className="w-12 h-12 text-white/85" />
@@ -146,7 +141,7 @@ export default function VendorHomePage() {
 										<XAxis dataKey="name" tick={{ fontSize: 11 }} />
 										<YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `৳${v}`} />
 										<Tooltip
-											formatter={(v) => [formatMoney(Number(v ?? 0)), "Sales"]}
+											formatter={(v) => ["৳" + formatBDT(Number(v ?? 0)), "Sales"]}
 										/>
 										<Bar dataKey="Sales" fill="#4f46e5" radius={[4, 4, 0, 0]} />
 									</BarChart>
@@ -259,18 +254,18 @@ export default function VendorHomePage() {
 					<div className="rounded-xl bg-white p-5 border border-gray-100">
 						<h2 className="text-sm font-semibold mb-1">Sold Amount</h2>
 						<p className="text-xs text-gray-500 mb-2">Your sold amount (current month)</p>
-						<p className="text-4xl font-bold text-[#2d2a5d]">
-							{isLoading ? "—" : formatMoney(dashboard?.this_month_sales ?? 0)}
+						<p className="text-4xl digit-font text-[#2d2a5d]">
+							{isLoading ? "—" : "৳" + formatBDT(dashboard?.this_month_sales ?? 0)}
 						</p>
 						<p className="text-xs text-gray-500 mt-1">
-							Last Month: {isLoading ? "—" : formatMoney(dashboard?.last_month_sales ?? 0)}
+							Last Month: {isLoading ? "—" : "৳" + formatBDT(dashboard?.last_month_sales ?? 0)}
 						</p>
 					</div>
 					<div className="rounded-xl bg-orange-50 p-5 border border-orange-100">
 						<h2 className="text-sm font-semibold mb-1">Pending Amount</h2>
-						<p className="text-xs text-gray-500 mb-2">Orders processing or awaiting delivery</p>
-						<p className="text-4xl font-bold text-orange-600">
-							{isLoading ? "—" : formatMoney(dashboard?.pending_amount ?? 0)}
+						<p className="text-xs text-gray-500 mb-2">Awaiting delivery</p>
+						<p className="text-4xl digit-font text-orange-600">
+							{isLoading ? "—" : "৳" + formatBDT(dashboard?.pending_amount ?? 0)}
 						</p>
 					</div>
 				</div>
@@ -330,8 +325,8 @@ export default function VendorHomePage() {
 											)}
 										</div>
 										<p className="mt-2 text-sm font-medium text-gray-900 truncate">{p.name}</p>
-										<p className="text-sm font-semibold text-[#2d2a5d]">
-											{formatMoney(p.price)}
+										<p className="text-sm font-semibold text-[#2d2a5d] digit-font">
+											৳{formatBDT(p.price)}
 										</p>
 										<div className="flex items-center gap-1 mt-1">
 											{[1, 2, 3, 4, 5].map((i) => (
@@ -342,8 +337,8 @@ export default function VendorHomePage() {
 											))}
 											{p.avg_rating > 0 && <span className="text-[10px] text-gray-500 ml-1">{p.avg_rating}</span>}
 										</div>
-										<p className="text-[11px] text-gray-500 mt-1">
-											Sales: {formatMoney(p.total_sales)} · Qty: {p.total_quantity}
+										<p className="text-[11px] text-gray-500 mt-1 digit-font">
+											Sales: ৳{formatBDT(p.total_sales)} · Qty: {p.total_quantity}
 										</p>
 									</Link>
 								))}

@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { useState } from "react";
 import WithVendorAuth from "../WithVendorAuth";
@@ -165,9 +166,9 @@ export default function VendorShippingPage() {
                                             <td className="px-3 py-2 font-medium">{m.name}</td>
                                             <td className="px-3 py-2 capitalize">{m.type}</td>
                                             <td className="px-3 py-2 text-right">
-                                                ৳{Number(m.rate).toLocaleString()}
+                                                ৳{formatBDT(m.rate)}
                                                 {m.type === "weight" && m.per_kg_rate != null && (
-                                                    <span className="text-gray-500 text-xs ml-1">+ ৳{Number(m.per_kg_rate).toLocaleString()}/kg</span>
+                                                    <span className="text-gray-500 text-xs ml-1">+ ৳{formatBDT(m.per_kg_rate)}/kg</span>
                                                 )}
                                             </td>
                                             <td className="px-3 py-2 text-center">

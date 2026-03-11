@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { Heart, Lock, ShoppingCart } from "lucide-react";
+import { formatBDT } from "@/lib/format-currency";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -54,12 +55,12 @@ function RowProductCard({ product, onAddToCart, isActive }: { product: any; onAd
 						<div className="flex items-center gap-1.5">
 							{isActive ? (
 								<>
-									<span className="text-sm sm:text-base font-bold text-gray-900">
-										৳{product?.ProductResellerPrice || product?.ProductSalePrice}
+									<span className="text-sm sm:text-base font-bold text-gray-900 digit-font">
+										৳{formatBDT(Number(product?.ProductResellerPrice || product?.ProductSalePrice))}
 									</span>
 									{product?.ProductSalePrice && product.ProductSalePrice !== (product.ProductResellerPrice || product.ProductSalePrice) && (
-										<span className="text-[10px] sm:text-xs text-gray-400 line-through">
-											৳{product?.ProductSalePrice}
+										<span className="text-[10px] sm:text-xs text-gray-400 line-through digit-font">
+											৳{formatBDT(Number(product?.ProductSalePrice))}
 										</span>
 									)}
 								</>
@@ -123,12 +124,12 @@ function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddT
 					<div className="flex items-center gap-2.5 mb-4">
 						{isActive ? (
 							<>
-								<span className="text-xl lg:text-2xl font-bold text-gray-900">
-									৳{product?.ProductResellerPrice || product?.ProductSalePrice}
+								<span className="text-xl lg:text-2xl font-bold text-gray-900 digit-font">
+									৳{formatBDT(Number(product?.ProductResellerPrice || product?.ProductSalePrice))}
 								</span>
 								{product?.ProductSalePrice && product.ProductSalePrice !== (product.ProductResellerPrice || product.ProductSalePrice) && (
-									<span className="text-sm lg:text-base text-gray-400 line-through">
-										৳{product?.ProductSalePrice}
+									<span className="text-sm lg:text-base text-gray-400 line-through digit-font">
+										৳{formatBDT(Number(product?.ProductSalePrice))}
 									</span>
 								)}
 							</>

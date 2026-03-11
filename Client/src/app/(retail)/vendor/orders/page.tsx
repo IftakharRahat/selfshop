@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import WithVendorAuth from "../WithVendorAuth";
 import { useGetVendorOrdersQuery } from "@/redux/api/vendorApi";
+import { formatBDT } from "@/lib/format-currency";
 
 const statusOptions = [
 	{ value: "", label: "All statuses" },
@@ -121,7 +122,7 @@ export default function VendorOrdersPage() {
 											</td>
 											<td className="px-3 py-2 text-center">{o.vendor_item_count}</td>
 											<td className="px-3 py-2">{o.customer_name ?? "—"} {o.customer_phone ? ` · ${o.customer_phone}` : ""}</td>
-											<td className="px-3 py-2 text-right font-medium">৳{o.vendor_subtotal.toLocaleString()}</td>
+											<td className="px-3 py-2 text-right font-medium">৳{formatBDT(o.vendor_subtotal)}</td>
 											<td className="px-3 py-2 text-center">
 												<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${statusBadgeClass(o.display_status ?? o.status)}`}>
 													{o.display_status ?? o.status}

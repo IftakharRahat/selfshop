@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { formatBDT } from "@/lib/format-currency";
 
 import { Drawer } from "antd";
 import { Minus, Plus, ShoppingBag, X } from "lucide-react";
@@ -150,7 +151,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 									{/* Line Total */}
 									<div className="text-right flex-shrink-0 self-start">
 										<p className="text-sm font-bold text-gray-900">
-											{isResellerActive ? `৳${(parseFloat(item.price) * item.qty).toFixed(0)}` : "???"}
+											{isResellerActive ? `৳${formatBDT(parseFloat(item.price) * item.qty, 0)}` : "???"}
 										</p>
 									</div>
 								</div>
@@ -186,7 +187,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 								Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
 							</span>
 							<span className="text-xl font-bold text-gray-900">
-								{isResellerActive ? `৳${totalPrice?.toFixed(2)}` : "***"}
+								{isResellerActive ? `৳${formatBDT(totalPrice)}` : "***"}
 							</span>
 						</div>
 

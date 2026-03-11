@@ -55,7 +55,7 @@ export default function OrderInsightCards() {
 								<p className="text-[10px] sm:text-sm text-gray-500 leading-tight">
 									{insight.title}
 								</p>
-								<p className="text-base sm:text-xl font-bold text-gray-900">
+								<p className="text-base sm:text-xl digit-font text-gray-900">
 									{insight.value}
 								</p>
 							</div>

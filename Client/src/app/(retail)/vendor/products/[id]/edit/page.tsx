@@ -7,6 +7,7 @@ import Link from "next/link";
 import WithVendorAuth from "../../../WithVendorAuth";
 import { toast } from "sonner";
 import { getImageUrl } from "@/lib/utils";
+import { formatBDT } from "@/lib/format-currency";
 import R2ImageUploader from "@/components/shared/r2-image-uploader";
 import R2MultiImageUploader from "@/components/shared/r2-multi-image-uploader";
 import {
@@ -374,8 +375,8 @@ export default function VendorEditProductPage() {
 											Base price (reseller)
 											<input type="number" min={0} step="0.01" value={f.base_price} onChange={set("base_price")} className={inputCls} />
 											{f.base_price && selectedCategoryCommission !== null && !isNaN(Number(f.base_price)) && (
-												<p className="text-xs text-green-600 mt-1 font-semibold">
-													Storefront price: ৳{(Number(f.base_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+												<p className="text-xs text-green-600 mt-1 font-semibold digit-font">
+													Storefront price: ৳{formatBDT(Number(f.base_price) * (1 + Number(selectedCategoryCommission) / 100))}
 													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
 												</p>
 											)}
@@ -691,8 +692,8 @@ export default function VendorEditProductPage() {
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
 																	<div className="font-semibold text-indigo-600">৳{sz.price || 'Inherited'}</div>
 																	{sz.price && selectedCategoryCommission !== null && (
-																		<div className="text-[9px] text-green-600 font-medium">
-																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																		<div className="text-[9px] text-green-600 font-medium digit-font">
+																			Store: ৳{formatBDT(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100))}
 																		</div>
 																	)}
 
@@ -720,8 +721,8 @@ export default function VendorEditProductPage() {
 																	<div className="text-right">
 																		<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
 																		{selectedCategoryCommission !== null && (
-																			<div className="text-[9px] text-green-600 font-medium">
-																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																			<div className="text-[9px] text-green-600 font-medium digit-font">
+																				Store: ৳{formatBDT(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100))}
 																			</div>
 																		)}
 

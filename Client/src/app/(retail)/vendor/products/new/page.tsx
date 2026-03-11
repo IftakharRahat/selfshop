@@ -19,6 +19,7 @@ import {
 	useGetAllNavbarCategoryDropdownOptionsQuery,
 	useGetAllBrandsQuery,
 } from "@/redux/features/home/homeApi";
+import { formatBDT } from "@/lib/format-currency";
 
 export default function VendorNewProductPage() {
 	const router = useRouter();
@@ -379,7 +380,7 @@ export default function VendorNewProductPage() {
 											/>
 											{basePrice && selectedCategoryCommission !== null && !isNaN(Number(basePrice)) && (
 												<p className="text-xs text-green-600 mt-1 font-semibold">
-													Storefront price: ৳{(Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+													Storefront price: ৳{formatBDT(Number(basePrice) * (1 + Number(selectedCategoryCommission) / 100))}
 													<span className="text-[10px] ml-1 font-normal">(after {selectedCategoryCommission}% admin commission)</span>
 												</p>
 											)}
@@ -707,7 +708,7 @@ export default function VendorNewProductPage() {
 																	<div className="font-semibold text-indigo-600">৳{sz.price}</div>
 																	{sz.price && selectedCategoryCommission !== null && (
 																		<div className="text-[9px] text-green-600 font-medium">
-																			Store: ৳{(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																			Store: ৳{formatBDT(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100))}
 																		</div>
 																	)}
 
@@ -740,7 +741,7 @@ export default function VendorNewProductPage() {
 																		<span className="font-bold text-indigo-600">৳{bt.bulk_price}</span>
 																		{selectedCategoryCommission !== null && (
 																			<div className="text-[9px] text-green-600 font-medium">
-																				Store: ৳{(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100)).toFixed(2)}
+																				Store: ৳{formatBDT(Number(bt.bulk_price) * (1 + Number(selectedCategoryCommission) / 100))}
 																			</div>
 																		)}
 

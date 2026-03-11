@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -52,24 +53,24 @@ export default function VendorEarningsPage() {
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 						<div className="rounded-xl border p-4 bg-blue-50 border-blue-200">
 							<p className="text-sm font-medium text-blue-600">Total sales</p>
-							<p className="text-2xl font-bold text-blue-800 mt-1">৳{Number(summary.total_sales).toLocaleString()}</p>
+							<p className="text-2xl digit-font text-blue-800 mt-1">৳{formatBDT(summary.total_sales)}</p>
 						</div>
 
 						<div className="rounded-xl border p-4 bg-emerald-50 border-emerald-200">
 							<p className="text-sm font-medium text-emerald-600">Net earnings</p>
-							<p className="text-2xl font-bold text-emerald-800 mt-1">৳{Number(summary.net_earnings).toLocaleString()}</p>
+							<p className="text-2xl digit-font text-emerald-800 mt-1">৳{formatBDT(summary.net_earnings)}</p>
 						</div>
 						<div className="rounded-xl border p-4 bg-gray-50 border-gray-200">
 							<p className="text-sm font-medium text-gray-600">Pending (orders)</p>
-							<p className="text-2xl font-bold text-gray-800 mt-1">৳{Number(summary.pending_balance).toLocaleString()}</p>
+							<p className="text-2xl digit-font text-gray-800 mt-1">৳{formatBDT(summary.pending_balance)}</p>
 						</div>
 						<div className="rounded-xl border p-4 bg-green-50 border-green-200">
 							<p className="text-sm font-medium text-green-600">Available balance</p>
-							<p className="text-2xl font-bold text-green-800 mt-1">৳{Number(summary.available_balance).toLocaleString()}</p>
+							<p className="text-2xl digit-font text-green-800 mt-1">৳{formatBDT(summary.available_balance)}</p>
 						</div>
 						<div className="rounded-xl border p-4 bg-indigo-50 border-indigo-200">
 							<p className="text-sm font-medium text-indigo-600">Paid out</p>
-							<p className="text-2xl font-bold text-indigo-800 mt-1">৳{Number(summary.paid_total).toLocaleString()}</p>
+							<p className="text-2xl digit-font text-indigo-800 mt-1">৳{formatBDT(summary.paid_total)}</p>
 						</div>
 					</div>
 				)}
@@ -129,9 +130,9 @@ export default function VendorEarningsPage() {
 											<tr key={e.id} className="hover:bg-gray-50">
 												<td className="px-3 py-2 text-gray-600">{e.order?.invoiceID ?? "—"}</td>
 												<td className="px-3 py-2">{e.product_name}</td>
-												<td className="px-3 py-2 text-right">৳{Number(e.line_total).toLocaleString()}</td>
+												<td className="px-3 py-2 text-right">৳{formatBDT(e.line_total)}</td>
 
-												<td className="px-3 py-2 text-right font-medium">৳{Number(e.net_amount).toLocaleString()}</td>
+												<td className="px-3 py-2 text-right font-medium">৳{formatBDT(e.net_amount)}</td>
 												<td className="px-3 py-2 text-center">
 													<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${e.status === "paid" ? "bg-green-100 text-green-700" :
 															e.status === "available" ? "bg-blue-100 text-blue-700" :

@@ -5,6 +5,7 @@ import { Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import React, { useState } from "react";
 import { TbCurrencyTaka } from "react-icons/tb";
+import { formatBDT } from "@/lib/format-currency";
 import { toast } from "sonner";
 
 type ColorOption = {
@@ -183,8 +184,8 @@ export default function OrderNowModal({
 				<div className="flex justify-between items-center mt-3 text-sm font-semibold">
 					<p>Total: {totalCount} pcs</p>
 
-					<p className="text-pink-600 flex items-center gap-1">
-						<TbCurrencyTaka /> {totalPrice.toFixed(2)}
+					<p className="text-pink-600 flex items-center gap-1 digit-font">
+						<TbCurrencyTaka /> {formatBDT(totalPrice)}
 					</p>
 				</div>
 

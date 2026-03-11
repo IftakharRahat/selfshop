@@ -1,5 +1,6 @@
 import { Heart, ShoppingCart } from "lucide-react";
 import Image from "next/image";
+import { formatBDT } from "@/lib/format-currency";
 
 export default function NewArrivalSection() {
 	const products = [
@@ -96,11 +97,11 @@ export default function NewArrivalSection() {
 								{/* Price and Cart */}
 								<div className="flex items-center justify-between">
 									<div className="flex items-center space-x-2">
-										<span className="text-lg font-bold text-gray-900">
-											৳ {product.currentPrice.toFixed(2)}
+										<span className="text-lg font-bold text-gray-900 digit-font">
+											৳ {formatBDT(product.currentPrice)}
 										</span>
-										<span className="text-sm text-gray-500 line-through">
-											৳ {product.originalPrice.toFixed(2)}
+										<span className="text-sm text-gray-500 line-through digit-font">
+											৳ {formatBDT(product.originalPrice)}
 										</span>
 									</div>
 									{/* Add to Cart Button */}

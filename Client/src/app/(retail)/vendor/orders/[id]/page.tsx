@@ -12,6 +12,7 @@ import {
 } from "@/redux/api/vendorApi";
 import { getImageUrl } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatBDT } from "@/lib/format-currency";
 
 const badgeClass = (status: string) => {
 	const s = status.toLowerCase();
@@ -311,7 +312,7 @@ export default function VendorOrderDetailPage() {
 												{item.productCode && <span className="text-gray-500 text-xs">({item.productCode})</span>}
 											</div>
 										</td>
-										<td className="px-3 py-2 text-right">৳{Number(item.productPrice).toLocaleString()}</td>
+										<td className="px-3 py-2 text-right">৳{formatBDT(Number(item.productPrice))}</td>
 										<td className="px-3 py-2 text-center">{item.quantity}</td>
 										<td className="px-3 py-2 text-center">
 											<span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${(item.fulfillment_status ?? "pending") === "shipped" ? "bg-blue-100 text-blue-800" :
@@ -324,14 +325,14 @@ export default function VendorOrderDetailPage() {
 										<td className="px-3 py-2 font-mono text-xs text-gray-600">
 											{item.tracking_number ?? "—"}
 										</td>
-										<td className="px-3 py-2 text-right font-medium">৳{item.line_total.toLocaleString()}</td>
+										<td className="px-3 py-2 text-right font-medium">৳{formatBDT(item.line_total)}</td>
 									</tr>
 								))}
 							</tbody>
 						</table>
 					</div>
 					<div className="mt-4 pt-4 border-t border-gray-200 flex justify-end">
-						<p className="text-sm font-semibold text-gray-900">Your subtotal: ৳{vendor_subtotal.toLocaleString()}</p>
+						<p className="text-sm font-semibold text-gray-900">Your subtotal: ৳{formatBDT(vendor_subtotal)}</p>
 					</div>
 				</div>
 			</div>

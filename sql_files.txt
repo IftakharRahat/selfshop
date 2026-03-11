@@ -1,0 +1,9 @@
+d:\selfshop\backend\public\info\phpinfo\sql\create_tables.sql
+d:\selfshop\backend\public\info\phpinfo\sql\upgrade_column_info_4_3_0+.sql
+d:\selfshop\backend\public\info\phpinfo\sql\upgrade_tables_4_7_0+.sql
+d:\selfshop\backend\public\info\phpinfo\sql\upgrade_tables_mysql_4_1_2+.sql
+d:\selfshop\backend\vendor\laravel\sail\database\pgsql\create-testing-database.sql
+d:\selfshop\db-recovery-backups\selfshop_20260304_054322.sql
+d:\selfshop\db-recovery-backups\selfshop_20260304_054322_utf8.sql
+d:\selfshop\db-recovery-backups\selfshop_clean_20260304_054738.sql
+d:\selfshop\db-recovery-backups\selfshop_salvage_20260304_054759.sql

@@ -1,4 +1,5 @@
 "use client";
+import { formatBDT } from "@/lib/format-currency";
 
 import { Check, Copy, Headset, LogOut } from "lucide-react";
 import Link from "next/link";
@@ -159,7 +160,7 @@ export function InvoicePage() {
 							</div>
 							<div className="rounded-xl border border-pink-100 bg-white p-3">
 								<p className="text-xs text-gray-500">Payable</p>
-								<p className="font-semibold text-gray-800">Tk {payableAmount.toLocaleString()}</p>
+								<p className="font-semibold text-gray-800">Tk {formatBDT(payableAmount)}</p>
 							</div>
 						</div>
 					</div>
