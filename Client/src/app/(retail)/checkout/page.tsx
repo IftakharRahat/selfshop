@@ -17,10 +17,7 @@ export default function CheckoutPage() {
 						Your payment was cancelled. No charges were made. You can try again or continue shopping.
 					</p>
 					<div className="flex gap-3 justify-center">
-						<Link href="/cart" className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-							Back to Cart
-						</Link>
-						<Link href="/" className="px-5 py-2.5 rounded-lg bg-gray-200 text-gray-800 text-sm font-medium hover:bg-gray-300">
+						<Link href="/" className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
 							Continue Shopping
 						</Link>
 					</div>
@@ -39,10 +36,7 @@ export default function CheckoutPage() {
 						Something went wrong with your payment. Please try again or choose a different payment method.
 					</p>
 					<div className="flex gap-3 justify-center">
-						<Link href="/cart" className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-							Try Again
-						</Link>
-						<Link href="/" className="px-5 py-2.5 rounded-lg bg-gray-200 text-gray-800 text-sm font-medium hover:bg-gray-300">
+						<Link href="/" className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
 							Continue Shopping
 						</Link>
 					</div>
@@ -51,16 +45,17 @@ export default function CheckoutPage() {
 		);
 	}
 
-	// Default: redirect to cart
+	// Default: redirect to home
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
 			<div className="text-center max-w-md">
 				<h1 className="text-2xl font-bold text-gray-900 mb-4">Checkout</h1>
 				<p className="text-gray-600 mb-6">Please proceed from your cart.</p>
-				<Link href="/cart" className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-					Go to Cart
+				<Link href="/" className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+					Go to Home
 				</Link>
 			</div>
 		</div>
 	);
 }
+
