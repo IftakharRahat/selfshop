@@ -35,6 +35,11 @@ class Vendor extends Model
         'rejected_at',
         'suspended_at',
         'notes',
+        'carrybee_store_id',
+        'pickup_city_id',
+        'pickup_zone_id',
+        'pickup_area_id',
+        'pickup_address',
     ];
 
     protected $casts = [
