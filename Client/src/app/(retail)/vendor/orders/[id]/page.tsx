@@ -62,9 +62,132 @@ export default function VendorOrderDetailPage() {
 	const isDelivered = lowerRawStatus.includes("deliver");
 	const isAccepted = lowerRawStatus === "confirmed" || (displayStatus ?? "").toLowerCase() === "accepted";
 	const canAccept = lowerRawStatus === "pending" || lowerRawStatus === "processing";
-	const canReject = !isRejected && !isDelivered;
+	const canReject = !isRejected && !isDelivered && !isAccepted;
 	const canSendWarehouse = !isRejected && !isDelivered && !order.warehouse_sent_at && isAccepted;
 	const canAddTracking = !isRejected && !isDelivered;
+	const isShippedToWarehouse = !!order.warehouse_sent_at;
+
+	const handleDownloadInvoice = () => {
+		const maskedPhone = customer?.customerPhone
+			? `${'*'.repeat(Math.max(0, customer.customerPhone.length - 4))}${customer.customerPhone.slice(-4)}`
+			: '—';
+
+		const itemRows = line_items
+			.map(
+				(item, i) =>
+					`<tr>
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">${i + 1}</td>
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:500;">${item.productName}${item.productCode ? ` <span style="color:#9ca3af;font-size:12px;">(${item.productCode})</span>` : ''}</td>
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:center;color:#374151;">${item.quantity}</td>
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;color:#374151;">৳${formatBDT(Number(item.productPrice))}</td>
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;color:#111827;font-weight:600;">৳${formatBDT(item.line_total)}</td>
+					</tr>`
+			)
+			.join('');
+
+		const consignment = order.carrybee_parcel_id
+			? `<div style="margin-top:28px;padding:16px 20px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:10px;">
+					<p style="margin:0;font-size:13px;color:#4338ca;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Carry Bee Consignment</p>
+					<p style="margin:6px 0 0;font-size:22px;font-weight:800;color:#312e81;letter-spacing:0.02em;">${order.carrybee_parcel_id}</p>
+			   </div>`
+			: '';
+
+		const invoiceDate = order.orderDate ?? new Date().toLocaleDateString();
+
+		const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Invoice - ${order.invoiceID}</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		body { font-family: 'Inter', -apple-system, sans-serif; background: #f9fafb; color: #111827; padding: 20px; }
+		.invoice { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+		.header { background: linear-gradient(135deg, #2d2a5d 0%, #4338ca 100%); padding: 36px 32px; color: #fff; }
+		.header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+		.header .subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+		.meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 24px 32px; border-bottom: 1px solid #f3f4f6; }
+		.meta-block h3 { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 4px; }
+		.meta-block p { font-size: 15px; font-weight: 600; color: #111827; }
+		.items { padding: 24px 32px 12px; }
+		.items h2 { font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+		table { width: 100%; border-collapse: collapse; font-size: 14px; }
+		thead th { padding: 10px 14px; background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; font-weight: 600; text-align: left; border-bottom: 2px solid #e5e7eb; }
+		thead th:nth-child(3) { text-align: center; }
+		thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
+		.total-row { padding: 20px 32px; border-top: 2px solid #e5e7eb; display: flex; justify-content: flex-end; }
+		.total-box { background: #f9fafb; padding: 14px 24px; border-radius: 8px; text-align: right; }
+		.total-box .label { font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.04em; }
+		.total-box .amount { font-size: 22px; font-weight: 800; color: #111827; margin-top: 2px; }
+		.footer { padding: 20px 32px 28px; }
+		@media print {
+			body { background: #fff; padding: 0; }
+			.invoice { box-shadow: none; border-radius: 0; }
+		}
+	</style>
+</head>
+<body>
+	<div class="invoice">
+		<div class="header">
+			<h1>INVOICE</h1>
+			<p class="subtitle">${order.invoiceID}</p>
+		</div>
+		<div class="meta">
+			<div class="meta-block">
+				<h3>Date</h3>
+				<p>${invoiceDate}</p>
+			</div>
+			<div class="meta-block">
+				<h3>Customer Phone</h3>
+				<p>${maskedPhone}</p>
+			</div>
+			<div class="meta-block">
+				<h3>Status</h3>
+				<p>Shipped to Warehouse</p>
+			</div>
+		</div>
+		<div class="items">
+			<h2>Products</h2>
+			<table>
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Product</th>
+						<th>Qty</th>
+						<th>Price</th>
+						<th>Total</th>
+					</tr>
+				</thead>
+				<tbody>
+					${itemRows}
+				</tbody>
+			</table>
+		</div>
+		<div class="total-row">
+			<div class="total-box">
+				<div class="label">Subtotal</div>
+				<div class="amount">৳${formatBDT(vendor_subtotal)}</div>
+			</div>
+		</div>
+		<div class="footer">
+			${consignment}
+		</div>
+	</div>
+	<script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+		const blob = new Blob([html], { type: 'text/html' });
+		const url = URL.createObjectURL(blob);
+		const win = window.open(url, '_blank');
+		if (win) {
+			win.onafterprint = () => {
+				URL.revokeObjectURL(url);
+				win.close();
+			};
+		}
+	};
 
 	const openTrackingModal = () => {
 		setOrderTracking(order.tracking_number ?? "");
@@ -172,6 +295,16 @@ export default function VendorOrderDetailPage() {
 								className="inline-flex w-full items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 sm:w-auto"
 							>
 								{sendingWarehouse ? "Sending..." : "Send to warehouse"}
+							</button>
+						)}
+						{isShippedToWarehouse && (
+							<button
+								type="button"
+								onClick={handleDownloadInvoice}
+								className="inline-flex w-full items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] sm:w-auto"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+								Download Invoice
 							</button>
 						)}
 						{/* Add / update tracking button hidden */}
