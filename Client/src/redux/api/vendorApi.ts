@@ -23,6 +23,10 @@ export interface VendorProfile {
 	verified_badge_by?: number | null;
 	logo_path?: string | null;
 	banner_path?: string | null;
+	pickup_city_id?: number | null;
+	pickup_zone_id?: number | null;
+	pickup_area_id?: number | null;
+	pickup_address?: string | null;
 }
 
 export interface VendorKycDocument {
@@ -282,7 +286,7 @@ export const vendorApi = baseApi.injectEndpoints({
 			{ status: boolean; message: string },
 			{
 				name: string;
-				email: string;
+				phone: string;
 				password: string;
 				company_name: string;
 				business_type?: string;

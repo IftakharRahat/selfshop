@@ -16,7 +16,7 @@ const VendorRegisterPage = () => {
 	const [registerVendor, { isLoading }] = useRegisterVendorMutation();
 
 	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
+	const [phone, setPhone] = useState("");
 	const [password, setPassword] = useState("");
 	const [companyName, setCompanyName] = useState("");
 	const [businessType, setBusinessType] = useState("");
@@ -56,7 +56,7 @@ const VendorRegisterPage = () => {
 		try {
 			const res = await registerVendor({
 				name,
-				email,
+				phone,
 				password,
 				company_name: companyName,
 				business_type: businessType,
@@ -111,11 +111,13 @@ const VendorRegisterPage = () => {
 							/>
 						</label>
 						<label className="flex flex-col text-sm font-medium text-gray-700">
-							Email or phone
+							Phone number
 							<input
 								required
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
+								type="tel"
+								placeholder="01XXXXXXXXX"
+								value={phone}
+								onChange={(e) => setPhone(e.target.value)}
 								className={inputClass}
 							/>
 						</label>
@@ -270,7 +272,7 @@ const VendorRegisterPage = () => {
 
 				<p className="text-xs text-gray-500 text-center">
 					After approval, you can sign in from the supplier login page using the
-					same email and password.
+					same phone number and password.
 				</p>
 				<div className="text-center">
 					<Link

@@ -6,6 +6,9 @@ import {
 	useUpsertVendorProfileMutation,
 	useGetVendorKycDocumentsQuery,
 	useCreateVendorKycDocumentMutation,
+	useGetCarryBeeCitiesQuery,
+	useGetCarryBeeZonesQuery,
+	useGetCarryBeeAreasQuery,
 } from "@/redux/api/vendorApi";
 import { toast } from "sonner";
 import WithVendorAuth from "../WithVendorAuth";
@@ -34,6 +37,12 @@ export default function VendorProfilePage() {
 	const [addressLine1, setAddressLine1] = useState("");
 	const [vendorStatus, setVendorStatus] = useState<null | string>(null);
 	const [isVerifiedBadge, setIsVerifiedBadge] = useState(false);
+
+	// Pickup point
+	const [pickupCityId, setPickupCityId] = useState<number | null>(null);
+	const [pickupZoneId, setPickupZoneId] = useState<number | null>(null);
+	const [pickupAreaId, setPickupAreaId] = useState<number | null>(null);
+	const [pickupAddress, setPickupAddress] = useState("");
 
 	// Logo & banner
 	const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -64,6 +73,10 @@ export default function VendorProfilePage() {
 			setIsVerifiedBadge(Boolean(vendor.is_verified_badge));
 			setExistingLogo(vendor.logo_path ?? "");
 			setExistingBanner(vendor.banner_path ?? "");
+			setPickupCityId(vendor.pickup_city_id ?? null);
+			setPickupZoneId(vendor.pickup_zone_id ?? null);
+			setPickupAreaId(vendor.pickup_area_id ?? null);
+			setPickupAddress(vendor.pickup_address ?? "");
 		} else if (user) {
 			setContactName(user.name ?? "");
 			setContactEmail(user.email ?? "");
@@ -86,6 +99,10 @@ export default function VendorProfilePage() {
 			if (addressLine1) formData.append("address_line_1", addressLine1);
 			if (logoFile) formData.append("logo_path", logoFile);
 			if (bannerFile) formData.append("banner_path", bannerFile);
+			if (pickupCityId) formData.append("pickup_city_id", String(pickupCityId));
+			if (pickupZoneId) formData.append("pickup_zone_id", String(pickupZoneId));
+			if (pickupAreaId) formData.append("pickup_area_id", String(pickupAreaId));
+			if (pickupAddress) formData.append("pickup_address", pickupAddress);
 
 			await saveProfile(formData).unwrap();
 			setLogoFile(null);
@@ -308,7 +325,19 @@ export default function VendorProfilePage() {
 							/>
 						</label>
 
-						<button
+					{/* ── Pickup Point (Carry Bee) ── */}
+					<PickupPointSection
+						pickupCityId={pickupCityId}
+						setPickupCityId={setPickupCityId}
+						pickupZoneId={pickupZoneId}
+						setPickupZoneId={setPickupZoneId}
+						pickupAreaId={pickupAreaId}
+						setPickupAreaId={setPickupAreaId}
+						pickupAddress={pickupAddress}
+						setPickupAddress={setPickupAddress}
+					/>
+
+					<button
 							type="submit"
 							disabled={isSaving || isLoading}
 							className="inline-flex items-center px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] disabled:opacity-60"
@@ -332,13 +361,20 @@ export default function VendorProfilePage() {
 						<form onSubmit={handleCreateKyc} className="space-y-2">
 							<label className="flex flex-col text-xs font-medium text-gray-700">
 								Document type
-								<input
+								<select
 									required
 									value={kycType}
 									onChange={(e) => setKycType(e.target.value)}
-									placeholder="nid, trade_license..."
-									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-								/>
+									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+								>
+									<option value="">Select document type</option>
+									<option value="nid">NID</option>
+									<option value="trade_license">Trade License</option>
+									<option value="passport">Passport</option>
+									<option value="driving_license">Driving License</option>
+									<option value="tin_certificate">TIN Certificate</option>
+									<option value="other">Other</option>
+								</select>
 							</label>
 							<label className="flex flex-col text-xs font-medium text-gray-700">
 								Document number (optional)
@@ -348,8 +384,8 @@ export default function VendorProfilePage() {
 									className="mt-1 rounded-md border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 								/>
 							</label>
-							<label className="flex flex-col text-xs font-medium text-gray-700">
-								Document file (image/PDF)
+							<div className="flex flex-col text-xs font-medium text-gray-700">
+								<span>Document file (image/PDF)</span>
 								<R2ImageUploader
 									value={kycFile}
 									onChange={(file) => setKycFile(file)}
@@ -357,7 +393,7 @@ export default function VendorProfilePage() {
 									maxSizeMB={2}
 									compact
 								/>
-							</label>
+							</div>
 							<button
 								type="submit"
 								disabled={isCreatingKyc}
@@ -419,5 +455,152 @@ export default function VendorProfilePage() {
 				</div>
 			</div>
 		</WithVendorAuth>
+	);
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/*  Pickup Point sub-component – reuses CarryBee hooks            */
+/* ────────────────────────────────────────────────────────────── */
+
+function PickupPointSection({
+	pickupCityId,
+	setPickupCityId,
+	pickupZoneId,
+	setPickupZoneId,
+	pickupAreaId,
+	setPickupAreaId,
+	pickupAddress,
+	setPickupAddress,
+}: {
+	pickupCityId: number | null;
+	setPickupCityId: (v: number | null) => void;
+	pickupZoneId: number | null;
+	setPickupZoneId: (v: number | null) => void;
+	pickupAreaId: number | null;
+	setPickupAreaId: (v: number | null) => void;
+	pickupAddress: string;
+	setPickupAddress: (v: string) => void;
+}) {
+	const { data: citiesData, isLoading: citiesLoading } =
+		useGetCarryBeeCitiesQuery();
+	const { data: zonesData, isLoading: zonesLoading } =
+		useGetCarryBeeZonesQuery(pickupCityId!, { skip: !pickupCityId });
+	const { data: areasData, isLoading: areasLoading } =
+		useGetCarryBeeAreasQuery(
+			{ cityId: pickupCityId!, zoneId: pickupZoneId! },
+			{ skip: !pickupCityId || !pickupZoneId },
+		);
+
+	const cities = citiesData?.data?.cities ?? [];
+	const zones = zonesData?.data?.zones ?? [];
+	const areas = areasData?.data?.areas ?? [];
+
+	const selectClass =
+		"mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white";
+	const inputClass =
+		"mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500";
+
+	return (
+		<div className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50 col-span-full">
+			<p className="text-sm font-semibold text-gray-800">📍 Pickup Point</p>
+			<p className="text-xs text-gray-500">
+				Select the nearest pickup location for courier pickups.
+			</p>
+
+			<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+				{/* City */}
+				<label className="flex flex-col text-sm font-medium text-gray-700">
+					City
+					<select
+						value={pickupCityId ?? ""}
+						onChange={(e) => {
+							setPickupCityId(
+								e.target.value ? Number(e.target.value) : null,
+							);
+							setPickupZoneId(null);
+							setPickupAreaId(null);
+						}}
+						className={selectClass}
+						disabled={citiesLoading}
+					>
+						<option value="">
+							{citiesLoading ? "Loading..." : "Select city"}
+						</option>
+						{cities.map((c: any) => (
+							<option key={c.id} value={c.id}>
+								{c.name}
+							</option>
+						))}
+					</select>
+				</label>
+
+				{/* Zone */}
+				<label className="flex flex-col text-sm font-medium text-gray-700">
+					Zone
+					<select
+						value={pickupZoneId ?? ""}
+						onChange={(e) => {
+							setPickupZoneId(
+								e.target.value ? Number(e.target.value) : null,
+							);
+							setPickupAreaId(null);
+						}}
+						className={selectClass}
+						disabled={!pickupCityId || zonesLoading}
+					>
+						<option value="">
+							{zonesLoading
+								? "Loading..."
+								: !pickupCityId
+									? "Select city first"
+									: "Select zone"}
+						</option>
+						{zones.map((z: any) => (
+							<option key={z.id} value={z.id}>
+								{z.name}
+							</option>
+						))}
+					</select>
+				</label>
+
+				{/* Area */}
+				<label className="flex flex-col text-sm font-medium text-gray-700">
+					Area
+					<select
+						value={pickupAreaId ?? ""}
+						onChange={(e) =>
+							setPickupAreaId(
+								e.target.value ? Number(e.target.value) : null,
+							)
+						}
+						className={selectClass}
+						disabled={!pickupZoneId || areasLoading}
+					>
+						<option value="">
+							{areasLoading
+								? "Loading..."
+								: !pickupZoneId
+									? "Select zone first"
+									: "Select area"}
+						</option>
+						{areas.map((a: any) => (
+							<option key={a.id} value={a.id}>
+								{a.name}
+							</option>
+						))}
+					</select>
+				</label>
+			</div>
+
+			<label className="flex flex-col text-sm font-medium text-gray-700">
+				Pickup address
+				<input
+					value={pickupAddress}
+					onChange={(e) => setPickupAddress(e.target.value)}
+					placeholder="Full address for courier pickup"
+					className={inputClass}
+				/>
+			</label>
+		</div>
 	);
 }
