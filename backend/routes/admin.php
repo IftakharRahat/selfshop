@@ -124,6 +124,8 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::resource('users', UserController::class, ['names' => 'admin.users']);
     Route::get('user/get/data', [UserController::class, 'userdata'])->name('admin.user.data');
     Route::get('activeuser/get/data', [UserController::class, 'activeuserdata'])->name('admin.activeuser.data');
+    Route::get('manage-users', [UserController::class, 'manageUsers'])->name('admin.manage-users');
+    Route::get('manage-user/get/data', [UserController::class, 'manageUserData'])->name('admin.manage-user.data');
 
     Route::get('view-active/user', [UserController::class, 'activeuser']);
     Route::get('executive', [AdminController::class, 'hrexe']);

@@ -64,6 +64,10 @@ class VendorAccountController extends Controller
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
             'pickup_location_label' => ['nullable', 'string', 'max:255'],
+            'pickup_city_id' => ['nullable', 'integer'],
+            'pickup_zone_id' => ['nullable', 'integer'],
+            'pickup_area_id' => ['nullable', 'integer'],
+            'pickup_address' => ['nullable', 'string', 'max:500'],
             'logo_path' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'banner_path' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);

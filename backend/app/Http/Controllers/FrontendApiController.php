@@ -1555,6 +1555,28 @@ class FrontendApiController extends Controller
 
     public function trackorder(Request $request)
     {
+        // Prefer lookup by unique order id if provided
+        if ($request->filled('id')) {
+            $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+                ->where('user_id', Auth::id())
+                ->where('id', $request->id)
+                ->first();
+
+            if ($orders) {
+                $orders = $this->hydrateOrderStatus($orders, true);
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Order found succesfully',
+                    'data' => $orders
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => false,
+                'message' => 'No order found with this id',
+            ], 404);
+        }
+
         $rawInvoiceId = trim((string) $request->invoiceID);
         $invoiceId = $this->normalizeInvoiceId($request->invoiceID);
 
@@ -1566,12 +1588,14 @@ class FrontendApiController extends Controller
         }
 
         $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+            ->where('user_id', Auth::id())
             ->where(function ($q) use ($rawInvoiceId, $invoiceId) {
                 $q->where('invoiceID', $invoiceId);
                 if ($rawInvoiceId !== '' && $rawInvoiceId !== $invoiceId) {
                     $q->orWhere('invoiceID', $rawInvoiceId);
                 }
             })
+            ->latest('id')
             ->first();
 
         if ($orders) {

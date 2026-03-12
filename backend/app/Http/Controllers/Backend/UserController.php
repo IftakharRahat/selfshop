@@ -113,6 +113,57 @@ class UserController extends Controller
             ->escapeColumns([])->make(true);
     }
 
+    public function manageUsers()
+    {
+        return view('backend.content.users.manage');
+    }
+
+    public function manageUserData(Request $request)
+    {
+        // Same query as userdata – exclude vendor accounts
+        $users = User::with('vendor')->doesntHave('vendor');
+
+        $statusFilter = trim((string) $request->input('status_filter', $request->input('status', '')));
+        $membershipFilter = trim((string) $request->input('membership_filter', $request->input('membership', '')));
+
+        if ($request['phone'] != '') {
+            $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
+        }
+
+        if ($request['startDate'] != '' && $request['endDate'] != '') {
+            $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+        }
+
+        if ($statusFilter !== '') {
+            $users->where('users.status', $statusFilter);
+        }
+
+        if ($membershipFilter !== '') {
+            $users->whereRaw("LOWER(COALESCE(users.membership_status, '')) = ?", [strtolower($membershipFilter)]);
+        }
+
+        return Datatables::of($users)
+            ->editColumn('user', function ($users) {
+                $u = User::where('id', $users->id)->first();
+                return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#2d2a5d; font-weight:600;">' . $u->my_referral_code . '</a> )';
+            })
+            ->addColumn('type', function ($users) {
+                if ($users->is_verified_wholesaler) {
+                    return '<span class="badge bg-success">Wholesaler</span>';
+                }
+                return '<span class="badge" style="background:#2d2a5d;color:#fff;">User</span>';
+            })
+            ->addColumn('analytics', function ($users) {
+                $inv = Resellerinvoice::where('user_id', $users->id)->first();
+                if (isset($inv)) {
+                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
+                } else {
+                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '';
+                }
+            })
+            ->escapeColumns([])->make(true);
+    }
+
     public function activeuser()
     {
         return view('backend.content.users.activeuser');

@@ -147,6 +147,7 @@
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-people"></i> Users</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
+                    <a href="{{ route('admin.manage-users') }}" class="dropdown-item">Manage Users</a>
                     <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
                 </div>
             </div>

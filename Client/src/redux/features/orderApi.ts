@@ -5,18 +5,31 @@ import { baseApi } from "../api/baseApi";
 const orderApi = baseApi.injectEndpoints({
 	endpoints: (builder) => ({
 		trackOrder: builder.query({
-			query: (orderId: string) => {
-				const normalized = String(orderId ?? "")
+		query: (params: string | { invoiceID: string; id?: string }) => {
+			let normalized = "";
+			let id = "";
+			if (typeof params === "string") {
+				normalized = String(params ?? "")
 					.trim()
 					.replace(/^[^A-Za-z0-9]+/, "");
+			} else {
+				normalized = String(params.invoiceID ?? "")
+					.trim()
+					.replace(/^[^A-Za-z0-9]+/, "");
+				id = params.id || "";
+			}
 
-				return {
-					url: `/track-order?invoiceID=${encodeURIComponent(normalized)}`,
-					method: "GET",
-				};
-			},
-			providesTags: ["orderApi"],
-		}),
+			const searchParams = new URLSearchParams();
+			if (normalized) searchParams.set("invoiceID", normalized);
+			if (id) searchParams.set("id", id);
+
+			return {
+				url: `/track-order?${searchParams.toString()}`,
+				method: "GET",
+			};
+		},
+		providesTags: ["orderApi"],
+	}),
 		orderCount: builder.query({
 			query: () => {
 				return {

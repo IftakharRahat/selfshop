@@ -147,7 +147,8 @@ export default function R2ImageUploader({
     );
 
     /* ─── Has a preview to show? ─── */
-    const showPreview = localPreview || previewUrl;
+    const hasFile = !!value;
+    const showPreview = localPreview || previewUrl || hasFile;
     const isImage =
         value?.type?.startsWith("image/") ||
         (previewUrl && /\.(jpe?g|png|gif|webp|svg|bmp)$/i.test(previewUrl));

@@ -25,7 +25,7 @@ class VendorAuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'max:255', Rule::unique('users', 'email')],
+            'phone' => ['required', 'string', 'size:11', 'regex:/^01[3-9]\d{8}$/', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:6'],
             'company_name' => ['required', 'string', 'max:255'],
             'business_type' => ['nullable', 'string', 'max:255'],
@@ -53,8 +53,8 @@ class VendorAuthController extends Controller
 
             $user = User::create([
                 'name' => $data['name'],
-                'email' => $data['email'],
-                'phone' => $data['email'],
+                'email' => $data['phone'],
+                'phone' => $data['phone'],
                 'password' => Hash::make($data['password']),
                 'status' => 'Inactive',
                 'is_verified_wholesaler' => false,
@@ -100,8 +100,7 @@ class VendorAuthController extends Controller
             if (!empty($data['pickup_city_id']) && !empty($data['pickup_zone_id']) && !empty($data['pickup_area_id'])) {
                 try {
                     $carryBee = app(CarryBeeService::class);
-                    // Use email as phone if it looks like a phone number, else use a default
-                    $contactPhone = preg_match('/^[\d\+]/', $data['email']) ? $data['email'] : '01700000000';
+                    $contactPhone = $data['phone'];
                     $storeResult = $carryBee->createStore([
                         'name' => $data['company_name'],
                         'contact_person_name' => $data['name'],
