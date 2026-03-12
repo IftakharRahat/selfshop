@@ -51,6 +51,7 @@ use DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
@@ -1176,9 +1177,12 @@ class FrontendApiController extends Controller
 
         $phone = $request->phone;
 
+        Log::info('[PasswordReset] Received request for phone: ' . $phone);
+
         if (strlen($phone) == '11') {
             $user = User::where('email', $phone)->first();
             if (!$user) {
+                Log::info('[PasswordReset] User not found with phone: ' . $phone . ', trying with 88 prefix');
                 $user = User::where('email', '88' . $phone)->first();
             }
         } else {
@@ -1186,11 +1190,24 @@ class FrontendApiController extends Controller
         }
 
         if (isset($user)) {
+            Log::info('[PasswordReset] User found: ID=' . $user->id . ', email=' . $user->email . ', name=' . $user->name);
+
             $otp = random_int(100000, 999999);
             $user->otp = $otp;
             $user->update();
 
-            $status = Http::get('http://bulksmsbd.net/api/smsapi?api_key=' . env('BULKSMS_API_KEY') . '&type=text&number=' . $user->email . '&senderid=' . env('BULKSMS_SENDER_ID') . '&message=Dear ' . $user->name . ' Your password reset OTP is : ' . $otp . '');
+            Log::info('[PasswordReset] OTP generated: ' . $otp . ' for user ID=' . $user->id);
+
+            $smsUrl = 'http://bulksmsbd.net/api/smsapi?api_key=' . env('BULKSMS_API_KEY') . '&type=text&number=' . $user->email . '&senderid=' . env('BULKSMS_SENDER_ID') . '&message=Dear ' . $user->name . ' Your password reset OTP is : ' . $otp . '';
+
+            Log::info('[PasswordReset] SMS API URL: ' . $smsUrl);
+            Log::info('[PasswordReset] BULKSMS_API_KEY set: ' . (env('BULKSMS_API_KEY') ? 'YES' : 'NO'));
+            Log::info('[PasswordReset] BULKSMS_SENDER_ID: ' . env('BULKSMS_SENDER_ID'));
+
+            $status = Http::get($smsUrl);
+
+            Log::info('[PasswordReset] SMS API response status: ' . $status->status());
+            Log::info('[PasswordReset] SMS API response body: ' . $status->body());
 
             if ($status->successful()) {
                 return response()->json([
@@ -1198,12 +1215,14 @@ class FrontendApiController extends Controller
                     'message' => 'OTP sent successfully to your phone number',
                 ], 200);
             } else {
+                Log::error('[PasswordReset] SMS API failed. Status: ' . $status->status() . ', Body: ' . $status->body());
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to send OTP. Please try again.',
                 ], 400);
             }
         } else {
+            Log::warning('[PasswordReset] No user found for phone: ' . $phone);
             return response()->json([
                 'status' => false,
                 'message' => 'No account found with this phone number',
