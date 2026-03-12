@@ -14,6 +14,28 @@ class Product extends Model
 
     protected $guarded = [];
 
+    protected $appends = ['storefront_price'];
+
+    /**
+     * Commission-inclusive display price for resellers.
+     * Uses ProductResellerPrice (or ProductSalePrice / ProductRegularPrice fallback)
+     * multiplied by the vendor commission factor.
+     */
+    public function getStorefrontPriceAttribute(): ?float
+    {
+        $base = (float) ($this->ProductResellerPrice
+            ?? $this->ProductSalePrice
+            ?? $this->ProductRegularPrice
+            ?? 0);
+
+        if ($base <= 0 || !$this->vendor_id) {
+            return $base > 0 ? $base : null;
+        }
+
+        $service = app(\App\Services\VendorCommissionService::class);
+        return $service->getStorefrontPrice($base, $this->vendor_id, $this->category_id);
+    }
+
     public function categories()
     {
         return $this->belongsTo(Category::class, 'category_id');

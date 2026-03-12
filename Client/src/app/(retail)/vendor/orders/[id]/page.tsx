@@ -62,7 +62,7 @@ export default function VendorOrderDetailPage() {
 	const isDelivered = lowerRawStatus.includes("deliver");
 	const isAccepted = lowerRawStatus === "confirmed" || (displayStatus ?? "").toLowerCase() === "accepted";
 	const canAccept = lowerRawStatus === "pending" || lowerRawStatus === "processing";
-	const canReject = !isRejected && !isDelivered && !isAccepted;
+	const canReject = canAccept;
 	const canSendWarehouse = !isRejected && !isDelivered && !order.warehouse_sent_at && isAccepted;
 	const canAddTracking = !isRejected && !isDelivered;
 	const isShippedToWarehouse = !!order.warehouse_sent_at;

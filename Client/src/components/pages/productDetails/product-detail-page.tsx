@@ -296,7 +296,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		}
 
 		// 4. Final fallback to product-level current price
-		return productData.currentPrice;
+		return productData.currentPrice * commissionFactor;
 	};
 
 	// Determine selling type
