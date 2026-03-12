@@ -347,15 +347,15 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 										className="text-[#e91e63] cursor-pointer text-sm mb-4 hover:underline"
 										onClick={() => setShowCoupon(true)}
 									>
-										Have a coupon code?
+										Have a refer code?
 									</p>
 								) : (
 									<Form.Item
 										name="refer_by"
-										label="Coupon Code"
+										label="Refer Code"
 										rules={[{ required: false }]}
 									>
-										<Input size="large" placeholder="Enter coupon code..." />
+										<Input size="large" placeholder="Enter refer code..." />
 									</Form.Item>
 								)}
 
