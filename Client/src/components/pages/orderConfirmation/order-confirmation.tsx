@@ -59,11 +59,14 @@ export default function OrderConfirmation() {
 	const [selected, setSelected] = useState("account");
 	const [agreedToTerms, setAgreedToTerms] = useState(false);
 	const [advanceDelivery, setAdvanceDelivery] = useState<"yes" | "no">("no");
-	const [deliveryZone, setDeliveryZone] = useState<"inside" | "outside">("inside");
+	const [deliveryZone, setDeliveryZone] = useState<"inside" | "near" | "outside" | null>(null);
+	const [deliveryZoneOpen, setDeliveryZoneOpen] = useState(false);
 	const { data: basicInfoData } = useGetBasicInfoQuery(undefined);
 	const insideDhakaCharge: number = Number(basicInfoData?.data?.inside_dhaka_charge) || 60;
+	const nearDhakaCharge: number = Number(basicInfoData?.data?.near_dhaka_charge) || 100;
 	const outsideDhakaCharge: number = Number(basicInfoData?.data?.outside_dhaka_charge) || 130;
-	const deliveryCharge: number = deliveryZone === "inside" ? insideDhakaCharge : outsideDhakaCharge;
+	const deliveryCharge: number = deliveryZone === "inside" ? insideDhakaCharge : deliveryZone === "near" ? nearDhakaCharge : deliveryZone === "outside" ? outsideDhakaCharge : 0;
+	const deliveryZoneLabel = deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : deliveryZone === "outside" ? "Outside Dhaka" : null;
 	const [customerData, setCustomerData] = useState({
 		name: "",
 		address: "",
@@ -136,9 +139,9 @@ export default function OrderConfirmation() {
 			return total + (sellingPrice - costPrice) * item.qty;
 		}, 0) || 0;
 	const grandTotal =
-		advanceDelivery === "yes"
-			? subtotal + totalProfit - discount // customer already paid delivery
-			: subtotal + totalProfit - discount + deliveryCharge; // delivery added
+		advanceDelivery === "yes" || !deliveryZone
+			? subtotal + totalProfit - discount
+			: subtotal + totalProfit - discount + deliveryCharge;
 
 	// ✅ Form Validation Before Submission
 	const validateForm = () => {
@@ -158,6 +161,10 @@ export default function OrderConfirmation() {
 
 	const handleOrderConfirm = async () => {
 		if (!validateForm()) return;
+		if (!deliveryZone) {
+			Swal.fire({ icon: "warning", title: "Please select a delivery zone", confirmButtonText: "OK" });
+			return;
+		}
 
 		const formData = new FormData();
 		formData.append("customerName", customerData.name);
@@ -165,7 +172,7 @@ export default function OrderConfirmation() {
 		formData.append("customerAddress", customerData.address);
 		formData.append("subTotal", subtotal.toString());
 		formData.append("deliveryCharge", deliveryCharge.toString());
-		formData.append("delivery_zone", deliveryZone === "inside" ? "Inside Dhaka" : "Outside Dhaka");
+		formData.append("delivery_zone", deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : "Outside Dhaka");
 		formData.append("advance_delivery", advanceDelivery);
 		formData.append(
 			"balance_from",
@@ -363,45 +370,36 @@ export default function OrderConfirmation() {
 							<p className="text-sm font-semibold text-gray-800 mb-3">
 								Delivery Zone
 							</p>
-							<div className="flex items-center gap-3">
-								<label
-									className={`flex items-center justify-between border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${deliveryZone === "inside"
-										? "border-pink-500 bg-pink-50 text-pink-700"
-										: "border-gray-300 text-gray-600 hover:border-gray-400"
-										}`}
+							<div className="relative">
+								<button
+									type="button"
+									onClick={() => setDeliveryZoneOpen(!deliveryZoneOpen)}
+									className={`w-full flex items-center justify-between px-4 py-3 border rounded-lg text-sm font-medium bg-white cursor-pointer transition-all ${deliveryZone ? "border-pink-500 text-gray-800" : "border-gray-300 text-gray-500"} ${deliveryZoneOpen ? "ring-2 ring-pink-500 border-pink-500" : "hover:border-gray-400"}`}
 								>
-									<div className="flex items-center gap-2">
-										<input
-											type="radio"
-											name="deliveryZone"
-											value="inside"
-											checked={deliveryZone === "inside"}
-											onChange={() => setDeliveryZone("inside")}
-											className="accent-pink-500"
-										/>
-										Inside Dhaka
+									<span>{deliveryZoneLabel ? `${deliveryZoneLabel} — ৳${formatBDT(deliveryCharge, 0)}` : "Choose Delivery Zone"}</span>
+									<svg className={`w-5 h-5 text-gray-400 transition-transform ${deliveryZoneOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+									</svg>
+								</button>
+								{deliveryZoneOpen && (
+									<div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+										{([
+											{ value: "inside" as const, label: "Inside Dhaka", charge: insideDhakaCharge },
+											{ value: "near" as const, label: "Surrounding Dhaka", charge: nearDhakaCharge },
+											{ value: "outside" as const, label: "Outside Dhaka", charge: outsideDhakaCharge },
+										]).map((zone) => (
+											<button
+												key={zone.value}
+												type="button"
+												onClick={() => { setDeliveryZone(zone.value); setDeliveryZoneOpen(false); }}
+												className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors cursor-pointer ${deliveryZone === zone.value ? "bg-pink-50 text-pink-700" : "text-gray-700 hover:bg-pink-50 hover:text-pink-700"}`}
+											>
+												<span>{zone.label}</span>
+												<span className="digit-font text-xs font-semibold">৳{formatBDT(zone.charge, 0)}</span>
+											</button>
+										))}
 									</div>
-								<span className="text-xs font-semibold digit-font">৳{formatBDT(insideDhakaCharge, 0)}</span>
-								</label>
-								<label
-									className={`flex items-center justify-between border rounded-lg px-4 py-2.5 cursor-pointer transition-all flex-1 ${deliveryZone === "outside"
-										? "border-pink-500 bg-pink-50 text-pink-700"
-										: "border-gray-300 text-gray-600 hover:border-gray-400"
-										}`}
-								>
-									<div className="flex items-center gap-2">
-										<input
-											type="radio"
-											name="deliveryZone"
-											value="outside"
-											checked={deliveryZone === "outside"}
-											onChange={() => setDeliveryZone("outside")}
-											className="accent-pink-500"
-										/>
-										Outside Dhaka
-									</div>
-								<span className="text-xs font-semibold digit-font">৳{formatBDT(outsideDhakaCharge, 0)}</span>
-								</label>
+								)}
 							</div>
 						</div>
 
@@ -444,7 +442,12 @@ export default function OrderConfirmation() {
 									No
 								</label>
 							</div>
-							{advanceDelivery === "yes" ? (
+							{!deliveryZone ? (
+								<p className="flex items-center gap-2 text-gray-500 text-sm font-medium p-3 rounded-lg mt-3 bg-gray-100">
+									<IoMdInformationCircleOutline size={18} />
+									Please select a delivery zone first
+								</p>
+							) : advanceDelivery === "yes" ? (
 								<p className="flex items-center gap-2 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
 									<FaCheckCircle size={16} />
 									Customer paid <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> advance delivery
@@ -458,10 +461,17 @@ export default function OrderConfirmation() {
 						</div>
 
 						{/* Delivery Fee Payment Info */}
-						<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
-							<IoMdInformationCircleOutline size={20} />
-							Please pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> delivery fee to confirm the order.
-						</p>
+						{deliveryZone ? (
+							<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
+								<IoMdInformationCircleOutline size={20} />
+								Please pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> delivery fee to confirm the order.
+							</p>
+						) : (
+							<p className="flex items-center gap-2 bg-gray-100 text-gray-500 text-sm font-medium p-4 rounded-lg mt-4">
+								<IoMdInformationCircleOutline size={20} />
+								Select a delivery zone to see the delivery fee.
+							</p>
+						)}
 
 						{/* Delivery Fee Payment Method */}
 						<div className="mt-5">
@@ -529,7 +539,7 @@ export default function OrderConfirmation() {
 								: "bg-gray-300 text-gray-500 cursor-not-allowed"
 								}`}
 						>
-							Pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> & Confirm Order
+							{deliveryZone ? <>Pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> {"&"} Confirm Order</> : "Confirm Order"}
 						</button>
 					</div>
 
@@ -638,7 +648,9 @@ export default function OrderConfirmation() {
 								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
 									<span>Delivery Charge</span>
 									<span className="flex items-center">
-										{advanceDelivery === "yes" ? (
+										{!deliveryZone ? (
+											<span className="text-gray-400 text-sm italic">Select a zone</span>
+										) : advanceDelivery === "yes" ? (
 											<span className="text-green-600 text-sm font-medium">Paid by customer</span>
 										) : (
 											<span className="digit-font flex items-center">
@@ -658,12 +670,16 @@ export default function OrderConfirmation() {
 									</div>
 								</div>
 								<div className="border-t pt-4">
-									<div className="flex flex-col sm:flex-row justify-between text-sm font-semibold text-pink-700 bg-pink-50 p-3 rounded-lg">
+									<div className={`flex flex-col sm:flex-row justify-between text-sm font-semibold p-3 rounded-lg ${deliveryZone ? "text-pink-700 bg-pink-50" : "text-gray-500 bg-gray-50"}`}>
 										<span>Delivery fee (pay now)</span>
-										<span className="flex items-center digit-font">
-											<TbCurrencyTaka size={18} />
-											{formatBDT(deliveryCharge, 0)}
-										</span>
+										{deliveryZone ? (
+											<span className="flex items-center digit-font">
+												<TbCurrencyTaka size={18} />
+												{formatBDT(deliveryCharge, 0)}
+											</span>
+										) : (
+											<span className="text-gray-400 text-xs italic">Select a zone</span>
+										)}
 									</div>
 								</div>
 							</div>

@@ -109,10 +109,7 @@ export default function OrderDetailCard({
 					<p className="text-xs text-gray-400">Phone</p>
 					<p className="font-medium text-gray-900">{orderData.customers?.customerPhone}</p>
 				</div>
-				<div>
-					<p className="text-xs text-gray-400">Delivery Charge</p>
-					<p className="font-medium text-gray-900">Tk {orderData.deliveryCharge}</p>
-				</div>
+
 				{orderData.customers?.customerAddress && (
 					<div className="col-span-2 sm:col-span-3">
 						<p className="text-xs text-gray-400">Address</p>
@@ -129,29 +126,52 @@ export default function OrderDetailCard({
 
 			<div className="pt-3 border-t border-gray-200">
 				<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Products</p>
-				{orderData.orderproducts?.map((item: any) => (
-					<div
-						key={item.id}
-						className="flex flex-wrap items-center justify-between gap-y-1 text-sm py-2 border-b border-gray-100 last:border-0"
-					>
-						<div className="flex-1 min-w-0">
-							<span className="text-gray-700">{item.productName} <span className="text-gray-400">x{item.quantity}</span></span>
-							{(item.tracking_number || item.fulfillment_status) && (
-								<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-									{item.fulfillment_status && item.fulfillment_status !== "pending" && (
-										<span className={`px-1.5 py-0.5 rounded font-medium ${item.fulfillment_status === "shipped" ? "bg-blue-100 text-blue-700" : item.fulfillment_status === "delivered" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-											{String(item.fulfillment_status).replace(/^\w/, (c: string) => c.toUpperCase())}
-										</span>
-									)}
-									{item.tracking_number && (
-										<span className="text-gray-500 font-mono">Track: {item.tracking_number}</span>
-									)}
-								</div>
-							)}
+				{orderData.orderproducts?.map((item: any) => {
+					const costPrice = parseFloat(item.productPrice) || 0;
+					const qty = parseInt(item.quantity) || 1;
+					const itemTotal = costPrice * qty;
+					return (
+						<div
+							key={item.id}
+							className="flex flex-wrap items-start justify-between gap-y-1 text-sm py-2 border-b border-gray-100 last:border-0"
+						>
+							<div className="flex-1 min-w-0">
+								<span className="text-gray-700">{item.productName} <span className="text-gray-400">x{item.quantity}</span></span>
+								{(item.tracking_number || item.fulfillment_status) && (
+									<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+										{item.fulfillment_status && item.fulfillment_status !== "pending" && (
+											<span className={`px-1.5 py-0.5 rounded font-medium ${item.fulfillment_status === "shipped" ? "bg-blue-100 text-blue-700" : item.fulfillment_status === "delivered" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+												{String(item.fulfillment_status).replace(/^\w/, (c: string) => c.toUpperCase())}
+											</span>
+										)}
+										{item.tracking_number && (
+											<span className="text-gray-500 font-mono">Track: {item.tracking_number}</span>
+										)}
+									</div>
+								)}
+							</div>
+							<div className="text-right">
+								<span className="font-medium text-gray-900">Tk {itemTotal.toLocaleString()}</span>
+							</div>
 						</div>
-						<span className="font-medium text-gray-900">Tk {item.productPrice}</span>
+					);
+				})}
+
+				{/* Order Summary */}
+				<div className="mt-3 pt-3 border-t border-gray-200 space-y-1.5 text-sm">
+					<div className="flex justify-between">
+						<span className="text-gray-500">Resell Price</span>
+						<span className="font-medium text-gray-900">Tk {(parseFloat(orderData.subTotal) || 0).toLocaleString()}</span>
 					</div>
-				))}
+					<div className="flex justify-between">
+						<span className="text-gray-500">Seller Profit</span>
+						<span className="font-medium text-green-600">Tk {(parseFloat(orderData.profit) || 0).toLocaleString()}</span>
+					</div>
+					<div className="flex justify-between pt-1.5 border-t border-gray-100">
+						<span className="font-semibold text-gray-900">Total</span>
+						<span className="font-semibold text-gray-900">Tk {((parseFloat(orderData.subTotal) || 0) + (parseFloat(orderData.profit) || 0)).toLocaleString()}</span>
+					</div>
+				</div>
 			</div>
 		</div>
 	);

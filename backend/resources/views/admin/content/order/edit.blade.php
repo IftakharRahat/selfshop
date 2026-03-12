@@ -314,7 +314,9 @@
                                  Total</label>
                              <div class="col-sm-8">
                                  <span class="form-control" id="subtotal"
-                                     style="cursor: not-allowed;">{{ number_format($order->subTotal, 2) }}</span>
+                                     style="cursor: not-allowed;">{{ number_format($order->subTotal + $order->profit, 2) }}</span>
+                                 <input type="hidden" id="orderProfit" value="{{ $order->profit }}">
+                                 <input type="hidden" id="advanceDelivery" value="{{ $order->advance_delivery }}">
                              </div>
                          </div>
                          <div class="mb-2 form-group row">

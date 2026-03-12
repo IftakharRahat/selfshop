@@ -352,7 +352,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Near Dhaka</label>
+                                        <label>Surrounding Dhaka</label>
                                         <input type="text" class="form-control" name="near_dhaka_charge"
                                             value="{{ $webinfo->near_dhaka_charge }}" id="near_dhaka_charge"
                                             placeholder="৳ 0">
