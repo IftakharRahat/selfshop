@@ -210,7 +210,7 @@ export default function ContactPage() {
 								</div>
 							</div>
 							<div>
-								<p className="text-gray-900 font-medium">Dhaka, Bangladesh</p>
+								<p className="text-gray-900 font-medium">Momotaz Plaza, 6th Floor, Flat-C, PTI More, College Road, Sadar Lakshmipur, Lakshmipur.</p>
 							</div>
 						</div>
 
@@ -274,7 +274,7 @@ export default function ContactPage() {
 								<div className="absolute inset-0 flex items-center justify-center">
 									<div className="bg-white rounded-lg px-4 py-2 shadow-lg">
 										<p className="text-gray-900 font-semibold">
-											Dhaka, Bangladesh
+											Lakshmipur, Bangladesh
 										</p>
 									</div>
 								</div>
