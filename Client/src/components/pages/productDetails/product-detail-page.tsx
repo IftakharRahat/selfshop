@@ -665,16 +665,19 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 							</div>
 							<div className="flex items-center">
 								<span className="font-medium text-gray-900">Quantity :</span>
-								<span className="ml-2 text-gray-600">
-									{(() => {
-										const currentVariant = variants[activeVariantIdx];
-										if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
-											const selectedSize = currentVariant.sizes[activeSizeIdx];
-											return selectedSize?.qty ?? 0;
-										}
-										return currentVariant?.qty ?? productData.quantity;
-									})()}
-								</span>
+								{(() => {
+									const currentVariant = variants[activeVariantIdx];
+									let qty = 0;
+									if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+										const selectedSize = currentVariant.sizes[activeSizeIdx];
+										qty = selectedSize?.qty ?? 0;
+									} else {
+										qty = currentVariant?.qty ?? productData.quantity;
+									}
+									return qty <= 0
+										? <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">Stock Out</span>
+										: <span className="ml-2 text-gray-600">{qty}</span>;
+								})()}
 							</div>
 							<div className="flex items-center">
 								<span className="font-medium text-gray-900">SKU :</span>
@@ -935,7 +938,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																</span>
 															)}
 														</div>
-														<div className="text-gray-600 text-sm text-center">{sz.qty}</div>
+														<div className="text-sm text-center">{sz.qty <= 0 ? <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Stock Out</span> : <span className="text-gray-600">{sz.qty}</span>}</div>
 														<div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
 															<button
 																onClick={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
@@ -953,7 +956,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																className={`w-14 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${qty > 0 ? 'bg-pink-50 border-pink-300 text-pink-700' : 'bg-white border-gray-200'}`}
 															/>
 															<button
-																disabled={qty >= sz.qty}
+																disabled={qty >= sz.qty || sz.qty <= 0}
 																onClick={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
 																className={`w-8 h-8 border rounded-lg flex items-center justify-center transition-colors ${qty >= sz.qty ? 'opacity-40 cursor-not-allowed bg-gray-100 border-gray-200' : 'hover:bg-pink-50 border-gray-300 bg-white'}`}
 															>

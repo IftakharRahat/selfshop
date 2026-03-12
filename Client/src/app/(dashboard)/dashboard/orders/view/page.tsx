@@ -14,11 +14,13 @@ function normalizeInvoiceId(value: string | null | undefined): string {
 export default function OrderViewPage() {
 	const searchParams = useSearchParams();
 	const rawInvoiceID = searchParams?.get("invoiceID");
+	const orderId = searchParams?.get("id");
 	const invoiceID = normalizeInvoiceId(rawInvoiceID);
 
-	const { data, isFetching, isError } = useTrackOrderQuery(invoiceID, {
-		skip: !invoiceID,
-	});
+	const { data, isFetching, isError } = useTrackOrderQuery(
+		{ invoiceID, id: orderId || undefined },
+		{ skip: !invoiceID && !orderId },
+	);
 
 	const orderData = data?.data;
 

@@ -30,10 +30,13 @@ interface OrdersTableProps {
 	status?: string;
 }
 
-function invoiceViewHref(invoiceId: string | null | undefined): string {
+function invoiceViewHref(invoiceId: string | null | undefined, orderId?: number | string): string {
 	const value = String(invoiceId ?? "").trim();
 	const normalized = value.replace(/^[^A-Za-z0-9]+/, "");
-	return `/dashboard/orders/view?invoiceID=${encodeURIComponent(normalized)}`;
+	const params = new URLSearchParams();
+	params.set('invoiceID', normalized);
+	if (orderId) params.set('id', String(orderId));
+	return `/dashboard/orders/view?${params.toString()}`;
 }
 
 export default function OrdersTable({ status = "all" }: OrdersTableProps) {
@@ -165,7 +168,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 
 							<div className="flex gap-2">
 								<Link
-									href={invoiceViewHref(order.invoiceID)}
+									href={invoiceViewHref(order.invoiceID, order.id)}
 									className="flex-1 text-center text-xs font-medium py-2 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
 								>
 									View Order
@@ -306,7 +309,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 									<td className="p-4">
 										<div className="flex items-center gap-2">
 											<Link
-												href={invoiceViewHref(order.invoiceID)}
+												href={invoiceViewHref(order.invoiceID, order.id)}
 												className="inline-block text-xs font-medium px-3 py-1.5 text-[#E5005F] hover:bg-[#E5005F]/5 border border-[#E5005F]/20 rounded-lg transition-colors cursor-pointer"
 											>
 												View
