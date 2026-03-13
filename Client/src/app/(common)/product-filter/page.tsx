@@ -6,6 +6,7 @@ import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import {
 	useGetCategoryProductsQuery,
 	useGetSubcategoryProductsQuery,
+	useGetMinicategoryProductsQuery,
 } from "@/redux/features/home/homeApi";
 
 interface Product {
@@ -30,16 +31,19 @@ const ProductFilterPage = () => {
 	const searchParams = useSearchParams();
 	const category = searchParams?.get("category") ?? "";
 	const subcategory = searchParams?.get("subcategory") ?? "";
+	const minicategory = searchParams?.get("minicategory") ?? "";
 	const [sort, setSort] = useState("rating");
 	const [currentPage, setCurrentPage] = useState(1);
 
 	// Reset page when sort or category changes
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [sort, category, subcategory]);
+	}, [sort, category, subcategory, minicategory]);
 
-	const useCategory = Boolean(category && !subcategory);
-	const subcategorySlug = subcategory || (category ? undefined : "");
+	// Determine which query to use: minicategory > subcategory > category
+	const useMinicategory = Boolean(minicategory);
+	const useSubcategory = Boolean(subcategory && !minicategory);
+	const useCategory = Boolean(category && !subcategory && !minicategory);
 
 	const {
 		data: categoryData,
@@ -57,19 +61,30 @@ const ProductFilterPage = () => {
 		isFetching: subcategoryFetching,
 	} = useGetSubcategoryProductsQuery(
 		{ slug: subcategory || "", sort, page: currentPage },
-		{ skip: useCategory },
+		{ skip: !useSubcategory },
+	);
+	const {
+		data: minicategoryData,
+		isLoading: minicategoryLoading,
+		isError: minicategoryError,
+		isFetching: minicategoryFetching,
+	} = useGetMinicategoryProductsQuery(
+		{ slug: minicategory, sort, page: currentPage },
+		{ skip: !useMinicategory },
 	);
 
-	const responseData = useCategory ? categoryData : subcategoryData;
-	const isLoading = useCategory ? categoryLoading : subcategoryLoading;
-	const isError = useCategory ? categoryError : subcategoryError;
-	const isFetching = useCategory ? categoryFetching : subcategoryFetching;
+	const responseData = useMinicategory ? minicategoryData : useCategory ? categoryData : subcategoryData;
+	const isLoading = useMinicategory ? minicategoryLoading : useCategory ? categoryLoading : subcategoryLoading;
+	const isError = useMinicategory ? minicategoryError : useCategory ? categoryError : subcategoryError;
+	const isFetching = useMinicategory ? minicategoryFetching : useCategory ? categoryFetching : subcategoryFetching;
 
-	const title = subcategory
-		? subcategory.replace(/-/g, " ")
-		: category
-			? category.replace(/-/g, " ")
-			: "All Products";
+	const title = minicategory
+		? minicategory.replace(/-/g, " ")
+		: subcategory
+			? subcategory.replace(/-/g, " ")
+			: category
+				? category.replace(/-/g, " ")
+				: "All Products";
 
 	// Handle paginated response structure
 	const paginationData = responseData?.data;

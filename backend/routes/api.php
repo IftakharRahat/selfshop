@@ -112,6 +112,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/big-selling', [FrontendApiController::class, 'bigselling'])->name('api.user.bigselling');
     Route::get('/products/{slug}', [FrontendApiController::class, 'productbycategory'])->name('api.user.productbycategory');
     Route::get('/subcategory-products/{slug?}', [FrontendApiController::class, 'productbysubcategory'])->name('api.user.productbysubcategory');
+    Route::get('/minicategory-products/{slug}', [FrontendApiController::class, 'productbyminicategory'])->name('api.user.productbyminicategory');
     Route::get('/brand-products/{slug}', [FrontendApiController::class, 'productbybrand'])->name('api.user.productbybrand');
     Route::get('/search', [FrontendApiController::class, 'search'])->name('api.user.search');
     Route::get('/product-details/{slug}', [FrontendApiController::class, 'productdetails'])->name('api.user.productdetails');

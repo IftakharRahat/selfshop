@@ -20,6 +20,7 @@ use App\Models\FlashSaleProduct;
 use App\Models\Fraud;
 use App\Models\Income;
 use App\Models\Message;
+use App\Models\Minicategory;
 use App\Models\Order;
 use App\Models\Orderproduct;
 use App\Library\SslCommerz\SslCommerzNotification;
@@ -812,6 +813,68 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => empty($slug) ? 'All products' : 'Products found with this sub-category successfully',
+            'data' => $paginated
+        ], 200);
+    }
+
+    public function productbyminicategory(Request $request, $slug)
+    {
+        $selects = ['id', 'category_id', 'subcategory_id', 'minicategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type', 'vendor_id'];
+
+        $perPage = $request->input('limit', 20);
+        $sort = $request->input('sort', 'rating');
+
+        if (empty($slug)) {
+            $query = Product::visibleOnStorefront()->select(...$selects);
+        } else {
+            $minicategory = Minicategory::where('slug', $slug)->first();
+            if (!$minicategory) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'No products found',
+                    'data' => []
+                ], 200);
+            }
+            $query = Product::visibleOnStorefront()->where('minicategory_id', $minicategory->id)->select(...$selects);
+        }
+
+        // Apply DB-level sorting
+        switch ($sort) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'price_asc':
+                $query->orderBy('ProductSalePrice', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('ProductSalePrice', 'desc');
+                break;
+            case 'rating':
+            default:
+                $query->selectSub(
+                    Review::selectRaw('COALESCE(AVG(rating), 0)')
+                        ->whereColumn('product_id', 'products.id')
+                        ->where('status', 'Active'),
+                    'avg_rating'
+                )->orderBy('avg_rating', 'desc');
+                break;
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        // Attach avg_rating and review_count to each product
+        foreach ($paginated->items() as $product) {
+            $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
+            $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
+            $product->review_count = $reviews->count();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => empty($slug) ? 'All products' : 'Products found with this mini-category successfully',
             'data' => $paginated
         ], 200);
     }

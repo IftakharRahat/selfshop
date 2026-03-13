@@ -154,6 +154,14 @@ const homeApi = baseApi.injectEndpoints({
 			}),
 			providesTags: ["categories"],
 		}),
+		getMinicategoryProducts: builder.query({
+			query: ({ slug, sort, page }: { slug: string; sort?: string; page?: number }) => ({
+				url: `/minicategory-products/${slug}`,
+				method: "GET",
+				params: { ...(sort ? { sort } : {}), ...(page ? { page } : {}) },
+			}),
+			providesTags: ["categories"],
+		}),
 		getPopularSuppliers: builder.query({
 			query: () => ({
 				url: `/popular-vendors`,
@@ -248,6 +256,7 @@ export const {
 	useGetFlashSaleQuery,
 	useGetCategoryProductsQuery,
 	useGetSubcategoryProductsQuery,
+	useGetMinicategoryProductsQuery,
 	useGetPopularSuppliersQuery,
 	useGetSupplierDetailsQuery,
 	useGetBrandProductsQuery,
