@@ -592,6 +592,9 @@ class OrderController extends Controller
                 $orderProducts->save();
             }
 
+            // Decrement product stock
+            app(\App\Services\StockService::class)->decrementForOrder($order->id);
+
             $notification = new Comment();
             $notification->order_id = $order->id;
             $notification->comment = '#SS00' . $order->id . ' Order Has Been Created by ' . Auth::guard('admin')->user()->name;
@@ -1377,6 +1380,9 @@ class OrderController extends Controller
 
         $customer = Customer::where('order_id', $order->id)->first();
         if ($order->status != 'Canceled' && $status == 'Canceled') {
+            // Restore product stock on cancellation
+            app(\App\Services\StockService::class)->restoreForOrder($order->id);
+
             $user = User::where('id', $order->user_id)->first();
             $user->account_balance = $user->account_balance + $order->paymentAmount;
             $user->update();
@@ -1391,6 +1397,9 @@ class OrderController extends Controller
         }
 
         if ($order->status == 'Canceled' && $status != 'Canceled') {
+            // Re-decrement stock when order is un-cancelled
+            app(\App\Services\StockService::class)->decrementForOrder($order->id);
+
             $user = User::where('id', $order->user_id)->first();
             $user->account_balance = $user->account_balance - $order->deliveryCharge;
             $user->update();
@@ -1410,6 +1419,9 @@ class OrderController extends Controller
         }
 
         if ($order->status != 'Return' && $request['status'] == 'Return') {
+            // Restore product stock on return
+            app(\App\Services\StockService::class)->restoreForOrder($order->id);
+
             $comment = new Comment();
             $comment->order_id = $id;
             $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Return The Parcel';

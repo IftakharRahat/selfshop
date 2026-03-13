@@ -3440,44 +3440,14 @@ class FrontendApiController extends Controller
 
                 $orderProduct->save();
 
-                // Decrement stock for the ordered variant size
-                $colorName = $options['color'] ?? null;
-                $sizeName = $options['size'] ?? null;
-                $orderedQty = (int) $product->qty;
-
-                if ($colorName && $colorName !== 'undefined') {
-                    $variant = Varient::where('product_id', $product->product_id)
-                        ->where('color_name', $colorName)
-                        ->first();
-
-                    if ($variant) {
-                        if ($sizeName && $sizeName !== 'undefined') {
-                            $variantSize = VariantSize::where('varient_id', $variant->id)
-                                ->where('size_name', $sizeName)
-                                ->first();
-                            if ($variantSize) {
-                                $variantSize->qty = max(0, $variantSize->qty - $orderedQty);
-                                $variantSize->save();
-                            }
-                        }
-                        // Also decrement variant qty
-                        $variant->qty = max(0, $variant->qty - $orderedQty);
-                        $variant->save();
-                    }
-                }
-
-                // Decrement product-level quantity
-                $productModel = Product::find($product->product_id);
-                if ($productModel && $productModel->ProductQuantity !== null) {
-                    $productModel->ProductQuantity = max(0, $productModel->ProductQuantity - $orderedQty);
-                    $productModel->save();
-                }
-
                 $vendorId = Product::where('id', $product->product_id)->value('vendor_id');
                 if ($vendorId) {
                     $vendorIds[(int) $vendorId] = true;
                 }
             }
+
+            // Decrement product stock for this order
+            app(\App\Services\StockService::class)->decrementForOrder($order->id);
 
             // Deduct account balance if needed
             if ($request->balance_from == 'from_account') {

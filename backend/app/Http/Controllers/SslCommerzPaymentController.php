@@ -1144,45 +1144,6 @@ private function createOrderDetails($orderId, $cartData, $request)
 
                 $orderProduct->save();
                 
-                // Reduce product stock
-                $orderedQty = is_object($item) ? (int) $item->qty : (int) $item['qty'];
-                $stockProductId = is_object($item) ? ($item->product_id ?? $item->id) : ($item['product_id'] ?? $item['id']);
-
-                // Decrement variant stock if applicable
-                $itemOpts = is_object($item) ? ($item->options ?? null) : ($item['options'] ?? null);
-                if (is_string($itemOpts)) $itemOpts = json_decode($itemOpts, true);
-                elseif (is_object($itemOpts)) $itemOpts = (array) $itemOpts;
-
-                $colorName = $itemOpts['color'] ?? null;
-                $sizeName = $itemOpts['size'] ?? null;
-
-                if ($colorName && $colorName !== 'undefined') {
-                    $variant = \App\Models\Varient::where('product_id', $stockProductId)
-                        ->where('color_name', $colorName)
-                        ->first();
-
-                    if ($variant) {
-                        if ($sizeName && $sizeName !== 'undefined') {
-                            $variantSize = \App\Models\VariantSize::where('varient_id', $variant->id)
-                                ->where('size_name', $sizeName)
-                                ->first();
-                            if ($variantSize) {
-                                $variantSize->qty = max(0, $variantSize->qty - $orderedQty);
-                                $variantSize->save();
-                            }
-                        }
-                        $variant->qty = max(0, $variant->qty - $orderedQty);
-                        $variant->save();
-                    }
-                }
-
-                // Decrement product-level quantity
-                $stockProduct = Product::find($stockProductId);
-                if ($stockProduct && $stockProduct->ProductQuantity !== null) {
-                    $stockProduct->ProductQuantity = max(0, $stockProduct->ProductQuantity - $orderedQty);
-                    $stockProduct->save();
-                }
-                
                 # Create notification
                 $notification = new Comment();
                 $notification->order_id = $storeOrder->id;
@@ -1190,6 +1151,9 @@ private function createOrderDetails($orderId, $cartData, $request)
                 $notification->admin_id = $storeOrder->admin_id;
                 $notification->save();
             }
+
+            // Decrement product stock for this store order
+            app(\App\Services\StockService::class)->decrementForOrder($storeOrder->id);
         }
         
         return true;

@@ -74,14 +74,17 @@ export default function VendorOrderDetailPage() {
 
 		const itemRows = line_items
 			.map(
-				(item, i) =>
-					`<tr>
+				(item, i) => {
+					const variants = [item.color, item.size].filter(v => v && v !== 'undefined').join(' / ');
+					return `<tr>
 						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">${i + 1}</td>
-						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:500;">${item.productName}${item.productCode ? ` <span style="color:#9ca3af;font-size:12px;">(${item.productCode})</span>` : ''}</td>
-						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:center;color:#374151;">${item.quantity}</td>
-						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;color:#374151;">৳${formatBDT(Number(item.productPrice))}</td>
-						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:right;color:#111827;font-weight:600;">৳${formatBDT(item.line_total)}</td>
-					</tr>`
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111827;font-weight:500;">
+							${item.productName}${item.productCode ? ` <span style="color:#9ca3af;font-size:12px;">(${item.productCode})</span>` : ''}
+							${variants ? `<br/><span style="color:#6b7280;font-size:12px;">${variants}</span>` : ''}
+						</td>
+						<td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;text-align:center;color:#374151;font-weight:600;">${item.quantity}</td>
+					</tr>`;
+				}
 			)
 			.join('');
 
@@ -94,6 +97,8 @@ export default function VendorOrderDetailPage() {
 
 		const invoiceDate = order.orderDate ?? new Date().toLocaleDateString();
 
+		const logoUrl = window.location.origin + '/icon/main_site_icon_with_label.png';
+
 		const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -104,9 +109,10 @@ export default function VendorOrderDetailPage() {
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		body { font-family: 'Inter', -apple-system, sans-serif; background: #f9fafb; color: #111827; padding: 20px; }
 		.invoice { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
-		.header { background: linear-gradient(135deg, #2d2a5d 0%, #4338ca 100%); padding: 36px 32px; color: #fff; }
-		.header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
-		.header .subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+		.header { background: linear-gradient(135deg, #2d2a5d 0%, #4338ca 100%); padding: 36px 32px; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+		.header-left h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+		.header-left .subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+		.header-logo img { height: 48px; width: auto; }
 		.meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 24px 32px; border-bottom: 1px solid #f3f4f6; }
 		.meta-block h3 { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 4px; }
 		.meta-block p { font-size: 15px; font-weight: 600; color: #111827; }
@@ -115,12 +121,9 @@ export default function VendorOrderDetailPage() {
 		table { width: 100%; border-collapse: collapse; font-size: 14px; }
 		thead th { padding: 10px 14px; background: #f9fafb; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; font-weight: 600; text-align: left; border-bottom: 2px solid #e5e7eb; }
 		thead th:nth-child(3) { text-align: center; }
-		thead th:nth-child(4), thead th:nth-child(5) { text-align: right; }
-		.total-row { padding: 20px 32px; border-top: 2px solid #e5e7eb; display: flex; justify-content: flex-end; }
-		.total-box { background: #f9fafb; padding: 14px 24px; border-radius: 8px; text-align: right; }
-		.total-box .label { font-size: 12px; text-transform: uppercase; color: #6b7280; font-weight: 600; letter-spacing: 0.04em; }
-		.total-box .amount { font-size: 22px; font-weight: 800; color: #111827; margin-top: 2px; }
 		.footer { padding: 20px 32px 28px; }
+		.tagline { margin-top: 24px; padding: 20px 16px; border-top: 1px solid #e5e7eb; text-align: center; }
+		.tagline p { font-size: 13px; color: #6b7280; line-height: 1.6; font-weight: 500; }
 		@media print {
 			body { background: #fff; padding: 0; }
 			.invoice { box-shadow: none; border-radius: 0; }
@@ -130,8 +133,13 @@ export default function VendorOrderDetailPage() {
 <body>
 	<div class="invoice">
 		<div class="header">
-			<h1>INVOICE</h1>
-			<p class="subtitle">${order.invoiceID}</p>
+			<div class="header-left">
+				<h1>INVOICE</h1>
+				<p class="subtitle">${order.invoiceID}</p>
+			</div>
+			<div class="header-logo">
+				<img src="${logoUrl}" alt="SelfShop" />
+			</div>
 		</div>
 		<div class="meta">
 			<div class="meta-block">
@@ -155,8 +163,6 @@ export default function VendorOrderDetailPage() {
 						<th>#</th>
 						<th>Product</th>
 						<th>Qty</th>
-						<th>Price</th>
-						<th>Total</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -164,14 +170,11 @@ export default function VendorOrderDetailPage() {
 				</tbody>
 			</table>
 		</div>
-		<div class="total-row">
-			<div class="total-box">
-				<div class="label">Subtotal</div>
-				<div class="amount">৳${formatBDT(vendor_subtotal)}</div>
-			</div>
-		</div>
 		<div class="footer">
 			${consignment}
+			<div class="tagline">
+				<p>Empowering Bangladesh's Entrepreneurs with<br/>Reliable Wholesale & Dropshipping Solutions</p>
+			</div>
 		</div>
 	</div>
 	<script>window.onload = () => window.print();</script>

@@ -10,6 +10,7 @@ use App\Models\Comment;
 use App\Models\Product;
 use App\Models\Chargededuct;
 use App\Models\Shopproduct;
+use App\Services\StockService;
 use DB;
 use App\Models\Admin;
 use App\Models\User;
@@ -62,6 +63,9 @@ class OrderController extends Controller
             $orderProducts->quantity = 1;
             $orderProducts->productPrice = $product->ProductResellerPrice;
             $orderProducts->save();
+
+            // Decrement product stock
+            app(StockService::class)->decrementForOrder($order->id);
 
             $notification = new Comment();
             $notification->order_id = $order->id;
@@ -163,6 +167,9 @@ class OrderController extends Controller
                         $orderProducts->productPrice = $product->price;
                         $orderProducts->save();
                     }
+
+                    // Decrement product stock
+                    app(StockService::class)->decrementForOrder($order->id);
 
                     if ($request->blance_from == 'from_account') {
                         $accountuser = User::where('id', Auth::user()->id)->first();
