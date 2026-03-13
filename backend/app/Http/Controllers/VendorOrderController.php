@@ -255,6 +255,8 @@ class VendorOrderController extends Controller
                     'product_id' => $op->product_id,
                     'productName' => $op->productName,
                     'productCode' => $op->productCode,
+                    'color' => $op->color,
+                    'size' => $op->size,
                     'productPrice' => $op->productPrice,
                     'quantity' => $op->quantity,
                     'line_total' => (float) $op->productPrice * (int) $op->quantity,
@@ -335,6 +337,9 @@ class VendorOrderController extends Controller
             }
 
             $order->status = 'Canceled';
+            // Restore product stock on vendor cancellation
+            app(\App\Services\StockService::class)->restoreForOrder($order->id);
+
             if ($request->filled('cancel_reason')) {
                 $order->cancel_comment = (string) $request->cancel_reason;
             }

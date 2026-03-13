@@ -160,6 +160,8 @@ export interface VendorOrderDetail {
 		product_id: number;
 		productName: string;
 		productCode: string;
+		color?: string | null;
+		size?: string | null;
 		productPrice: number;
 		quantity: number;
 		line_total: number;
