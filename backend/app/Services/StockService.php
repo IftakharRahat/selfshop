@@ -64,8 +64,8 @@ class StockService
                 ->first();
 
             if ($variant) {
-                // Size-level stock
-                if ($sizeName && $sizeName !== 'undefined') {
+                // Size-level stock (skip placeholder values like 'Default' or 'undefined')
+                if ($sizeName && $sizeName !== 'undefined' && $sizeName !== 'Default') {
                     $variantSize = VariantSize::where('varient_id', $variant->id)
                         ->where('size_name', $sizeName)
                         ->first();
@@ -87,12 +87,33 @@ class StockService
         }
 
         // --- Product-level stock ---
+        // Admin products use ProductQuantity, vendor products use qty.
+        // Decrement/restore whichever field(s) are populated.
         $product = Product::find($op->product_id);
-        if ($product && $product->ProductQuantity !== null) {
-            $product->ProductQuantity = $direction === 'decrement'
-                ? max(0, $product->ProductQuantity - $qty)
-                : $product->ProductQuantity + $qty;
-            $product->save();
+        if ($product) {
+            $changed = false;
+
+            // ProductQuantity (admin products)
+            if ($product->ProductQuantity !== null) {
+                $current = (int) $product->ProductQuantity;
+                $product->ProductQuantity = $direction === 'decrement'
+                    ? max(0, $current - $qty)
+                    : $current + $qty;
+                $changed = true;
+            }
+
+            // qty (vendor products)
+            if ($product->qty !== null) {
+                $current = (int) $product->qty;
+                $product->qty = $direction === 'decrement'
+                    ? max(0, $current - $qty)
+                    : $current + $qty;
+                $changed = true;
+            }
+
+            if ($changed) {
+                $product->save();
+            }
         }
     }
 }
