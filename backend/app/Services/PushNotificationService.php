@@ -18,6 +18,21 @@ class PushNotificationService
     {
         try {
             event(new OrderNotificationEvent($userId, $title, $message, $type, $meta));
+
+            // Also persist to database so it appears in the notification bell dropdown
+            if ($userId > 0) {
+                $user = \App\Models\User::find($userId);
+                if ($user) {
+                    $user->notify(new \App\Notifications\AdminBroadcastNotification(
+                        $title,
+                        $message,
+                        null,  // imageUrl
+                        null,  // actionUrl
+                        'individual',
+                        $meta
+                    ));
+                }
+            }
         } catch (\Throwable $e) {
             Log::warning('PushNotificationService: broadcast failed', [
                 'user_id' => $userId,
@@ -27,7 +42,7 @@ class PushNotificationService
     }
 
     /**
-     * Notify vendor(s) whose products are in this order.
+     * Notify supplier(s) whose products are in this order.
      */
     public function notifyOrderVendors(int $orderId, string $title, string $message, string $type = 'info', array $extraMeta = []): void
     {
@@ -41,10 +56,13 @@ class PushNotificationService
                 ->pluck('users.id');
 
             foreach ($vendorUserIds as $userId) {
-                $this->notifyUser($userId, $title, $message, $type, array_merge(['order_id' => $orderId], $extraMeta));
+                $this->notifyUser($userId, $title, $message, $type, array_merge([
+                    'order_id' => $orderId,
+                    'audience' => 'supplier',
+                ], $extraMeta));
             }
         } catch (\Throwable $e) {
-            Log::warning('PushNotificationService: vendor notification failed', [
+            Log::warning('PushNotificationService: supplier notification failed', [
                 'order_id' => $orderId,
                 'error' => $e->getMessage(),
             ]);
@@ -65,7 +83,11 @@ class PushNotificationService
             $title,
             $message,
             $type,
-            array_merge(['order_id' => $order->id, 'invoiceID' => $order->invoiceID], $extraMeta)
+            array_merge([
+                'order_id' => $order->id,
+                'invoiceID' => $order->invoiceID,
+                'audience' => 'reseller',
+            ], $extraMeta)
         );
     }
 
@@ -91,7 +113,7 @@ class PushNotificationService
     {
         $invoiceID = $order->invoiceID;
 
-        // Notify vendor(s)
+        // Notify supplier(s)
         $this->notifyOrderVendors(
             $order->id,
             '🛒 New Order Received',
@@ -122,7 +144,7 @@ class PushNotificationService
             ['event' => 'status_change', 'status' => $newStatus]
         );
 
-        // Notify vendor(s)
+        // Notify supplier(s)
         $this->notifyOrderVendors(
             $order->id,
             "📦 Order Status: {$newStatus}",
@@ -146,7 +168,7 @@ class PushNotificationService
             ['event' => 'courier_assigned', 'tracking_number' => $trackingCode]
         );
 
-        // Notify vendor(s)
+        // Notify supplier(s)
         $this->notifyOrderVendors(
             $order->id,
             "🚚 Courier Assigned: {$courierName}",
@@ -162,21 +184,21 @@ class PushNotificationService
         $label = $action === 'accept' ? 'Accepted' : 'Cancelled';
         $icon = $action === 'accept' ? '✅' : '❌';
 
-        // Notify reseller
+        // Notify reseller only (supplier already knows — they performed the action)
         $this->notifyReseller(
             $order,
             "{$icon} Order {$label}",
-            "Your order #{$invoiceID} has been {$label} by vendor.",
+            "Your order #{$invoiceID} has been {$label} by supplier.",
             $action === 'accept' ? 'success' : 'warning',
-            ['event' => 'vendor_action', 'action' => $action]
+            ['event' => 'supplier_action', 'action' => $action]
         );
 
         // Notify admins
         $this->notifyAdmins(
-            "{$icon} Vendor {$label} Order",
-            "Order #{$invoiceID} was {$label} by vendor.",
+            "{$icon} Supplier {$label} Order",
+            "Order #{$invoiceID} was {$label} by supplier.",
             'info',
-            ['order_id' => $order->id, 'event' => 'vendor_action', 'action' => $action]
+            ['order_id' => $order->id, 'event' => 'supplier_action', 'action' => $action]
         );
     }
 
@@ -184,7 +206,7 @@ class PushNotificationService
     {
         $invoiceID = $order->invoiceID;
 
-        // Notify reseller
+        // Notify reseller only (supplier already knows — they performed the action)
         $this->notifyReseller(
             $order,
             '📦 Order Sent to Warehouse',
@@ -196,7 +218,7 @@ class PushNotificationService
         // Notify admins
         $this->notifyAdmins(
             '📦 Warehouse Dispatch',
-            "Order #{$invoiceID} sent to warehouse by vendor.",
+            "Order #{$invoiceID} sent to warehouse by supplier.",
             'info',
             ['order_id' => $order->id, 'event' => 'warehouse_sent']
         );

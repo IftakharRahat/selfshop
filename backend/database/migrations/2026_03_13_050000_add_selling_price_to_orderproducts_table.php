@@ -1,0 +1,23 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('orderproducts', function (Blueprint $table) {
+            $table->decimal('selling_price', 10, 2)->nullable()->after('productPrice')
+                  ->comment('Resell price set by seller at checkout');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('orderproducts', function (Blueprint $table) {
+            $table->dropColumn('selling_price');
+        });
+    }
+};

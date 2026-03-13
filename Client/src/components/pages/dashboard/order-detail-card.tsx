@@ -167,9 +167,15 @@ export default function OrderDetailCard({
 						<span className="text-gray-500">Seller Profit</span>
 						<span className="font-medium text-green-600">Tk {(parseFloat(orderData.profit) || 0).toLocaleString()}</span>
 					</div>
+					{(parseFloat(orderData.deliveryCharge) || 0) > 0 && (
+						<div className="flex justify-between">
+							<span className="text-gray-500">Delivery Charge</span>
+							<span className="font-medium text-gray-900">Tk {(parseFloat(orderData.deliveryCharge) || 0).toLocaleString()}</span>
+						</div>
+					)}
 					<div className="flex justify-between pt-1.5 border-t border-gray-100">
 						<span className="font-semibold text-gray-900">Total</span>
-						<span className="font-semibold text-gray-900">Tk {((parseFloat(orderData.subTotal) || 0) + (parseFloat(orderData.profit) || 0)).toLocaleString()}</span>
+						<span className="font-semibold text-gray-900">Tk {((parseFloat(orderData.subTotal) || 0) + (parseFloat(orderData.deliveryCharge) || 0)).toLocaleString()}</span>
 					</div>
 				</div>
 			</div>

@@ -21,6 +21,7 @@ class Orderproduct extends Model
         'shipped_at',
         'fulfillment_status',
         'fulfillment_type',
+        'selling_price',
     ];
 
     protected $casts = [

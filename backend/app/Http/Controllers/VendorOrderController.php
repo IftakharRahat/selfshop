@@ -307,12 +307,7 @@ class VendorOrderController extends Controller
             return response()->json(['status' => false, 'message' => 'Order not found or contains no your products'], 404);
         }
 
-        if (!$this->canVendorMutateWholeOrder($order, (int) $vendor->id)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'This order has products from multiple vendors. Only admin can change overall order status.',
-            ], 409);
-        }
+
 
         $action = $request->input('action');
 
@@ -389,12 +384,7 @@ class VendorOrderController extends Controller
             return response()->json(['status' => false, 'message' => 'Order not found or contains no your products'], 404);
         }
 
-        if (!$this->canVendorMutateWholeOrder($order, (int) $vendor->id)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'This order has products from multiple vendors. Only admin can send whole order to warehouse.',
-            ], 409);
-        }
+
 
         if (!in_array((string) $order->status, ['Confirmed', 'Processing', 'Pending', 'Ontheway'], true)) {
             return response()->json([
@@ -508,6 +498,15 @@ class VendorOrderController extends Controller
                     $recipientAddress = str_pad($recipientAddress, 10, ', Dhaka');
                 }
 
+                // Calculate vendor-specific totals using RESELL price (what customer pays)
+                $vendorResellTotal = $vendorItems->sum(function ($op) {
+                    $resellPrice = (float) ($op->selling_price ?? $op->productPrice);
+                    return $resellPrice * (int) $op->quantity;
+                });
+                $vendorItemCount = $vendorItems->sum(fn($op) => (int) $op->quantity);
+                $productDescription = $vendorItems->map(fn($op) => $op->productName . ' x' . $op->quantity)->implode(', ');
+                $deliveryCharge = (float) ($order->deliveryCharge ?? 0);
+
                 $orderData = [
                     'store_id'            => (string) $vendor->carrybee_store_id,
                     'merchant_order_id'   => (string) $order->invoiceID,
@@ -519,9 +518,12 @@ class VendorOrderController extends Controller
                     'city_id'             => (int) ($order->city_id ?? 14),  // default Dhaka
                     'zone_id'             => (int) ($order->zone_id ?? 1),
                     'special_instruction' => (string) ($order->customerNote ?? ''),
+                    'product_description'  => substr($productDescription, 0, 200),
                     'item_weight'         => 500,  // grams (default 500g)
-                    'item_quantity'       => 1,
-                    'collectable_amount'  => (int) ($order->subTotal ?? 0),  // COD in Taka
+                    'item_quantity'       => max(1, $vendorItemCount),
+                    'collectable_amount'  => $order->advance_delivery
+                        ? (int) round($vendorResellTotal)                              // Delivery already paid → collect resell price only
+                        : (int) round($vendorResellTotal + $deliveryCharge),            // COD delivery → collect resell price + delivery charge
                 ];
 
                 // Only include area_id if available

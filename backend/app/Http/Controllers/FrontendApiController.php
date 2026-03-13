@@ -38,6 +38,7 @@ use App\Models\Subcategory;
 use App\Models\Tikit;
 use App\Models\User;
 use App\Models\Varient;
+use App\Models\VariantSize;
 use App\Models\Vendor;
 use App\Models\VendorFollower;
 use App\Models\Withdrew;
@@ -2751,6 +2752,7 @@ class FrontendApiController extends Controller
                     'color' => $request->color,
                     'image' => $cartProduct->ProductImage,
                     'code' => $cartProduct->ProductSku,
+                    'selling_price' => $request->selling_price,
                 ],
                 'session_id' => $request->session_id,
             ]
@@ -3261,12 +3263,27 @@ class FrontendApiController extends Controller
             ]);
 
             #Before  going to initiate the payment order status need to update as Pending.
+            // Calculate profit from cart items
+            $buy = $sell = $orderBonus = 0;
+            foreach ($shopproducts->flatten() as $cartItem) {
+                $opts = is_array($cartItem->options) ? $cartItem->options : (is_string($cartItem->options) ? json_decode($cartItem->options, true) : []);
+                $costPrice = (float) $cartItem->price;
+                $sellingPrice = !empty($opts['selling_price']) ? (float) $opts['selling_price'] : $costPrice;
+                $buy  += $costPrice * $cartItem->qty;
+                $sell += $sellingPrice * $cartItem->qty;
+                $pd = Product::find($cartItem->product_id);
+                $orderBonus += $pd->reseller_bonus ?? 0;
+            }
+            $profit = $sell - $buy;
+
             $update_product = DB::table('orders')
                 ->where('transaction_id', $post_data['tran_id'])
                 ->updateOrInsert([
                     'store_id' => 1,
-                    'invoiceID' => $this->uniqueID(),
-                    'subTotal' => $request->subTotal,
+                    'invoiceID' => $this->uniqueIDN(),
+                    'subTotal' => $sell,
+                    'profit' => $profit,
+                    'order_bonus' => $orderBonus,
                     'deliveryCharge' => $request->deliveryCharge,
                     'advance_delivery' => $request->advance_delivery === 'yes' ? 1 : 0,
                     'data' => json_encode([
@@ -3281,7 +3298,6 @@ class FrontendApiController extends Controller
                     ]),
                     'cart' => json_encode($shopproducts),
                     'orderDate' => date('Y-m-d'),
-                    'courier_id' => 26,
                     'transaction_id' => $post_data['tran_id'],
                     'user_id' => Auth::id(),
                     'status' => 'Pending',
@@ -3318,6 +3334,17 @@ class FrontendApiController extends Controller
             }
         }
 
+        // Validate wallet balance for from_account orders
+        if ($request->balance_from == 'from_account') {
+            $currentUser = User::find(Auth::id());
+            if (!$currentUser || (float) $currentUser->account_balance < (float) $request->deliveryCharge) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Insufficient wallet balance. You need ৳' . $request->deliveryCharge . ' but have ৳' . ($currentUser->account_balance ?? 0) . '.',
+                ], 422);
+            }
+        }
+
         // Get cart items for this session
 
 
@@ -3335,24 +3362,25 @@ class FrontendApiController extends Controller
                 ->first();
 
             $order = new Order();
-            $buy = $bonus = $sellprice = 0;
+            $buy = $sell = $bonus = 0;
 
             foreach ($shopproduct as $product) {
                 $productData = Product::find($product->product_id);
                 $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
-                $itemSellingPrice = !empty($options['selling_price']) ? (float) $options['selling_price'] : (float) $product->price;
-                $sellprice += $itemSellingPrice * $product->qty;
-                $buy += $productData->ProductResellerPrice * $product->qty;
+                // cart.price already includes commission markup (set in userAddToCart)
+                $costPrice = (float) $product->price;
+                $sellingPrice = !empty($options['selling_price']) ? (float) $options['selling_price'] : $costPrice;
+                $buy  += $costPrice * $product->qty;
+                $sell += $sellingPrice * $product->qty;
                 $bonus += $productData->reseller_bonus;
             }
 
-            $order->profit = $sellprice - $buy;
+            $order->profit = $sell - $buy;
             $order->order_bonus = $bonus;
             $order->user_id = Auth::id() ?? null; // if using API auth
-            $order->courier_id = 26;
             $order->store_id = $shopproduct[0]->shop_id ?: 1;
             $order->invoiceID = $this->uniqueIDN();
-            $order->subTotal = $sellprice;
+            $order->subTotal = $sell;
             $order->deliveryCharge = $request->deliveryCharge;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
@@ -3386,6 +3414,8 @@ class FrontendApiController extends Controller
             // Save order products
             $vendorIds = [];
             foreach ($shopproduct as $product) {
+                $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
+
                 $orderProduct = new Orderproduct();
                 $orderProduct->order_id = $order->id;
                 $orderProduct->product_id = $product->product_id;
@@ -3394,15 +3424,54 @@ class FrontendApiController extends Controller
                 $orderProduct->quantity = $product->qty;
                 $orderProduct->productPrice = $product->price;
 
-                if (!empty($product->options['color']) && $product->options['color'] != 'undefined') {
-                    $orderProduct->color = $product->options['color'];
+                if (!empty($options['color']) && $options['color'] != 'undefined') {
+                    $orderProduct->color = $options['color'];
                 }
 
-                if (!empty($product->options['size']) && $product->options['size'] != 'undefined') {
-                    $orderProduct->size = $product->options['size'];
+                if (!empty($options['size']) && $options['size'] != 'undefined') {
+                    $orderProduct->size = $options['size'];
+                }
+
+                // Save the resell/selling price from cart options
+                $sellingPrice = $options['selling_price'] ?? null;
+                if ($sellingPrice && $sellingPrice !== 'undefined') {
+                    $orderProduct->selling_price = (float) $sellingPrice;
                 }
 
                 $orderProduct->save();
+
+                // Decrement stock for the ordered variant size
+                $colorName = $options['color'] ?? null;
+                $sizeName = $options['size'] ?? null;
+                $orderedQty = (int) $product->qty;
+
+                if ($colorName && $colorName !== 'undefined') {
+                    $variant = Varient::where('product_id', $product->product_id)
+                        ->where('color_name', $colorName)
+                        ->first();
+
+                    if ($variant) {
+                        if ($sizeName && $sizeName !== 'undefined') {
+                            $variantSize = VariantSize::where('varient_id', $variant->id)
+                                ->where('size_name', $sizeName)
+                                ->first();
+                            if ($variantSize) {
+                                $variantSize->qty = max(0, $variantSize->qty - $orderedQty);
+                                $variantSize->save();
+                            }
+                        }
+                        // Also decrement variant qty
+                        $variant->qty = max(0, $variant->qty - $orderedQty);
+                        $variant->save();
+                    }
+                }
+
+                // Decrement product-level quantity
+                $productModel = Product::find($product->product_id);
+                if ($productModel && $productModel->ProductQuantity !== null) {
+                    $productModel->ProductQuantity = max(0, $productModel->ProductQuantity - $orderedQty);
+                    $productModel->save();
+                }
 
                 $vendorId = Product::where('id', $product->product_id)->value('vendor_id');
                 if ($vendorId) {

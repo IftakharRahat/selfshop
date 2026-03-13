@@ -1120,7 +1120,7 @@ private function createOrderDetails($orderId, $cartData, $request)
             foreach ($items as $item) {
                 $orderProduct = new Orderproduct();
                 $orderProduct->order_id = $storeOrder->id;
-                $orderProduct->product_id = is_object($item) ? $item->id : $item['id'];
+                $orderProduct->product_id = is_object($item) ? ($item->product_id ?? $item->id) : ($item['product_id'] ?? $item['id']);
                 $orderProduct->productCode = is_object($item) ? 
                     ($item->options->code ?? '') : 
                     ($item['options']['code'] ?? '');
@@ -1133,15 +1133,55 @@ private function createOrderDetails($orderId, $cartData, $request)
                 $orderProduct->productName = is_object($item) ? $item->name : $item['name'];
                 $orderProduct->quantity = is_object($item) ? $item->qty : $item['qty'];
                 $orderProduct->productPrice = is_object($item) ? $item->price : $item['price'];
+
+                // Save selling_price from cart options
+                $opts = is_object($item) ? ($item->options ?? null) : ($item['options'] ?? null);
+                if (is_string($opts)) $opts = json_decode($opts, true);
+                elseif (is_object($opts)) $opts = (array) $opts;
+                if (!empty($opts['selling_price']) && $opts['selling_price'] !== 'undefined') {
+                    $orderProduct->selling_price = (float) $opts['selling_price'];
+                }
+
                 $orderProduct->save();
                 
                 // Reduce product stock
-                $orderedQty = is_object($item) ? $item->qty : $item['qty'];
-                $productId = is_object($item) ? $item->id : $item['id'];
-                DB::table('products')
-                    ->where('id', $productId)
-                    ->where('qty', '>', 0)
-                    ->decrement('qty', (int) $orderedQty);
+                $orderedQty = is_object($item) ? (int) $item->qty : (int) $item['qty'];
+                $stockProductId = is_object($item) ? ($item->product_id ?? $item->id) : ($item['product_id'] ?? $item['id']);
+
+                // Decrement variant stock if applicable
+                $itemOpts = is_object($item) ? ($item->options ?? null) : ($item['options'] ?? null);
+                if (is_string($itemOpts)) $itemOpts = json_decode($itemOpts, true);
+                elseif (is_object($itemOpts)) $itemOpts = (array) $itemOpts;
+
+                $colorName = $itemOpts['color'] ?? null;
+                $sizeName = $itemOpts['size'] ?? null;
+
+                if ($colorName && $colorName !== 'undefined') {
+                    $variant = \App\Models\Varient::where('product_id', $stockProductId)
+                        ->where('color_name', $colorName)
+                        ->first();
+
+                    if ($variant) {
+                        if ($sizeName && $sizeName !== 'undefined') {
+                            $variantSize = \App\Models\VariantSize::where('varient_id', $variant->id)
+                                ->where('size_name', $sizeName)
+                                ->first();
+                            if ($variantSize) {
+                                $variantSize->qty = max(0, $variantSize->qty - $orderedQty);
+                                $variantSize->save();
+                            }
+                        }
+                        $variant->qty = max(0, $variant->qty - $orderedQty);
+                        $variant->save();
+                    }
+                }
+
+                // Decrement product-level quantity
+                $stockProduct = Product::find($stockProductId);
+                if ($stockProduct && $stockProduct->ProductQuantity !== null) {
+                    $stockProduct->ProductQuantity = max(0, $stockProduct->ProductQuantity - $orderedQty);
+                    $stockProduct->save();
+                }
                 
                 # Create notification
                 $notification = new Comment();
@@ -1437,6 +1477,10 @@ public function success(Request $request)
                         $op->productCode = $item['options']['code'] ?? '';
                         $op->color = $item['options']['color'] ?? null;
                         $op->size = $item['options']['size'] ?? null;
+                        // Save selling_price from cart options
+                        if (!empty($item['options']['selling_price']) && $item['options']['selling_price'] !== 'undefined') {
+                            $op->selling_price = (float) $item['options']['selling_price'];
+                        }
                         $op->save();
                         Log::info('Main order product created: ' . $op->productName . ' (product_id: ' . $productId . ')');
                     }

@@ -30,7 +30,9 @@ class VendorNotificationController extends Controller
         $perPage = min(max((int) $request->input('per_page', 20), 5), 100);
         $unreadOnly = $request->boolean('unread_only', false);
 
-        $query = $user->notifications()->orderByDesc('created_at');
+        $query = $user->notifications()
+            ->whereJsonContains('data->meta->audience', 'supplier')
+            ->orderByDesc('created_at');
         if ($unreadOnly) {
             $query->whereNull('read_at');
         }
@@ -57,7 +59,9 @@ class VendorNotificationController extends Controller
             'status' => true,
             'data' => [
                 'notifications' => $notifications,
-                'unread_count' => $user->unreadNotifications()->count(),
+                'unread_count' => $user->unreadNotifications()
+                    ->whereJsonContains('data->meta->audience', 'supplier')
+                    ->count(),
                 'pagination' => [
                     'current_page' => $items->currentPage(),
                     'last_page' => $items->lastPage(),
