@@ -99,7 +99,11 @@ export default function Navbar() {
 				id: index,
 				name: sub.sub_category_name,
 				href: `/product-filter?subcategory=${sub.slug}`, // ✅ subcategory endpoint
-				sub_sub_items: [], // If you don’t have deeper levels
+				sub_sub_items: sub.minicategories?.map((mini: any, miniIndex: number) => ({
+					id: miniIndex,
+					name: mini.mini_category_name,
+					href: `/product-filter?minicategory=${mini.slug}`,
+				})) || [], // If you don’t have deeper levels
 			})),
 		})) || [];
 

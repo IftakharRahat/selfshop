@@ -31,7 +31,8 @@ import {
 	useGetAllBrandsQuery,
 } from "@/redux/features/home/homeApi";
 
-type CatItem = { id: number; category_name: string; subcategories?: { id: number; sub_category_name: string; category_id: number }[] };
+type MiniCategoryItem = { id: number; mini_category_name: string; subcategory_id: number };
+type CatItem = { id: number; category_name: string; subcategories?: { id: number; sub_category_name: string; category_id: number; minicategories?: MiniCategoryItem[] }[] };
 
 export default function VendorEditProductPage() {
 	const router = useRouter();
@@ -73,6 +74,7 @@ export default function VendorEditProductPage() {
 		stock_visibility: "quantity",
 		category_id: "",
 		subcategory_id: "",
+		minicategory_id: "",
 		brand_id: "",
 	});
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
@@ -135,6 +137,7 @@ export default function VendorEditProductPage() {
 					p.show_stock === "On" ? "quantity" : p.show_stock_text === "On" ? "text" : "hide",
 				category_id: String(p.category_id ?? ""),
 				subcategory_id: String(p.subcategory_id ?? ""),
+				minicategory_id: String(p.minicategory_id ?? ""),
 				brand_id: String(p.brand_id ?? ""),
 			});
 
@@ -154,6 +157,12 @@ export default function VendorEditProductPage() {
 		const cat = categories.find((c) => c.id === Number(f.category_id));
 		return cat?.subcategories ?? [];
 	}, [categories, f.category_id]);
+
+	const miniCategories = useMemo(() => {
+		if (!f.subcategory_id) return [];
+		const sub = subcategories.find((item) => item.id === Number(f.subcategory_id));
+		return sub?.minicategories ?? [];
+	}, [f.subcategory_id, subcategories]);
 
 	const set = (key: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 		const v = e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value;
@@ -236,6 +245,7 @@ export default function VendorEditProductPage() {
 		formData.append("status", f.status);
 		formData.append("category_id", f.category_id);
 		formData.append("subcategory_id", f.subcategory_id);
+		if (f.minicategory_id) formData.append("minicategory_id", f.minicategory_id);
 		formData.append("brand_id", f.brand_id);
 		formData.append("show_stock", f.stock_visibility === "quantity" ? "On" : "Off");
 		formData.append("show_stock_text", f.stock_visibility === "text" ? "On" : "Off");
@@ -481,7 +491,7 @@ export default function VendorEditProductPage() {
 									<select
 										required
 										value={f.category_id}
-										onChange={(e) => setF((prev) => ({ ...prev, category_id: e.target.value, subcategory_id: "" }))}
+										onChange={(e) => setF((prev) => ({ ...prev, category_id: e.target.value, subcategory_id: "", minicategory_id: "" }))}
 										className={inputCls}
 									>
 										<option value="">Select category</option>
@@ -492,10 +502,33 @@ export default function VendorEditProductPage() {
 								</label>
 								<label className="flex flex-col text-xs font-medium text-gray-700">
 									Subcategory
-									<select required value={f.subcategory_id} onChange={set("subcategory_id")} className={inputCls}>
+									<select required value={f.subcategory_id} onChange={(e) => setF((prev) => ({ ...prev, subcategory_id: e.target.value, minicategory_id: "" }))} className={inputCls}>
 										<option value="">Select subcategory</option>
 										{subcategories.map((s) => (
 											<option key={s.id} value={s.id}>{s.sub_category_name}</option>
+										))}
+									</select>
+								</label>
+								<label className="flex flex-col text-xs font-medium text-gray-700">
+									Child category
+									<select
+										value={f.minicategory_id}
+										onChange={set("minicategory_id")}
+										required={miniCategories.length > 0}
+										disabled={!f.subcategory_id}
+										className={`${inputCls} disabled:bg-gray-100 disabled:text-gray-500`}
+									>
+										<option value="">
+											{!f.subcategory_id
+												? "Select subcategory first"
+												: miniCategories.length > 0
+													? "Select child category"
+													: "No child category"}
+										</option>
+										{miniCategories.map((m) => (
+											<option key={m.id} value={m.id}>
+												{m.mini_category_name}
+											</option>
 										))}
 									</select>
 								</label>
