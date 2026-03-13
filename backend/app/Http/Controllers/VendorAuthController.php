@@ -73,6 +73,7 @@ class VendorAuthController extends Controller
             $vendor = Vendor::create([
                 'user_id' => $user->id,
                 'company_name' => $data['company_name'],
+                'contact_phone' => $data['phone'],
                 'business_type' => $data['business_type'] ?? null,
                 'status' => 'pending',
                 'slug' => $slug,

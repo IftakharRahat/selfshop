@@ -3519,6 +3519,14 @@ class FrontendApiController extends Controller
                         '/vendor/orders/' . $order->id
                     );
                 }
+
+                // Send SMS + Email to suppliers
+                try {
+                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                    $supplierNotification->notify($order, array_keys($vendorIds), $request->customerName);
+                } catch (\Throwable $e) {
+                    \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
+                }
             }
 
             // Real-time push notification
