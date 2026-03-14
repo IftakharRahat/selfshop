@@ -326,11 +326,15 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		? parseFloat(flashSale.flash_price)
 		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice)) * commissionFactor;
 
+	const minimumSellingPrice = productData.minimumPrice > 0
+		? productData.minimumPrice
+		: Math.ceil(effectiveUnitPrice);
+
 	const sellingPriceSchema = z
 		.number({ required_error: "Selling price is required" })
 		.min(
-			effectiveUnitPrice,
-			`Price must be at least ৳${formatBDT(effectiveUnitPrice)}.`,
+			minimumSellingPrice,
+			`Price must be at least ৳${formatBDT(minimumSellingPrice)}.`,
 		);
 
 

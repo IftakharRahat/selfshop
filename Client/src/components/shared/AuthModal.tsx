@@ -87,8 +87,14 @@ export default function AuthModal({
 				const membershipStatus = String(
 					profileData?.data?.profile?.membership_status ?? "",
 				).toLowerCase();
+				const accountStatus = String(
+					profileData?.data?.profile?.status ?? "",
+				).toLowerCase();
 
-				if (membershipStatus !== "paid") {
+				const isPaidOrActive =
+					membershipStatus === "paid" || accountStatus === "active";
+
+				if (!isPaidOrActive) {
 					setIsPricingModalOpen(true);
 				}
 			} catch {
