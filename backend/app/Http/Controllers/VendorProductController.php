@@ -63,7 +63,7 @@ class VendorProductController extends Controller
             'ProductName' => 'required|string|max:255',
             'category_id' => 'required|exists:categories,id',
             'subcategory_id' => 'required|exists:subcategories,id',
-            'brand_id' => 'required|exists:brands,id',
+            'brand_id' => 'nullable|exists:brands,id',
             'ProductImage' => 'nullable|image|max:5120',
             'ProductBreaf' => 'nullable|string',
             'ProductDetails' => 'nullable|string',
@@ -93,7 +93,7 @@ class VendorProductController extends Controller
         $catalogError = $this->validateCatalogSelection(
             (int) $data['category_id'],
             (int) $data['subcategory_id'],
-            (int) $data['brand_id']
+            isset($data['brand_id']) ? (int) $data['brand_id'] : null
         );
         if ($catalogError) {
             return response()->json([
@@ -114,7 +114,7 @@ class VendorProductController extends Controller
         $product->vendor_id = $vendor->id;
         $product->category_id = $data['category_id'];
         $product->subcategory_id = $data['subcategory_id'];
-        $product->brand_id = $data['brand_id'];
+        $product->brand_id = $data['brand_id'] ?? null;
         if (Schema::hasColumn('products', 'minicategory_id')) {
             $product->minicategory_id = $request->input('minicategory_id');
         }
@@ -262,8 +262,8 @@ class VendorProductController extends Controller
             ? (int) $data['subcategory_id']
             : (int) $product->subcategory_id;
         $effectiveBrandId = array_key_exists('brand_id', $data)
-            ? (int) $data['brand_id']
-            : (int) $product->brand_id;
+            ? ($data['brand_id'] ? (int) $data['brand_id'] : null)
+            : ($product->brand_id ? (int) $product->brand_id : null);
 
         $catalogError = $this->validateCatalogSelection(
             $effectiveCategoryId,
@@ -815,17 +815,17 @@ class VendorProductController extends Controller
      * Vendors must use existing active catalog records from the main website.
      * Returns null when selection is valid; otherwise an error message.
      */
-    private function validateCatalogSelection(int $categoryId, int $subcategoryId, int $brandId): ?string
+    private function validateCatalogSelection(int $categoryId, ?int $subcategoryId, ?int $brandId): ?string
     {
         if ($categoryId <= 0 || !Category::where('id', $categoryId)->where('status', 'Active')->exists()) {
             return 'Selected category is invalid or inactive. Use an active category from main website.';
         }
 
-        if ($subcategoryId <= 0 || !Subcategory::where('id', $subcategoryId)->where('category_id', $categoryId)->where('status', 'Active')->exists()) {
+        if ($subcategoryId !== null && ($subcategoryId <= 0 || !Subcategory::where('id', $subcategoryId)->where('category_id', $categoryId)->where('status', 'Active')->exists())) {
             return 'Selected subcategory is invalid for the chosen category.';
         }
 
-        if ($brandId <= 0 || !Brand::where('id', $brandId)->where('status', 'Active')->exists()) {
+        if ($brandId !== null && ($brandId <= 0 || !Brand::where('id', $brandId)->where('status', 'Active')->exists())) {
             return 'Selected brand is invalid or inactive.';
         }
 

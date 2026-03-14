@@ -284,14 +284,14 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 				.find((t: any) => qty >= t.min_qty);
 			if (tier) {
 				rawPrice = parseFloat(tier.bulk_price || tier.unit_price);
-				return rawPrice * commissionFactor;
+				return Math.round(rawPrice * commissionFactor * 100) / 100;
 			}
 		}
 
 		// 2. Check size-level base price if any
 		if (sizeItem.price !== null && sizeItem.price !== undefined) {
 			const sPrice = parseFloat(sizeItem.price);
-			if (sPrice > 0) return sPrice * commissionFactor;
+			if (sPrice > 0) return Math.round(sPrice * commissionFactor * 100) / 100;
 		}
 
 		// 3. Fallback to product-level tiers based on total quantity
@@ -300,11 +300,11 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 				.slice()
 				.sort((a: any, b: any) => b.min_qty - a.min_qty)
 				.find((t: any) => totalQuantity >= t.min_qty);
-			if (tier) return parseFloat(tier.unit_price) * commissionFactor;
+			if (tier) return Math.round(parseFloat(tier.unit_price) * commissionFactor * 100) / 100;
 		}
 
 		// 4. Final fallback to product-level current price
-		return productData.currentPrice * commissionFactor;
+		return Math.round(productData.currentPrice * commissionFactor * 100) / 100;
 	};
 
 	// Determine selling type
