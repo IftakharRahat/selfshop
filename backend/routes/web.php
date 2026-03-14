@@ -191,6 +191,29 @@ Route::post('/sslcommerz/package/ipn', [SslCommerzPaymentController::class, 'pac
 // Also add a simpler route for the form action
 Route::post('/package/payment', [SslCommerzPaymentController::class, 'initiatePackagePayment'])->name('package.payment');
 
+// Email template preview (dev only)
+Route::get('/email-preview/supplier-order', function () {
+    $order = new \stdClass();
+    $order->invoiceID = 'INV-20260314-00123';
+    $order->orderDate = '14 Mar 2026';
+    $order->created_at = now();
+
+    $vendor = new \stdClass();
+    $vendor->company_name = 'ABC Traders Ltd.';
+
+    $orderProducts = collect([
+        (object) ['productName' => 'Premium Cotton T-Shirt (Black, XL)', 'quantity' => 10, 'productPrice' => 350],
+        (object) ['productName' => 'Slim Fit Jeans (Blue, 32)', 'quantity' => 5, 'productPrice' => 850],
+        (object) ['productName' => 'Sports Sneakers (White, 42)', 'quantity' => 3, 'productPrice' => 1200],
+    ]);
+
+    return view('emails.supplier_new_order', [
+        'order' => $order,
+        'vendor' => $vendor,
+        'orderProducts' => $orderProducts,
+    ]);
+});
+
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin.php';
 Route::get('{slug}/products', [WebviewController::class, 'slugProduct'])->middleware(['resellact']);

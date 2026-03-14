@@ -21,7 +21,7 @@ import "swiper/css/thumbs";
 
 import { MdOutlineFileDownload } from "react-icons/md";
 import Swal from "sweetalert2";
-import { z } from "zod";
+
 import { cn, getImageUrl } from "@/lib/utils";
 import { formatBDT } from "@/lib/format-currency";
 import { useAppSelector } from "@/redux/hooks";
@@ -197,8 +197,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const [activeSizeIdx, setActiveSizeIdx] = useState(0); // New: tracks currently "highlighted" size within active variant
 	// Per-variant per-size quantities: { [variantId]: { [size]: qty } }
 	const [variantQuantities, setVariantQuantities] = useState<Record<number, Record<string, number>>>({});
-	const [sellingPrice, setSellingPrice] = useState("");
-	const [priceError, setPriceError] = useState<string | null>(null);
+	// Per-variant per-size selling prices: { [variantId]: { [size]: priceString } }
+	const [variantSellingPrices, setVariantSellingPrices] = useState<Record<number, Record<string, string>>>({});
+
+	const handleSellingPriceChange = (variantId: number, size: string, value: string) => {
+		setVariantSellingPrices((prev) => {
+			const varSizes = { ...(prev[variantId] || {}) };
+			varSizes[size] = value;
+			return { ...prev, [variantId]: varSizes };
+		});
+	};
 
 	// ---- Flash Sale Countdown ----
 	const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
@@ -326,28 +334,20 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		? parseFloat(flashSale.flash_price)
 		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice)) * commissionFactor;
 
-	const minimumSellingPrice = productData.minimumPrice > 0
-		? productData.minimumPrice
-		: Math.ceil(effectiveUnitPrice);
-
-	const sellingPriceSchema = z
-		.number({ required_error: "Selling price is required" })
-		.min(
-			minimumSellingPrice,
-			`Price must be at least ৳${formatBDT(minimumSellingPrice)}.`,
-		);
-
-
-
-	const validateSellingPrice = () => {
-		try {
-			const parsedPrice = sellingPriceSchema.parse(Number(sellingPrice));
-			setPriceError(null);
-			return parsedPrice;
-		} catch (err: any) {
-			setPriceError(err.errors?.[0]?.message || "Invalid price");
-			return null;
+	// Validate all selected items have valid selling prices (for dropshipping)
+	const validateAllSellingPrices = (): boolean => {
+		const items = getSelectedItems();
+		let allValid = true;
+		for (const item of items) {
+			if (!item.sellingPrice || item.sellingPrice < item.price) {
+				allValid = false;
+				break;
+			}
 		}
+		if (!allValid) {
+			toast.error("Please enter a valid selling price for all selected items (must be ≥ cost price).");
+		}
+		return allValid;
 	};
 
 	const handleAddToCart = async () => {
@@ -360,7 +360,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			return;
 		}
 
-		if (showDropshipping && !validateSellingPrice()) {
+		if (showDropshipping && !validateAllSellingPrices()) {
 			return;
 		}
 
@@ -374,8 +374,8 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			const formData = new FormData();
 			formData.append("product_id", product.id);
 			formData.append("price", item.price.toString());
-			if (showDropshipping && sellingPrice) {
-				formData.append("selling_price", sellingPrice.toString());
+			if (showDropshipping && item.sellingPrice) {
+				formData.append("selling_price", item.sellingPrice.toString());
 			}
 			formData.append("qty", item.qty.toString());
 			formData.append("size", item.size); // The size name
@@ -402,7 +402,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			return;
 		}
 
-		if (showDropshipping && !validateSellingPrice()) {
+		if (showDropshipping && !validateAllSellingPrices()) {
 			return;
 		}
 
@@ -417,8 +417,8 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			const formData = new FormData();
 			formData.append("product_id", product.id);
 			formData.append("price", item.price.toString());
-			if (showDropshipping && sellingPrice) {
-				formData.append("selling_price", sellingPrice.toString());
+			if (showDropshipping && item.sellingPrice) {
+				formData.append("selling_price", item.sellingPrice.toString());
 			}
 			formData.append("qty", item.qty.toString());
 			formData.append("size", item.size); // The size name
@@ -452,7 +452,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 
 	// Helper: get items that have non-zero quantity for cart submission
 	const getSelectedItems = () => {
-		const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number }[] = [];
+		const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number; sellingPrice: number | null }[] = [];
 		for (const [vid, sizes] of Object.entries(variantQuantities)) {
 			const v = variants.find((vr: any) => vr.id === Number(vid));
 			for (const [sizeName, qty] of Object.entries(sizes)) {
@@ -461,12 +461,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 					// Find the actual size object for price calculation
 					const sizeItem = v?.sizes?.find((s: any) => s.size_name === sizeName);
 					const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : effectiveUnitPrice;
+					// Get per-item selling price
+					const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
+					const sp = spStr ? parseFloat(spStr) : null;
 					items.push({
 						variantId: Number(vid),
 						variantTitle: variantLabel,
 						size: sizeName,
 						qty,
-						price: itemPrice
+						price: itemPrice,
+						sellingPrice: sp && !isNaN(sp) ? sp : null,
 					});
 				}
 			}
@@ -904,23 +908,34 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 								return (
 									<div className="space-y-3">
 										<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-											<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase">
+											<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase ${showDropshipping && isResellerActive ? 'grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'grid-cols-[2fr_2fr_1fr_3fr]  sm:grid-cols-4'}`}>
 												<div>Size</div>
 												<div>Price</div>
 												<div className="text-center">Stock</div>
 												<div className="text-right">Quantity</div>
+												{showDropshipping && isResellerActive && (
+													<>
+														<div className="text-center">My Price</div>
+														<div className="text-right">Earn</div>
+													</>
+												)}
 											</div>
 											{sizesForTable.map((sz, szIdx) => {
 												const size = sz.size_name;
 												const qty = variantQuantities[currentVarId]?.[size] || 0;
 												const displayPrice = getSizePrice(sz, qty);
 												const isSelected = activeSizeIdx === szIdx;
+												// Per-row selling price state
+												const rowSellingPrice = variantSellingPrices[currentVarId]?.[size] || "";
+												const rowSP = rowSellingPrice ? parseFloat(rowSellingPrice) : 0;
+												const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
+												const rowPriceInvalid = rowSellingPrice !== "" && rowSP < displayPrice;
 												return (
 													<div
 														key={size}
 														onClick={() => setActiveSizeIdx(szIdx)}
 														className={cn(
-															"grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-100 items-center cursor-pointer transition-colors",
+															`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-100 items-center cursor-pointer transition-colors ${showDropshipping && isResellerActive ? 'grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4'}`,
 															isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50"
 														)}
 													>
@@ -967,6 +982,32 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																<Plus className="w-3 h-3" />
 															</button>
 														</div>
+														{/* Per-row selling price input (dropshipping) */}
+														{showDropshipping && isResellerActive && (
+															<>
+																<div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+																	<input
+																		type="number"
+																		min={Math.ceil(displayPrice)}
+																		value={rowSellingPrice}
+																		onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
+																		placeholder={`≥${Math.ceil(displayPrice)}`}
+																		className={`w-20 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
+																	/>
+																</div>
+																<div className="text-right text-sm">
+																	{rowEarnings > 0 ? (
+																		<span className="text-green-600 font-semibold flex items-center justify-end">
+																			+৳{formatBDT(rowEarnings)}
+																		</span>
+																	) : rowPriceInvalid ? (
+																		<span className="text-red-500 text-[10px]">Too low</span>
+																	) : (
+																		<span className="text-gray-400 text-xs">—</span>
+																	)}
+																</div>
+															</>
+														)}
 													</div>
 												);
 											})}
@@ -975,7 +1016,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 												const selectedItems = getSelectedItems();
 												const totalPrice = selectedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 												return (
-													<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
+													<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm ${showDropshipping && isResellerActive ? 'grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4'}`}>
 														<div className="text-gray-900">Total</div>
 														<div className="text-pink-600 flex items-center">
 															{isResellerActive ? (
@@ -989,6 +1030,28 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 														</div>
 														<div></div>
 														<div className="text-right text-gray-700">{totalQuantity} pcs</div>
+														{showDropshipping && isResellerActive && (
+															<>
+																<div></div>
+																<div className="text-right">
+																	{(() => {
+																		// Calculate total earnings from all selected items across all variants
+																		const allItems = getSelectedItems();
+																		const totalEarn = allItems.reduce((sum, item) => {
+																			if (item.sellingPrice && item.sellingPrice >= item.price) {
+																				return sum + (item.sellingPrice - item.price) * item.qty;
+																			}
+																			return sum;
+																		}, 0);
+																		return totalEarn > 0 ? (
+																			<span className="text-green-600 font-bold">+৳{formatBDT(totalEarn)}</span>
+																		) : (
+																			<span className="text-gray-400">—</span>
+																		);
+																	})()}
+																</div>
+															</>
+														)}
 													</div>
 												);
 											})()}
@@ -1057,42 +1120,26 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 							);
 						})()}
 
-						{/* Dropshipping: Selling Price + Earnings */}
-						{showDropshipping && isResellerActive && (
-							<div className="space-y-3">
-								<h3 className="font-medium text-gray-900">Your selling price</h3>
-								<input
-									type="number"
-									placeholder="Enter your selling price"
-									value={sellingPrice}
-									onChange={(e) => {
-										setSellingPrice(e.target.value);
-										if (priceError) setPriceError(null);
-									}}
-									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-								/>
-								{priceError && (
-									<p className="text-red-500 text-sm mt-1">{priceError}</p>
-								)}{" "}
-								{priceError == null && (
-									<p
-										className={cn(
-											"text-green-600 text-sm mt-1",
-											(Number(sellingPrice) - effectiveUnitPrice) * (totalQuantity || 1) > 0
-												? ""
-												: "hidden",
-										)}
-									>
-										Your total earn{" "}
-										{formatBDT(
-											(Number(sellingPrice) - effectiveUnitPrice) *
-											(totalQuantity || 1)
-										)}{" "}
-										TK
-									</p>
-								)}
-							</div>
-						)}
+						{/* Dropshipping: Total Earnings Summary */}
+						{showDropshipping && isResellerActive && (() => {
+							const allItems = getSelectedItems();
+							const totalEarnings = allItems.reduce((sum, item) => {
+								if (item.sellingPrice && item.sellingPrice >= item.price) {
+									return sum + (item.sellingPrice - item.price) * item.qty;
+								}
+								return sum;
+							}, 0);
+							const hasAnyPriceSet = allItems.some(i => i.sellingPrice && i.sellingPrice > 0);
+							if (!hasAnyPriceSet || totalQuantity === 0) return null;
+							return (
+								<div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+									<span className="text-sm font-medium text-green-800">Total Earnings</span>
+									<span className="text-lg font-bold text-green-600 flex items-center">
+										+৳{formatBDT(totalEarnings)}
+									</span>
+								</div>
+							);
+						})()}
 
 						<div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 ">
 							{!isResellerActive ? (
