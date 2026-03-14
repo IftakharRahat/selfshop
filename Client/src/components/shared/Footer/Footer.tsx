@@ -11,7 +11,6 @@ import { IoPersonOutline } from "react-icons/io5";
 import { LiaFileInvoiceSolid } from "react-icons/lia";
 import { LuShoppingCart } from "react-icons/lu";
 import footerLofo from "@/assets/icons/footerLogo.png";
-import { cn } from "@/lib/utils";
 import FooterNavbar from "../FooterNavbar/FooterNavbar";
 
 // import home from "@/assets/images/home-01.png";
@@ -67,11 +66,11 @@ export default function Footer() {
 								className="w-44 mb-4"
 							/>
 							<p className="text-gray-300 leading-relaxed mb-8">
-								SelfShop is a B2B platform created for modern entrepreneurs and
-								dropshippers. Here, you can purchase single wholesale products
-								or buy in bulk—giving you the flexibility to grow your business
-								your way. From trending items to essential goods, we make
-								sourcing and scaling simple.
+								SelfShop Limited is Bangladesh&apos;s premier B2B wholesale and
+								dropshipping marketplace. We empower entrepreneurs and resellers
+								by providing high-quality products, reliable sourcing, and
+								seamless fulfillment solutions to help scale their businesses
+								with confidence.
 							</p>
 
 							{/* Social Media */}

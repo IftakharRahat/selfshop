@@ -21,7 +21,7 @@ import "swiper/css/thumbs";
 
 import { MdOutlineFileDownload } from "react-icons/md";
 import Swal from "sweetalert2";
-import { z } from "zod";
+
 import { cn, getImageUrl } from "@/lib/utils";
 import { formatBDT } from "@/lib/format-currency";
 import { useAppSelector } from "@/redux/hooks";
@@ -197,8 +197,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const [activeSizeIdx, setActiveSizeIdx] = useState(0); // New: tracks currently "highlighted" size within active variant
 	// Per-variant per-size quantities: { [variantId]: { [size]: qty } }
 	const [variantQuantities, setVariantQuantities] = useState<Record<number, Record<string, number>>>({});
-	const [sellingPrice, setSellingPrice] = useState("");
-	const [priceError, setPriceError] = useState<string | null>(null);
+	// Per-variant per-size selling prices: { [variantId]: { [size]: priceString } }
+	const [variantSellingPrices, setVariantSellingPrices] = useState<Record<number, Record<string, string>>>({});
+
+	const handleSellingPriceChange = (variantId: number, size: string, value: string) => {
+		setVariantSellingPrices((prev) => {
+			const varSizes = { ...(prev[variantId] || {}) };
+			varSizes[size] = value;
+			return { ...prev, [variantId]: varSizes };
+		});
+	};
 
 	// ---- Flash Sale Countdown ----
 	const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
@@ -305,6 +313,21 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const showWholesale = (sellingType === 'wholesale' || sellingType === 'both') && hasProductTiers;
 	const showDropshipping = sellingType === 'dropshipping' || sellingType === 'both';
 
+	// Use per-row selling price inputs when there are multiple variants
+	// OR when a single variant has multiple sizes with different prices
+	// For truly simple products (1 variant, 1 size or uniform prices), show the old-style single input
+	const usePerRowPricing = (() => {
+		if (variants.length > 1) return true;
+		// Check if the single variant has multiple sizes with different prices
+		const v = variants[0];
+		if (v?.sizes && v.sizes.length > 1) {
+			const prices = v.sizes.map((s: any) => parseFloat(s.price || 0));
+			const hasDifferentPrices = prices.some((p: number) => p !== prices[0]);
+			if (hasDifferentPrices) return true;
+		}
+		return false;
+	})();
+
 	// For display consistency in main section, we'll show the "current" effective unit price based on total qty
 	const activeTier = hasProductTiers
 		? productData.priceTiers
@@ -326,24 +349,20 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		? parseFloat(flashSale.flash_price)
 		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice)) * commissionFactor;
 
-	const sellingPriceSchema = z
-		.number({ required_error: "Selling price is required" })
-		.min(
-			effectiveUnitPrice,
-			`Price must be at least ৳${formatBDT(effectiveUnitPrice)}.`,
-		);
-
-
-
-	const validateSellingPrice = () => {
-		try {
-			const parsedPrice = sellingPriceSchema.parse(Number(sellingPrice));
-			setPriceError(null);
-			return parsedPrice;
-		} catch (err: any) {
-			setPriceError(err.errors?.[0]?.message || "Invalid price");
-			return null;
+	// Validate all selected items have valid selling prices (for dropshipping)
+	const validateAllSellingPrices = (): boolean => {
+		const items = getSelectedItems();
+		let allValid = true;
+		for (const item of items) {
+			if (!item.sellingPrice || item.sellingPrice < item.price) {
+				allValid = false;
+				break;
+			}
 		}
+		if (!allValid) {
+			toast.error("Please enter a valid selling price for all selected items (must be ≥ cost price).");
+		}
+		return allValid;
 	};
 
 	const handleAddToCart = async () => {
@@ -356,7 +375,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			return;
 		}
 
-		if (showDropshipping && !validateSellingPrice()) {
+		if (showDropshipping && !validateAllSellingPrices()) {
 			return;
 		}
 
@@ -370,8 +389,8 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			const formData = new FormData();
 			formData.append("product_id", product.id);
 			formData.append("price", item.price.toString());
-			if (showDropshipping && sellingPrice) {
-				formData.append("selling_price", sellingPrice.toString());
+			if (showDropshipping && item.sellingPrice) {
+				formData.append("selling_price", item.sellingPrice.toString());
 			}
 			formData.append("qty", item.qty.toString());
 			formData.append("size", item.size); // The size name
@@ -398,7 +417,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			return;
 		}
 
-		if (showDropshipping && !validateSellingPrice()) {
+		if (showDropshipping && !validateAllSellingPrices()) {
 			return;
 		}
 
@@ -413,8 +432,8 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			const formData = new FormData();
 			formData.append("product_id", product.id);
 			formData.append("price", item.price.toString());
-			if (showDropshipping && sellingPrice) {
-				formData.append("selling_price", sellingPrice.toString());
+			if (showDropshipping && item.sellingPrice) {
+				formData.append("selling_price", item.sellingPrice.toString());
 			}
 			formData.append("qty", item.qty.toString());
 			formData.append("size", item.size); // The size name
@@ -448,7 +467,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 
 	// Helper: get items that have non-zero quantity for cart submission
 	const getSelectedItems = () => {
-		const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number }[] = [];
+		const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number; sellingPrice: number | null }[] = [];
 		for (const [vid, sizes] of Object.entries(variantQuantities)) {
 			const v = variants.find((vr: any) => vr.id === Number(vid));
 			for (const [sizeName, qty] of Object.entries(sizes)) {
@@ -457,12 +476,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 					// Find the actual size object for price calculation
 					const sizeItem = v?.sizes?.find((s: any) => s.size_name === sizeName);
 					const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : effectiveUnitPrice;
+					// Get per-item selling price
+					const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
+					const sp = spStr ? parseFloat(spStr) : null;
 					items.push({
 						variantId: Number(vid),
 						variantTitle: variantLabel,
 						size: sizeName,
 						qty,
-						price: itemPrice
+						price: itemPrice,
+						sellingPrice: sp && !isNaN(sp) ? sp : null,
 					});
 				}
 			}
@@ -900,69 +923,123 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 								return (
 									<div className="space-y-3">
 										<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-											<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase">
+											<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
 												<div>Size</div>
 												<div>Price</div>
 												<div className="text-center">Stock</div>
 												<div className="text-right">Quantity</div>
+												{showDropshipping && isResellerActive && usePerRowPricing && (
+													<>
+														<div className="text-center hidden sm:block">My Price</div>
+														<div className="text-right hidden sm:block">Earn</div>
+													</>
+												)}
 											</div>
 											{sizesForTable.map((sz, szIdx) => {
 												const size = sz.size_name;
 												const qty = variantQuantities[currentVarId]?.[size] || 0;
 												const displayPrice = getSizePrice(sz, qty);
 												const isSelected = activeSizeIdx === szIdx;
+												// Per-row selling price state
+												const rowSellingPrice = variantSellingPrices[currentVarId]?.[size] || "";
+												const rowSP = rowSellingPrice ? parseFloat(rowSellingPrice) : 0;
+												const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
+												const rowPriceInvalid = rowSellingPrice !== "" && rowSP < displayPrice;
 												return (
-													<div
-														key={size}
-														onClick={() => setActiveSizeIdx(szIdx)}
-														className={cn(
-															"grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 border-t border-gray-100 items-center cursor-pointer transition-colors",
-															isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50"
-														)}
-													>
-														<div className="font-medium text-gray-900 text-sm">{size}</div>
-														<div className="text-gray-700 flex items-center text-sm gap-1">
-															<div className="flex items-center">
-																{isResellerActive ? (
-																	<>
-																		<TbCurrencyTaka size={14} />
-																		{formatBDT(displayPrice)}
-																	</>
-																) : (
-																	<span className="text-xs text-gray-400">Locked</span>
+													<div key={size} onClick={() => setActiveSizeIdx(szIdx)} className={cn("border-t border-gray-100 cursor-pointer transition-colors", isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50")}>
+														{/* Main row: Size / Price / Stock / Qty — always 4 cols on mobile, 6 on sm+ when per-row pricing */}
+														<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 items-center grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
+															<div className="font-medium text-gray-900 text-sm">{size}</div>
+															<div className="text-gray-700 flex items-center text-sm gap-1">
+																<div className="flex items-center">
+																	{isResellerActive ? (
+																		<>
+																			<TbCurrencyTaka size={14} />
+																			{formatBDT(displayPrice)}
+																		</>
+																	) : (
+																		<span className="text-xs text-gray-400">Locked</span>
+																	)}
+																</div>
+																{sz.bulk_prices?.length > 0 && (
+																	<span className="text-[9px] bg-green-100 text-green-700 px-1 rounded font-bold uppercase leading-tight">
+																		Bulk
+																	</span>
 																)}
 															</div>
-															{sz.bulk_prices?.length > 0 && (
-																<span className="text-[9px] bg-green-100 text-green-700 px-1 rounded font-bold uppercase leading-tight">
-																	Bulk
-																</span>
+															<div className="text-sm text-center">{sz.qty <= 0 ? <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Stock Out</span> : <span className="text-gray-600">{sz.qty}</span>}</div>
+															<div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+																<button
+																	onClick={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
+																	className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
+																>
+																	<Minus className="w-3 h-3" />
+																</button>
+																<input
+																	type="number"
+																	min={0}
+																	max={sz.qty}
+																	value={qty || ''}
+																	onChange={(e) => handleQtySet(currentVarId, size, e.target.value, sz.qty)}
+																	placeholder="0"
+																	className={`w-14 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${qty > 0 ? 'bg-pink-50 border-pink-300 text-pink-700' : 'bg-white border-gray-200'}`}
+																/>
+																<button
+																	disabled={qty >= sz.qty || sz.qty <= 0}
+																	onClick={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
+																	className={`w-8 h-8 border rounded-lg flex items-center justify-center transition-colors ${qty >= sz.qty ? 'opacity-40 cursor-not-allowed bg-gray-100 border-gray-200' : 'hover:bg-pink-50 border-gray-300 bg-white'}`}
+																>
+																	<Plus className="w-3 h-3" />
+																</button>
+															</div>
+															{/* Desktop: inline My Price + Earn columns */}
+															{showDropshipping && isResellerActive && usePerRowPricing && (
+																<>
+																	<div className="hidden sm:flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+																		<input
+																			type="number"
+																			min={Math.ceil(displayPrice)}
+																			value={rowSellingPrice}
+																			onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
+																			placeholder={`≥${Math.ceil(displayPrice)}`}
+																			className={`w-20 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
+																		/>
+																	</div>
+																	<div className="hidden sm:block text-right text-sm">
+																		{rowEarnings > 0 ? (
+																			<span className="text-green-600 font-semibold flex items-center justify-end">
+																				+৳{formatBDT(rowEarnings)}
+																			</span>
+																		) : rowPriceInvalid ? (
+																			<span className="text-red-500 text-[10px]">Too low</span>
+																		) : (
+																			<span className="text-gray-400 text-xs">—</span>
+																		)}
+																	</div>
+																</>
 															)}
 														</div>
-														<div className="text-sm text-center">{sz.qty <= 0 ? <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Stock Out</span> : <span className="text-gray-600">{sz.qty}</span>}</div>
-														<div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-															<button
-																onClick={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
-																className="w-8 h-8 border border-gray-300 rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors bg-white"
-															>
-																<Minus className="w-3 h-3" />
-															</button>
-															<input
-																type="number"
-																min={0}
-																max={sz.qty}
-																value={qty || ''}
-																onChange={(e) => handleQtySet(currentVarId, size, e.target.value, sz.qty)}
-																placeholder="0"
-																className={`w-14 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${qty > 0 ? 'bg-pink-50 border-pink-300 text-pink-700' : 'bg-white border-gray-200'}`}
-															/>
-															<button
-																disabled={qty >= sz.qty || sz.qty <= 0}
-																onClick={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
-																className={`w-8 h-8 border rounded-lg flex items-center justify-center transition-colors ${qty >= sz.qty ? 'opacity-40 cursor-not-allowed bg-gray-100 border-gray-200' : 'hover:bg-pink-50 border-gray-300 bg-white'}`}
-															>
-																<Plus className="w-3 h-3" />
-															</button>
-														</div>
+														{/* Mobile: My Price + Earn sub-row */}
+														{showDropshipping && isResellerActive && usePerRowPricing && (
+															<div className="sm:hidden flex items-center gap-2 px-2 pb-2 pt-1" onClick={(e) => e.stopPropagation()}>
+																<span className="text-[10px] text-gray-500 font-semibold uppercase shrink-0">My Price:</span>
+																<input
+																	type="number"
+																	min={Math.ceil(displayPrice)}
+																	value={rowSellingPrice}
+																	onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
+																	placeholder={`≥${Math.ceil(displayPrice)}`}
+																	className={`w-24 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
+																/>
+																<span className="text-sm shrink-0">
+																	{rowEarnings > 0 ? (
+																		<span className="text-green-600 font-semibold">+৳{formatBDT(rowEarnings)}</span>
+																	) : rowPriceInvalid ? (
+																		<span className="text-red-500 text-[10px]">Too low</span>
+																	) : null}
+																</span>
+															</div>
+														)}
 													</div>
 												);
 											})}
@@ -971,7 +1048,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 												const selectedItems = getSelectedItems();
 												const totalPrice = selectedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 												return (
-													<div className="grid grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4 gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm">
+													<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
 														<div className="text-gray-900">Total</div>
 														<div className="text-pink-600 flex items-center">
 															{isResellerActive ? (
@@ -985,6 +1062,28 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 														</div>
 														<div></div>
 														<div className="text-right text-gray-700">{totalQuantity} pcs</div>
+														{showDropshipping && isResellerActive && usePerRowPricing && (
+															<>
+																<div className="hidden sm:block"></div>
+																<div className="hidden sm:block text-right">
+																	{(() => {
+																		// Calculate total earnings from all selected items across all variants
+																		const allItems = getSelectedItems();
+																		const totalEarn = allItems.reduce((sum, item) => {
+																			if (item.sellingPrice && item.sellingPrice >= item.price) {
+																				return sum + (item.sellingPrice - item.price) * item.qty;
+																			}
+																			return sum;
+																		}, 0);
+																		return totalEarn > 0 ? (
+																			<span className="text-green-600 font-bold">+৳{formatBDT(totalEarn)}</span>
+																		) : (
+																			<span className="text-gray-400">—</span>
+																		);
+																	})()}
+																</div>
+															</>
+														)}
 													</div>
 												);
 											})()}
@@ -1053,42 +1152,70 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 							);
 						})()}
 
-						{/* Dropshipping: Selling Price + Earnings */}
-						{showDropshipping && isResellerActive && (
-							<div className="space-y-3">
-								<h3 className="font-medium text-gray-900">Your selling price</h3>
-								<input
-									type="number"
-									placeholder="Enter your selling price"
-									value={sellingPrice}
-									onChange={(e) => {
-										setSellingPrice(e.target.value);
-										if (priceError) setPriceError(null);
-									}}
-									className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-								/>
-								{priceError && (
-									<p className="text-red-500 text-sm mt-1">{priceError}</p>
-								)}{" "}
-								{priceError == null && (
-									<p
-										className={cn(
-											"text-green-600 text-sm mt-1",
-											(Number(sellingPrice) - effectiveUnitPrice) * (totalQuantity || 1) > 0
-												? ""
-												: "hidden",
+						{/* Dropshipping: Total Earnings Summary (per-row mode) OR Single Input (simple mode) */}
+						{showDropshipping && isResellerActive && (() => {
+							const allItems = getSelectedItems();
+							const totalEarnings = allItems.reduce((sum, item) => {
+								if (item.sellingPrice && item.sellingPrice >= item.price) {
+									return sum + (item.sellingPrice - item.price) * item.qty;
+								}
+								return sum;
+							}, 0);
+
+							if (!usePerRowPricing) {
+								// Single selling price input for simple products
+								const singleSP = variantSellingPrices[variants[0]?.id]?.[Object.keys(variantSellingPrices[variants[0]?.id] || {})[0]] || "";
+								const spNum = singleSP ? parseFloat(singleSP) : 0;
+								const isTooLow = singleSP !== "" && spNum < effectiveUnitPrice;
+								return (
+									<div className="space-y-3">
+										<h3 className="font-medium text-gray-900">Your selling price</h3>
+										<input
+											type="number"
+											placeholder={`Enter your selling price (≥${Math.ceil(effectiveUnitPrice)})`}
+											value={singleSP}
+											onChange={(e) => {
+												const val = e.target.value;
+												// Sync to ALL variant/size combinations
+												setVariantSellingPrices((prev) => {
+													const next = { ...prev };
+													for (const v of variants) {
+														const sizes = v.sizes?.length > 0 ? v.sizes.map((s: any) => s.size_name) : (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
+														const varSizes: Record<string, string> = {};
+														for (const sz of sizes) {
+															varSizes[sz] = val;
+														}
+														next[v.id] = varSizes;
+													}
+													return next;
+												});
+											}}
+											className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isTooLow ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+										/>
+										{isTooLow && (
+											<p className="text-red-500 text-sm mt-1">Price must be at least ৳{formatBDT(effectiveUnitPrice)}</p>
 										)}
-									>
-										Your total earn{" "}
-										{formatBDT(
-											(Number(sellingPrice) - effectiveUnitPrice) *
-											(totalQuantity || 1)
-										)}{" "}
-										TK
-									</p>
-								)}
-							</div>
-						)}
+										{totalEarnings > 0 && totalQuantity > 0 && (
+											<p className="text-green-600 text-sm mt-1">
+												Your total earn {formatBDT(totalEarnings)} TK
+											</p>
+										)}
+									</div>
+								);
+							}
+
+							// Per-row mode: show total earnings banner
+							const hasAnyPriceSet = allItems.some(i => i.sellingPrice && i.sellingPrice > 0);
+							if (!hasAnyPriceSet || totalQuantity === 0) return null;
+							return (
+								<div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+									<span className="text-sm font-medium text-green-800">Total Earnings</span>
+									<span className="text-lg font-bold text-green-600 flex items-center">
+										+৳{formatBDT(totalEarnings)}
+									</span>
+								</div>
+							);
+						})()}
 
 						<div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 ">
 							{!isResellerActive ? (

@@ -16,8 +16,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-	title: "SelfShop",
-	description: "Your one-stop online shop for all your needs.",
+	title: "SelfShop Limited | Bangladesh's Leading B2B Wholesale & Dropshipping Marketplace",
+	description:
+		"Empowering Bangladesh's entrepreneurs with reliable wholesale & dropshipping solutions. Source quality products, automate fulfillment, and scale your reselling business with SelfShop Limited.",
 };
 
 export default function RootLayout({

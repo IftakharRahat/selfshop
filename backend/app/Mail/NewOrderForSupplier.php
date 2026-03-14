@@ -27,7 +27,7 @@ class NewOrderForSupplier extends Mailable
 
     public function build()
     {
-        return $this->subject('New Order Received – ' . $this->order->invoiceID)
+        return $this->subject('New Order Received – Action Required | ' . $this->order->invoiceID)
                     ->view('emails.supplier_new_order');
     }
 }
