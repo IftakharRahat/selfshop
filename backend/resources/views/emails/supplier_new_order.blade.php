@@ -52,7 +52,6 @@
                                     <tr style="background-color:#f3f4f6;">
                                         <th style="text-align:left; font-size:12px; color:#6b7280; border-bottom:1px solid #e5e7eb;">Product</th>
                                         <th style="text-align:center; font-size:12px; color:#6b7280; border-bottom:1px solid #e5e7eb;">Qty</th>
-                                        <th style="text-align:right; font-size:12px; color:#6b7280; border-bottom:1px solid #e5e7eb;">Price</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -60,7 +59,6 @@
                                     <tr>
                                         <td style="font-size:13px; color:#111; border-bottom:1px solid #f3f4f6;">{{ $item->productName }}</td>
                                         <td style="font-size:13px; color:#111; border-bottom:1px solid #f3f4f6; text-align:center;">{{ $item->quantity }}</td>
-                                        <td style="font-size:13px; color:#111; border-bottom:1px solid #f3f4f6; text-align:right;">৳{{ number_format($item->productPrice * $item->quantity, 2) }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -70,6 +68,17 @@
                             <p style="margin:0 0 20px; color:#555; font-size:14px; line-height:1.6;">
                                 Please log in to your <strong>Supplier Dashboard</strong> to review the full order details and start processing the order.
                             </p>
+
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ env('FRONTEND_URL', 'https://selfshop.com.bd') }}/vendor/orders"
+                                           style="display:inline-block; padding:12px 32px; background-color:#2d2a5d; color:#ffffff; font-size:14px; font-weight:700; text-decoration:none; border-radius:6px;">
+                                            Go to Supplier Dashboard
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
 
                             <p style="margin:0 0 24px; color:#555; font-size:14px; line-height:1.6;">
                                 If you have any questions or need assistance, please feel free to contact our support team.
