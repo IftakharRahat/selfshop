@@ -314,17 +314,15 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const showDropshipping = sellingType === 'dropshipping' || sellingType === 'both';
 
 	// Use per-row selling price inputs when there are multiple variants
-	// OR when a single variant has multiple sizes with different prices
-	// For truly simple products (1 variant, 1 size or uniform prices), show the old-style single input
+	// OR when a variant has multiple sizes (reseller may want different prices per size)
+	// Single input only for truly simple products (1 variant with 1 size)
 	const usePerRowPricing = (() => {
 		if (variants.length > 1) return true;
-		// Check if the single variant has multiple sizes with different prices
+		// Check if the single variant has multiple sizes
 		const v = variants[0];
-		if (v?.sizes && v.sizes.length > 1) {
-			const prices = v.sizes.map((s: any) => parseFloat(s.price || 0));
-			const hasDifferentPrices = prices.some((p: number) => p !== prices[0]);
-			if (hasDifferentPrices) return true;
-		}
+		if (v?.sizes && v.sizes.length > 1) return true;
+		// Also check product-level sizes
+		if (productData.sizes && productData.sizes.length > 1) return true;
 		return false;
 	})();
 
@@ -946,9 +944,9 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 												const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
 												const rowPriceInvalid = rowSellingPrice !== "" && rowSP < displayPrice;
 												return (
-													<div key={size} onClick={() => setActiveSizeIdx(szIdx)} className={cn("border-t border-gray-100 cursor-pointer transition-colors", isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50")}>
+													<div key={size} className={cn("border-t border-gray-100 cursor-pointer transition-colors", isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50")}>
 														{/* Main row: Size / Price / Stock / Qty — always 4 cols on mobile, 6 on sm+ when per-row pricing */}
-														<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 items-center grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
+														<div onClick={() => setActiveSizeIdx(szIdx)} className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 items-center grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
 															<div className="font-medium text-gray-900 text-sm">{size}</div>
 															<div className="text-gray-700 flex items-center text-sm gap-1">
 																<div className="flex items-center">
@@ -1164,7 +1162,12 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 
 							if (!usePerRowPricing) {
 								// Single selling price input for simple products
-								const singleSP = variantSellingPrices[variants[0]?.id]?.[Object.keys(variantSellingPrices[variants[0]?.id] || {})[0]] || "";
+								// Use fallback variant ID 0 when no variants exist (matches size table logic)
+								const fallbackVarId = variants[0]?.id ?? 0;
+								const fallbackSizes = variants[0]?.sizes?.length > 0
+									? variants[0].sizes.map((s: any) => s.size_name)
+									: (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
+								const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
 								const spNum = singleSP ? parseFloat(singleSP) : 0;
 								const isTooLow = singleSP !== "" && spNum < effectiveUnitPrice;
 								return (
@@ -1176,16 +1179,25 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 											value={singleSP}
 											onChange={(e) => {
 												const val = e.target.value;
-												// Sync to ALL variant/size combinations
+												// Sync to ALL variant/size combinations (including fallback)
 												setVariantSellingPrices((prev) => {
 													const next = { ...prev };
-													for (const v of variants) {
-														const sizes = v.sizes?.length > 0 ? v.sizes.map((s: any) => s.size_name) : (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
+													if (variants.length > 0) {
+														for (const v of variants) {
+															const sizes = v.sizes?.length > 0 ? v.sizes.map((s: any) => s.size_name) : fallbackSizes;
+															const varSizes: Record<string, string> = {};
+															for (const sz of sizes) {
+																varSizes[sz] = val;
+															}
+															next[v.id] = varSizes;
+														}
+													} else {
+														// No variants — use fallback variant ID 0
 														const varSizes: Record<string, string> = {};
-														for (const sz of sizes) {
+														for (const sz of fallbackSizes) {
 															varSizes[sz] = val;
 														}
-														next[v.id] = varSizes;
+														next[fallbackVarId] = varSizes;
 													}
 													return next;
 												});
