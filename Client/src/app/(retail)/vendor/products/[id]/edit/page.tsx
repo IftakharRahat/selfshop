@@ -246,7 +246,7 @@ export default function VendorEditProductPage() {
 		formData.append("category_id", f.category_id);
 		formData.append("subcategory_id", f.subcategory_id);
 		if (f.minicategory_id) formData.append("minicategory_id", f.minicategory_id);
-		formData.append("brand_id", f.brand_id);
+		if (f.brand_id) formData.append("brand_id", f.brand_id);
 		formData.append("show_stock", f.stock_visibility === "quantity" ? "On" : "Off");
 		formData.append("show_stock_text", f.stock_visibility === "text" ? "On" : "Off");
 		formData.append("product_weight", f.product_weight || "0");
@@ -534,7 +534,7 @@ export default function VendorEditProductPage() {
 								</label>
 								<label className="flex flex-col text-xs font-medium text-gray-700">
 									Brand
-									<select required value={f.brand_id} onChange={set("brand_id")} className={inputCls}>
+									<select value={f.brand_id} onChange={set("brand_id")} className={inputCls}>
 										<option value="">Select brand</option>
 										{brands.map((b) => (
 											<option key={b.id} value={b.id}>{b.brand_name}</option>

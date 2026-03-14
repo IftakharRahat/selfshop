@@ -2996,7 +2996,7 @@ class FrontendApiController extends Controller
     $submittedPrice = (float) ($request->selling_price ?: $request->price);
 
         // Validation: If selling price provided, it must be >= cost
-        if ($submittedPrice < $minAllowedPrice) {
+        if ($submittedPrice < $minAllowedPrice - 0.01) {
             return response()->json([
                 'status' => false,
                 'message' => 'Selling price (' . number_format($submittedPrice, 2) . ') cannot be lower than the product cost (' . number_format($minAllowedPrice, 2) . ').'

@@ -146,7 +146,10 @@ export default function VendorNewProductPage() {
 		if (minicategoryId) {
 			formData.append("minicategory_id", minicategoryId);
 		}
-		formData.append("brand_id", (form.querySelector('[name="brand_id"]') as HTMLSelectElement).value);
+		const brandVal = (form.querySelector('[name="brand_id"]') as HTMLSelectElement).value;
+		if (brandVal) {
+			formData.append("brand_id", brandVal);
+		}
 		const brief = (form.querySelector('[name="short_description"]') as HTMLTextAreaElement).value;
 		const details = (form.querySelector('[name="description"]') as HTMLTextAreaElement).value;
 		if (brief) formData.append("ProductBreaf", brief);
@@ -542,7 +545,6 @@ export default function VendorNewProductPage() {
 									Brand
 									<select
 										name="brand_id"
-										required
 										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
 									>
 										<option value="">Select brand</option>
