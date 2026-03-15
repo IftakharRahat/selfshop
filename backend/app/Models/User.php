@@ -34,6 +34,10 @@ class User extends Authenticatable
         'expire_date',
         'p_system',
         'active_date',
+        'order_bonus',
+        'sell_profit',
+        'bonus_percent',
+        'is_invoice',
     ];
 
     /**
