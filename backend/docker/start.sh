@@ -17,7 +17,10 @@ chmod -R 777 /app/storage 2>/dev/null || true
 touch /app/storage/logs/laravel.log
 chmod 666 /app/storage/logs/laravel.log
 
-# 5. Start PHP-FPM + Nginx
+# 5. Increase PHP memory limit (38K+ users need more than default 128M)
+echo "memory_limit = 512M" > /usr/local/etc/php/conf.d/memory.ini
+
+# 6. Start PHP-FPM + Nginx
 perl /assets/transform-config.pl /assets/nginx.template /nginx.conf
 php-fpm -y /assets/php-fpm.conf &
 nginx -c /nginx.conf

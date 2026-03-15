@@ -223,7 +223,7 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-4 col-xl">
                     <div class="dash-card">
                         <span class="dash-card-label">Total Profit</span>
-                        <div class="dash-card-value">৳ <span id="totalprofit">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-value">৳ <span id="totalprofit">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                         <div class="dash-card-sub"><span id="totalorder">0</span> orders</div>
                     </div>
                 </div>
@@ -262,38 +262,38 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-3">
                     <div class="dash-card">
                         <span class="dash-card-label">Total Sales</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="dash-card">
                         <span class="dash-card-label">This Year</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <?php
                         $monthSubTotal = \App\Models\Order::where('status','Delivered')
                             ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
-                            ->get()->sum('subTotal');
+                            ->sum('subTotal');
                         $monthPaymentAmount = \App\Models\Order::where('status','Delivered')
                             ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
-                            ->get()->sum('paymentAmount');
+                            ->sum('paymentAmount');
                         $monthTotal = $monthSubTotal + $monthPaymentAmount;
                     ?>
                     <div class="dash-card">
                         <span class="dash-card-label">This Month</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereMonth('deliveryDate', Carbon\Carbon::now()->month)->where('status','Delivered')->get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereMonth('deliveryDate', Carbon\Carbon::now()->month)->where('status','Delivered')->count()) }}</div>
                         <div class="dash-card-sub">৳ {{ number_format($monthTotal) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="dash-card">
                         <span class="dash-card-label">Today's Sales</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('deliveryDate', date('Y-m-d'))->where('status','Delivered')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->where('deliveryDate', date('Y-m-d'))->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('deliveryDate', date('Y-m-d'))->where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->where('deliveryDate', date('Y-m-d'))->sum('subTotal')) }}</div>
                     </div>
                 </div>
             </div>
@@ -307,36 +307,36 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Orders</span>
-                        <div class="dash-card-value"><span id="to">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
-                        <div class="dash-card-sub">৳ <span id="toa">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-value"><span id="to">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="toa">{{ \App\Models\Order::where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Confirmed</span>
-                        <div class="dash-card-value"><span id="tc">{{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
-                        <div class="dash-card-sub">৳ <span id="tca">{{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-value"><span id="tc">{{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="tca">{{ \App\Models\Order::where('status','Confirmed')->where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">On the Way</span>
-                        <div class="dash-card-value"><span id="tod">{{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
-                        <div class="dash-card-sub">৳ <span id="toda">{{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-value"><span id="tod">{{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="toda">{{ \App\Models\Order::where('status','Ontheway')->where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Delivered</span>
-                        <div class="dash-card-value"><span id="td">{{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
-                        <div class="dash-card-sub">৳ <span id="tda">{{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-value"><span id="td">{{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="tda">{{ \App\Models\Order::where('status','Delivered')->where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Returned</span>
-                        <div class="dash-card-value"><span id="tr">{{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->get()->count() }}</span></div>
-                        <div class="dash-card-sub">৳ <span id="tra">{{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->get()->sum('subTotal') }}</span></div>
+                        <div class="dash-card-value"><span id="tr">{{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="tra">{{ \App\Models\Order::where('status','Return')->where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
@@ -357,43 +357,43 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Total Orders</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Confirmed</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Confirmed')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Confirmed')->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Confirmed')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Confirmed')->sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">On the Way</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Ontheway')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Ontheway')->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Ontheway')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Ontheway')->sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Delivered</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Returned</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Return')->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Return')->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Return')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Return')->sum('subTotal')) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Other Statuses</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->get()->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->get()->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->sum('subTotal')) }}</div>
                     </div>
                 </div>
             </div>
@@ -407,37 +407,37 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Total Resellers</span>
-                        <div class="dash-card-value">{{ number_format(App\Models\User::get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::count()) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Paid Resellers</span>
-                        <div class="dash-card-value">{{ number_format(App\Models\User::where('status','Active')->where('membership_status','Paid')->get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('status','Active')->where('membership_status','Paid')->count()) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Unpaid Resellers</span>
-                        <div class="dash-card-value">{{ number_format(App\Models\User::where('membership_status','Unpaid')->get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('membership_status','Unpaid')->count()) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Banned</span>
-                        <div class="dash-card-value">{{ number_format(App\Models\User::where('status','Block')->get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('status','Block')->count()) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Today's Registered</span>
-                        <div class="dash-card-value">{{ number_format(App\Models\User::where('created_at', '>=', Carbon\Carbon::today())->get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('created_at', '>=', Carbon\Carbon::today())->count()) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Today's Active</span>
-                        <div class="dash-card-value">{{ number_format(App\Models\User::where('active_date', '>=', Carbon\Carbon::today())->get()->count()) }}</div>
+                        <div class="dash-card-value">{{ number_format(App\Models\User::where('active_date', '>=', Carbon\Carbon::today())->count()) }}</div>
                     </div>
                 </div>
             </div>
