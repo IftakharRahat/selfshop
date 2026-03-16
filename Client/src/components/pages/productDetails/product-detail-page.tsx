@@ -123,6 +123,20 @@ function DesktopTabs({
 }
 
 export default function ProductDetailPage({ product, flashSale, commissionPercent }: any) {
+	if (!product) {
+		return (
+			<div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 px-4">
+				<h2 className="text-xl font-semibold text-gray-600">Product Not Found</h2>
+				<p className="text-gray-400 text-sm text-center">
+					This product may have been removed or is no longer available.
+				</p>
+				<Link href="/" className="mt-2 text-sm font-medium text-[#E5005F] hover:underline">
+					← Back to Home
+				</Link>
+			</div>
+		);
+	}
+
 	const [orderOpen, setOrderOpen] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 	const { isActive: isResellerActive } = useIsActiveReseller();
