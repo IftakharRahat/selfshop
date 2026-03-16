@@ -178,6 +178,9 @@ export default function FlashSaleSection() {
 function FlashProductCard({ product }: { product: any }) {
     const [imgError, setImgError] = useState(false);
     const { isActive: isResellerActive } = useIsActiveReseller();
+
+    if (!product) return null;
+
     const hasDiscount =
         product.discount_percentage > 0 &&
         product.FlashPrice < product.SalePrice;

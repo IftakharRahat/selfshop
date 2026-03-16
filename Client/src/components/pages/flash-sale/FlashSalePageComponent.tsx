@@ -150,6 +150,9 @@ export default function FlashSalePageComponent() {
 
 function FlashProductCard({ product }: { product: any }) {
     const [imgError, setImgError] = useState(false);
+
+    if (!product) return null;
+
     const hasDiscount =
         product.discount_percentage > 0 &&
         product.FlashPrice < product.SalePrice;

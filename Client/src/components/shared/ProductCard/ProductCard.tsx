@@ -24,6 +24,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 	const [addToCart] = useAddToCartMutation();
 	const [imgError, setImgError] = useState(false);
 
+	if (!product) return null;
+
 	const handleAddToCart = async () => {
 		if (!token) {
 			toast.info("Please log in to add to cart");
