@@ -19,6 +19,40 @@ export const metadata: Metadata = {
 	title: "SelfShop Limited | Bangladesh's Leading B2B Wholesale & Dropshipping Marketplace",
 	description:
 		"Empowering Bangladesh's entrepreneurs with reliable wholesale & dropshipping solutions. Source quality products, automate fulfillment, and scale your reselling business with SelfShop Limited.",
+	icons: {
+		icon: [
+			{ url: "/favicon.png", sizes: "any" },
+			{ url: "/favicon.png", type: "image/png", sizes: "32x32" },
+			{ url: "/favicon.png", type: "image/png", sizes: "192x192" },
+		],
+		apple: "/favicon.png",
+		shortcut: "/favicon.png",
+	},
+	openGraph: {
+		title: "SelfShop Limited | Bangladesh's Leading B2B Wholesale & Dropshipping Marketplace",
+		description:
+			"Empowering Bangladesh's entrepreneurs with reliable wholesale & dropshipping solutions. Source quality products, automate fulfillment, and scale your reselling business with SelfShop Limited.",
+		siteName: "SelfShop Limited",
+		locale: "en_US",
+		type: "website",
+		images: [
+			{
+				url: "/icon/main_site_icon_with_label.png",
+				width: 512,
+				height: 512,
+				alt: "SelfShop Limited",
+			},
+		],
+	},
+	twitter: {
+		card: "summary",
+		title: "SelfShop Limited | B2B Wholesale & Dropshipping Marketplace",
+		description:
+			"Bangladesh's premier B2B wholesale and dropshipping marketplace. Source quality products and scale your reselling business.",
+		images: ["/icon/main_site_icon_with_label.png"],
+	},
+	metadataBase: new URL("https://selfshop.com.bd"),
+	manifest: "/manifest.json",
 };
 
 export default function RootLayout({

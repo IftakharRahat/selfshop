@@ -154,36 +154,36 @@ export default function Footer() {
 							<h3 className="text-lg font-semibold mb-6">PAGES</h3>
 							<ul className="space-y-3">
 								<li>
-									<a
-										href="#"
+									<Link
+										href={"/support"}
 										className="text-gray-300 hover:text-white transition-colors"
 									>
 										Live Chat
-									</a>
+									</Link>
 								</li>
 								<li>
-									<a
-										href="#"
+									<Link
+										href={"/dashboard/track-orders"}
 										className="text-gray-300 hover:text-white transition-colors"
 									>
 										Live Tracking
-									</a>
+									</Link>
 								</li>
 								<li>
-									<a
-										href="#"
+									<Link
+										href={"/vendor"}
 										className="text-gray-300 hover:text-white transition-colors"
 									>
-										Become an Supplier
-									</a>
+										Become a Supplier
+									</Link>
 								</li>
 								<li>
-									<a
-										href="#"
+									<Link
+										href={"/pricing"}
 										className="text-gray-300 hover:text-white transition-colors"
 									>
-										Become an Reseller
-									</a>
+										Become a Reseller
+									</Link>
 								</li>
 							</ul>
 						</div>
@@ -217,12 +217,12 @@ export default function Footer() {
 									</Link>
 								</li>
 								<li>
-									<a
-										href="#"
+									<Link
+										href={"/dashboard/track-orders"}
 										className="text-gray-300 hover:text-white transition-colors"
 									>
 										Track Order
-									</a>
+									</Link>
 								</li>
 							</ul>
 

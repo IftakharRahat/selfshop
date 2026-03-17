@@ -2131,7 +2131,7 @@ class frontendapicon extends Controller
         $vendors = Vendor::where('status', 'approved')
             ->withCount('products')
             ->orderByDesc('products_count')
-            ->limit(12)
+            ->limit(60)
             ->get([
                 'id',
                 'user_id',
