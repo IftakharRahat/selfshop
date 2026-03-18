@@ -15,7 +15,7 @@ import {
 } from "antd";
 import { ChevronDown, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -58,6 +58,18 @@ export default function Navbar() {
 	const [searchValue, setSearchValue] = useState("");
 
 	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	// Auto-open auth modal when redirected from pricing page with ?showAuth=true
+	useEffect(() => {
+		if (searchParams.get("showAuth") === "true" && !token) {
+			setIsLoginModalOpen(true);
+			// Clean up the URL by removing the showAuth param
+			const url = new URL(window.location.href);
+			url.searchParams.delete("showAuth");
+			window.history.replaceState({}, "", url.pathname + url.search);
+		}
+	}, [searchParams, token]);
 
 	const handleLogout = async () => {
 		const result = await Swal.fire({

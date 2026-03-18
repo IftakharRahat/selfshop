@@ -4,7 +4,7 @@ import { formatBDT } from "@/lib/format-currency";
 import { CheckCircle2, Headset, LogOut, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
 	type PackageInvoice,
 	type PackagePlan,
@@ -89,7 +89,15 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 	const router = useRouter();
 	const dispatch = useAppDispatch();
 	const token = useAppSelector((state) => state.auth.access_token);
-	const { data: pricingData, isLoading } = useGetPricingQuery();
+
+	// Redirect unauthenticated users to home page with auth modal (standalone page only)
+	useEffect(() => {
+		if (!token && !onInvoiceCreated) {
+			router.replace("/?showAuth=true");
+		}
+	}, [token, onInvoiceCreated, router]);
+
+	const { data: pricingData, isLoading } = useGetPricingQuery(undefined, { skip: !token });
 	const [createPurchase] = useCreatePurchaseMutation();
 	const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
@@ -107,6 +115,12 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 
 	const handlePurchase = async () => {
 		if (!selectedPlan) return;
+
+		// If user is not logged in, redirect to storefront with auth modal
+		if (!token) {
+			router.push("/?showAuth=true");
+			return;
+		}
 
 		const discount = normalizePrice(selectedPlan.discount_price);
 		const regular = normalizePrice(selectedPlan.price);
