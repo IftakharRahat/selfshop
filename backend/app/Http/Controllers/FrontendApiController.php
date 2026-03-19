@@ -20,6 +20,7 @@ use App\Models\FlashSaleProduct;
 use App\Models\Fraud;
 use App\Models\Income;
 use App\Models\Message;
+use App\Models\Minicategory;
 use App\Models\Order;
 use App\Models\Orderproduct;
 use App\Library\SslCommerz\SslCommerzNotification;
@@ -579,9 +580,9 @@ class FrontendApiController extends Controller
     public function newproducts(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
+        $total = Product::visibleOnStorefront()->count();
 
-        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id')->latest('id')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id')->latest('id')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -812,6 +813,68 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => empty($slug) ? 'All products' : 'Products found with this sub-category successfully',
+            'data' => $paginated
+        ], 200);
+    }
+
+    public function productbyminicategory(Request $request, $slug)
+    {
+        $selects = ['id', 'category_id', 'subcategory_id', 'minicategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'created_at', 'selling_type', 'vendor_id'];
+
+        $perPage = $request->input('limit', 20);
+        $sort = $request->input('sort', 'rating');
+
+        if (empty($slug)) {
+            $query = Product::visibleOnStorefront()->select(...$selects);
+        } else {
+            $minicategory = Minicategory::where('slug', $slug)->first();
+            if (!$minicategory) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'No products found',
+                    'data' => []
+                ], 200);
+            }
+            $query = Product::visibleOnStorefront()->where('minicategory_id', $minicategory->id)->select(...$selects);
+        }
+
+        // Apply DB-level sorting
+        switch ($sort) {
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'price_asc':
+                $query->orderBy('ProductSalePrice', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('ProductSalePrice', 'desc');
+                break;
+            case 'rating':
+            default:
+                $query->selectSub(
+                    Review::selectRaw('COALESCE(AVG(rating), 0)')
+                        ->whereColumn('product_id', 'products.id')
+                        ->where('status', 'Active'),
+                    'avg_rating'
+                )->orderBy('avg_rating', 'desc');
+                break;
+        }
+
+        $paginated = $query->paginate($perPage);
+
+        // Attach avg_rating and review_count to each product
+        foreach ($paginated->items() as $product) {
+            $reviews = Review::where('product_id', $product->id)->where('status', 'Active');
+            $product->avg_rating = round($reviews->avg('rating') ?? 0, 1);
+            $product->review_count = $reviews->count();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => empty($slug) ? 'All products' : 'Products found with this mini-category successfully',
             'data' => $paginated
         ], 200);
     }
@@ -2933,7 +2996,7 @@ class FrontendApiController extends Controller
     $submittedPrice = (float) ($request->selling_price ?: $request->price);
 
         // Validation: If selling price provided, it must be >= cost
-        if ($submittedPrice < $minAllowedPrice) {
+        if ($submittedPrice < $minAllowedPrice - 0.01) {
             return response()->json([
                 'status' => false,
                 'message' => 'Selling price (' . number_format($submittedPrice, 2) . ') cannot be lower than the product cost (' . number_format($minAllowedPrice, 2) . ').'
@@ -3440,44 +3503,14 @@ class FrontendApiController extends Controller
 
                 $orderProduct->save();
 
-                // Decrement stock for the ordered variant size
-                $colorName = $options['color'] ?? null;
-                $sizeName = $options['size'] ?? null;
-                $orderedQty = (int) $product->qty;
-
-                if ($colorName && $colorName !== 'undefined') {
-                    $variant = Varient::where('product_id', $product->product_id)
-                        ->where('color_name', $colorName)
-                        ->first();
-
-                    if ($variant) {
-                        if ($sizeName && $sizeName !== 'undefined') {
-                            $variantSize = VariantSize::where('varient_id', $variant->id)
-                                ->where('size_name', $sizeName)
-                                ->first();
-                            if ($variantSize) {
-                                $variantSize->qty = max(0, $variantSize->qty - $orderedQty);
-                                $variantSize->save();
-                            }
-                        }
-                        // Also decrement variant qty
-                        $variant->qty = max(0, $variant->qty - $orderedQty);
-                        $variant->save();
-                    }
-                }
-
-                // Decrement product-level quantity
-                $productModel = Product::find($product->product_id);
-                if ($productModel && $productModel->ProductQuantity !== null) {
-                    $productModel->ProductQuantity = max(0, $productModel->ProductQuantity - $orderedQty);
-                    $productModel->save();
-                }
-
                 $vendorId = Product::where('id', $product->product_id)->value('vendor_id');
                 if ($vendorId) {
                     $vendorIds[(int) $vendorId] = true;
                 }
             }
+
+            // Decrement product stock for this order
+            app(\App\Services\StockService::class)->decrementForOrder($order->id);
 
             // Deduct account balance if needed
             if ($request->balance_from == 'from_account') {
@@ -3518,6 +3551,14 @@ class FrontendApiController extends Controller
                         ],
                         '/vendor/orders/' . $order->id
                     );
+                }
+
+                // Send SMS + Email to suppliers
+                try {
+                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                    $supplierNotification->notify($order, array_keys($vendorIds), $request->customerName);
+                } catch (\Throwable $e) {
+                    \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
                 }
             }
 
@@ -3731,8 +3772,10 @@ class FrontendApiController extends Controller
     /**
  * Return approved vendors ordered by average product rating (from reviews).
  */
-public function popularVendors()
+public function popularVendors(Request $request)
 {
+    $sort = $request->input('sort', 'best_rated');
+
     $vendors = Vendor::where('status', 'approved')
         ->withCount('products')
         ->get([
@@ -3746,6 +3789,7 @@ public function popularVendors()
             'business_type',
             'city',
             'is_verified_badge',
+            'created_at',
         ]);
 
     // Compute average rating across all products for each vendor
@@ -3761,8 +3805,19 @@ public function popularVendors()
         $vendor->slug = $vendor->public_slug;
     }
 
-    // Sort by average rating descending, then by product count
-    $sorted = $vendors->sortByDesc('avg_product_rating')->values();
+    // Apply sort
+    switch ($sort) {
+        case 'top_supplier':
+            $sorted = $vendors->sortByDesc('products_count')->values();
+            break;
+        case 'recent':
+            $sorted = $vendors->sortByDesc('created_at')->values();
+            break;
+        case 'best_rated':
+        default:
+            $sorted = $vendors->sortByDesc('avg_product_rating')->values();
+            break;
+    }
 
     return response()->json([
         'status' => true,

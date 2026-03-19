@@ -1,151 +1,123 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { FreeMode } from "swiper/modules";
-import { MapPin, BadgeCheck, Star } from "lucide-react";
-import { getImageUrl } from "@/lib/utils";
+import { useRef, useCallback, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetPopularSuppliersQuery } from "@/redux/features/home/homeApi";
-import "swiper/css";
-import "swiper/css/free-mode";
+import SupplierCard, { SupplierItem } from "@/components/shared/SupplierCard/SupplierCard";
 
-interface SupplierItem {
-    id: number;
-    company_name: string;
-    slug: string;
-    logo_path: string | null;
-    banner_path: string | null;
-    business_type: string | null;
-    city: string | null;
-    is_verified_badge: boolean;
-    products_count: number;
-    avg_product_rating?: number;
-    review_count?: number;
-}
-
-/** Logo with fallback initials */
-function SupplierLogo({
-    logo,
-    name,
-}: {
-    logo: string | null;
-    name: string;
-}) {
-    const [errored, setErrored] = useState(false);
-
-    if (!logo || errored) {
-        const initials = name
-            .split(" ")
-            .map((w) => w[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-        return (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-400 to-rose-600 rounded-full text-white font-bold text-sm sm:text-base select-none">
-                {initials}
-            </div>
-        );
-    }
-
-    return (
-        <Image
-            src={getImageUrl(logo)}
-            alt={name}
-            width={80}
-            height={80}
-            className="object-cover rounded-full w-full h-full"
-            onError={() => setErrored(true)}
-        />
-    );
-}
-
-function SupplierCard({ supplier }: { supplier: SupplierItem }) {
-    return (
-        <Link href={`/supplier/${supplier.slug}`}>
-            <div className="bg-white border border-gray-100 rounded-xl p-4 sm:p-5 cursor-pointer hover:shadow-md hover:border-pink-100 transition-all flex flex-col items-center text-center gap-2.5 h-full">
-                {/* Circular logo */}
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 ring-2 ring-gray-100">
-                    <SupplierLogo logo={supplier.logo_path} name={supplier.company_name} />
-                    {supplier.is_verified_badge && (
-                        <span className="absolute -bottom-0.5 -right-0.5 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center shadow">
-                            <BadgeCheck className="w-3 h-3" />
-                        </span>
-                    )}
-                </div>
-
-                {/* Name */}
-                <p className="text-xs sm:text-sm font-semibold text-gray-900 truncate w-full leading-tight">
-                    {supplier.company_name}
-                </p>
-
-                {/* City */}
-                {supplier.city && (
-                    <div className="flex items-center gap-1 text-gray-400">
-                        <MapPin className="w-3 h-3" />
-                        <span className="text-[10px] sm:text-xs">{supplier.city}</span>
-                    </div>
-                )}
-
-                {/* Rating */}
-                {(supplier.avg_product_rating ?? 0) > 0 && (
-                    <div className="flex items-center gap-1 text-amber-500">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-[10px] sm:text-xs font-semibold">
-                            {supplier.avg_product_rating}
-                        </span>
-                        <span className="text-[10px] sm:text-xs text-gray-400 font-normal">
-                            ({supplier.review_count})
-                        </span>
-                    </div>
-                )}
-
-                {/* Product count badge */}
-                <span className="text-[10px] sm:text-xs text-pink-600 bg-pink-50 px-2.5 py-0.5 rounded-full font-medium">
-                    {supplier.products_count} {supplier.products_count === 1 ? "Product" : "Products"}
-                </span>
-            </div>
-        </Link>
-    );
-}
+const INITIAL_VISIBLE = 16; // 8 per row × 2 rows on desktop
+const SCROLL_KEY = "selfshop_scroll_suppliers";
 
 const PopularSuppliers = () => {
     const { data, isLoading } = useGetPopularSuppliersQuery(undefined);
     const suppliers: SupplierItem[] = data?.data ?? [];
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const sectionRef = useRef<HTMLElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const displayedSuppliers = suppliers.slice(0, INITIAL_VISIBLE);
+
+    const updateScrollButtons = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setCanScrollLeft(el.scrollLeft > 5);
+        setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+    }, []);
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const timer = setTimeout(updateScrollButtons, 100);
+        el.addEventListener("scroll", updateScrollButtons, { passive: true });
+        window.addEventListener("resize", updateScrollButtons);
+        return () => {
+            clearTimeout(timer);
+            el.removeEventListener("scroll", updateScrollButtons);
+            window.removeEventListener("resize", updateScrollButtons);
+        };
+    }, [updateScrollButtons, displayedSuppliers]);
+
+    // Restore scroll position when returning from "View All" page
+    useEffect(() => {
+        const saved = sessionStorage.getItem(SCROLL_KEY);
+        if (saved) {
+            const timer = setTimeout(() => {
+                window.scrollTo({ top: parseInt(saved, 10), behavior: "instant" as ScrollBehavior });
+                sessionStorage.removeItem(SCROLL_KEY);
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
+    const scroll = (direction: "left" | "right") => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const cardWidth = el.querySelector(".supplier-card")?.getBoundingClientRect().width ?? 180;
+        const scrollAmount = cardWidth * 3;
+        el.scrollBy({
+            left: direction === "right" ? scrollAmount : -scrollAmount,
+            behavior: "smooth",
+        });
+    };
+
+    const saveScrollAndNavigate = () => {
+        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    };
 
     if (isLoading || suppliers.length === 0) return null;
 
     return (
-        <div className="container mx-auto py-3 sm:py-6 lg:py-10 px-3 sm:px-6 lg:px-8">
-            {/* Section title — matches other home sections */}
-            <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-semibold text-[#322F35] mb-3 sm:mb-5 text-center">
-                Popular Suppliers
-            </h2>
-
-            {/* ---------- MOBILE SWIPER ---------- */}
-            <div className="block md:hidden">
-                <Swiper
-                    slidesPerView={2.5}
-                    spaceBetween={10}
-                    freeMode={true}
-                    modules={[FreeMode]}
-                >
-                    {suppliers.map((s) => (
-                        <SwiperSlide key={s.id}>
-                            <SupplierCard supplier={s} />
-                        </SwiperSlide>
-                    ))}
-                </Swiper>
+        <section className="popular-suppliers-section" ref={sectionRef}>
+            {/* Header row */}
+            <div className="popular-suppliers-header">
+                <h2 className="popular-suppliers-title">Popular Suppliers</h2>
+                {suppliers.length > INITIAL_VISIBLE && (
+                    <Link
+                        href="/all-suppliers"
+                        className="popular-suppliers-viewall"
+                        onClick={saveScrollAndNavigate}
+                    >
+                        View All ({suppliers.length})
+                    </Link>
+                )}
             </div>
 
-            {/* ---------- DESKTOP GRID ---------- */}
-            <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {suppliers.map((s) => (
-                    <SupplierCard key={s.id} supplier={s} />
-                ))}
+            {/* Scrollable container with nav arrows */}
+            <div className="popular-suppliers-scroll-wrapper">
+                {/* Left arrow */}
+                {canScrollLeft && (
+                    <button
+                        className="popular-suppliers-arrow popular-suppliers-arrow-left"
+                        onClick={() => scroll("left")}
+                        aria-label="Scroll left"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                )}
+
+                {/* Scrollable grid */}
+                <div className="popular-suppliers-scroll" ref={scrollRef}>
+                    <div className="popular-suppliers-grid">
+                        {displayedSuppliers.map((s) => (
+                            <SupplierCard key={s.id} supplier={s} />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Right arrow */}
+                {canScrollRight && (
+                    <button
+                        className="popular-suppliers-arrow popular-suppliers-arrow-right"
+                        onClick={() => scroll("right")}
+                        aria-label="Scroll right"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                )}
             </div>
-        </div>
+        </section>
     );
 };
 
