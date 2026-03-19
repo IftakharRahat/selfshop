@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import { useGetAllNewProductsQuery } from "@/redux/features/home/homeApi";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 
 const INITIAL_VISIBLE = 8; // 4 per row × 2 rows
+const SCROLL_KEY = "selfshop_scroll_newproducts";
 
 export default function NewProducts() {
 	const [objectQuery] = useState([
@@ -15,9 +17,24 @@ export default function NewProducts() {
 	]);
 	const { data: newArrivalsData } = useGetAllNewProductsQuery({ objectQuery });
 	const allProducts: any[] = newArrivalsData?.data?.data || [];
-	const [showAll, setShowAll] = useState(false);
 
-	const displayedProducts = showAll ? allProducts : allProducts.slice(0, INITIAL_VISIBLE);
+	const displayedProducts = allProducts.slice(0, INITIAL_VISIBLE);
+
+	// Restore scroll position when returning from "View All" page
+	useEffect(() => {
+		const saved = sessionStorage.getItem(SCROLL_KEY);
+		if (saved) {
+			const timer = setTimeout(() => {
+				window.scrollTo({ top: parseInt(saved, 10), behavior: "instant" as ScrollBehavior });
+				sessionStorage.removeItem(SCROLL_KEY);
+			}, 200);
+			return () => clearTimeout(timer);
+		}
+	}, []);
+
+	const saveScrollAndNavigate = () => {
+		sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+	};
 
 	return (
 		<div className="w-full bg-white py-3 sm:py-6 lg:py-10">
@@ -28,12 +45,13 @@ export default function NewProducts() {
 						NEW PRODUCTS
 					</h2>
 					{allProducts.length > INITIAL_VISIBLE && (
-						<button
+						<Link
+							href="/all-new-products"
 							className="new-products-viewall"
-							onClick={() => setShowAll((v) => !v)}
+							onClick={saveScrollAndNavigate}
 						>
-							{showAll ? "Show Less" : "View All"}
-						</button>
+							View All
+						</Link>
 					)}
 				</div>
 

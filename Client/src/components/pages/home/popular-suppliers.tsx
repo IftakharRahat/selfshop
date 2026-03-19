@@ -1,124 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useCallback, useEffect } from "react";
-import { MapPin, BadgeCheck, Star, ChevronLeft, ChevronRight } from "lucide-react";
-import { getImageUrl } from "@/lib/utils";
+import { useRef, useCallback, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useGetPopularSuppliersQuery } from "@/redux/features/home/homeApi";
+import SupplierCard, { SupplierItem } from "@/components/shared/SupplierCard/SupplierCard";
 
-interface SupplierItem {
-    id: number;
-    company_name: string;
-    slug: string;
-    logo_path: string | null;
-    banner_path: string | null;
-    business_type: string | null;
-    city: string | null;
-    is_verified_badge: boolean;
-    products_count: number;
-    avg_product_rating?: number;
-    review_count?: number;
-}
-
-/** Logo with fallback initials */
-function SupplierLogo({
-    logo,
-    name,
-}: {
-    logo: string | null;
-    name: string;
-}) {
-    const [errored, setErrored] = useState(false);
-
-    if (!logo || errored) {
-        const initials = name
-            .split(" ")
-            .map((w) => w[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase();
-        return (
-            <div className="supplier-logo-fallback">
-                {initials}
-            </div>
-        );
-    }
-
-    return (
-        <Image
-            src={getImageUrl(logo)}
-            alt={name}
-            width={80}
-            height={80}
-            className="object-cover rounded-full w-full h-full"
-            onError={() => setErrored(true)}
-        />
-    );
-}
-
-function SupplierCard({ supplier }: { supplier: SupplierItem }) {
-    return (
-        <Link href={`/supplier/${supplier.slug}`}>
-            <div className="supplier-card">
-                {/* Circular logo */}
-                <div className="supplier-logo-wrapper">
-                    <SupplierLogo logo={supplier.logo_path} name={supplier.company_name} />
-                    {supplier.is_verified_badge && (
-                        <span className="supplier-verified-badge">
-                            <BadgeCheck className="w-3 h-3" />
-                        </span>
-                    )}
-                </div>
-
-                {/* Name */}
-                <p className="supplier-name">
-                    {supplier.company_name}
-                </p>
-
-                {/* City */}
-                {supplier.city && (
-                    <div className="supplier-city">
-                        <MapPin className="w-3 h-3" />
-                        <span>{supplier.city}</span>
-                    </div>
-                )}
-
-                {/* Rating */}
-                {(supplier.avg_product_rating ?? 0) > 0 && (
-                    <div className="supplier-rating">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="supplier-rating-value">
-                            {supplier.avg_product_rating}
-                        </span>
-                        <span className="supplier-rating-count">
-                            ({supplier.review_count})
-                        </span>
-                    </div>
-                )}
-
-                {/* Product count badge */}
-                <span className="supplier-product-count">
-                    {supplier.products_count} {supplier.products_count === 1 ? "Product" : "Products"}
-                </span>
-            </div>
-        </Link>
-    );
-}
-
-const COLS_VISIBLE = 6; // columns visible at once on desktop
-const ROWS = 2;
-const INITIAL_VISIBLE = COLS_VISIBLE * ROWS; // 12 cards shown initially (2 rows × 6 cols)
+const INITIAL_VISIBLE = 16; // 8 per row × 2 rows on desktop
+const SCROLL_KEY = "selfshop_scroll_suppliers";
 
 const PopularSuppliers = () => {
     const { data, isLoading } = useGetPopularSuppliersQuery(undefined);
     const suppliers: SupplierItem[] = data?.data ?? [];
-    const [showAll, setShowAll] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const sectionRef = useRef<HTMLElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
 
-    const displayedSuppliers = showAll ? suppliers : suppliers.slice(0, INITIAL_VISIBLE);
+    const displayedSuppliers = suppliers.slice(0, INITIAL_VISIBLE);
 
     const updateScrollButtons = useCallback(() => {
         const el = scrollRef.current;
@@ -130,7 +29,6 @@ const PopularSuppliers = () => {
     useEffect(() => {
         const el = scrollRef.current;
         if (!el) return;
-        // Initial check after render
         const timer = setTimeout(updateScrollButtons, 100);
         el.addEventListener("scroll", updateScrollButtons, { passive: true });
         window.addEventListener("resize", updateScrollButtons);
@@ -141,31 +39,48 @@ const PopularSuppliers = () => {
         };
     }, [updateScrollButtons, displayedSuppliers]);
 
+    // Restore scroll position when returning from "View All" page
+    useEffect(() => {
+        const saved = sessionStorage.getItem(SCROLL_KEY);
+        if (saved) {
+            const timer = setTimeout(() => {
+                window.scrollTo({ top: parseInt(saved, 10), behavior: "instant" as ScrollBehavior });
+                sessionStorage.removeItem(SCROLL_KEY);
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, []);
+
     const scroll = (direction: "left" | "right") => {
         const el = scrollRef.current;
         if (!el) return;
         const cardWidth = el.querySelector(".supplier-card")?.getBoundingClientRect().width ?? 180;
-        const scrollAmount = cardWidth * 3; // scroll 3 cards at a time
+        const scrollAmount = cardWidth * 3;
         el.scrollBy({
             left: direction === "right" ? scrollAmount : -scrollAmount,
             behavior: "smooth",
         });
     };
 
+    const saveScrollAndNavigate = () => {
+        sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    };
+
     if (isLoading || suppliers.length === 0) return null;
 
     return (
-        <section className="popular-suppliers-section">
+        <section className="popular-suppliers-section" ref={sectionRef}>
             {/* Header row */}
             <div className="popular-suppliers-header">
                 <h2 className="popular-suppliers-title">Popular Suppliers</h2>
                 {suppliers.length > INITIAL_VISIBLE && (
-                    <button
+                    <Link
+                        href="/all-suppliers"
                         className="popular-suppliers-viewall"
-                        onClick={() => setShowAll((v) => !v)}
+                        onClick={saveScrollAndNavigate}
                     >
-                        {showAll ? "Show Less" : `View All (${suppliers.length})`}
-                    </button>
+                        View All ({suppliers.length})
+                    </Link>
                 )}
             </div>
 
