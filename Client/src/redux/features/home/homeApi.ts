@@ -163,9 +163,10 @@ const homeApi = baseApi.injectEndpoints({
 			providesTags: ["categories"],
 		}),
 		getPopularSuppliers: builder.query({
-			query: () => ({
+			query: (sort?: string) => ({
 				url: `/popular-vendors`,
 				method: "GET",
+				params: sort ? { sort } : undefined,
 			}),
 			providesTags: ["categories"],
 		}),

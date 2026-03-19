@@ -208,26 +208,48 @@ body {
   display: none;
 }
 
-/* Two-row grid using CSS grid with auto-flow column */
+/* Mobile: single scrollable row | Desktop: 2-row centered grid */
 .popular-suppliers-grid {
-  display: grid;
-  grid-template-rows: repeat(2, auto);
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(140px, 160px);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 0.75rem;
   padding-bottom: 0.25rem;
 }
 
+.popular-suppliers-grid > * {
+  flex: 0 0 130px;
+  min-width: 130px;
+}
+
 @media (min-width: 640px) {
+  .popular-suppliers-grid > * {
+    flex: 0 0 150px;
+    min-width: 150px;
+  }
+}
+
+@media (min-width: 768px) {
   .popular-suppliers-grid {
-    grid-auto-columns: minmax(155px, 175px);
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    justify-content: center;
     gap: 1rem;
+  }
+  .popular-suppliers-grid > * {
+    flex: unset;
+    min-width: unset;
   }
 }
 
 @media (min-width: 1024px) {
   .popular-suppliers-grid {
-    grid-auto-columns: minmax(165px, 185px);
+    grid-template-columns: repeat(8, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .popular-suppliers-grid {
+    grid-template-columns: repeat(8, 1fr);
   }
 }
 
@@ -421,5 +443,158 @@ body {
 @media (min-width: 640px) {
   .supplier-product-count {
     font-size: 0.75rem;
+  }
+}
+
+/* ─── All Items Page (shared by All Suppliers & All New Products) ─── */
+.all-items-page {
+  max-width: var(--container-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+@media (min-width: 640px) {
+  .all-items-page {
+    padding: 2rem 1.5rem 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .all-items-page {
+    padding: 2.5rem 2rem 5rem;
+  }
+}
+
+.all-items-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.all-items-back-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #E5005F;
+  background: transparent;
+  border: 1.5px solid #E5005F;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.all-items-back-btn:hover {
+  background: #E5005F;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(229, 0, 95, 0.35);
+  transform: translateY(-1px);
+}
+
+.all-items-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #322F35;
+  text-align: center;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .all-items-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .all-items-title {
+    font-size: 1.875rem;
+  }
+}
+
+/* All Suppliers — responsive grid */
+.all-suppliers-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .all-suppliers-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .all-suppliers-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .all-suppliers-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .all-suppliers-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* ─── Supplier Filter Tabs ─── */
+.supplier-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.supplier-filter-tab {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  padding: 0.45rem 1.15rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.supplier-filter-tab:hover {
+  border-color: #E5005F;
+  color: #E5005F;
+  background: #fdf2f8;
+}
+
+.supplier-filter-tab-active {
+  background: #E5005F;
+  color: #fff;
+  border-color: #E5005F;
+}
+
+.supplier-filter-tab-active:hover {
+  background: #c80050;
+  color: #fff;
+  border-color: #c80050;
+}
+
+@media (min-width: 640px) {
+  .supplier-filter-tab {
+    font-size: 0.85rem;
+    padding: 0.5rem 1.35rem;
   }
 }

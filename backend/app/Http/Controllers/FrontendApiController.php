@@ -580,9 +580,9 @@ class FrontendApiController extends Controller
     public function newproducts(Request $request)
     {
         $limit = $request->limit ?? 15;
-        $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
+        $total = Product::visibleOnStorefront()->count();
 
-        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id')->latest('id')->paginate($limit);
+        $searchcontents = Product::visibleOnStorefront()->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id')->latest('id')->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -3772,8 +3772,10 @@ class FrontendApiController extends Controller
     /**
  * Return approved vendors ordered by average product rating (from reviews).
  */
-public function popularVendors()
+public function popularVendors(Request $request)
 {
+    $sort = $request->input('sort', 'best_rated');
+
     $vendors = Vendor::where('status', 'approved')
         ->withCount('products')
         ->get([
@@ -3787,6 +3789,7 @@ public function popularVendors()
             'business_type',
             'city',
             'is_verified_badge',
+            'created_at',
         ]);
 
     // Compute average rating across all products for each vendor
@@ -3802,8 +3805,19 @@ public function popularVendors()
         $vendor->slug = $vendor->public_slug;
     }
 
-    // Sort by average rating descending, then by product count
-    $sorted = $vendors->sortByDesc('avg_product_rating')->values();
+    // Apply sort
+    switch ($sort) {
+        case 'top_supplier':
+            $sorted = $vendors->sortByDesc('products_count')->values();
+            break;
+        case 'recent':
+            $sorted = $vendors->sortByDesc('created_at')->values();
+            break;
+        case 'best_rated':
+        default:
+            $sorted = $vendors->sortByDesc('avg_product_rating')->values();
+            break;
+    }
 
     return response()->json([
         'status' => true,
