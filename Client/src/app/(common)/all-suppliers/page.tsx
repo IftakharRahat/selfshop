@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import SupplierCard, { SupplierItem } from "@/components/shared/SupplierCard/SupplierCard";
 import { useGetPopularSuppliersQuery } from "@/redux/features/home/homeApi";
 
-const SCROLL_KEY = "selfshop_scroll_suppliers";
 const ITEMS_PER_PAGE = 30;
 
 const FILTER_OPTIONS = [
@@ -16,18 +15,30 @@ const FILTER_OPTIONS = [
     { value: "recent", label: "Recent Supplier" },
 ] as const;
 
-export default function AllSuppliersPage() {
+function AllSuppliersContent() {
     const router = useRouter();
-    const [activeFilter, setActiveFilter] = useState("best_rated");
+    const searchParams = useSearchParams();
+
+    // Read filter & page from URL search params (preserved in browser history)
+    const activeFilter = searchParams.get("filter") || "best_rated";
+    const currentPage = parseInt(searchParams.get("page") || "1", 10);
+
     const { data, isLoading, isFetching } = useGetPopularSuppliersQuery(activeFilter);
     const allSuppliers: SupplierItem[] = data?.data ?? [];
 
-    const [currentPage, setCurrentPage] = useState(1);
     const lastPage = Math.ceil(allSuppliers.length / ITEMS_PER_PAGE);
     const displayedSuppliers = allSuppliers.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
     );
+
+    // Helper to build the URL with updated search params
+    const buildUrl = useCallback((filter: string, page: number) => {
+        const params = new URLSearchParams();
+        params.set("filter", filter);
+        params.set("page", String(page));
+        return `/all-suppliers?${params.toString()}`;
+    }, []);
 
     // Generate page numbers for pagination
     const getPageNumbers = () => {
@@ -47,24 +58,16 @@ export default function AllSuppliersPage() {
     };
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        router.push(buildUrl(activeFilter, page), { scroll: false });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleFilterChange = (filter: string) => {
-        setActiveFilter(filter);
-        setCurrentPage(1);
+        router.push(buildUrl(filter, 1), { scroll: false });
     };
 
     const handleBack = () => {
-        router.back();
-        setTimeout(() => {
-            const saved = sessionStorage.getItem(SCROLL_KEY);
-            if (saved) {
-                window.scrollTo({ top: parseInt(saved, 10), behavior: "instant" as ScrollBehavior });
-                sessionStorage.removeItem(SCROLL_KEY);
-            }
-        }, 300);
+        router.push("/");
     };
 
     return (
@@ -161,5 +164,19 @@ export default function AllSuppliersPage() {
                 </div>
             )}
         </section>
+    );
+}
+
+export default function AllSuppliersPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex justify-center py-16">
+                    <div className="w-8 h-8 border-3 border-[#E5005F] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
+        >
+            <AllSuppliersContent />
+        </Suspense>
     );
 }

@@ -17,51 +17,59 @@
     </div>
 
     <div class="row g-3 mb-3">
-        <div class="col-md-2">
+        <div class="col">
             <div class="admin-content-card">
-                <div class="admin-card-body text-center">
-                    <div class="small text-muted">Total Supplier</div>
-                    <div style="font-size: 20px; font-weight: 700;">{{ number_format($totalSuppliers) }}</div>
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">Total Supplier</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($totalSuppliers) }}</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col">
             <div class="admin-content-card">
-                <div class="admin-card-body text-center">
-                    <div class="small text-muted">Active Supplier</div>
-                    <div style="font-size: 20px; font-weight: 700;">{{ number_format($activeSuppliers) }}</div>
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">Active Supplier</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($activeSuppliers) }}</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col">
             <div class="admin-content-card">
-                <div class="admin-card-body text-center">
-                    <div class="small text-muted">Pending Supplier</div>
-                    <div style="font-size: 20px; font-weight: 700;">{{ number_format($pendingSuppliers) }}</div>
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">Pending Supplier</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($pendingSuppliers) }}</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col">
             <div class="admin-content-card">
-                <div class="admin-card-body text-center">
-                    <div class="small text-muted">Total Payment</div>
-                    <div style="font-size: 20px; font-weight: 700;">{{ number_format($totalSupplierPayment, 2) }}</div>
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">Total Products</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($totalProducts) }}</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col">
             <div class="admin-content-card">
-                <div class="admin-card-body text-center">
-                    <div class="small text-muted">Pending Payment</div>
-                    <div style="font-size: 20px; font-weight: 700;">{{ number_format($pendingSupplierPayment, 2) }}</div>
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">Total Payment</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($totalSupplierPayment, 2) }}</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col">
             <div class="admin-content-card">
-                <div class="admin-card-body text-center">
-                    <div class="small text-muted">All Supplier Account Balance</div>
-                    <div style="font-size: 20px; font-weight: 700;">{{ number_format($totalSupplierAccountBalance, 2) }}</div>
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">Pending Payment</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($pendingSupplierPayment, 2) }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="admin-content-card">
+                <div class="admin-card-body text-center px-1 py-3">
+                    <div class="small text-muted" style="font-size: 11px;">All App Balance</div>
+                    <div style="font-size: 18px; font-weight: 700;">{{ number_format($totalSupplierAccountBalance, 2) }}</div>
                 </div>
             </div>
         </div>
@@ -102,6 +110,7 @@
                             <th>Supplier</th>
                             <th>Contact</th>
                             <th>Status</th>
+                            <th>Products</th>
                             <th>Orders</th>
                             <th>Sales</th>
                             <th>Commission</th>
@@ -127,6 +136,7 @@
                                         {{ ucfirst($supplier->status) }}
                                     </span>
                                 </td>
+                                <td>{{ number_format((int) $supplier->products_count) }}</td>
                                 <td>{{ number_format((int) $supplier->order_count) }}</td>
                                 <td>{{ number_format((float) $supplier->sales_total, 2) }}</td>
                                 <td>{{ number_format((float) $supplier->commission_total, 2) }}</td>
@@ -146,7 +156,7 @@
             </div>
         </div>
         <div class="admin-card-body d-flex justify-content-center">
-            {{ $suppliers->links() }}
+            {{ $suppliers->links('vendor.pagination.admin') }}
         </div>
     </div>
 </div>

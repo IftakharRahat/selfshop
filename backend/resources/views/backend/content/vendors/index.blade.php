@@ -15,9 +15,6 @@
         </nav>
     </div>
 
-    @if(session('message'))
-    <div class="alert alert-success">{{ session('message') }}</div>
-    @endif
 
     <div class="row g-3 mb-3">
         <div class="col-md-2">
@@ -166,6 +163,11 @@
                                         </form>
                                     @endif
                                 @endif
+                                <form action="{{ route('admin.vendors.destroy', $vendor->id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete {{ addslashes($vendor->company_name) }} and all their data? This cannot be undone.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger mb-1">Delete</button>
+                                </form>
                             </td>
                         </tr>
                         @empty
@@ -177,7 +179,7 @@
                 </table>
             </div>
         </div>
-        <div class="admin-card-body d-flex justify-content-center">{{ $vendors->links() }}</div>
+        <div class="admin-card-body d-flex justify-content-center">{{ $vendors->links('vendor.pagination.admin') }}</div>
     </div>
 </div>
 @endsection

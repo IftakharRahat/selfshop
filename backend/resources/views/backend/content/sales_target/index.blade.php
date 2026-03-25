@@ -127,7 +127,7 @@
                     </div>
 
                     <div class="mt-3">
-                        {{ $targets->links() }}
+                        {{ $targets->links('vendor.pagination.admin') }}
                     </div>
                 </div>
             </div>
