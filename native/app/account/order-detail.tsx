@@ -24,23 +24,25 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }
 };
 
 export default function OrderDetailScreen() {
-  const { orderNumber } = useLocalSearchParams<{ orderNumber: string }>();
+  const params = useLocalSearchParams<{ orderNumber?: string; invoiceID?: string; id?: string }>();
+  const invoiceID = params.invoiceID ?? params.orderNumber ?? "";
   const queryClient = useQueryClient();
 
   const orderQuery = useQuery({
-    queryKey: ["order", orderNumber],
+    queryKey: ["order", invoiceID],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/orders/${orderNumber}`);
+      // Try reseller track-order API first (works with invoiceID)
+      const { data } = await apiClient.get(`/track-order?invoiceID=${invoiceID}`);
       return data?.data ?? data;
     },
-    enabled: !!orderNumber,
+    enabled: !!invoiceID,
   });
 
   const cancelMutation = useMutation({
     mutationFn: (orderId: number) => apiClient.post(`/orders/${orderId}/cancel`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["order", orderNumber] });
+      queryClient.invalidateQueries({ queryKey: ["order", invoiceID] });
       Alert.alert("Success", "Order cancelled successfully");
     },
     onError: (err: any) => {
@@ -48,8 +50,8 @@ export default function OrderDetailScreen() {
     },
   });
 
+  // track-order returns the order directly, consumer /orders returns { order: {...} }
   const orderData = orderQuery.data?.order ?? orderQuery.data;
-  const deliveryInfo = orderQuery.data?.deliveryInfo ?? orderQuery.data?.delivery_info;
 
   if (orderQuery.isLoading) {
     return (
@@ -72,15 +74,23 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const status = STATUS_CONFIG[orderData.status] ?? STATUS_CONFIG.pending;
-  const canCancel = orderData.status === "pending";
-  const date = new Date(orderData.createdAt ?? orderData.created_at).toLocaleDateString("en-BD", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // Handle both consumer and reseller field names
+  const displayStatus = orderData.customer_status ?? orderData.display_status ?? orderData.status ?? "Pending";
+  const statusKey = displayStatus.toLowerCase().replace(/\s+/g, "");
+  const status = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
+  const canCancel = statusKey === "pending";
+  const orderTitle = orderData.invoiceID ?? orderData.orderNumber ?? orderData.order_number ?? "Order";
+  const date = orderData.orderDate ?? (orderData.createdAt ?? orderData.created_at
+    ? new Date(orderData.createdAt ?? orderData.created_at).toLocaleDateString("en-BD", {
+        day: "numeric", month: "long", year: "numeric",
+      })
+    : "");
+  const items = orderData.products ?? orderData.items ?? [];
+  const customerInfo = orderData.customers ?? {};
+  const shippingName = customerInfo.customerName ?? orderData.shippingName ?? orderData.shipping_name ?? "";
+  const shippingPhone = customerInfo.customerPhone ?? orderData.shippingPhone ?? orderData.shipping_phone ?? "";
+  const shippingAddress = customerInfo.customerAddress ?? orderData.shippingAddress ?? orderData.shipping_address ?? "";
+  const paymentMethod = orderData.payment_method ?? orderData.paymentMethod ?? "";
 
   function handleCancel() {
     Alert.alert(
@@ -102,7 +112,7 @@ export default function OrderDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: orderData.orderNumber ?? orderData.order_number,
+          title: orderTitle,
           headerShadowVisible: false,
           headerStyle: { backgroundColor: "#fff" },
         }}
@@ -111,42 +121,37 @@ export default function OrderDetailScreen() {
         {/* Status Card */}
         <View style={styles.statusCard}>
           <View style={[styles.statusBadgeLarge, { backgroundColor: status.bg }]}>
-            <Text fontSize="$4" fontWeight="bold" color={status.color}>
+            <Text fontSize="$4" fontWeight="bold" color={status.color as any}>
               {status.label}
             </Text>
           </View>
           <Text fontSize="$2" color="#8E8E93" mt="$2">
             {date}
           </Text>
-          {deliveryInfo && (
-            <Text fontSize="$3" color="#1A1A2E" mt="$1">
-              Delivery: {(deliveryInfo.status ?? "").replace(/_/g, " ")}
-            </Text>
-          )}
         </View>
 
         {/* Items */}
         <View style={styles.section}>
           <Text fontSize="$4" fontWeight="bold" color="#1A1A2E" mb="$3">
-            Items ({orderData.items?.length ?? 0})
+            Items ({items.length})
           </Text>
-          {orderData.items?.map((item: any) => (
-            <View key={item.id} style={styles.itemRow}>
+          {items.map((item: any, idx: number) => (
+            <View key={item.id ?? idx} style={styles.itemRow}>
               <Image
-                source={{ uri: item.productImage ?? item.product_image }}
+                source={{ uri: item.productImage ?? item.product_image ?? item.ViewProductImage }}
                 style={styles.itemImage}
                 resizeMode="cover"
               />
               <View style={styles.itemInfo}>
                 <Text fontSize="$3" fontWeight="600" color="#1A1A2E" numberOfLines={2}>
-                  {item.productName ?? item.product_name}
+                  {item.productName ?? item.product_name ?? item.ProductName ?? "Product"}
                 </Text>
                 <Text fontSize="$2" color="#8E8E93">
-                  {item.productSize ?? item.product_size} × {item.quantity}
+                  {item.productSize ?? item.product_size ?? ""} × {item.quantity ?? 1}
                 </Text>
               </View>
               <Text fontSize="$3" fontWeight="bold" color="#1A1A2E">
-                ৳{item.totalPrice ?? item.total_price}
+                ৳{item.totalPrice ?? item.total_price ?? item.sellingPrice ?? item.price ?? 0}
               </Text>
             </View>
           ))}
@@ -157,18 +162,15 @@ export default function OrderDetailScreen() {
           <Text fontSize="$4" fontWeight="bold" color="#1A1A2E" mb="$3">
             Shipping Information
           </Text>
-          <InfoRow icon="person-outline" label={orderData.shippingName ?? orderData.shipping_name} />
-          <InfoRow icon="call-outline" label={orderData.shippingPhone ?? orderData.shipping_phone} />
-          <InfoRow
-            icon="location-outline"
-            label={`${orderData.shippingAddress ?? orderData.shipping_address}, ${orderData.shippingCity ?? orderData.shipping_city}${(orderData.shippingArea ?? orderData.shipping_area) ? `, ${orderData.shippingArea ?? orderData.shipping_area}` : ""}`}
-          />
-          {(orderData.paymentMethod ?? orderData.payment_method) && (
+          {shippingName ? <InfoRow icon="person-outline" label={shippingName} /> : null}
+          {shippingPhone ? <InfoRow icon="call-outline" label={shippingPhone} /> : null}
+          {shippingAddress ? <InfoRow icon="location-outline" label={shippingAddress} /> : null}
+          {paymentMethod ? (
             <InfoRow
               icon="card-outline"
-              label={(orderData.paymentMethod ?? orderData.payment_method).replace(/_/g, " ").toUpperCase()}
+              label={paymentMethod.replace(/_/g, " ").toUpperCase()}
             />
-          )}
+          ) : null}
         </View>
 
         {/* Pricing */}
