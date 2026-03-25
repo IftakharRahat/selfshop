@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
+  TextInput, Alert,
 } from "react-native";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
@@ -26,7 +27,6 @@ export default function ProductDetailScreen() {
   const insets = useSafeAreaInsets();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const queryClient = useQueryClient();
-  const [qty, setQty] = useState(1);
   const [imgIdx, setImgIdx] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
@@ -34,6 +34,11 @@ export default function ProductDetailScreen() {
   const [showActivation, setShowActivation] = useState(false);
   const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
+
+  // ── Variant / Size ordering state ──
+  const [activeVariantIdx, setActiveVariantIdx] = useState(0);
+  const [variantQuantities, setVariantQuantities] = useState<Record<number, Record<string, number>>>({});
+  const [variantSellingPrices, setVariantSellingPrices] = useState<Record<number, Record<string, string>>>({});
 
   // Bottom sheet spring animation
   const sheetAnim = useRef(new Animated.Value(400)).current;
@@ -58,7 +63,7 @@ export default function ProductDetailScreen() {
     enabled: !!slug && slug.length > 0,
   });
 
-  // ── Shop hooks (MUST be before early returns to respect Rules of Hooks) ──
+  // ── Shop hooks ──
   const productId = (data?.product_details ?? data?.product ?? data)?.id;
 
   const shopCheckQuery = useQuery({
@@ -85,6 +90,22 @@ export default function ProductDetailScreen() {
     },
     onError: () => {
       toast.error("Something went wrong. Please try again.");
+    },
+  });
+
+  // ── Add to Cart mutation ──
+  const addToCartMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data: d } = await apiClient.post("/user-add-to-cart", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return d;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
+    },
+    onError: () => {
+      toast.error("Failed to add to cart");
     },
   });
 
@@ -125,18 +146,27 @@ export default function ProductDetailScreen() {
   try { postImages = product.PostImage ? JSON.parse(product.PostImage) : []; } catch { postImages = []; }
   const allImgs: string[] = [mainImg, ...postImages].filter(Boolean);
 
+  // Commission
+  const commissionPercent = parseFloat(data.commission_percent || product.commission_percent || "0");
+  const commissionFactor = 1 + (commissionPercent / 100);
+
   // Pricing
-  const salePrice = Number(product.storefront_price ?? product.ProductSalePrice ?? 0);
+  const basePrice = Number(product.ProductResellerPrice || product.ProductRegularPrice || 0);
   const regularPrice = Number(product.ProductRegularPrice ?? 0);
-  const hasDiscount = regularPrice > salePrice && regularPrice > 0;
-  const discountPercent = hasDiscount ? Math.round(((regularPrice - salePrice) / regularPrice) * 100) : 0;
+  const priceTiers: any[] = product.price_tiers || [];
+  const hasTiers = priceTiers.length > 0;
 
   // Variants
   const variants: any[] = product.varients ?? [];
 
+  // Selling type
+  const sellingType: "wholesale" | "dropshipping" | "both" = product.selling_type || "both";
+  const showWholesale = (sellingType === "wholesale" || sellingType === "both") && hasTiers;
+  const showDropshipping = sellingType === "dropshipping" || sellingType === "both";
+
   // Meta
   const categoryName = product.categories?.category_name ?? "";
-  const vendorName = product.vendor?.company_name ?? product.vendor?.CompanyName ?? "";
+  const vendorName = product.vendor?.company_name || product.vendor?.CompanyName || "";
   const minQty = Number(product.minimum_qty ?? 1);
   const stockQty = Number(product.qty ?? 0);
   const sku = product.ProductSku ?? "";
@@ -146,14 +176,236 @@ export default function ProductDetailScreen() {
   const rawDesc = product.ProductDetails ?? product.ProductBreaf ?? "";
   const cleanDesc = rawDesc.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 
+  // ── Computed sizes for current variant ──
+  const currentVariant = variants[activeVariantIdx];
+  const currentVarId = currentVariant?.id ?? 0;
+
+  let sizesForTable: Array<{ size_name: string; price: any; qty: number; bulk_prices: any[] }> = [];
+  if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+    sizesForTable = currentVariant.sizes.map((sz: any) => ({
+      size_name: sz.size_name,
+      price: sz.price,
+      qty: sz.qty ?? 0,
+      bulk_prices: sz.bulkPrices || sz.bulk_prices || [],
+    }));
+  } else {
+    const overrideStock = currentVariant ? currentVariant.qty ?? stockQty : stockQty;
+    const productSizes = Array.isArray(product.size)
+      ? product.size
+      : typeof product.size === "string"
+        ? (() => { try { return JSON.parse(product.size); } catch { return []; } })()
+        : [];
+    const legacySizes = productSizes.length > 0 ? productSizes : ["Default"];
+    sizesForTable = legacySizes.map((sName: string) => ({
+      size_name: sName,
+      price: null,
+      qty: overrideStock,
+      bulk_prices: [],
+    }));
+  }
+
+  // Total quantity across all variants and sizes
+  const totalQuantity = Object.values(variantQuantities)
+    .flatMap((sizes) => Object.values(sizes))
+    .reduce((a, b) => a + b, 0);
+
+  // Active tier based on total qty
+  const activeTier = hasTiers
+    ? priceTiers
+        .slice()
+        .sort((a: any, b: any) => b.min_qty - a.min_qty)
+        .find((t: any) => totalQuantity >= t.min_qty) ?? priceTiers[0]
+    : null;
+
+  // Get price for a size item
+  const getSizePrice = (sizeItem: any, qty: number): number => {
+    if (flashSale && flashSale.flash_price > 0) {
+      return parseFloat(flashSale.flash_price);
+    }
+    // Size-level bulk tiers
+    const tiers = sizeItem.bulk_prices || [];
+    if (tiers.length > 0) {
+      const tier = tiers.slice().sort((a: any, b: any) => b.min_qty - a.min_qty).find((t: any) => qty >= t.min_qty);
+      if (tier) return Math.round(parseFloat(tier.bulk_price || tier.unit_price) * commissionFactor * 100) / 100;
+    }
+    // Size-level base price
+    if (sizeItem.price !== null && sizeItem.price !== undefined) {
+      const sp = parseFloat(sizeItem.price);
+      if (sp > 0) return Math.round(sp * commissionFactor * 100) / 100;
+    }
+    // Product-level tier
+    if (hasTiers && activeTier) {
+      return Math.round(parseFloat(activeTier.unit_price) * commissionFactor * 100) / 100;
+    }
+    // Fallback
+    return Math.round(basePrice * commissionFactor * 100) / 100;
+  };
+
+  // Display price (for hero section)
+  const salePrice = flashSale && flashSale.flash_price > 0
+    ? parseFloat(flashSale.flash_price)
+    : activeTier
+      ? Math.round(parseFloat(activeTier.unit_price) * commissionFactor * 100) / 100
+      : Math.round(
+          Number(product.storefront_price ?? product.ProductSalePrice ?? basePrice) *
+            (product.storefront_price ? 1 : commissionFactor) *
+            100
+        ) / 100;
+
+  const hasDiscount = regularPrice > salePrice && regularPrice > 0;
+  const discountPercent = hasDiscount ? Math.round(((regularPrice - salePrice) / regularPrice) * 100) : 0;
+
+  // ── Qty handlers ──
+  const handleQtyChange = (variantId: number, size: string, type: "increase" | "decrease", stock?: number) => {
+    setVariantQuantities((prev) => {
+      const varSizes = { ...(prev[variantId] || {}) };
+      const cur = varSizes[size] || 0;
+      let next = type === "increase" ? cur + 1 : Math.max(0, cur - 1);
+      if (type === "increase" && stock !== undefined && next > stock) {
+        next = stock;
+        toast.error(`Only ${stock} items in stock for size ${size}`);
+      }
+      varSizes[size] = next;
+      return { ...prev, [variantId]: varSizes };
+    });
+  };
+
+  const handleSellingPriceChange = (variantId: number, size: string, value: string) => {
+    setVariantSellingPrices((prev) => {
+      const varSizes = { ...(prev[variantId] || {}) };
+      varSizes[size] = value;
+      return { ...prev, [variantId]: varSizes };
+    });
+  };
+
+  // ── Get selected items for cart submission ──
+  const getSelectedItems = () => {
+    const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number; sellingPrice: number | null }[] = [];
+    for (const [vid, sizes] of Object.entries(variantQuantities)) {
+      const v = variants.find((vr: any) => vr.id === Number(vid));
+      for (const [sizeName, qty] of Object.entries(sizes)) {
+        if (qty > 0) {
+          const variantLabel = v?.color_name || v?.title || "";
+          const sizeItem = v?.sizes?.find((sz: any) => sz.size_name === sizeName) || sizesForTable.find(sz => sz.size_name === sizeName);
+          const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : salePrice;
+          const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
+          const sp = spStr ? parseFloat(spStr) : null;
+          items.push({
+            variantId: Number(vid),
+            variantTitle: variantLabel,
+            size: sizeName,
+            qty,
+            price: itemPrice,
+            sellingPrice: sp && !isNaN(sp) ? sp : null,
+          });
+        }
+      }
+    }
+    return items;
+  };
+
+  // ── Add to Cart ──
+  const handleAddToCart = async () => {
+    if (!isLoggedIn) {
+      router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
+      return;
+    }
+
+    const items = getSelectedItems();
+    if (items.length === 0) {
+      toast.error("Please select at least one item");
+      return;
+    }
+
+    if (showDropshipping) {
+      const invalid = items.find(i => !i.sellingPrice || i.sellingPrice < i.price);
+      if (invalid) {
+        toast.error("Please enter a valid selling price (≥ cost price) for all items");
+        return;
+      }
+    }
+
+    let successCount = 0;
+    for (const item of items) {
+      const formData = new FormData();
+      formData.append("product_id", String(product.id));
+      formData.append("price", item.price.toString());
+      if (showDropshipping && item.sellingPrice) {
+        formData.append("selling_price", item.sellingPrice.toString());
+      }
+      formData.append("qty", item.qty.toString());
+      formData.append("size", item.size);
+      if (item.variantId) formData.append("varient_id", item.variantId.toString());
+      if (item.variantTitle) formData.append("color", item.variantTitle);
+
+      try {
+        await addToCartMutation.mutateAsync(formData);
+        successCount++;
+      } catch { /* error handled in mutation */ }
+    }
+    if (successCount > 0) {
+      toast.success(`${successCount} item${successCount > 1 ? "s" : ""} added to cart`);
+      // Reset quantities after adding
+      setVariantQuantities({});
+      setVariantSellingPrices({});
+    }
+  };
+
+  // ── Buy Now ──
+  const handleBuyNow = async () => {
+    if (!isLoggedIn) {
+      router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
+      return;
+    }
+
+    const items = getSelectedItems();
+    if (items.length === 0) {
+      toast.error("Please select at least one item");
+      return;
+    }
+
+    if (showDropshipping) {
+      const invalid = items.find(i => !i.sellingPrice || i.sellingPrice < i.price);
+      if (invalid) {
+        toast.error("Please enter a valid selling price (≥ cost price) for all items");
+        return;
+      }
+    }
+
+    let lastSuccess = false;
+    for (const item of items) {
+      const formData = new FormData();
+      formData.append("product_id", String(product.id));
+      formData.append("price", item.price.toString());
+      if (showDropshipping && item.sellingPrice) {
+        formData.append("selling_price", item.sellingPrice.toString());
+      }
+      formData.append("qty", item.qty.toString());
+      formData.append("size", item.size);
+      if (item.variantId) formData.append("varient_id", item.variantId.toString());
+      if (item.variantTitle) formData.append("color", item.variantTitle);
+
+      try {
+        await addToCartMutation.mutateAsync(formData);
+        lastSuccess = true;
+      } catch { /* error handled */ }
+    }
+
+    if (lastSuccess) {
+      router.push("/order-confirmation" as any);
+    }
+  };
+
   const scrollToImage = (idx: number) => {
     imgRef.current?.scrollToIndex({ index: idx, animated: true });
     setImgIdx(idx);
   };
 
+  const formatBDT = (num: number, dec = 2) => num.toLocaleString("en-BD", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
   return (
     <View style={s.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 110 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 130 }}>
 
         {/* ═══ IMAGE GALLERY ═══ */}
         <View style={s.hero}>
@@ -187,7 +439,6 @@ export default function ProductDetailScreen() {
           <Pressable style={[s.overlayBtn, { top: insets.top + 8, right: 16 }]}>
             <Ionicons name="share-social-outline" size={20} color={DARK} />
           </Pressable>
-          {/* Image counter badge */}
           {allImgs.length > 1 && (
             <View style={s.imgCounter}>
               <Text fontSize={11} fontWeight="600" color="#fff">{imgIdx + 1}/{allImgs.length}</Text>
@@ -200,11 +451,7 @@ export default function ProductDetailScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbRow}>
             {allImgs.map((img, i) => (
               <Pressable key={i} onPress={() => scrollToImage(i)}>
-                <Image
-                  source={{ uri: img }}
-                  style={[s.thumbImg, imgIdx === i && s.thumbActive]}
-                  resizeMode="cover"
-                />
+                <Image source={{ uri: img }} style={[s.thumbImg, imgIdx === i && s.thumbActive]} resizeMode="cover" />
               </Pressable>
             ))}
           </ScrollView>
@@ -225,12 +472,31 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
+          {/* Selling Type Badge */}
+          <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+            {sellingType === "wholesale" && (
+              <View style={[s.typeBadge, { backgroundColor: "#ECFDF5" }]}>
+                <Text fontSize={10} fontWeight="700" color="#059669">🏭 Wholesale</Text>
+              </View>
+            )}
+            {sellingType === "dropshipping" && (
+              <View style={[s.typeBadge, { backgroundColor: "#EFF6FF" }]}>
+                <Text fontSize={10} fontWeight="700" color="#2563EB">🚀 Dropshipping</Text>
+              </View>
+            )}
+            {sellingType === "both" && (
+              <View style={[s.typeBadge, { backgroundColor: "#FFFBEB" }]}>
+                <Text fontSize={10} fontWeight="700" color="#D97706">🔄 Wholesale + Dropshipping</Text>
+              </View>
+            )}
+          </View>
+
           {/* Price */}
           <View style={s.priceSection}>
             {isResellerActive ? (
               <>
                 <Text fontSize={32} fontWeight="800" color={ACCENT} style={{ letterSpacing: -1 }}>
-                  ৳{salePrice.toLocaleString()}
+                  ৳{formatBDT(salePrice, 0)}
                 </Text>
                 {hasDiscount && (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
@@ -256,7 +522,7 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          {/* Product Name */}
+          {/* Name */}
           <Text fontSize={18} fontWeight="600" color={DARK} mt="$2" lineHeight={24}>
             {product.ProductName}
           </Text>
@@ -274,48 +540,38 @@ export default function ProductDetailScreen() {
                 <Text fontSize={11} fontWeight="600" color="#C62828">Out of Stock</Text>
               </View>
             )}
-            {sku ? (
-              <View style={s.metaChip}>
-                <Text fontSize={11} color="#666">SKU: {sku}</Text>
-              </View>
-            ) : null}
-            {categoryName ? (
-              <View style={s.metaChip}>
-                <Text fontSize={11} color="#666">{categoryName}</Text>
-              </View>
-            ) : null}
+            {sku ? <View style={s.metaChip}><Text fontSize={11} color="#666">SKU: {sku}</Text></View> : null}
+            {categoryName ? <View style={s.metaChip}><Text fontSize={11} color="#666">{categoryName}</Text></View> : null}
           </View>
         </View>
 
-        {/* ═══ QUANTITY ═══ */}
-        {isResellerActive && (
+        {/* ═══ WHOLESALE BULK TIER BADGES ═══ */}
+        {showWholesale && isResellerActive && (
           <View style={s.card}>
-            <View style={s.qtyRow}>
-              <View>
-                <Text fontSize="$4" fontWeight="700" color={DARK}>Quantity</Text>
-                <Text fontSize={11} color={GREY}>Min order: {minQty}</Text>
-              </View>
-              <View style={s.stepper}>
-                <Pressable
-                  style={[s.stepBtn, qty <= minQty && s.stepBtnDisabled]}
-                  onPress={() => setQty(p => Math.max(minQty, p - 1))}
-                  disabled={qty <= minQty}
-                >
-                  <Ionicons name="remove" size={18} color={qty <= minQty ? "#ccc" : ACCENT} />
-                </Pressable>
-                <View style={s.stepVal}>
-                  <Text fontSize="$5" fontWeight="800" color={DARK}>{qty}</Text>
-                </View>
-                <Pressable style={s.stepBtn} onPress={() => setQty(p => p + 1)}>
-                  <Ionicons name="add" size={18} color={ACCENT} />
-                </Pressable>
-              </View>
-            </View>
-            {/* Subtotal */}
-            <View style={s.subtotalRow}>
-              <Text fontSize="$3" color={GREY}>Subtotal</Text>
-              <Text fontSize="$5" fontWeight="800" color={DARK}>৳{(salePrice * qty).toLocaleString()}</Text>
-            </View>
+            <Text fontSize="$3" fontWeight="700" color={DARK} mb="$2">Wholesale Pricing</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {priceTiers.map((tier: any) => {
+                const isActive = activeTier?.id === tier.id;
+                const qtyLabel = tier.max_qty ? `${tier.min_qty}-${tier.max_qty} Pcs` : `${tier.min_qty}+ Pcs`;
+                return (
+                  <View
+                    key={tier.id}
+                    style={[
+                      s.tierBadge,
+                      isActive && { borderColor: ACCENT, backgroundColor: "#FFF0F5" },
+                    ]}
+                  >
+                    <Text fontSize={14} fontWeight="800" color={isActive ? ACCENT : DARK}>
+                      ৳{formatBDT(parseFloat(tier.unit_price) * commissionFactor, 0)}
+                    </Text>
+                    <Text fontSize={10} fontWeight="600" color={isActive ? ACCENT : GREY}>{qtyLabel}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            {totalQuantity > 0 && (
+              <Text fontSize={11} color={GREY} mt="$1">Total selected: {totalQuantity} pcs</Text>
+            )}
           </View>
         )}
 
@@ -339,37 +595,153 @@ export default function ProductDetailScreen() {
           </View>
         ) : null}
 
-        {/* ═══ VARIANTS ═══ */}
-        {variants.length > 0 && (
+        {/* ═══ VARIANT + SIZE ORDERING TABLE ═══ */}
+        {isResellerActive && (
           <View style={s.card}>
-            <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Colors & Variants</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-              {variants.map((v: any, i: number) => (
-                <View key={v.id} style={s.variantItem}>
-                  {v.image ? (
-                    <Image source={{ uri: v.image }} style={s.variantImg} resizeMode="cover" />
-                  ) : v.color_code ? (
-                    <View style={[s.variantSwatch, { backgroundColor: v.color_code }]} />
-                  ) : (
-                    <View style={s.variantFallback}>
-                      <Text fontSize={12} fontWeight="600" color={GREY}>{(v.color_name || v.title || "?").slice(0, 2)}</Text>
+            <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Select Items</Text>
+
+            {/* Variant (Color) Tabs */}
+            {variants.length > 0 && (
+              <View style={{ marginBottom: 12 }}>
+                <Text fontSize={12} fontWeight="600" color={GREY} mb="$1">
+                  Color: {currentVariant?.title || currentVariant?.color_name || "Default"}
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {variants.map((v: any, idx: number) => {
+                    const isAct = idx === activeVariantIdx;
+                    const selectedVarQty = Object.values(variantQuantities[Number(v.id)] ?? {}).reduce((sum, qty) => sum + Number(qty || 0), 0);
+                    const colorCode = typeof v.color_code === "string" ? v.color_code : "";
+                    return (
+                      <Pressable
+                        key={v.id}
+                        onPress={() => setActiveVariantIdx(idx)}
+                        style={[s.variantTab, isAct && { borderColor: ACCENT, backgroundColor: "#FFF0F5" }]}
+                      >
+                        {/* Qty badge */}
+                        {selectedVarQty > 0 && (
+                          <View style={s.variantQtyBadge}>
+                            <Text fontSize={9} fontWeight="800" color="#fff">{selectedVarQty}</Text>
+                          </View>
+                        )}
+                        {v.image ? (
+                          <Image source={{ uri: v.image }} style={s.variantTabImg} resizeMode="cover" />
+                        ) : colorCode ? (
+                          <View style={[s.variantSwatch, { backgroundColor: colorCode }]} />
+                        ) : (
+                          <View style={s.variantFallback}>
+                            <Text fontSize={12} fontWeight="600" color={GREY}>{(v.color_name || v.title || "?").slice(0, 2)}</Text>
+                          </View>
+                        )}
+                        <Text fontSize={10} fontWeight="600" color={isAct ? ACCENT : "#555"} numberOfLines={1}>
+                          {v.color_name || v.title || `V${idx + 1}`}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Size Rows */}
+            <View style={s.sizeTable}>
+              {/* Header */}
+              <View style={s.sizeTableHeader}>
+                <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={10} fontWeight="700" color={GREY}>SIZE</Text>
+                <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={10} fontWeight="700" color={GREY}>PRICE</Text>
+                <Text style={[s.sizeCol, { flex: 0.8, textAlign: "center" }]} fontSize={10} fontWeight="700" color={GREY}>STOCK</Text>
+                <Text style={[s.sizeCol, { flex: 1.5, textAlign: "right" }]} fontSize={10} fontWeight="700" color={GREY}>QTY</Text>
+              </View>
+
+              {sizesForTable.map((sz) => {
+                const size = sz.size_name;
+                const qty = variantQuantities[currentVarId]?.[size] || 0;
+                const displayPrice = getSizePrice(sz, qty);
+                const rowSPStr = variantSellingPrices[currentVarId]?.[size] || "";
+                const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
+                const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
+                const rowPriceInvalid = rowSPStr !== "" && rowSP < displayPrice;
+
+                return (
+                  <View key={size}>
+                    <View style={[s.sizeTableRow, qty > 0 && { backgroundColor: "#FFF0F5" }]}>
+                      <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={13} fontWeight="600" color={DARK}>{size}</Text>
+                      <View style={[s.sizeCol, { flex: 1.2, flexDirection: "row", alignItems: "center", gap: 3 }]}>
+                        <Text fontSize={13} fontWeight="600" color={DARK}>৳{formatBDT(displayPrice, 0)}</Text>
+                        {sz.bulk_prices?.length > 0 && (
+                          <View style={{ backgroundColor: "#ECFDF5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                            <Text fontSize={8} fontWeight="800" color="#059669">BULK</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[s.sizeCol, { flex: 0.8, textAlign: "center" }]} fontSize={12} fontWeight="500" color={sz.qty <= 0 ? "#EF4444" : "#666"}>
+                        {sz.qty <= 0 ? "Out" : sz.qty}
+                      </Text>
+                      <View style={[s.sizeCol, { flex: 1.5, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 2 }]}>
+                        <Pressable
+                          style={[s.miniStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
+                          onPress={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
+                          disabled={qty <= 0}
+                        >
+                          <Ionicons name="remove" size={14} color={qty <= 0 ? "#ccc" : DARK} />
+                        </Pressable>
+                        <View style={s.miniStepVal}>
+                          <Text fontSize={13} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
+                        </View>
+                        <Pressable
+                          style={[s.miniStepBtn, (qty >= sz.qty || sz.qty <= 0) && s.miniStepBtnDisabled]}
+                          onPress={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
+                          disabled={qty >= sz.qty || sz.qty <= 0}
+                        >
+                          <Ionicons name="add" size={14} color={(qty >= sz.qty || sz.qty <= 0) ? "#ccc" : ACCENT} />
+                        </Pressable>
+                      </View>
                     </View>
-                  )}
-                  <Text fontSize={10} color="#555" numberOfLines={1} textAlign="center">
-                    {v.color_name || v.title || `V${i + 1}`}
+
+                    {/* Dropshipping selling price row */}
+                    {showDropshipping && qty > 0 && (
+                      <View style={s.sellingPriceRow}>
+                        <Text fontSize={10} fontWeight="600" color={GREY}>My Price:</Text>
+                        <TextInput
+                          style={[
+                            s.sellingPriceInput,
+                            rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                            rowSP >= displayPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                          ]}
+                          keyboardType="numeric"
+                          value={rowSPStr}
+                          onChangeText={(v) => handleSellingPriceChange(currentVarId, size, v)}
+                          placeholder={`≥${Math.ceil(displayPrice)}`}
+                          placeholderTextColor="#aaa"
+                        />
+                        {rowEarnings > 0 ? (
+                          <Text fontSize={11} fontWeight="700" color="#059669">+৳{formatBDT(rowEarnings, 0)}</Text>
+                        ) : rowPriceInvalid ? (
+                          <Text fontSize={10} fontWeight="600" color="#EF4444">Too low</Text>
+                        ) : null}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+
+              {/* Total Row */}
+              {totalQuantity > 0 && (
+                <View style={s.sizeTableTotal}>
+                  <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Total</Text>
+                  <Text fontSize={13} fontWeight="800" color={ACCENT}>
+                    ৳{formatBDT(getSelectedItems().reduce((sum, i) => sum + i.price * i.qty, 0), 0)}
                   </Text>
+                  <Text fontSize={12} fontWeight="700" color={GREY} ml="$3">{totalQuantity} pcs</Text>
                 </View>
-              ))}
-            </ScrollView>
+              )}
+            </View>
           </View>
         )}
 
         {/* ═══ YOUTUBE ═══ */}
         {youtubeLink ? (
           <Pressable style={s.youtubeCard} onPress={() => Linking.openURL(youtubeLink)}>
-            <View style={s.ytIcon}>
-              <Ionicons name="play" size={18} color="#fff" />
-            </View>
+            <View style={s.ytIcon}><Ionicons name="play" size={18} color="#fff" /></View>
             <View style={{ flex: 1 }}>
               <Text fontSize="$3" fontWeight="600" color={DARK}>Watch Product Video</Text>
               <Text fontSize={11} color={GREY}>See it in action on YouTube</Text>
@@ -480,14 +852,24 @@ export default function ProductDetailScreen() {
           <>
             <Pressable
               style={({ pressed }) => [s.cartBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-              onPress={() => toast.success("Added to cart")}
+              onPress={handleAddToCart}
+              disabled={addToCartMutation.isPending || totalQuantity === 0}
             >
-              <Ionicons name="cart-outline" size={18} color="#fff" />
-              <Text fontSize="$3" fontWeight="700" color="#fff">Add to Cart</Text>
+              {addToCartMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="cart-outline" size={18} color="#fff" />
+                  <Text fontSize="$3" fontWeight="700" color="#fff">
+                    {totalQuantity > 0 ? `Add (${totalQuantity})` : "Add to Cart"}
+                  </Text>
+                </>
+              )}
             </Pressable>
             <Pressable
               style={({ pressed }) => [s.buyBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-              onPress={() => toast.success("Proceeding to checkout")}
+              onPress={handleBuyNow}
+              disabled={addToCartMutation.isPending || totalQuantity === 0}
             >
               <Text fontSize="$3" fontWeight="700" color="#fff">Buy Now</Text>
             </Pressable>
@@ -521,26 +903,17 @@ export default function ProductDetailScreen() {
       >
         <Pressable style={s.sheetOverlay} onPress={() => setShowActivation(false)}>
           <Animated.View style={[s.sheetContainer, { transform: [{ translateY: sheetAnim }] }]}>
-            {/* Handle bar */}
             <View style={s.sheetHandle} />
-
-            {/* Icon */}
             <View style={s.sheetIconWrap}>
               <Ionicons name="shield-checkmark" size={36} color={ACCENT} />
             </View>
-
-            {/* Title */}
-            <Text fontSize="$6" fontWeight="bold" color={DARK} text="center" mt="$3">
+            <Text fontSize="$6" fontWeight="bold" color={DARK} textAlign="center" mt="$3">
               Activate Your Profile
             </Text>
-
-            {/* Description */}
-            <Text fontSize="$3" color={GREY} text="center" mt="$2" lineHeight={20} mx="$2">
+            <Text fontSize="$3" color={GREY} textAlign="center" mt="$2" lineHeight={20} mx="$2">
               You need an active reseller profile to view prices and place orders.{"\n"}
               Upgrade your membership to unlock wholesale pricing, place bulk orders, and access exclusive deals.
             </Text>
-
-            {/* Benefits */}
             <View style={s.sheetBenefits}>
               {[
                 { icon: "pricetag", text: "View wholesale prices" },
@@ -553,8 +926,6 @@ export default function ProductDetailScreen() {
                 </View>
               ))}
             </View>
-
-            {/* CTA */}
             <Pressable
               style={({ pressed }) => [s.sheetCta, pressed && { opacity: 0.85 }]}
               onPress={() => {
@@ -563,16 +934,10 @@ export default function ProductDetailScreen() {
               }}
             >
               <Ionicons name="rocket" size={18} color="#fff" />
-              <Text fontSize="$4" fontWeight="bold" color="#fff" ml="$2">
-                Activate Now
-              </Text>
+              <Text fontSize="$4" fontWeight="bold" color="#fff" ml="$2">Activate Now</Text>
             </Pressable>
-
-            {/* Dismiss */}
             <Pressable onPress={() => setShowActivation(false)} style={{ marginTop: 12 }}>
-              <Text fontSize="$3" color={GREY} text="center">
-                Maybe later
-              </Text>
+              <Text fontSize="$3" color={GREY} textAlign="center">Maybe later</Text>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -625,6 +990,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
 
+  // Type badge
+  typeBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+
   // Flash Sale
   flashBanner: {
     backgroundColor: ACCENT, borderRadius: 12, padding: 12, marginBottom: 14,
@@ -633,10 +1001,8 @@ const s = StyleSheet.create({
   flashLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
 
   // Price
-  priceSection: { },
-  discountBadge: {
-    backgroundColor: "#FF3D71", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2,
-  },
+  priceSection: {},
+  discountBadge: { backgroundColor: "#FF3D71", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   lockBadge: {
     flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: "#FFF0F5", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
@@ -650,6 +1016,13 @@ const s = StyleSheet.create({
   },
   metaDot: { width: 6, height: 6, borderRadius: 3 },
 
+  // Tier badges
+  tierBadge: {
+    alignItems: "center", paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E5EA", backgroundColor: "#fff",
+    minWidth: 100,
+  },
+
   // Vendor
   vendorRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   vendorLogo: {
@@ -661,32 +1034,55 @@ const s = StyleSheet.create({
     justifyContent: "center", alignItems: "center",
   },
 
-  // Variants
-  variantItem: { alignItems: "center", gap: 4, width: 56 },
-  variantImg: {
-    width: 44, height: 44, borderRadius: 10, backgroundColor: BG, borderWidth: 1, borderColor: "#E5E5E5",
+  // Variant tabs
+  variantTab: {
+    alignItems: "center", gap: 4, padding: 6, borderRadius: 10,
+    borderWidth: 1.5, borderColor: "#E5E5EA", minWidth: 60, position: "relative",
   },
-  variantSwatch: {
-    width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: "#E0E0E5",
-  },
+  variantTabImg: { width: 40, height: 40, borderRadius: 8, backgroundColor: BG },
+  variantSwatch: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: "#E0E0E5" },
   variantFallback: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: BG,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: BG,
     justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#E0E0E5",
   },
-
-  // Quantity
-  qtyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  stepper: { flexDirection: "row", alignItems: "center", gap: 4 },
-  stepBtn: {
-    width: 38, height: 38, borderRadius: 12,
-    borderWidth: 1.5, borderColor: "#E5E5E5", justifyContent: "center", alignItems: "center",
-    backgroundColor: "#fff",
+  variantQtyBadge: {
+    position: "absolute", top: -6, right: -6, zIndex: 1,
+    minWidth: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT,
+    justifyContent: "center", alignItems: "center", paddingHorizontal: 3,
   },
-  stepBtnDisabled: { borderColor: "#F0F0F5", backgroundColor: "#FAFAFA" },
-  stepVal: { minWidth: 40, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
-  subtotalRow: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F5F5F5",
+
+  // Size table
+  sizeTable: { borderWidth: 1, borderColor: "#E5E5EA", borderRadius: 12, overflow: "hidden" },
+  sizeTableHeader: {
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 8,
+    backgroundColor: "#F9F9FB",
+  },
+  sizeTableRow: {
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 10,
+    borderTopWidth: 1, borderTopColor: "#F0F0F5",
+  },
+  sizeTableTotal: {
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 10, paddingVertical: 10,
+    borderTopWidth: 2, borderTopColor: "#E5E5EA", backgroundColor: "#F9F9FB",
+  },
+  sizeCol: {},
+  miniStepBtn: {
+    width: 28, height: 28, borderRadius: 8, borderWidth: 1.5, borderColor: "#E5E5EA",
+    justifyContent: "center", alignItems: "center", backgroundColor: "#fff",
+  },
+  miniStepBtnDisabled: { borderColor: "#F0F0F5", backgroundColor: "#FAFAFA" },
+  miniStepVal: { minWidth: 28, alignItems: "center", justifyContent: "center" },
+
+  // Selling price
+  sellingPriceRow: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 10, paddingBottom: 8, paddingTop: 2,
+    borderTopWidth: 0,
+  },
+  sellingPriceInput: {
+    width: 80, height: 30, borderRadius: 8, borderWidth: 1, borderColor: "#E5E5EA",
+    textAlign: "center", fontSize: 13, fontWeight: "600", backgroundColor: "#fff",
+    paddingHorizontal: 4,
   },
 
   // YouTube
@@ -711,8 +1107,8 @@ const s = StyleSheet.create({
     flexDirection: "row", paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: "#F5F5F5",
   },
-  specLabel: { width: "35%", fontSize: 13, color: GREY, fontWeight: "500" },
-  specValue: { flex: 1, fontSize: 13, color: DARK, fontWeight: "600" },
+  specLabel: { width: "35%", fontSize: 13, color: GREY, fontWeight: "500" as any },
+  specValue: { flex: 1, fontSize: 13, color: DARK, fontWeight: "600" as any },
 
   // Read more
   readMoreBtn: {
@@ -751,16 +1147,12 @@ const s = StyleSheet.create({
   },
 
   // Activation Bottom Sheet
-  sheetOverlay: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end",
-  },
+  sheetOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   sheetContainer: {
     backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, paddingBottom: 36, alignItems: "center",
   },
-  sheetHandle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 16,
-  },
+  sheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#E0E0E0", marginBottom: 16 },
   sheetIconWrap: {
     width: 72, height: 72, borderRadius: 36, backgroundColor: "#FFF0F5",
     justifyContent: "center", alignItems: "center",
@@ -769,9 +1161,7 @@ const s = StyleSheet.create({
     width: "100%", marginTop: 20, gap: 12,
     backgroundColor: "#FAFAFA", borderRadius: 14, padding: 16,
   },
-  sheetBenefitRow: {
-    flexDirection: "row", alignItems: "center",
-  },
+  sheetBenefitRow: { flexDirection: "row", alignItems: "center" },
   sheetCta: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     backgroundColor: ACCENT, borderRadius: 30, paddingVertical: 16,
