@@ -99,7 +99,7 @@ class CrmDashboardController extends Controller
         $applyDateRangeDatetime($usersBaseQuery, 'created_at');
 
         $allUsers = (clone $usersBaseQuery)->count();
-        $activeUsers = (clone $usersBaseQuery)->where('status', 'Active')->count();
+        $activeUsers = (clone $usersBaseQuery)->whereRaw("LOWER(COALESCE(membership_status, '')) = ?", ['paid'])->count();
         $paidUsers = (clone $usersBaseQuery)->whereRaw("LOWER(COALESCE(membership_status, '')) = ?", ['paid'])->count();
         $unpaidUsers = (clone $usersBaseQuery)->whereRaw("LOWER(COALESCE(membership_status, '')) = ?", ['unpaid'])->count();
         $totalUserAccountBalance = (float) (clone $usersBaseQuery)->sum('account_balance');
@@ -232,7 +232,7 @@ class CrmDashboardController extends Controller
             'status' => $status,
             'membership' => $membership,
             'allUsers' => User::count(),
-            'activeUsers' => User::where('status', 'Active')->count(),
+            'activeUsers' => User::whereRaw("LOWER(COALESCE(membership_status, '')) = 'paid'")->count(),
             'paidUsers' => User::whereRaw("LOWER(COALESCE(membership_status, '')) = 'paid'")->count(),
             'unpaidUsers' => User::whereRaw("LOWER(COALESCE(membership_status, '')) = 'unpaid'")->count(),
             'expiredUsers' => User::whereNotNull('expire_date')->where('expire_date', '!=', '')->where('expire_date', '<', date('Y-m-d'))->count(),
@@ -272,6 +272,7 @@ class CrmDashboardController extends Controller
                 'vendors.contact_email',
                 'vendors.contact_phone',
                 'vendors.created_at',
+                DB::raw('(SELECT COUNT(*) FROM products WHERE products.vendor_id = vendors.id) AS products_count'),
                 'users.email AS user_email',
                 DB::raw('COALESCE(earnings.sales_total, 0) AS sales_total'),
                 DB::raw('COALESCE(earnings.commission_total, 0) AS commission_total'),
@@ -304,6 +305,7 @@ class CrmDashboardController extends Controller
             'totalSupplierPayment' => (float) VendorPayout::where('status', 'completed')->sum('amount'),
             'pendingSupplierPayment' => (float) VendorPayoutRequest::where('status', 'pending')->sum('amount'),
             'totalSupplierAccountBalance' => (float) VendorEarning::sum(DB::raw('COALESCE(net_amount, 0) - COALESCE(paid_amount, 0)')),
+            'totalProducts' => \App\Models\Product::whereNotNull('vendor_id')->count(),
         ]);
     }
 }

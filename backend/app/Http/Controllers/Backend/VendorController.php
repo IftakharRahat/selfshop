@@ -296,5 +296,38 @@ class VendorController extends Controller
         }
         return redirect()->back()->with('message', 'Verified badge removed.');
     }
+
+    /**
+     * Permanently delete a vendor and all related data.
+     * DELETE /admin/vendors/{vendor}
+     */
+    public function destroy(Vendor $vendor)
+    {
+        // Revoke wholesaler status on the user (keep the user account)
+        $user = $vendor->user;
+        if ($user) {
+            $user->is_verified_wholesaler = false;
+            $user->save();
+        }
+
+        // Cascade-delete all related records
+        $vendor->followers()->delete();
+        $vendor->payouts()->delete();
+        $vendor->payoutRequests()->delete();
+        $vendor->payoutAccounts()->delete();
+        $vendor->earnings()->delete();
+        $vendor->shippingMethods()->delete();
+        $vendor->kycDocuments()->delete();
+        $vendor->warehouses()->delete();
+        $vendor->products()->delete();
+
+        $companyName = $vendor->company_name;
+        $vendor->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['status' => true, 'message' => "Supplier '{$companyName}' deleted."]);
+        }
+        return redirect()->route('admin.vendors.index')->with('message', "Supplier '{$companyName}' has been permanently deleted.");
+    }
 }
 

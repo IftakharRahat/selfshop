@@ -144,7 +144,7 @@
             </div>
         </div>
         <div class="admin-card-body d-flex justify-content-center">
-            {{ $users->links() }}
+            {{ $users->links('vendor.pagination.admin') }}
         </div>
     </div>
 </div>

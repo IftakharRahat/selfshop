@@ -82,14 +82,23 @@ class UserController extends Controller
 
     public function activeuserdata(Request $request)
     {
-        $users = User::where('status', 'Active')->where('membership_status', 'paid');
+        $users = User::where('users.status', 'Active')->where('users.membership_status', 'paid');
 
 
         if ($request['phone'] != '') {
             $users = $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
         } else {
             if ($request['startDate'] != '' && $request['endDate'] != '') {
-                $users = $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+                $start = $request['startDate'] . ' 00:00:00';
+                $end   = $request['endDate'] . ' 23:59:59';
+
+                $users = $users->leftJoin('resellerinvoices', 'resellerinvoices.user_id', '=', 'users.id')
+                    ->where(function ($q) use ($start, $end) {
+                        $q->whereBetween('users.created_at', [$start, $end])
+                          ->orWhereBetween('resellerinvoices.paymentDate', [$start, $end]);
+                    })
+                    ->select('users.*')
+                    ->distinct();
             }
         }
 

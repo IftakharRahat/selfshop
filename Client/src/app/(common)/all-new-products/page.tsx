@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import { useGetAllNewProductsQuery } from "@/redux/features/home/homeApi";
 
-const SCROLL_KEY = "selfshop_scroll_newproducts";
 const ITEMS_PER_PAGE = 30;
 
-export default function AllNewProductsPage() {
+function AllNewProductsContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    
+    // We fetch all products, since the API doesn't seem to natively paginate the way we want
     const [objectQuery] = useState([
         { name: "page", value: 1 },
         { name: "limit", value: 200 },
@@ -19,11 +21,18 @@ export default function AllNewProductsPage() {
     const { data, isLoading } = useGetAllNewProductsQuery({ objectQuery });
     const allProducts: any[] = data?.data?.data || [];
 
-    const [currentPage, setCurrentPage] = useState(1);
+    // Derive current page from URL
+    const pageParam = searchParams.get("page");
+    const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+
     const lastPage = Math.ceil(allProducts.length / ITEMS_PER_PAGE);
+    
+    // Safety check just in case URL page is too high
+    const validCurrentPage = currentPage > lastPage && lastPage > 0 ? lastPage : currentPage;
+
     const displayedProducts = allProducts.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
+        (validCurrentPage - 1) * ITEMS_PER_PAGE,
+        validCurrentPage * ITEMS_PER_PAGE
     );
 
     // Generate page numbers for pagination
@@ -33,30 +42,23 @@ export default function AllNewProductsPage() {
             for (let i = 1; i <= lastPage; i++) pages.push(i);
         } else {
             pages.push(1);
-            if (currentPage > 3) pages.push("...");
-            const start = Math.max(2, currentPage - 1);
-            const end = Math.min(lastPage - 1, currentPage + 1);
+            if (validCurrentPage > 3) pages.push("...");
+            const start = Math.max(2, validCurrentPage - 1);
+            const end = Math.min(lastPage - 1, validCurrentPage + 1);
             for (let i = start; i <= end; i++) pages.push(i);
-            if (currentPage < lastPage - 2) pages.push("...");
+            if (validCurrentPage < lastPage - 2) pages.push("...");
             pages.push(lastPage);
         }
         return pages;
     };
 
     const handlePageChange = (page: number) => {
-        setCurrentPage(page);
+        router.push(`?page=${page}`, { scroll: false });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleBack = () => {
-        router.back();
-        setTimeout(() => {
-            const saved = sessionStorage.getItem(SCROLL_KEY);
-            if (saved) {
-                window.scrollTo({ top: parseInt(saved, 10), behavior: "instant" as ScrollBehavior });
-                sessionStorage.removeItem(SCROLL_KEY);
-            }
-        }, 300);
+        router.push("/");
     };
 
     return (
@@ -91,8 +93,8 @@ export default function AllNewProductsPage() {
                         <div className="flex items-center justify-center gap-1 mt-10">
                             {/* Previous Button */}
                             <button
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
+                                onClick={() => handlePageChange(validCurrentPage - 1)}
+                                disabled={validCurrentPage === 1}
                                 className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -109,7 +111,7 @@ export default function AllNewProductsPage() {
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page as number)}
-                                        className={`min-w-[36px] h-9 text-sm rounded-lg border transition-colors ${currentPage === page
+                                        className={`min-w-[36px] h-9 text-sm rounded-lg border transition-colors ${validCurrentPage === page
                                                 ? "bg-[#E5005F] text-white border-[#E5005F]"
                                                 : "border-gray-200 hover:bg-gray-50 text-gray-700"
                                             }`}
@@ -121,8 +123,8 @@ export default function AllNewProductsPage() {
 
                             {/* Next Button */}
                             <button
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === lastPage}
+                                onClick={() => handlePageChange(validCurrentPage + 1)}
+                                disabled={validCurrentPage === lastPage}
                                 className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             >
                                 <span className="hidden sm:inline">Next</span>
@@ -143,5 +145,17 @@ export default function AllNewProductsPage() {
                 </div>
             )}
         </section>
+    );
+}
+
+export default function AllNewProductsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-3 border-[#E5005F] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        }>
+            <AllNewProductsContent />
+        </Suspense>
     );
 }

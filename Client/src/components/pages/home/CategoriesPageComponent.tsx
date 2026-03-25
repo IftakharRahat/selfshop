@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getImageUrl } from "@/lib/utils";
 import { useGetAllNavbarCategoryDropdownOptionsQuery } from "@/redux/features/home/homeApi";
 import { ChevronDown, ChevronLeft, Package } from "lucide-react";
@@ -49,8 +49,9 @@ function CategoryImage({
 	);
 }
 
-export default function CategoriesPageComponent() {
+function CategoriesContent() {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 
 	const { data: menuOptions } =
 		useGetAllNavbarCategoryDropdownOptionsQuery(undefined);
@@ -67,23 +68,18 @@ export default function CategoriesPageComponent() {
 			})),
 		})) || [];
 
-	const [selectedCategory, setSelectedCategory] = useState<any>(null);
-	const [expandedSubcategory, setExpandedSubcategory] = useState<
-		number | null
-	>(null);
+	const categorySlug = searchParams.get("category");
+	const selectedCategory = categorySlug
+		? categories.find((c: any) => c.slug === categorySlug) || categories[0]
+		: categories[0];
 
-	// Auto-select first category when data loads
-	useEffect(() => {
-		if (categories.length > 0 && !selectedCategory) {
-			setSelectedCategory(categories[0]);
-		}
-	}, [menuOptions]);
+	const expandedParam = searchParams.get("expanded");
+	const expandedSubcategory = expandedParam ? parseInt(expandedParam, 10) : null;
 
 	const handleSubcategoryClick = (sub: any) => {
 		if (sub.minicategories && sub.minicategories.length > 0) {
-			setExpandedSubcategory(
-				expandedSubcategory === sub.id ? null : sub.id,
-			);
+			const nextExpanded = expandedSubcategory === sub.id ? "" : `&expanded=${sub.id}`;
+			router.replace(`/categories?category=${selectedCategory?.slug}${nextExpanded}`, { scroll: false });
 		} else {
 			router.push(
 				`/product-filter?category=${selectedCategory?.slug}&subcategory=${sub.slug}`,
@@ -114,8 +110,7 @@ export default function CategoriesPageComponent() {
 							<div
 								key={cat.id}
 								onClick={() => {
-									setSelectedCategory(cat);
-									setExpandedSubcategory(null);
+									router.replace(`/categories?category=${cat.slug}`, { scroll: false });
 									document.getElementById("subcategory-panel")?.scrollTo(0, 0);
 								}}
 								className={`flex flex-col items-center gap-1.5 px-1.5 py-2.5 mx-1 cursor-pointer rounded-xl transition-all duration-200
@@ -250,5 +245,17 @@ export default function CategoriesPageComponent() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+export default function CategoriesPageComponent() {
+	return (
+		<Suspense fallback={
+			<div className="fixed inset-0 z-40 flex items-center justify-center bg-white">
+				<div className="w-8 h-8 border-3 border-[#E5005F] border-t-transparent rounded-full animate-spin"></div>
+			</div>
+		}>
+			<CategoriesContent />
+		</Suspense>
 	);
 }

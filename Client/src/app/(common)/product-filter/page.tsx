@@ -1,6 +1,6 @@
 "use client";
-import { useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
 import { ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import {
@@ -27,18 +27,17 @@ const SORT_OPTIONS = [
 	{ value: "price_desc", label: "Price: High to Low" },
 ] as const;
 
-const ProductFilterPage = () => {
+function ProductFilterContent() {
+	const router = useRouter();
 	const searchParams = useSearchParams();
+	
 	const category = searchParams?.get("category") ?? "";
 	const subcategory = searchParams?.get("subcategory") ?? "";
 	const minicategory = searchParams?.get("minicategory") ?? "";
-	const [sort, setSort] = useState("rating");
-	const [currentPage, setCurrentPage] = useState(1);
-
-	// Reset page when sort or category changes
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [sort, category, subcategory, minicategory]);
+	
+	const sort = searchParams?.get("sort") || "rating";
+	const pageParam = searchParams?.get("page") || "1";
+	const currentPage = parseInt(pageParam, 10) || 1;
 
 	// Determine which query to use: minicategory > subcategory > category
 	const useMinicategory = Boolean(minicategory);
@@ -109,10 +108,18 @@ const ProductFilterPage = () => {
 		return pages;
 	};
 
-	// Scroll to top when page changes
 	const handlePageChange = (page: number) => {
-		setCurrentPage(page);
+		const params = new URLSearchParams(searchParams?.toString());
+		params.set("page", page.toString());
+		router.push(`?${params.toString()}`, { scroll: false });
 		window.scrollTo({ top: 0, behavior: "smooth" });
+	};
+
+	const handleSortChange = (newSort: string) => {
+		const params = new URLSearchParams(searchParams?.toString());
+		params.set("sort", newSort);
+		params.set("page", "1"); // Reset to first page
+		router.push(`?${params.toString()}`, { scroll: false });
 	};
 
 	return (
@@ -133,7 +140,7 @@ const ProductFilterPage = () => {
 					<ArrowUpDown className="w-4 h-4 text-gray-400" />
 					<select
 						value={sort}
-						onChange={(e) => setSort(e.target.value)}
+						onChange={(e) => handleSortChange(e.target.value)}
 						className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#E5005F]/20 focus:border-[#E5005F] cursor-pointer"
 					>
 						{SORT_OPTIONS.map((opt) => (
@@ -215,6 +222,16 @@ const ProductFilterPage = () => {
 			)}
 		</section>
 	);
-};
+}
 
-export default ProductFilterPage;
+export default function ProductFilterPage() {
+	return (
+		<Suspense fallback={
+			<div className="flex justify-center py-16">
+				<div className="w-8 h-8 border-3 border-gray-200 border-t-[#E5005F] rounded-full animate-spin" />
+			</div>
+		}>
+			<ProductFilterContent />
+		</Suspense>
+	);
+}

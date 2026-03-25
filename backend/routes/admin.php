@@ -308,6 +308,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
     Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge');
     Route::post('vendors/{vendor}/remove-verified-badge', [VendorController::class, 'removeVerifiedBadge'])->name('admin.vendors.remove-verified-badge');
+    Route::delete('vendors/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendors.destroy');
 
     // Product reviews (admin view & moderate)
     Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');

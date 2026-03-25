@@ -123,7 +123,7 @@
                 </table>
             </div>
         </div>
-        <div class="admin-card-body d-flex justify-content-center">{{ $products->withQueryString()->links() }}</div>
+        <div class="admin-card-body d-flex justify-content-center">{{ $products->withQueryString()->links('vendor.pagination.admin') }}</div>
     </div>
 </div>
 @endsection
