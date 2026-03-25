@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
+import { ProductGridSkeleton } from "@/components/skeleton";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SHEET_HEIGHT = 340;
@@ -144,9 +145,7 @@ export default function CollectionScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#E5005F" />
-        </View>
+        <ProductGridSkeleton />
       ) : isError ? (
         <View style={styles.center}>
           <Text color="#999">Failed to load products.</Text>

@@ -18,12 +18,15 @@ export default function TabLayout() {
         name="cart"
         options={{
           title: "Cart",
-          // Uncomment and set dynamically when you have cart state:
-          // tabBarBadge: cartItemCount,
         }}
       />
-      <Tabs.Screen name="account" options={{ title: "Account" }} />
+      <Tabs.Screen name="dashboard" options={{ title: "Dashboard" }} />
+      <Tabs.Screen
+        name="account"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
-

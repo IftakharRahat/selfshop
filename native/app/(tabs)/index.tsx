@@ -7,7 +7,6 @@ import {
   Dimensions,
   StyleSheet,
   Pressable,
-  ActivityIndicator,
   Image,
   type ViewToken,
 } from "react-native";
@@ -16,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Ionicons } from "@expo/vector-icons";
 import { SearchBar } from "@/components/search-bar";
+import { HomeSkeleton } from "@/components/skeleton";
 import { CategoryChip } from "@/components/category-chip";
 import { ProductCard } from "@/components/product-card";
 import apiClient from "@/lib/api-client";
@@ -128,11 +128,7 @@ export default function HomeScreen() {
   const categoryList = categories.data ?? [];
 
   if (newProducts.isLoading && categories.isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E5005F" />
-      </View>
-    );
+    return <HomeSkeleton />;
   }
 
   return (

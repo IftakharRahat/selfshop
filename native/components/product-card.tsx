@@ -55,7 +55,7 @@ export function ProductCard({
             {category}
           </Text>
         )}
-        <Text fontSize={13} color="#1A1A2E" fontWeight="600" numberOfLines={2} lineHeight={17}>
+        <Text fontSize={13} color="#1A1A2E" fontWeight="600" numberOfLines={2} lineHeight={17} style={{ height: 34 }}>
           {name}
         </Text>
 
@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
     overflow: "hidden",
+    marginBottom: 12,
   },
   horizontalImage: {
     width: 160,

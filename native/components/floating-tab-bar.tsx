@@ -17,14 +17,14 @@ const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
   index: { active: "home", inactive: "home-outline" },
   categories: { active: "grid", inactive: "grid-outline" },
   cart: { active: "cart", inactive: "cart-outline" },
-  account: { active: "person", inactive: "person-outline" },
+  dashboard: { active: "bar-chart", inactive: "bar-chart-outline" },
 };
 
 const TAB_LABELS: Record<string, string> = {
   index: "Home",
   categories: "Categories",
   cart: "Cart",
-  account: "Account",
+  dashboard: "Dashboard",
 };
 
 const ACCENT = "#E5005F";
@@ -169,6 +169,13 @@ export function FloatingTabBar({
         <View style={styles.innerContainer}>
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
+
+            // Skip hidden tabs (href: null sets tabBarButton to a no-op)
+            if (options.tabBarButton && options.tabBarButton({} as any) === null) return null;
+            // Also skip if tabBarItemStyle hides it, or if no icon entry exists
+            const hasIcon = !!TAB_ICONS[route.name];
+            if (!hasIcon) return null;
+
             const isFocused = state.index === index;
 
             const onPress = () => {

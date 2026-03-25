@@ -13,6 +13,7 @@ import { Text } from "tamagui";
 import { useQuery } from "@tanstack/react-query";
 
 import apiClient from "@/lib/api-client";
+import { CategoriesSkeleton } from "@/components/skeleton";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const SIDEBAR_WIDTH = 86;
@@ -34,11 +35,7 @@ export default function CategoriesScreen() {
   const subcategories: any[] = selectedCat?.subcategories ?? [];
 
   if (categories.isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E5005F" />
-      </View>
-    );
+    return <CategoriesSkeleton />;
   }
 
   return (
