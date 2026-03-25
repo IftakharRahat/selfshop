@@ -5,6 +5,7 @@ import {
   TextInput, Alert, StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { ProductDetailSkeleton } from "@/components/skeleton";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -141,12 +142,7 @@ export default function ProductDetailScreen() {
   }, []);
   const imgViewCfg = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
-  if (isLoading) return (
-    <View style={s.loadC}>
-      <ActivityIndicator size="large" color={ACCENT} />
-      <Text fontSize="$3" color={GREY} mt="$3">Loading product...</Text>
-    </View>
-  );
+  if (isLoading) return <ProductDetailSkeleton />;
   if (isError || !data) return (
     <View style={s.loadC}>
       <View style={s.errorIcon}>

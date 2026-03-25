@@ -5,7 +5,7 @@ import {
   Image,
   Pressable,
   StyleSheet,
-  ActivityIndicator,
+
   RefreshControl,
   Alert,
 } from "react-native";
@@ -18,6 +18,7 @@ import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
+import { CartSkeleton } from "@/components/skeleton";
 
 const ACCENT = "#E5005F";
 const DARK = "#1A1A2E";
@@ -178,10 +179,7 @@ export default function CartScreen() {
         <View style={[s.header, { paddingTop: insets.top + 12 }]}>
           <Text fontSize="$7" fontWeight="bold" color={DARK}>Cart</Text>
         </View>
-        <View style={s.loadingState}>
-          <ActivityIndicator size="large" color={ACCENT} />
-          <Text fontSize="$3" color={GREY} mt="$3">Loading your cart...</Text>
-        </View>
+        <CartSkeleton />
       </View>
     );
   }

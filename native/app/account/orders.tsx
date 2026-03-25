@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { OrdersSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -211,9 +212,7 @@ export default function OrdersScreen() {
           onEndReachedThreshold={0.3}
           ListEmptyComponent={
             ordersQuery.isLoading ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator size="large" color={ACCENT} />
-              </View>
+              <OrdersSkeleton />
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="receipt-outline" size={48} color="#D1D5DB" />

@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import { useSession, logout } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
+import { DashboardSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
 
@@ -162,11 +163,7 @@ export default function DashboardScreen() {
 
   /* ── Loading State ── */
   if (dashboardQuery.isLoading && profileQuery.isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E5005F" />
-      </View>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (
