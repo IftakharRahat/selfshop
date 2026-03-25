@@ -1,5 +1,6 @@
 import { View, TextInput, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -7,8 +8,16 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ placeholder = "Search products...", onPress }: SearchBarProps) {
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push("/search");
+    }
+  };
+
   return (
-    <Pressable onPress={onPress} style={styles.container}>
+    <Pressable onPress={handlePress} style={styles.container}>
       <Ionicons name="search-outline" size={18} color="#8E8E93" />
       <TextInput
         style={styles.input}

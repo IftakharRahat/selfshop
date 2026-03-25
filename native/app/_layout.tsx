@@ -62,13 +62,32 @@ export default function RootLayout() {
             screenOptions={{
               headerShown: false,
               contentStyle: { backgroundColor: "#fff" },
-              animation: "fade",
+              animation: "ios_from_right",
+              gestureEnabled: true,
+              fullScreenGestureEnabled: true,
             }}
           >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="onboarding" />
-            <Stack.Screen name="login" />
-            <Stack.Screen name="register" />
+            {/* Tab root — fade (instant feel) */}
+            <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+
+            {/* Auth — slide up (modal feel) */}
+            <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+            <Stack.Screen name="login" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+            <Stack.Screen name="register" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+            <Stack.Screen name="forgot-password" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+
+            {/* Checkout & modals — slide up */}
+            <Stack.Screen name="pricing" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
+            <Stack.Screen name="invoice" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
+            <Stack.Screen name="order-confirmation" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
+
+            {/* Content screens — platform default (iOS parallax card / Android material) */}
+            <Stack.Screen name="product-detail" />
+            <Stack.Screen name="category-products" />
+            <Stack.Screen name="collection/[slug]" />
+            <Stack.Screen name="search" options={{ animation: "fade_from_bottom" }} />
+
+            {/* Account sub-screens — platform default drill-in */}
             <Stack.Screen name="account/orders" />
             <Stack.Screen name="account/order-detail" />
             <Stack.Screen name="account/addresses" />
@@ -79,7 +98,15 @@ export default function RootLayout() {
             <Stack.Screen name="account/create-ticket" />
             <Stack.Screen name="account/faq" />
             <Stack.Screen name="account/change-password" />
-            <Stack.Screen name="product-detail" />
+            <Stack.Screen name="account/my-shop" />
+            <Stack.Screen name="account/reseller-shop" />
+            <Stack.Screen name="account/notifications" />
+            <Stack.Screen name="account/balance-transfer" />
+            <Stack.Screen name="account/income-history" />
+            <Stack.Screen name="account/team-members" />
+            <Stack.Screen name="account/referral" />
+            <Stack.Screen name="account/withdraw" />
+            <Stack.Screen name="account/track-order" />
           </Stack>
           <Toaster
             position="top-center"
