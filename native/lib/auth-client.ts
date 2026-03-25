@@ -55,6 +55,31 @@ export async function logout(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
+export async function forgotPassword(phone: string) {
+  const { data } = await apiClient.post("/forgot-password", { phone });
+  return data;
+}
+
+export async function verifyOtp(phone: string, otp: string) {
+  const { data } = await apiClient.post("/verify-otp", { phone, otp });
+  return data;
+}
+
+export async function resetPassword(
+  phone: string,
+  otp: string,
+  password: string,
+  password_confirmation: string,
+) {
+  const { data } = await apiClient.post("/reset-password", {
+    phone,
+    otp,
+    password,
+    password_confirmation,
+  });
+  return data;
+}
+
 export async function getToken(): Promise<string | null> {
   return SecureStore.getItemAsync(TOKEN_KEY);
 }

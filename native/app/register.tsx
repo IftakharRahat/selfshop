@@ -16,18 +16,32 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { register } from "@/lib/auth-client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const { width } = Dimensions.get("window");
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    c_password: "",
+    refer_by: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showReferral, setShowReferral] = useState(false);
+  const queryClient = useQueryClient();
 
   async function handleSignUp() {
     if (!form.name || !form.email || !form.password) {
       setError("Please fill in all fields");
+      return;
+    }
+    if (form.password !== form.c_password) {
+      setError("Passwords do not match");
       return;
     }
 
@@ -35,8 +49,10 @@ export default function Register() {
     setError(null);
 
     try {
-      await register(form.name, form.email, form.password, form.password);
-      setForm({ name: "", email: "", password: "" });
+      await register(form.name, form.email, form.password, form.c_password);
+      queryClient.invalidateQueries({ queryKey: ["auth-token"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      setForm({ name: "", email: "", password: "", c_password: "", refer_by: "" });
       router.replace("/");
     } catch (err: any) {
       const message =
@@ -101,6 +117,7 @@ export default function Register() {
 
         {/* Form */}
         <View style={styles.formContainer}>
+          {/* Name */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -112,19 +129,20 @@ export default function Register() {
             />
           </View>
 
+          {/* Phone Number */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="Phone Number"
               placeholderTextColor="#C7C7CC"
               value={form.email}
               onChangeText={(val) => setForm((prev) => ({ ...prev, email: val }))}
-              keyboardType="email-address"
+              keyboardType="phone-pad"
               autoCapitalize="none"
-              autoComplete="email"
             />
           </View>
 
+          {/* Password */}
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -148,6 +166,53 @@ export default function Register() {
               />
             </Pressable>
           </View>
+
+          {/* Confirm Password */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor="#C7C7CC"
+              value={form.c_password}
+              onChangeText={(val) =>
+                setForm((prev) => ({ ...prev, c_password: val }))
+              }
+              secureTextEntry={!showConfirm}
+              autoCapitalize="none"
+            />
+            <Pressable
+              style={styles.eyeIcon}
+              onPress={() => setShowConfirm(!showConfirm)}
+            >
+              <Ionicons
+                name={showConfirm ? "eye-off-outline" : "eye-outline"}
+                size={20}
+                color="#C7C7CC"
+              />
+            </Pressable>
+          </View>
+
+          {/* Referral Code */}
+          {!showReferral ? (
+            <Pressable onPress={() => setShowReferral(true)}>
+              <Text fontSize="$3" color="#E5005F" fontWeight="600">
+                Have a refer code?
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter refer code..."
+                placeholderTextColor="#C7C7CC"
+                value={form.refer_by}
+                onChangeText={(val) =>
+                  setForm((prev) => ({ ...prev, refer_by: val }))
+                }
+                autoCapitalize="none"
+              />
+            </View>
+          )}
         </View>
 
         {/* Sign Up Button */}
@@ -185,9 +250,9 @@ export default function Register() {
             pressed && { opacity: 0.8 },
           ]}
         >
-          <Ionicons name="logo-facebook" size={22} color="#1877F2" />
+          <Ionicons name="logo-google" size={22} color="#EA4335" />
           <Text fontSize="$4" fontWeight="600" color="#1A1A2E" ml="$3">
-            Connect with Facebook
+            Continue with Google
           </Text>
         </Pressable>
 
@@ -197,9 +262,9 @@ export default function Register() {
             pressed && { opacity: 0.8 },
           ]}
         >
-          <Ionicons name="logo-google" size={22} color="#EA4335" />
+          <Ionicons name="logo-apple" size={22} color="#000" />
           <Text fontSize="$4" fontWeight="600" color="#1A1A2E" ml="$3">
-            Connect with Google
+            Continue with Apple
           </Text>
         </Pressable>
       </ScrollView>

@@ -12,18 +12,21 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Text } from "tamagui";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { login } from "@/lib/auth-client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const { width } = Dimensions.get("window");
 
 export default function Login() {
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const [form, setForm] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const queryClient = useQueryClient();
 
   async function handleSignIn() {
     if (!form.email || !form.password) {
@@ -36,8 +39,14 @@ export default function Login() {
 
     try {
       await login(form.email, form.password);
+      queryClient.invalidateQueries({ queryKey: ["auth-token"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       setForm({ email: "", password: "" });
-      router.replace("/");
+      if (returnTo) {
+        router.replace(returnTo as any);
+      } else {
+        router.replace("/");
+      }
     } catch (err: any) {
       const message =
         err?.response?.data?.message || err?.message || "Failed to sign in";
@@ -104,13 +113,12 @@ export default function Login() {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Username or Email"
+              placeholder="Phone Number"
               placeholderTextColor="#C7C7CC"
               value={form.email}
               onChangeText={(val) => setForm((prev) => ({ ...prev, email: val }))}
-              keyboardType="email-address"
+              keyboardType="phone-pad"
               autoCapitalize="none"
-              autoComplete="email"
             />
           </View>
 
@@ -157,7 +165,7 @@ export default function Login() {
         </Pressable>
 
         {/* Forgot Password */}
-        <Pressable style={styles.forgotPassword}>
+        <Pressable style={styles.forgotPassword} onPress={() => router.push("/forgot-password")}>
           <Text fontSize="$3" color="#E5005F" fontWeight="600">
             Forgot Password?
           </Text>
@@ -179,9 +187,9 @@ export default function Login() {
             pressed && { opacity: 0.8 },
           ]}
         >
-          <Ionicons name="logo-facebook" size={22} color="#1877F2" />
+          <Ionicons name="logo-google" size={22} color="#EA4335" />
           <Text fontSize="$4" fontWeight="600" color="#1A1A2E" ml="$3">
-            Connect with Facebook
+            Continue with Google
           </Text>
         </Pressable>
 
@@ -191,9 +199,9 @@ export default function Login() {
             pressed && { opacity: 0.8 },
           ]}
         >
-          <Ionicons name="logo-google" size={22} color="#EA4335" />
+          <Ionicons name="logo-apple" size={22} color="#000" />
           <Text fontSize="$4" fontWeight="600" color="#1A1A2E" ml="$3">
-            Connect with Google
+            Continue with Apple
           </Text>
         </Pressable>
       </ScrollView>

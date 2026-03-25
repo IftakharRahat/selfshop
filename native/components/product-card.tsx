@@ -1,6 +1,8 @@
 import { View, Image, StyleSheet, Pressable, Dimensions } from "react-native";
 import { Text } from "tamagui";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const CARD_WIDTH = (Dimensions.get("window").width - 48 - 12) / 2;
 
@@ -24,6 +26,7 @@ export function ProductCard({
   variant = "grid",
 }: ProductCardProps) {
   const isHorizontal = variant === "horizontal";
+  const { isActive: isResellerActive, isLoading } = useIsActiveReseller();
 
   const handlePress = () => {
     if (onPress) {
@@ -52,12 +55,23 @@ export function ProductCard({
             {category}
           </Text>
         )}
-        <Text fontSize="$3" color="#1A1A2E" fontWeight="600" numberOfLines={2}>
+        <Text fontSize={13} color="#1A1A2E" fontWeight="600" numberOfLines={2} lineHeight={17}>
           {name}
         </Text>
-        <Text fontSize="$4" color="#1A1A2E" fontWeight="bold">
-          ৳{price}
-        </Text>
+
+        {isResellerActive ? (
+          <Text fontSize="$4" color="#1A1A2E" fontWeight="bold">
+            ৳{price}
+          </Text>
+        ) : (
+          <View style={styles.lockedRow}>
+            <Text fontSize="$4" color="#999" fontWeight="bold">***</Text>
+            <View style={styles.lockBadge}>
+              <Ionicons name="lock-closed" size={11} color="#E5005F" />
+              <Text fontSize={11} fontWeight="700" color="#E5005F">Login</Text>
+            </View>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -93,5 +107,22 @@ const styles = StyleSheet.create({
   info: {
     padding: 10,
     gap: 2,
+    flex: 1,
+  },
+  lockedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: "auto",
+    paddingTop: 4,
+  },
+  lockBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#FFF0F5",
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
 });
