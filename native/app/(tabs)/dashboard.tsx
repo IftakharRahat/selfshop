@@ -22,7 +22,7 @@ const { width } = Dimensions.get("window");
 /* ── Quick Action items ── */
 const QUICK_ACTIONS = [
   { icon: "cube-outline" as const, label: "Orders", route: "/account/orders", color: "#E5005F" },
-  { icon: "storefront-outline" as const, label: "My Shop", route: null, color: "#7C3AED" },
+  { icon: "storefront-outline" as const, label: "My Shop", route: "/account/my-shop", color: "#7C3AED" },
   { icon: "wallet-outline" as const, label: "Withdraw", route: "/account/withdraw", color: "#059669" },
   { icon: "people-outline" as const, label: "Referral", route: "/account/referral", color: "#D97706" },
   { icon: "search-outline" as const, label: "Track", route: "/account/track-order", color: "#2563EB" },
@@ -109,7 +109,12 @@ export default function DashboardScreen() {
   /* ── Derived data ── */
   const profile = profileQuery.data?.profile ?? profileQuery.data;
   const metrics = dashboardQuery.data;
-  const recentOrders = (recentOrdersQuery.data ?? []).slice(0, 5);
+  const recentOrdersRaw = recentOrdersQuery.data;
+  const recentOrders = (
+    Array.isArray(recentOrdersRaw) ? recentOrdersRaw
+    : Array.isArray(recentOrdersRaw?.data) ? recentOrdersRaw.data
+    : []
+  ).slice(0, 5);
   const unreadNotifs = notificationsQuery.data ?? 0;
   const walletBalance = Number(
     metrics?.balance ?? metrics?.blance ?? profile?.account_balance ?? 0

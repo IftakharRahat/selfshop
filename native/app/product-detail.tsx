@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
@@ -25,6 +25,7 @@ export default function ProductDetailScreen() {
   const params = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const queryClient = useQueryClient();
   const [qty, setQty] = useState(1);
   const [imgIdx, setImgIdx] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
@@ -55,6 +56,36 @@ export default function ProductDetailScreen() {
       return d?.data ?? d;
     },
     enabled: !!slug && slug.length > 0,
+  });
+
+  // ── Shop hooks (MUST be before early returns to respect Rules of Hooks) ──
+  const productId = (data?.product_details ?? data?.product ?? data)?.id;
+
+  const shopCheckQuery = useQuery({
+    queryKey: ["check-in-shop", productId],
+    queryFn: async () => {
+      const { data: d } = await apiClient.get(`/check-in-shop/${productId}`);
+      return d;
+    },
+    enabled: !!productId && isLoggedIn,
+    staleTime: 60 * 1000,
+  });
+  const isInShop = shopCheckQuery.data?.in_shop ?? false;
+
+  const shopToggleMutation = useMutation({
+    mutationFn: async () => {
+      const endpoint = isInShop ? `/remove-from-shop/${productId}` : `/add-to-shop/${productId}`;
+      const { data: d } = await apiClient.get(endpoint);
+      return d;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["check-in-shop", productId] });
+      queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+      toast.success(isInShop ? "Removed from your shop" : "Added to your shop!");
+    },
+    onError: () => {
+      toast.error("Something went wrong. Please try again.");
+    },
   });
 
   const onImgChange = useCallback(({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -139,11 +170,20 @@ export default function ProductDetailScreen() {
             <Ionicons name="arrow-back" size={22} color={DARK} />
           </Pressable>
           <Pressable
-            style={[s.overlayBtn, { top: insets.top + 8, right: 60 }]}
+            style={[s.overlayBtn, { top: insets.top + 8, right: 108 }]}
             onPress={() => setWishlisted(p => { toast.success(!p ? "Added to wishlist" : "Removed from wishlist"); return !p; })}
           >
             <Ionicons name={wishlisted ? "heart" : "heart-outline"} size={20} color={wishlisted ? "#EF4444" : DARK} />
           </Pressable>
+          {isLoggedIn && (
+            <Pressable
+              style={[s.overlayBtn, { top: insets.top + 8, right: 60, backgroundColor: isInShop ? "#D1FAE5" : "rgba(255,255,255,0.95)" }]}
+              onPress={() => shopToggleMutation.mutate()}
+              disabled={shopToggleMutation.isPending}
+            >
+              <Ionicons name={isInShop ? "storefront" : "storefront-outline"} size={18} color={isInShop ? "#059669" : DARK} />
+            </Pressable>
+          )}
           <Pressable style={[s.overlayBtn, { top: insets.top + 8, right: 16 }]}>
             <Ionicons name="share-social-outline" size={20} color={DARK} />
           </Pressable>
