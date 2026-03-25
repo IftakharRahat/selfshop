@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { router } from "expo-router";
 import {
   View,
   ScrollView,
@@ -114,7 +115,13 @@ export default function CategoriesScreen() {
             return (
               <View key={sub.id} style={styles.subSection}>
                 {/* Subcategory header */}
-                <View style={styles.subHeader}>
+                <Pressable
+                  style={styles.subHeader}
+                  onPress={() => router.push({
+                    pathname: "/category-products",
+                    params: { type: "subcategory", slug: sub.slug, title: sub.sub_category_name },
+                  } as any)}
+                >
                   <View style={styles.subIconWrapper}>
                     <Image
                       source={{ uri: sub.subcategory_icon }}
@@ -125,7 +132,7 @@ export default function CategoriesScreen() {
                   <Text fontSize="$3" fontWeight="700" color="#1A1A2E" style={{ flex: 1 }}>
                     {sub.sub_category_name}
                   </Text>
-                </View>
+                </Pressable>
 
                 {/* Minicategories card grid */}
                 {miniList.length > 0 && (
@@ -137,6 +144,10 @@ export default function CategoriesScreen() {
                           styles.miniItem,
                           pressed && { opacity: 0.7 },
                         ]}
+                        onPress={() => router.push({
+                          pathname: "/category-products",
+                          params: { type: "minicategory", slug: mini.slug, title: mini.mini_category_name },
+                        } as any)}
                       >
                         <View style={styles.miniIconWrapper}>
                           <Image

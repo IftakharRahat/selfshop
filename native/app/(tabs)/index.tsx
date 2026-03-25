@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  Image,
   type ViewToken,
 } from "react-native";
 import { Text } from "tamagui";
@@ -21,30 +22,56 @@ import apiClient from "@/lib/api-client";
 
 const { width } = Dimensions.get("window");
 
-const BANNERS = [
-  {
-    id: "1",
-    title: "Big Sale!",
-    subtitle: "Up to 50% off on selected items",
-    bgColor: "#E5005F",
-  },
-  {
-    id: "2",
-    title: "Free Delivery",
-    subtitle: "On orders above ৳500",
-    bgColor: "#4CAF50",
-  },
-  {
-    id: "3",
-    title: "New Arrivals",
-    subtitle: "Check out the latest products",
-    bgColor: "#3257D9",
-  },
-];
+/* ── Image URL helper (mirrors web getImageUrl logic) ── */
+const IMAGE_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
+
+function resolveImageUrl(path?: string | null): string | null {
+  if (!path || path.trim().length < 2) return null;
+  const p = path.trim();
+  if (p.startsWith("http")) return p;
+  const clean = p.replace(/^\//, "");
+  if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
+  if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
+  return `${IMAGE_BASE}/storage/${clean}`;
+}
+
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text fontSize="$5" fontWeight="bold" color="#1A1A2E">
+        {title}
+      </Text>
+      <Pressable onPress={onSeeAll} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Text fontSize="$3" color="#E5005F" fontWeight="600">
+          See All
+        </Text>
+        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#E5005F", justifyContent: "center", alignItems: "center" }}>
+          <Ionicons name="arrow-forward" size={14} color="#fff" />
+        </View>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef<FlatList>(null);
+
+  /* ── Queries ── */
+  const sliders = useQuery({
+    queryKey: ["sliders"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/sliders");
+      return (data?.data ?? []).map((s: any) => ({
+        id: String(s.id ?? s.slider_title ?? Math.random()),
+        title: s.slider_title ?? "",
+        image: resolveImageUrl(s.slider_image),
+        link: s.slider_btn_link ?? "",
+      }));
+    },
+  });
 
   const categories = useQuery({
     queryKey: ["categories", "active"],
@@ -58,7 +85,6 @@ export default function HomeScreen() {
     queryKey: ["new-products"],
     queryFn: async () => {
       const { data } = await apiClient.get("/new-products");
-      // paginated response: { status, data: { data: [...], ... } }
       return data?.data?.data ?? data?.data ?? [];
     },
   });
@@ -71,17 +97,20 @@ export default function HomeScreen() {
     },
   });
 
+  const bannerList = sliders.data ?? [];
+
   // Auto-scroll banners
   useEffect(() => {
+    if (bannerList.length < 2) return;
     const timer = setInterval(() => {
       setBannerIndex((prev) => {
-        const next = (prev + 1) % BANNERS.length;
+        const next = (prev + 1) % bannerList.length;
         bannerRef.current?.scrollToIndex({ index: next, animated: true });
         return next;
       });
     }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [bannerList.length]);
 
   const onBannerViewableChange = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -121,70 +150,68 @@ export default function HomeScreen() {
       </View>
 
       {/* Banner Carousel */}
-      <View style={styles.bannerSection}>
-        <FlatList
-          ref={bannerRef}
-          data={BANNERS}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          bounces={false}
-          onViewableItemsChanged={onBannerViewableChange}
-          viewabilityConfig={bannerViewConfig}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={[styles.bannerCard, { backgroundColor: item.bgColor }]}>
-              <Text fontSize="$7" fontWeight="bold" color="#fff">
-                {item.title}
-              </Text>
-              <Text fontSize="$3" color="rgba(255,255,255,0.9)" mt="$1">
-                {item.subtitle}
-              </Text>
-              <Pressable style={styles.bannerButton}>
-                <Text fontSize="$3" fontWeight="bold" color="#1A1A2E">
-                  Shop Now
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        />
-        {/* Banner Dots */}
-        <View style={styles.bannerDots}>
-          {BANNERS.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                bannerIndex === i ? styles.dotActive : styles.dotInactive,
-              ]}
-            />
-          ))}
+      {bannerList.length > 0 && (
+        <View style={styles.bannerSection}>
+          <FlatList
+            ref={bannerRef}
+            data={bannerList}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            bounces={false}
+            onViewableItemsChanged={onBannerViewableChange}
+            viewabilityConfig={bannerViewConfig}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.bannerCard}>
+                {item.image ? (
+                  <Image
+                    source={{ uri: item.image }}
+                    style={styles.bannerImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.bannerPlaceholder}>
+                    <Ionicons name="image-outline" size={36} color="#ccc" />
+                  </View>
+                )}
+              </View>
+            )}
+          />
+          {/* Banner Dots */}
+          <View style={styles.bannerDots}>
+            {bannerList.map((_: any, i: number) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  bannerIndex === i ? styles.dotActive : styles.dotInactive,
+                ]}
+              />
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Categories */}
       {categoryList.length > 0 && (
         <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text fontSize="$5" fontWeight="bold" color="#1A1A2E">
-              Categories
-            </Text>
-            <Pressable onPress={() => router.push("/categories")} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Text fontSize="$3" color="#E5005F" fontWeight="600">
-                See All
-              </Text>
-              <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#E5005F", justifyContent: "center", alignItems: "center" }}>
-                <Ionicons name="arrow-forward" size={14} color="#fff" />
-              </View>
-            </Pressable>
-          </View>
+          <SectionHeader title="Categories" onSeeAll={() => router.push("/categories")} />
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryList}
           >
             {categoryList.map((cat: any) => (
-              <CategoryChip key={cat.id} name={cat.category_name} image={cat.category_icon} />
+              <CategoryChip
+                key={cat.id}
+                name={cat.category_name}
+                image={cat.category_icon}
+                onPress={() => router.push({
+                  pathname: "/category-products",
+                  params: { type: "category", slug: cat.slug, title: cat.category_name },
+                } as any)}
+              />
             ))}
           </ScrollView>
         </View>
@@ -193,16 +220,7 @@ export default function HomeScreen() {
       {/* Featured Products */}
       {allFeatured.length > 0 && (
         <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text fontSize="$5" fontWeight="bold" color="#1A1A2E">
-              Featured
-            </Text>
-            <Pressable>
-              <Text fontSize="$3" color="#E5005F" fontWeight="600">
-                See all
-              </Text>
-            </Pressable>
-          </View>
+          <SectionHeader title="Featured" onSeeAll={() => router.push("/collection/featured" as any)} />
           <FlatList
             data={allFeatured}
             horizontal
@@ -225,28 +243,23 @@ export default function HomeScreen() {
       {/* New Arrivals */}
       {newArrivals.length > 0 && (
         <View style={styles.sectionContainer}>
-          <View style={styles.sectionHeader}>
-            <Text fontSize="$5" fontWeight="bold" color="#1A1A2E">
-              New Arrivals
-            </Text>
-            <Pressable>
-              <Text fontSize="$3" color="#E5005F" fontWeight="600">
-                See all
-              </Text>
-            </Pressable>
-          </View>
-          <View style={styles.productGrid}>
-            {newArrivals.map((item: any) => (
+          <SectionHeader title="New Arrivals" onSeeAll={() => router.push("/collection/new_arrivel" as any)} />
+          <FlatList
+            data={newArrivals}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.productList}
+            keyExtractor={(item: any) => String(item.id)}
+            renderItem={({ item }: any) => (
               <ProductCard
-                key={item.id}
                 name={item.ProductName}
                 price={String(item.storefront_price ?? item.ProductSalePrice ?? item.ProductRegularPrice)}
                 image={item.ViewProductImage}
                 slug={item.ProductSlug}
-                variant="grid"
+                variant="horizontal"
               />
-            ))}
-          </View>
+            )}
+          />
         </View>
       )}
 
@@ -282,18 +295,20 @@ const styles = StyleSheet.create({
   bannerCard: {
     width: width - 40,
     marginHorizontal: 20,
-    height: 150,
+    height: 180,
     borderRadius: 16,
-    padding: 24,
-    justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: "#F0F0F5",
   },
-  bannerButton: {
-    backgroundColor: "#fff",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-    marginTop: 12,
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  bannerPlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F0F0F5",
   },
   bannerDots: {
     flexDirection: "row",
@@ -338,3 +353,4 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
+

@@ -109,17 +109,39 @@ export default function InvoiceScreen() {
     queryClient.invalidateQueries({ queryKey: ["reseller-profile"] });
   };
 
-  // Detect SSLCommerz success/fail/cancel URL patterns
+  // Detect SSLCommerz success/fail/cancel URL patterns.
+  // The backend redirects to the frontend site with a `payment=` query param
+  // (e.g. ?payment=success, ?payment=canceled, ?payment=failed, ?payment=error).
+  // We also keep legacy checks for /payment/… paths and status= params.
   const handleNavigationChange = (navState: { url: string }) => {
     const url = navState.url.toLowerCase();
-    if (url.includes("/payment/success") || url.includes("status=success")) {
+
+    const isSuccess =
+      url.includes("payment=success") ||
+      url.includes("payment=already_paid") ||
+      url.includes("/payment/success") ||
+      url.includes("status=success");
+
+    const isFail =
+      url.includes("payment=failed") ||
+      url.includes("payment=error") ||
+      url.includes("/payment/fail") ||
+      url.includes("status=fail");
+
+    const isCancel =
+      url.includes("payment=canceled") ||
+      url.includes("payment=cancelled") ||
+      url.includes("/payment/cancel") ||
+      url.includes("status=cancel");
+
+    if (isSuccess) {
       toast.success("Payment successful! 🎉 Your account is now active.");
       handleCloseWebView();
       router.replace("/");
-    } else if (url.includes("/payment/fail") || url.includes("status=fail")) {
+    } else if (isFail) {
       toast.error("Payment failed. Please try again.");
       handleCloseWebView();
-    } else if (url.includes("/payment/cancel") || url.includes("status=cancel")) {
+    } else if (isCancel) {
       toast.info("Payment cancelled.");
       handleCloseWebView();
     }
@@ -292,21 +314,33 @@ export default function InvoiceScreen() {
 
           {/* WebView */}
           {gatewayUrl && (
-            <KeyboardAvoidingView
-              style={{ flex: 1 }}
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              keyboardVerticalOffset={insets.top + 44}
-            >
+            Platform.OS === "ios" ? (
+              <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={insets.top + 44}>
+                <WebView
+                  ref={webViewRef}
+                  source={{ uri: gatewayUrl }}
+                  style={{ flex: 1, backgroundColor: "#1A1A2E" }}
+                  onLoadEnd={() => setWebViewLoading(false)}
+                  onNavigationStateChange={handleNavigationChange}
+                  javaScriptEnabled
+                  domStorageEnabled
+                  startInLoadingState={false}
+                  allowsInlineMediaPlayback
+                  sharedCookiesEnabled
+                  setSupportMultipleWindows={false}
+                />
+              </KeyboardAvoidingView>
+            ) : (
               <WebView
                 ref={webViewRef}
                 source={{ uri: gatewayUrl }}
-                style={{ flex: 1, backgroundColor: "#1A1A2E" }}
+                style={{ flex: 1, backgroundColor: "#fff" }}
                 onLoadEnd={() => setWebViewLoading(false)}
                 onNavigationStateChange={handleNavigationChange}
                 javaScriptEnabled
                 domStorageEnabled
                 startInLoadingState={false}
-                scalesPageToFit={Platform.OS === "android"}
+                scalesPageToFit={false}
                 allowsInlineMediaPlayback
                 sharedCookiesEnabled
                 androidLayerType="hardware"
@@ -314,14 +348,15 @@ export default function InvoiceScreen() {
                 setSupportMultipleWindows={false}
                 injectedJavaScript={`
                   (function(){
-                    var s=document.createElement('style');
-                    s.textContent='html,body{min-height:100vh!important;background:#1A1A2E!important;}';
-                    document.head.appendChild(s);
+                    var meta = document.createElement('meta');
+                    meta.name = 'viewport';
+                    meta.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0';
+                    document.head.appendChild(meta);
                   })();
                   true;
                 `}
               />
-            </KeyboardAvoidingView>
+            )
           )}
         </View>
       </Modal>
