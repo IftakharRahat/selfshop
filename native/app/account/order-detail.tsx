@@ -49,37 +49,9 @@ export default function OrderDetailScreen() {
       const searchParams = new URLSearchParams();
       if (invoiceID) searchParams.set("invoiceID", invoiceID);
       if (orderId) searchParams.set("id", orderId);
-      const url = `/track-order?${searchParams.toString()}`;
-      console.log("[OrderDetail] Fetching:", url);
-      const res = await apiClient.get(url);
+      const res = await apiClient.get(`/track-order?${searchParams.toString()}`);
       const apiResponse = res.data;
-      const orderData = apiResponse?.data ?? apiResponse;
-      console.log("[OrderDetail] orderproducts count:", orderData?.orderproducts?.length, "first item keys:", Object.keys(orderData?.orderproducts?.[0] ?? {}));
-      
-      // If products empty from track-order, try fetching order list data which includes products
-      if (orderData && (!orderData.orderproducts || orderData.orderproducts.length === 0)) {
-        console.log("[OrderDetail] Products empty, trying order-data endpoint. Order id:", orderData.id, "invoiceID:", orderData.invoiceID, "status:", orderData.status);
-        try {
-          const status = orderData.status ?? "Pending";
-          const listRes = await apiClient.get(`/order-data/${status}?page=1`);
-          console.log("[OrderDetail] order-data raw keys:", Object.keys(listRes.data ?? {}));
-          const listData = listRes.data?.data?.data ?? listRes.data?.data ?? [];
-          const orders = Array.isArray(listData) ? listData : [];
-          console.log("[OrderDetail] order-data returned", orders.length, "orders. First order id:", orders[0]?.id, "invoiceID:", orders[0]?.invoiceID, "products:", orders[0]?.orderproducts?.length);
-          const match = orders.find((o: any) => 
-            String(o.id) === String(orderData.id) || o.invoiceID === orderData.invoiceID
-          );
-          console.log("[OrderDetail] Match found:", !!match, "match products:", match?.orderproducts?.length);
-          if (match?.orderproducts?.length > 0) {
-            console.log("[OrderDetail] Found products from order-data:", match.orderproducts.length);
-            orderData.orderproducts = match.orderproducts;
-          }
-        } catch (e: any) {
-          console.log("[OrderDetail] order-data fallback failed:", e?.message ?? e);
-        }
-      }
-      
-      return orderData;
+      return apiResponse?.data ?? apiResponse;
     },
     enabled: !!invoiceID || !!orderId,
   });
