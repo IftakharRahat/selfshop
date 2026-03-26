@@ -6,7 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
+  ScrollView,
 } from "react-native";
 import { Text } from "tamagui";
 import { router, Stack } from "expo-router";
@@ -16,7 +16,6 @@ import { Ionicons } from "@expo/vector-icons";
 import apiClient from "@/lib/api-client";
 import { OrdersSkeleton } from "@/components/skeleton";
 
-const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
 
 /* ── Status Tabs ── */
@@ -67,8 +66,6 @@ export default function OrdersScreen() {
     queryKey: ["orders", activeStatus, page],
     queryFn: async () => {
       const { data } = await apiClient.get(`/order-data/${activeStatus}?page=${page}`);
-      // Response: { data: { data: [...orders], current_page, last_page } }
-      // or possibly: { data: [...orders] }
       return data;
     },
     staleTime: 30 * 1000,
@@ -76,7 +73,8 @@ export default function OrdersScreen() {
 
   const ordersRaw = ordersQuery.data;
   // Handle: data.data.data (triple-nested), data.data (double), or data (flat array)
-  const ordersList = ordersRaw?.data?.data ?? ordersRaw?.data ?? (Array.isArray(ordersRaw) ? ordersRaw : []);
+  const ordersList =
+    ordersRaw?.data?.data ?? ordersRaw?.data ?? (Array.isArray(ordersRaw) ? ordersRaw : []);
   const orders: any[] = Array.isArray(ordersList) ? ordersList : [];
   const lastPage = ordersRaw?.data?.last_page ?? ordersRaw?.last_page ?? 1;
   const counts = countQuery.data ?? {};
@@ -100,14 +98,14 @@ export default function OrdersScreen() {
 
   /* ── Get count for a status tab ── */
   function getCount(key: string): number {
-    // API might return different casing, try common patterns
     const k = key.toLowerCase();
     return Number(counts[key] ?? counts[k] ?? counts[`${k}_count`] ?? 0);
   }
 
   /* ── Render ── */
   const renderOrder = ({ item: order }: { item: any }) => {
-    const displayStatus = order.customer_status ?? order.display_status ?? order.status ?? activeStatus;
+    const displayStatus =
+      order.customer_status ?? order.display_status ?? order.status ?? activeStatus;
     const statusStyle = STATUS_COLORS[displayStatus] ?? STATUS_COLORS.Pending;
 
     return (
@@ -161,23 +159,22 @@ export default function OrdersScreen() {
       />
       <View style={styles.container}>
         {/* ── Status Tabs ── */}
-        <FlatList
-          data={STATUS_TABS}
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
           contentContainerStyle={styles.tabsContainer}
-          keyExtractor={(item) => item.key}
-          renderItem={({ item: tab }) => {
+        >
+          {STATUS_TABS.map((tab) => {
             const isActive = tab.key === activeStatus;
             const count = getCount(tab.key);
             return (
               <Pressable
+                key={tab.key}
                 style={[styles.tab, isActive && styles.tabActive]}
                 onPress={() => handleTabChange(tab.key)}
               >
-                <Text
-                  style={[styles.tabLabel, isActive && styles.tabLabelActive]}
-                >
+                <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
                   {tab.label}
                 </Text>
                 {count > 0 && (
@@ -189,8 +186,8 @@ export default function OrdersScreen() {
                 )}
               </Pressable>
             );
-          }}
-        />
+          })}
+        </ScrollView>
 
         {/* ── Orders List ── */}
         <FlatList
@@ -201,6 +198,7 @@ export default function OrdersScreen() {
             styles.listContent,
             orders.length === 0 && { flex: 1 },
           ]}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           refreshControl={
             <RefreshControl
               refreshing={ordersQuery.isRefetching}
@@ -286,7 +284,6 @@ const styles = StyleSheet.create({
   /* ── List ── */
   listContent: {
     padding: 16,
-    gap: 10,
     paddingBottom: 40,
   },
   emptyState: {
