@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Image,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, useLocalSearchParams, router } from "expo-router";
@@ -15,6 +16,21 @@ import { Ionicons } from "@expo/vector-icons";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
+
+/* ── Image URL helper ── */
+const IMAGE_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
+
+function resolveImageUrl(path?: string | null): string | null {
+  if (!path || path.trim().length < 2) return null;
+  const p = path.trim();
+  if (p.startsWith("http")) return p;
+  const clean = p.replace(/^\//, "");
+  if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
+  if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
+  return `${IMAGE_BASE}/storage/${clean}`;
+}
 
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
   Pending: { color: "#92400E", bg: "#FEF3C7" },
@@ -202,6 +218,20 @@ export default function OrderDetailScreen() {
             const itemTotal = costPrice * qty;
             return (
               <View key={item.id ?? idx} style={styles.productRow}>
+                {(() => {
+                  const imgUri = resolveImageUrl(item.product?.ViewProductImage);
+                  return imgUri ? (
+                    <Image
+                      source={{ uri: imgUri }}
+                      style={styles.productImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.productImagePlaceholder}>
+                      <Ionicons name="cube-outline" size={16} color="#9CA3AF" />
+                    </View>
+                  );
+                })()}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.productName} numberOfLines={2}>
                     {item.productName ?? item.ProductName ?? "Product"}
@@ -311,8 +341,15 @@ const styles = StyleSheet.create({
   },
 
   productRow: {
-    flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between",
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F5F5FA",
+  },
+  productImage: {
+    width: 36, height: 36, borderRadius: 8, marginTop: 2,
+  },
+  productImagePlaceholder: {
+    width: 36, height: 36, borderRadius: 8, backgroundColor: "#F5F5FA",
+    justifyContent: "center", alignItems: "center", marginTop: 2,
   },
   productName: { fontSize: 13, fontWeight: "600", color: "#1A1A2E" },
   productMeta: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },

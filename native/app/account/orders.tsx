@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
+  Image,
 } from "react-native";
 import { Text } from "tamagui";
 import { router, Stack } from "expo-router";
@@ -17,6 +18,21 @@ import apiClient from "@/lib/api-client";
 import { OrdersSkeleton } from "@/components/skeleton";
 
 const ACCENT = "#E5005F";
+
+/* ── Image URL helper ── */
+const IMAGE_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
+
+function resolveImageUrl(path?: string | null): string | null {
+  if (!path || path.trim().length < 2) return null;
+  const p = path.trim();
+  if (p.startsWith("http")) return p;
+  const clean = p.replace(/^\//, "");
+  if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
+  if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
+  return `${IMAGE_BASE}/storage/${clean}`;
+}
 
 /* ── Status Tabs ── */
 const STATUS_TABS = [
@@ -122,9 +138,21 @@ export default function OrdersScreen() {
         }
       >
         <View style={styles.orderTop}>
-          <View style={styles.orderIconWrapper}>
-            <Ionicons name="cube-outline" size={20} color={ACCENT} />
-          </View>
+          {(() => {
+            const imgPath = order.orderproducts?.[0]?.product?.ViewProductImage;
+            const imgUri = resolveImageUrl(imgPath);
+            return imgUri ? (
+              <Image
+                source={{ uri: imgUri }}
+                style={styles.orderImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.orderIconWrapper}>
+                <Ionicons name="cube-outline" size={20} color={ACCENT} />
+              </View>
+            );
+          })()}
           <View style={styles.orderInfo}>
             <Text style={styles.orderInvoice} numberOfLines={1}>
               {order.invoiceID}
@@ -313,6 +341,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#FDF2F8",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 2,
+  },
+  orderImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     marginTop: 2,
   },
   orderInfo: { flex: 1 },
