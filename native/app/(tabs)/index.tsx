@@ -97,6 +97,15 @@ export default function HomeScreen() {
     },
   });
 
+  const flashSale = useQuery({
+    queryKey: ["flash-sale"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/flash-sale");
+      return data?.data ?? data;
+    },
+    staleTime: 60 * 1000,
+  });
+
   const bannerList = sliders.data ?? [];
 
   // Auto-scroll banners
@@ -211,6 +220,44 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </View>
+      )}
+
+      {/* Flash Sale Banner */}
+      {flashSale.data?.products?.length > 0 && (
+        <Pressable
+          style={{
+            marginHorizontal: 20,
+            marginBottom: 24,
+            borderRadius: 16,
+            overflow: "hidden",
+            backgroundColor: "#3257D9",
+            padding: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+          onPress={() => router.push("/flash-sale" as any)}
+        >
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={{ fontSize: 18 }}>⚡</Text>
+              <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}>
+                Flash Sale
+              </Text>
+            </View>
+            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
+              {flashSale.data.products.length} products on sale
+            </Text>
+          </View>
+          <View style={{
+            backgroundColor: "#E5005F",
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            borderRadius: 10,
+          }}>
+            <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>Shop Now</Text>
+          </View>
+        </Pressable>
       )}
 
       {/* Featured Products */}

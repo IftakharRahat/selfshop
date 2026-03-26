@@ -28,6 +28,9 @@ const QUICK_ACTIONS = [
   { icon: "people-outline" as const, label: "Referral", route: "/account/referral", color: "#D97706" },
   { icon: "search-outline" as const, label: "Track", route: "/account/track-order", color: "#2563EB" },
   { icon: "swap-horizontal-outline" as const, label: "Transfer", route: "/account/balance-transfer", color: "#DC2626" },
+  { icon: "trending-up-outline" as const, label: "Income", route: "/account/order-income", color: "#0891B2" },
+  { icon: "shield-checkmark-outline" as const, label: "Fraud", route: "/account/fraud-checker", color: "#7C3AED" },
+  { icon: "add-circle-outline" as const, label: "Request", route: "/account/product-request", color: "#EA580C" },
 ] as const;
 
 /* ── Status pill colors ── */
@@ -375,6 +378,36 @@ export default function DashboardScreen() {
               label="Income History"
               subtitle="View your earnings"
               onPress={() => router.push("/account/income-history" as any)}
+            />
+            <MenuItem
+              icon="trending-up-outline"
+              label="Order Income"
+              subtitle="Per-order profit breakdown"
+              onPress={() => router.push("/account/order-income" as any)}
+            />
+            <MenuItem
+              icon="shield-checkmark-outline"
+              label="Fraud Checker"
+              subtitle="Verify customer phone numbers"
+              onPress={() => router.push("/account/fraud-checker" as any)}
+            />
+            <MenuItem
+              icon="add-circle-outline"
+              label="Product Request"
+              subtitle="Request new products"
+              onPress={() => router.push("/account/product-request" as any)}
+            />
+            <MenuItem
+              icon="trophy-outline"
+              label="Event Challenges"
+              subtitle="Participate and earn rewards"
+              onPress={() => router.push("/account/events" as any)}
+            />
+            <MenuItem
+              icon="book-outline"
+              label="Free Courses"
+              subtitle="Learn and grow for free"
+              onPress={() => router.push("/account/free-courses" as any)}
             />
             <MenuItem
               icon="people-outline"

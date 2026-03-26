@@ -206,6 +206,39 @@ export default function AccountScreen() {
         </View>
       </View>
 
+      {/* Legal & Info */}
+      <View style={styles.menuGroup}>
+        <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
+          Legal & Info
+        </Text>
+        <View style={styles.menuCard}>
+          <MenuItem
+            icon="information-circle-outline"
+            label="About Us"
+            subtitle="Learn about SelfShop"
+            onPress={() => router.push("/about-us" as any)}
+          />
+          <MenuItem
+            icon="shield-outline"
+            label="Privacy Policy"
+            subtitle="How we handle your data"
+            onPress={() => router.push("/privacy-policy" as any)}
+          />
+          <MenuItem
+            icon="document-text-outline"
+            label="Terms & Conditions"
+            subtitle="Terms of service"
+            onPress={() => router.push("/terms-and-conditions" as any)}
+          />
+          <MenuItem
+            icon="arrow-undo-outline"
+            label="Return Policy"
+            subtitle="Returns and refunds"
+            onPress={() => router.push("/return-policy" as any)}
+          />
+        </View>
+      </View>
+
       {/* More */}
       <View style={styles.menuGroup}>
         <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
