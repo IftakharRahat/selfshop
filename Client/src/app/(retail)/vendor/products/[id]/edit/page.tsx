@@ -621,7 +621,7 @@ export default function VendorEditProductPage() {
 					</div>
 
 					{/* Product Variants (Colors & Sizes) */}
-					{sellingType !== 'dropshipping' && (
+					{(
 					<div className="rounded-xl bg-indigo-50/30 p-4 sm:p-6 shadow-sm border border-indigo-100">
 						<h2 className="text-sm font-bold text-indigo-900 mb-3 flex items-center gap-2">
 							🎨 Product Variants (Colors & Sizes)
