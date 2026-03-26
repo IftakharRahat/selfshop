@@ -76,11 +76,8 @@ export default function AllSuppliersScreen() {
         ]}
         onPress={() =>
           router.push({
-            pathname: "/webview-page",
-            params: {
-              url: `https://selfshop.com.bd/supplier/${item.slug ?? item.id}`,
-              title: name,
-            },
+            pathname: "/supplier/[slug]",
+            params: { slug: item.slug ?? item.id },
           } as any)
         }
       >

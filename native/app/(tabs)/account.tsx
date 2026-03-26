@@ -246,6 +246,12 @@ export default function AccountScreen() {
         </Text>
         <View style={styles.menuCard}>
           <MenuItem
+            icon="chatbubble-ellipses-outline"
+            label="Contact & Support"
+            subtitle="Get help or send a message"
+            onPress={() => router.push("/contact" as any)}
+          />
+          <MenuItem
             icon="star-outline"
             label="Rate Us"
             subtitle="Share your feedback"
