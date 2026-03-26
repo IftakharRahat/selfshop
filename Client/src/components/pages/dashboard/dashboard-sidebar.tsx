@@ -10,6 +10,7 @@ import {
 	Download,
 	GraduationCap,
 	Home,
+	LogOut,
 	Package,
 	Settings,
 	Shield,
@@ -21,10 +22,12 @@ import {
 	Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FcSupport } from "react-icons/fc";
 import { MdDeveloperBoard, MdFormatQuote } from "react-icons/md";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
+import { logout } from "@/redux/features/auth/authSlice";
+import { useAppDispatch } from "@/redux/hooks";
 
 function getInitials(name: string | undefined): string {
 	if (!name) return "U";
@@ -82,6 +85,8 @@ export default function DashboardSidebar({
 	onItemClick,
 }: DashboardSidebarProps) {
 	const { data } = useGetMeQuery(undefined);
+	const dispatch = useAppDispatch();
+	const router = useRouter();
 
 	const profile = data?.data?.profile;
 	const walletBalance =
@@ -93,6 +98,11 @@ export default function DashboardSidebar({
 			0,
 		) || 0;
 	const pathname = usePathname();
+
+	const handleLogout = () => {
+		dispatch(logout());
+		router.push("/");
+	};
 
 	return (
 		<aside className="w-full bg-white  sticky top-0 h-full max-h-[calc(100vh-75px)] overflow-hidden">
@@ -152,6 +162,19 @@ export default function DashboardSidebar({
 							</li>
 						);
 					})}
+					{/* Logout */}
+					<li>
+						<button
+							onClick={() => {
+								onItemClick?.();
+								handleLogout();
+							}}
+							className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors cursor-pointer text-red-600 hover:bg-red-50"
+						>
+							<LogOut className="w-5 h-5" />
+							<span className="font-medium">Logout</span>
+						</button>
+					</li>
 				</ul>
 			</nav>
 		</aside>
