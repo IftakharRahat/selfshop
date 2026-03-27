@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
 import { OrderListSkeleton } from "@/components/skeleton";
 
@@ -53,21 +53,23 @@ export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const [activeStatus, setActiveStatus] = useState("all");
 
-  const { data, isLoading, isError, refetch, isRefetching } = useQuery({
+  const { data, isLoading, isError, refetch, isRefetching, isFetching } = useQuery({
     queryKey: ["vendor-orders", activeStatus],
     queryFn: async () => {
       const params: Record<string, string | number> = { per_page: 25 };
       if (activeStatus !== "all") params.status = activeStatus;
       const { data } = await apiClient.get("/vendor/orders", { params });
-      return data?.data as { orders: OrderItem[]; pagination: { total: number } };
+      return data?.data as { orders: OrderItem[]; pagination: { total: number }; status_counts?: Record<string, number> };
     },
+    placeholderData: (prev) => prev,
   });
 
   const orders = data?.orders ?? [];
+  const statusCounts = data?.status_counts ?? {};
   const statusColor = (status: string) =>
     STATUS_COLORS[status] ?? { bg: "#F3F4F6", text: "#374151" };
 
-  if (isLoading) {
+  if (!data && isLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
@@ -86,28 +88,41 @@ export default function OrdersScreen() {
       </View>
 
       {/* Status Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer}
-      >
-        {STATUS_TABS.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            onPress={() => setActiveStatus(tab.key)}
-            style={[styles.tab, activeStatus === tab.key && styles.tabActive]}
-          >
-            <Text style={[styles.tabText, activeStatus === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={{ flexShrink: 0 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {STATUS_TABS.map((tab) => {
+            const count = tab.key === "all"
+              ? (data?.pagination?.total ?? 0)
+              : (statusCounts[tab.key] ?? 0);
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setActiveStatus(tab.key)}
+                style={[styles.tab, activeStatus === tab.key && styles.tabActive]}
+              >
+                <Text
+                  style={[styles.tabText, activeStatus === tab.key && styles.tabTextActive]}
+                  numberOfLines={1}
+                >
+                  {tab.label}{count > 0 ? ` (${count})` : ""}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {isError ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={48} color="#d1d5db" />
           <Text style={styles.emptyText}>Failed to load orders</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()} activeOpacity={0.7}>
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : orders.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -185,11 +200,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
   },
-  tabsContainer: { paddingHorizontal: 16, paddingVertical: 10, gap: 6 },
+  tabsContainer: { paddingHorizontal: 16, paddingVertical: 6, gap: 6 },
   tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -205,8 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
+    ...CARD_SHADOW,
   },
   orderHeader: {
     flexDirection: "row",
@@ -232,4 +246,12 @@ const styles = StyleSheet.create({
   orderTotal: { fontSize: 15, fontWeight: "700", color: BRAND.primary },
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   emptyText: { fontSize: 14, color: "#9ca3af" },
+  retryBtn: {
+    marginTop: 8,
+    backgroundColor: BRAND.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  retryBtnText: { fontSize: 13, fontWeight: "600", color: "#fff" },
 });

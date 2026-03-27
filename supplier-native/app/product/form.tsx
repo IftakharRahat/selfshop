@@ -45,7 +45,7 @@ export default function ProductFormScreen() {
   const [weight, setWeight] = useState("");
   const [minimumQty, setMinimumQty] = useState("");
   const [discount, setDiscount] = useState("");
-  const [sellingType, setSellingType] = useState<"wholesale" | "dropshipping" | "both">("both");
+  const [sellingType, setSellingType] = useState<"wholesale" | "dropshipping" | "both">("wholesale");
   const [isFeatured, setIsFeatured] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -103,6 +103,7 @@ export default function ProductFormScreen() {
       if (discount) formData.append("Discount", discount);
       formData.append("selling_type", sellingType);
       formData.append("frature", isFeatured ? "1" : "0");
+      formData.append("allow_dropship", sellingType === "dropshipping" || sellingType === "both" ? "1" : "0");
 
       if (imageUri) {
         const filename = imageUri.split("/").pop() ?? "product.jpg";
@@ -127,8 +128,16 @@ export default function ProductFormScreen() {
       queryClient.invalidateQueries({ queryKey: ["vendor-products"] });
       if (isEdit) {
         queryClient.invalidateQueries({ queryKey: ["vendor-product", productId] });
+        router.back();
+      } else {
+        // Navigate to variants for wholesale/both after creating
+        const newId = result?.data?.product?.id;
+        if (newId && (sellingType === "wholesale" || sellingType === "both")) {
+          router.replace({ pathname: "/product/variants", params: { id: String(newId) } });
+        } else {
+          router.back();
+        }
       }
-      router.back();
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? "Failed to save product";
@@ -151,10 +160,12 @@ export default function ProductFormScreen() {
   const existingImage = getImageUrl(productData?.ViewProductImage ?? productData?.ProductImage);
 
   const SELLING_TYPES = [
-    { value: "wholesale", label: "Wholesale" },
-    { value: "dropshipping", label: "Dropshipping" },
-    { value: "both", label: "Both" },
+    { value: "wholesale", label: "Wholesale", icon: "🏭", subtitle: "Bulk pricing tiers", accent: "#059669", bg: "#ECFDF5" },
+    { value: "dropshipping", label: "Dropshipping", icon: "🚀", subtitle: "Single price & stock", accent: "#3b82f6", bg: "#EFF6FF" },
+    { value: "both", label: "Both", icon: "🔄", subtitle: "Wholesale + Dropship", accent: "#d97706", bg: "#FFFBEB" },
   ] as const;
+
+  const showPriceFields = sellingType === "dropshipping" || sellingType === "both";
 
   if (isEdit && isLoading) {
     return (
@@ -207,50 +218,33 @@ export default function ProductFormScreen() {
 
           <Field label="Product Name *" value={name} onChange={setName} placeholder="Enter product name" />
           <Field label="SKU" value={sku} onChange={setSku} placeholder="Product SKU code" />
-
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Field label="Reseller Price *" value={resellerPrice} onChange={setResellerPrice} placeholder="0" keyboard="numeric" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Regular Price" value={regularPrice} onChange={setRegularPrice} placeholder="0" keyboard="numeric" />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Field label="Quantity" value={qty} onChange={setQty} placeholder="0" keyboard="numeric" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Discount (%)" value={discount} onChange={setDiscount} placeholder="0" keyboard="numeric" />
-            </View>
-          </View>
-
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Field label="Weight" value={weight} onChange={setWeight} placeholder="e.g. 500g" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Min Order Qty" value={minimumQty} onChange={setMinimumQty} placeholder="1" keyboard="numeric" />
-            </View>
-          </View>
         </View>
 
         {/* Selling Type */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Selling Type</Text>
-          <View style={styles.chipRow}>
-            {SELLING_TYPES.map((st) => (
-              <TouchableOpacity
-                key={st.value}
-                style={[styles.chip, sellingType === st.value && styles.chipActive]}
-                onPress={() => setSellingType(st.value)}
-              >
-                <Text style={[styles.chipText, sellingType === st.value && styles.chipTextActive]}>
-                  {st.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.sellingTypeRow}>
+            {SELLING_TYPES.map((st) => {
+              const isActive = sellingType === st.value;
+              return (
+                <TouchableOpacity
+                  key={st.value}
+                  style={[
+                    styles.sellingTypeCard,
+                    { borderColor: isActive ? st.accent : "#e5e7eb" },
+                    isActive && { backgroundColor: st.bg },
+                  ]}
+                  onPress={() => setSellingType(st.value)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.sellingTypeIcon}>{st.icon}</Text>
+                  <Text style={[styles.sellingTypeLabel, isActive && { color: st.accent }]}>
+                    {st.label}
+                  </Text>
+                  <Text style={styles.sellingTypeSub}>{st.subtitle}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <View style={styles.switchRow}>
@@ -264,6 +258,51 @@ export default function ProductFormScreen() {
           </View>
         </View>
 
+        {/* Price & Stock — only for dropshipping/both */}
+        {showPriceFields ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Price & Stock</Text>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Field label="Reseller Price *" value={resellerPrice} onChange={setResellerPrice} placeholder="0" keyboard="numeric" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Regular Price" value={regularPrice} onChange={setRegularPrice} placeholder="0" keyboard="numeric" />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Field label="Quantity" value={qty} onChange={setQty} placeholder="0" keyboard="numeric" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Discount (%)" value={discount} onChange={setDiscount} placeholder="0" keyboard="numeric" />
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Field label="Weight" value={weight} onChange={setWeight} placeholder="e.g. 500g" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Field label="Min Order Qty" value={minimumQty} onChange={setMinimumQty} placeholder="1" keyboard="numeric" />
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.infoCard}>
+            <Ionicons name="information-circle" size={20} color="#4f46e5" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.infoTitle}>Wholesale pricing via variants</Text>
+              <Text style={styles.infoText}>
+                Price & stock are managed through variants (colors & sizes).{"\n"}
+                {isEdit ? "Use 'Manage Variants' below to set pricing." : "After creating the product, you'll be taken to add variants."}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Description */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Description</Text>
@@ -271,11 +310,29 @@ export default function ProductFormScreen() {
           <Field label="Full Details" value={details} onChange={setDetails} placeholder="Detailed product description" multiline />
         </View>
 
+        {/* Manage Variants — only for edit mode */}
+        {isEdit && (
+          <TouchableOpacity
+            style={styles.variantsBtn}
+            onPress={() => router.push({ pathname: "/product/variants", params: { id: String(productId) } })}
+            activeOpacity={0.7}
+          >
+            <View style={styles.variantsBtnInner}>
+              <Ionicons name="color-palette-outline" size={20} color={BRAND.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.variantsBtnTitle}>Manage Variants</Text>
+                <Text style={styles.variantsBtnSub}>Colors, Sizes & Bulk Pricing</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Save */}
         <TouchableOpacity
           style={[styles.saveBtn, saveMutation.isPending && { opacity: 0.6 }]}
           onPress={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending || !name.trim() || !resellerPrice.trim()}
+          disabled={saveMutation.isPending || !name.trim() || (showPriceFields && !resellerPrice.trim())}
           activeOpacity={0.8}
         >
           {saveMutation.isPending ? (
@@ -377,6 +434,19 @@ const styles = StyleSheet.create({
     color: "#1a1a2e",
   },
   chipRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  sellingTypeRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  sellingTypeCard: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 10,
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#fff",
+  },
+  sellingTypeIcon: { fontSize: 20, marginBottom: 2 },
+  sellingTypeLabel: { fontSize: 11, fontWeight: "700", color: "#374151" },
+  sellingTypeSub: { fontSize: 9, color: "#9ca3af", textAlign: "center" },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
@@ -404,4 +474,27 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveBtnText: { fontSize: 15, fontWeight: "600", color: "#fff" },
+  infoCard: {
+    flexDirection: "row",
+    backgroundColor: "#EEF2FF",
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+    marginBottom: 12,
+    alignItems: "flex-start",
+  },
+  infoTitle: { fontSize: 13, fontWeight: "600", color: "#312E81", marginBottom: 2 },
+  infoText: { fontSize: 11, color: "#4338CA", lineHeight: 16 },
+  variantsBtn: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: BRAND.primaryLight,
+    borderStyle: "dashed",
+  },
+  variantsBtnInner: { flexDirection: "row", alignItems: "center", gap: 12 },
+  variantsBtnTitle: { fontSize: 14, fontWeight: "600", color: BRAND.primary },
+  variantsBtnSub: { fontSize: 11, color: "#6b7280", marginTop: 1 },
 });

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   Alert,
   RefreshControl,
   Switch,
@@ -16,8 +15,9 @@ import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
+import { SubScreenSkeleton } from "@/components/skeleton";
 
 interface ShippingMethod {
   id: number;
@@ -143,7 +143,7 @@ export default function ShippingScreen() {
         )}
 
         {isLoading ? (
-          <ActivityIndicator size="large" color={BRAND.primary} style={{ marginTop: 40 }} />
+          <SubScreenSkeleton />
         ) : methods.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="boat-outline" size={48} color="#d1d5db" />
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   saveBtnText: { fontSize: 13, fontWeight: "600", color: "#fff" },
   emptyState: { alignItems: "center", paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 14, color: "#9ca3af" },
-  methodCard: { backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: "#f3f4f6" },
+  methodCard: { backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 8, ...CARD_SHADOW },
   methodHeader: { flexDirection: "row", justifyContent: "space-between" },
   methodName: { fontSize: 14, fontWeight: "600", color: "#1a1a2e" },
   methodType: { fontSize: 11, color: "#6b7280", marginTop: 2 },

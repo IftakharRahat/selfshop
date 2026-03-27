@@ -6,13 +6,24 @@ import {
   ScrollView,
   RefreshControl,
   Image,
+  TouchableOpacity,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
+import { useSession } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace("/api", "") ?? "";
 function getImageUrl(path?: string | null) {
@@ -46,6 +57,8 @@ interface DashboardData {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
+  const { data: session } = useSession();
+  const userName = session?.user?.name?.split(" ")[0] ?? "Supplier";
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-dashboard"],
@@ -111,7 +124,10 @@ export default function DashboardScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard</Text>
+        <View>
+          <Text style={styles.greeting}>{getGreeting()}, {userName}</Text>
+          <Text style={styles.headerTitle}>Dashboard</Text>
+        </View>
         <View style={styles.ratingBadge}>
           <Ionicons name="star" size={14} color="#f59e0b" />
           <Text style={styles.ratingText}>{data?.avg_rating ?? "—"}</Text>
@@ -125,6 +141,50 @@ export default function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Quick Actions ── */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.quickActionBtn}
+            onPress={() => router.push("/product/form")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: "#EEF2FF" }]}>
+              <Ionicons name="add-circle" size={20} color="#4f46e5" />
+            </View>
+            <Text style={styles.quickActionText}>Add Product</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickActionBtn}
+            onPress={() => router.push("/(tabs)/orders")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: "#ECFDF5" }]}>
+              <Ionicons name="clipboard" size={20} color="#059669" />
+            </View>
+            <Text style={styles.quickActionText}>View Orders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickActionBtn}
+            onPress={() => router.push("/account/reports")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: "#FEF3C7" }]}>
+              <Ionicons name="bar-chart" size={20} color="#d97706" />
+            </View>
+            <Text style={styles.quickActionText}>Reports</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.quickActionBtn}
+            onPress={() => router.push("/account/earnings")}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: "#EEEDFA" }]}>
+              <Ionicons name="wallet" size={20} color={BRAND.primary} />
+            </View>
+            <Text style={styles.quickActionText}>Earnings</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Stat Cards ── */}
         <View style={styles.statsGrid}>
           {statCards.map((card) => (
@@ -237,10 +297,10 @@ export default function DashboardScreen() {
         )}
 
         {/* ── Pending Amount ── */}
-        <View style={[styles.sectionCard, { backgroundColor: "#FFF7ED", borderColor: "#FED7AA" }]}>
+        <View style={[styles.sectionCard, styles.pendingCard]}>
           <Text style={[styles.sectionTitle, { color: "#92400e" }]}>Pending Amount</Text>
           <Text style={styles.pendingAmount}>৳{(data?.pending_amount ?? 0).toLocaleString()}</Text>
-          <Text style={{ fontSize: 12, color: "#b45309", marginTop: 2 }}>Awaiting delivery confirmation</Text>
+          <Text style={styles.pendingSubtext}>Awaiting delivery confirmation</Text>
         </View>
 
         {/* Bottom spacer for tab bar */}
@@ -254,7 +314,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f9fafb" },
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -262,6 +322,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
   },
+  greeting: { fontSize: 13, color: "#6b7280", marginBottom: 2 },
   headerTitle: { fontSize: 22, fontWeight: "700", color: "#1a1a2e" },
   ratingBadge: {
     flexDirection: "row",
@@ -274,6 +335,29 @@ const styles = StyleSheet.create({
   },
   ratingText: { fontSize: 13, fontWeight: "600", color: "#92400e" },
   scrollContent: { padding: 16 },
+  quickActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  quickActionBtn: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: "#374151",
+    textAlign: "center",
+  },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -284,8 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 14,
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
+    ...CARD_SHADOW,
   },
   statIconWrap: {
     width: 36,
@@ -313,8 +396,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     marginTop: 12,
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
+    ...CARD_SHADOW,
   },
   sectionTitle: { fontSize: 15, fontWeight: "600", color: "#1a1a2e", marginBottom: 12 },
   chartHeader: {
@@ -345,7 +427,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   barValue: {
-    fontSize: 9,
+    fontSize: 11,
     color: "#9ca3af",
     marginBottom: 4,
     fontWeight: "500",
@@ -356,7 +438,7 @@ const styles = StyleSheet.create({
     minHeight: 4,
   },
   barLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#6b7280",
     marginTop: 6,
     fontWeight: "500",
@@ -405,7 +487,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   topProductRatingText: { fontSize: 10, fontWeight: "600", color: "#92400e" },
+  pendingCard: { backgroundColor: "#FFF7ED", borderColor: "#FED7AA", borderWidth: 1 },
   pendingAmount: { fontSize: 28, fontWeight: "700", color: "#ea580c" },
+  pendingSubtext: { fontSize: 12, color: "#b45309", marginTop: 2 },
   errorContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   errorText: { fontSize: 16, fontWeight: "600", color: "#6b7280" },
   errorSubtext: { fontSize: 13, color: "#9ca3af", textAlign: "center", paddingHorizontal: 40 },

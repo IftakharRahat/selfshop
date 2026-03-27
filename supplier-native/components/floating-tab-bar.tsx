@@ -1,6 +1,7 @@
 import React from "react";
 import {
   View,
+  Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
@@ -47,6 +48,7 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
             <TouchableOpacity
               key={tab.name}
               accessibilityRole="button"
+              accessibilityLabel={tab.label}
               accessibilityState={isFocused ? { selected: true } : {}}
               onPress={onPress}
               style={styles.tab}
@@ -59,9 +61,9 @@ export default function FloatingTabBar({ state, navigation }: BottomTabBarProps)
                   color={isFocused ? BRAND.primary : "#9ca3af"}
                 />
               </View>
-              <View style={styles.labelRow}>
-                <View style={[styles.dot, isFocused && styles.dotActive]} />
-              </View>
+              <Text style={[styles.label, isFocused && styles.labelActive]}>
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -114,17 +116,14 @@ const styles = StyleSheet.create({
   iconWrapFocused: {
     backgroundColor: BRAND.primaryLight,
   },
-  labelRow: {
-    marginTop: 3,
-    alignItems: "center",
+  label: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#9ca3af",
+    marginTop: 2,
   },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "transparent",
-  },
-  dotActive: {
-    backgroundColor: BRAND.primary,
+  labelActive: {
+    color: BRAND.primary,
+    fontWeight: "600",
   },
 });

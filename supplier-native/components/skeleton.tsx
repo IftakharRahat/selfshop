@@ -106,6 +106,26 @@ export function OrderListSkeleton() {
   );
 }
 
+/* ── Sub-Screen Skeleton (reports, earnings, inventory, shipping) ── */
+
+export function SubScreenSkeleton() {
+  return (
+    <View style={skeletonStyles.container}>
+      {/* Hero summary card */}
+      <Skeleton width="100%" height={80} borderRadius={14} />
+      {/* Stat grid */}
+      <View style={[skeletonStyles.row, { marginTop: 12, gap: 8 }]}>
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} width="31%" height={72} borderRadius={10} />
+        ))}
+      </View>
+      {/* Section card with list rows */}
+      <Skeleton width="100%" height={160} borderRadius={14} style={{ marginTop: 12 }} />
+      <Skeleton width="100%" height={120} borderRadius={14} style={{ marginTop: 12 }} />
+    </View>
+  );
+}
+
 const skeletonStyles = StyleSheet.create({
   container: { padding: 16, gap: 4 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },

@@ -6,14 +6,14 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
+import { SubScreenSkeleton } from "@/components/skeleton";
 
 interface EarningsSummary {
   total_sales: number;
@@ -78,9 +78,7 @@ export default function EarningsScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND.primary} />
-        </View>
+        <SubScreenSkeleton />
       ) : (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -164,12 +162,12 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
   statCard: {
     width: "31%", backgroundColor: "#fff", borderRadius: 12, padding: 12,
-    borderWidth: 1, borderColor: "#f3f4f6", alignItems: "center", gap: 4,
+    alignItems: "center", gap: 4, ...CARD_SHADOW,
   },
   statCardValue: { fontSize: 13, fontWeight: "700", color: "#1a1a2e" },
   statCardLabel: { fontSize: 9, color: "#9ca3af", fontWeight: "500", textAlign: "center" },
   sectionCard: {
-    backgroundColor: "#fff", borderRadius: 14, padding: 16, borderWidth: 1, borderColor: "#f3f4f6",
+    backgroundColor: "#fff", borderRadius: 14, padding: 16, ...CARD_SHADOW,
   },
   sectionTitle: { fontSize: 15, fontWeight: "600", color: "#1a1a2e", marginBottom: 12 },
   emptyText: { fontSize: 13, color: "#9ca3af", textAlign: "center", paddingVertical: 16 },

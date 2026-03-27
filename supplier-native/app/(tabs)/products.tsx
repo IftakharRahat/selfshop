@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
 import { ProductListSkeleton } from "@/components/skeleton";
 
@@ -48,12 +48,29 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> 
 export default function ProductsScreen() {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => { if (debounceTimeout.current) clearTimeout(debounceTimeout.current); };
+  }, [search]);
+
+  const STATUS_FILTERS = [
+    { key: "all", label: "All" },
+    { key: "Active", label: "Active" },
+    { key: "Inactive", label: "Inactive" },
+    { key: "pending", label: "Pending" },
+  ];
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
-    queryKey: ["vendor-products", search],
+    queryKey: ["vendor-products", debouncedSearch, statusFilter],
     queryFn: async () => {
       const params: Record<string, string> = {};
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (statusFilter !== "all") params.status = statusFilter;
       const { data } = await apiClient.get("/vendor/products", { params });
       return data?.data?.products as Product[];
     },
@@ -95,6 +112,21 @@ export default function ProductsScreen() {
             <Ionicons name="close-circle" size={18} color="#9ca3af" />
           </TouchableOpacity>
         )}
+      </View>
+
+      {/* Status Filters */}
+      <View style={styles.filterRow}>
+        {STATUS_FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f.key}
+            style={[styles.filterChip, statusFilter === f.key && styles.filterChipActive]}
+            onPress={() => setStatusFilter(f.key)}
+          >
+            <Text style={[styles.filterChipText, statusFilter === f.key && styles.filterChipTextActive]}>
+              {f.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {isError ? (
@@ -215,9 +247,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 12,
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
     gap: 12,
+    ...CARD_SHADOW,
   },
   productImageWrap: {
     width: 72,
@@ -245,6 +276,27 @@ const styles = StyleSheet.create({
   qtyText: { fontSize: 11, color: "#6b7280" },
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   emptyText: { fontSize: 14, color: "#9ca3af" },
+  filterRow: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    gap: 6,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  filterChipActive: {
+    backgroundColor: BRAND.primary,
+    borderColor: BRAND.primary,
+  },
+  filterChipText: { fontSize: 12, fontWeight: "500", color: "#6b7280" },
+  filterChipTextActive: { color: "#fff" },
   fab: {
     position: "absolute",
     bottom: 100,

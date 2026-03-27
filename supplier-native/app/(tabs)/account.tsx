@@ -10,8 +10,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND } from "@/lib/constants";
+import { BRAND, SECTION_COLORS, CARD_SHADOW } from "@/lib/constants";
 import { useSession } from "@/lib/auth-client";
+import apiClient from "@/lib/api-client";
+import { useQuery } from "@tanstack/react-query";
 
 interface MenuItem {
   icon: keyof typeof Ionicons.glyphMap;
@@ -21,9 +23,26 @@ interface MenuItem {
   color?: string;
 }
 
+interface VendorProfileBrief {
+  status?: string;
+  is_verified_badge?: boolean;
+}
+
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { data: session, isLoading, signOut } = useSession();
+
+  const { data: vendorData } = useQuery({
+    queryKey: ["vendor-profile-brief"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/vendor/profile");
+      return data?.data?.vendor as VendorProfileBrief | null;
+    },
+    enabled: !!session,
+  });
+
+  const vendorStatus = vendorData?.status ?? "pending";
+  const isVerified = vendorData?.is_verified_badge ?? false;
 
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
@@ -39,9 +58,10 @@ export default function AccountScreen() {
     ]);
   };
 
-  const menuSections: { title: string; items: MenuItem[] }[] = [
+  const menuSections: { title: string; color: string; items: MenuItem[] }[] = [
     {
       title: "Business",
+      color: SECTION_COLORS.business,
       items: [
         { icon: "storefront-outline", label: "Shop Profile", subtitle: "Edit your store info & branding", onPress: () => router.push("/account/profile") },
         { icon: "shield-checkmark-outline", label: "KYC Documents", subtitle: "Upload verification documents", onPress: () => router.push("/account/kyc") },
@@ -50,6 +70,7 @@ export default function AccountScreen() {
     },
     {
       title: "Finance",
+      color: SECTION_COLORS.finance,
       items: [
         { icon: "wallet-outline", label: "Earnings", subtitle: "View your earnings history", onPress: () => router.push("/account/earnings") },
         { icon: "cash-outline", label: "Payouts", subtitle: "Request and track payouts", onPress: () => router.push("/account/payouts") },
@@ -57,6 +78,7 @@ export default function AccountScreen() {
     },
     {
       title: "Management",
+      color: SECTION_COLORS.management,
       items: [
         { icon: "layers-outline", label: "Inventory", subtitle: "Stock levels & alerts", onPress: () => router.push("/account/inventory") },
         { icon: "boat-outline", label: "Shipping Methods", subtitle: "Configure shipping rates", onPress: () => router.push("/account/shipping") },
@@ -64,6 +86,7 @@ export default function AccountScreen() {
     },
     {
       title: "Insights",
+      color: SECTION_COLORS.insights,
       items: [
         { icon: "bar-chart-outline", label: "Reports", subtitle: "Sales and product analytics", onPress: () => router.push("/account/reports") },
         { icon: "star-outline", label: "Reviews", subtitle: "Customer product reviews", onPress: () => router.push("/account/reviews") },
@@ -99,6 +122,19 @@ export default function AccountScreen() {
                 {session.user.phone && (
                   <Text style={styles.profilePhone}>{session.user.phone}</Text>
                 )}
+                <View style={styles.statusRow}>
+                  <View style={[styles.vendorStatusBadge, { backgroundColor: vendorStatus === "approved" ? "#D1FAE5" : "#FEF3C7" }]}>
+                    <Text style={[styles.vendorStatusText, { color: vendorStatus === "approved" ? "#065F46" : "#92400E" }]}>
+                      {vendorStatus.charAt(0).toUpperCase() + vendorStatus.slice(1)}
+                    </Text>
+                  </View>
+                  {isVerified && (
+                    <View style={[styles.vendorStatusBadge, { backgroundColor: "#DBEAFE" }]}>
+                      <Ionicons name="checkmark-circle" size={10} color="#1D4ED8" />
+                      <Text style={[styles.vendorStatusText, { color: "#1D4ED8" }]}>Verified</Text>
+                    </View>
+                  )}
+                </View>
               </>
             ) : (
               <>
@@ -129,8 +165,8 @@ export default function AccountScreen() {
                   onPress={item.onPress}
                   activeOpacity={0.6}
                 >
-                  <View style={styles.menuIconWrap}>
-                    <Ionicons name={item.icon} size={20} color={BRAND.primary} />
+                  <View style={[styles.menuIconWrap, { backgroundColor: section.color + "15" }]}>
+                    <Ionicons name={item.icon} size={20} color={section.color} />
                   </View>
                   <View style={styles.menuTextWrap}>
                     <Text style={styles.menuLabel}>{item.label}</Text>
@@ -176,9 +212,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
     gap: 14,
+    ...CARD_SHADOW,
   },
   avatarWrap: {
     width: 56,
@@ -193,6 +228,16 @@ const styles = StyleSheet.create({
   profileName: { fontSize: 16, fontWeight: "600", color: "#1a1a2e" },
   profileEmail: { fontSize: 13, color: "#6b7280", marginTop: 2 },
   profilePhone: { fontSize: 12, color: "#9ca3af", marginTop: 1 },
+  statusRow: { flexDirection: "row", gap: 6, marginTop: 6 },
+  vendorStatusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  vendorStatusText: { fontSize: 10, fontWeight: "600" },
   loginBtn: {
     marginTop: 8,
     backgroundColor: BRAND.primary,
@@ -215,9 +260,8 @@ const styles = StyleSheet.create({
   menuCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
     overflow: "hidden",
+    ...CARD_SHADOW,
   },
   menuItem: {
     flexDirection: "row",
@@ -233,7 +277,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: BRAND.primaryLight,
     alignItems: "center",
     justifyContent: "center",
   },

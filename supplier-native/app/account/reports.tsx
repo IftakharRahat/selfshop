@@ -5,15 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
+import { SubScreenSkeleton } from "@/components/skeleton";
 
 interface SalesSeriesItem {
   period: string;
@@ -73,9 +73,7 @@ export default function ReportsScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND.primary} />
-        </View>
+        <SubScreenSkeleton />
       ) : (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -171,7 +169,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: "600", color: "#1a1a2e" },
   loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
   scrollContent: { padding: 16 },
-  sectionCard: { backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#f3f4f6" },
+  sectionCard: { backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 12, ...CARD_SHADOW },
   sectionTitle: { fontSize: 15, fontWeight: "600", color: "#1a1a2e", marginBottom: 8 },
   periodText: { fontSize: 11, color: "#9ca3af", marginBottom: 12 },
   chartContainer: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", height: 120, paddingTop: 12 },

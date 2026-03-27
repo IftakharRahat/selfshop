@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   RefreshControl,
   Image,
   Alert,
@@ -16,8 +15,9 @@ import { router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
-import { BRAND } from "@/lib/constants";
+import { BRAND, CARD_SHADOW } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
+import { SubScreenSkeleton } from "@/components/skeleton";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace("/api", "") ?? "";
 function getImageUrl(path?: string | null) {
@@ -110,9 +110,7 @@ export default function InventoryScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND.primary} />
-        </View>
+        <SubScreenSkeleton />
       ) : (
         <FlatList
           data={products}
@@ -268,7 +266,7 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: BRAND.primary, borderColor: BRAND.primary },
   filterText: { fontSize: 11, fontWeight: "500", color: "#6b7280" },
   filterTextActive: { color: "#fff" },
-  productCard: { backgroundColor: "#fff", borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: "#f3f4f6" },
+  productCard: { backgroundColor: "#fff", borderRadius: 12, padding: 12, marginBottom: 8, ...CARD_SHADOW },
   productRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   productImageWrap: { width: 44, height: 44, borderRadius: 8, overflow: "hidden", backgroundColor: "#f9fafb" },
   productImage: { width: "100%", height: "100%", resizeMode: "cover" },
