@@ -326,7 +326,7 @@ export default function OrderDetailScreen() {
       </ScrollView>
 
       {/* Cancel Modal */}
-      <Modal visible={showCancelModal} transparent animationType="slide">
+      <Modal visible={showCancelModal} transparent animationType="slide" statusBarTranslucent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Cancel Order</Text>
@@ -360,7 +360,7 @@ export default function OrderDetailScreen() {
       </Modal>
 
       {/* Tracking Modal */}
-      <Modal visible={showTrackingModal} transparent animationType="slide">
+      <Modal visible={showTrackingModal} transparent animationType="slide" statusBarTranslucent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Tracking Number</Text>

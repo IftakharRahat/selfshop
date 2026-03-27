@@ -48,20 +48,14 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior="padding"
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20, paddingBottom: 40 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Close button */}
-        <TouchableOpacity
-          style={styles.closeBtn}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="close" size={24} color="#6b7280" />
-        </TouchableOpacity>
+
 
         {/* Logo / Branding */}
         <View style={styles.brandingSection}>
