@@ -9,6 +9,7 @@ import {
   FlatList,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { BRAND } from "@/lib/constants";
@@ -124,7 +125,7 @@ export default function OrdersScreen() {
           renderItem={({ item }) => {
             const sc = statusColor(item.status);
             return (
-              <View style={styles.orderCard}>
+              <TouchableOpacity style={styles.orderCard} onPress={() => router.push(`/order/${item.id}`)} activeOpacity={0.7}>
                 <View style={styles.orderHeader}>
                   <Text style={styles.invoiceId}>#{item.invoiceID}</Text>
                   <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
@@ -151,7 +152,7 @@ export default function OrdersScreen() {
                   </Text>
                   <Text style={styles.orderTotal}>৳{item.vendor_subtotal?.toLocaleString()}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
           ListFooterComponent={<View style={{ height: 100 }} />}

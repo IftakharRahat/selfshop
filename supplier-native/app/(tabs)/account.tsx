@@ -43,34 +43,31 @@ export default function AccountScreen() {
     {
       title: "Business",
       items: [
-        { icon: "storefront-outline", label: "Shop Profile", subtitle: "Edit your store info & branding", onPress: () => {} },
-        { icon: "shield-checkmark-outline", label: "KYC Documents", subtitle: "Upload verification documents", onPress: () => {} },
-        { icon: "notifications-outline", label: "Notifications", subtitle: "View all notifications", onPress: () => {} },
+        { icon: "storefront-outline", label: "Shop Profile", subtitle: "Edit your store info & branding", onPress: () => router.push("/account/profile") },
+        { icon: "shield-checkmark-outline", label: "KYC Documents", subtitle: "Upload verification documents", onPress: () => router.push("/account/kyc") },
+        { icon: "notifications-outline", label: "Notifications", subtitle: "View all notifications", onPress: () => router.push("/account/notifications") },
       ],
     },
     {
       title: "Finance",
       items: [
-        { icon: "wallet-outline", label: "Earnings", subtitle: "View your earnings history", onPress: () => {} },
-        { icon: "card-outline", label: "Payout Accounts", subtitle: "Manage bank/bKash accounts", onPress: () => {} },
-        { icon: "cash-outline", label: "Payouts", subtitle: "Request and track payouts", onPress: () => {} },
+        { icon: "wallet-outline", label: "Earnings", subtitle: "View your earnings history", onPress: () => router.push("/account/earnings") },
+        { icon: "cash-outline", label: "Payouts", subtitle: "Request and track payouts", onPress: () => router.push("/account/payouts") },
       ],
     },
     {
       title: "Management",
       items: [
-        { icon: "layers-outline", label: "Inventory", subtitle: "Stock levels & alerts", onPress: () => {} },
-        { icon: "business-outline", label: "Warehouses", subtitle: "Manage warehouse locations", onPress: () => {} },
-        { icon: "boat-outline", label: "Shipping Methods", subtitle: "Configure shipping rates", onPress: () => {} },
+        { icon: "layers-outline", label: "Inventory", subtitle: "Stock levels & alerts", onPress: () => router.push("/account/inventory") },
+        { icon: "boat-outline", label: "Shipping Methods", subtitle: "Configure shipping rates", onPress: () => router.push("/account/shipping") },
       ],
     },
     {
       title: "Insights",
       items: [
-        { icon: "bar-chart-outline", label: "Reports", subtitle: "Sales and product analytics", onPress: () => {} },
-        { icon: "star-outline", label: "Reviews", subtitle: "Customer product reviews", onPress: () => {} },
-        { icon: "pricetag-outline", label: "Category Discounts", subtitle: "Set discounts by category", onPress: () => {} },
-        { icon: "megaphone-outline", label: "Campaigns", subtitle: "Flash sale participation", onPress: () => {} },
+        { icon: "bar-chart-outline", label: "Reports", subtitle: "Sales and product analytics", onPress: () => router.push("/account/reports") },
+        { icon: "star-outline", label: "Reviews", subtitle: "Customer product reviews", onPress: () => router.push("/account/reviews") },
+        { icon: "pricetag-outline", label: "Discounts & Commissions", subtitle: "Category discounts & rates", onPress: () => router.push("/account/discounts") },
       ],
     },
   ];

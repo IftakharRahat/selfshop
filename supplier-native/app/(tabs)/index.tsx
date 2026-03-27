@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +13,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { BRAND } from "@/lib/constants";
 import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
+
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace("/api", "") ?? "";
+function getImageUrl(path?: string | null) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${BASE_URL}/storage/${path}`;
+}
 
 interface DashboardData {
   product_count: number;
@@ -23,6 +31,17 @@ interface DashboardData {
   avg_rating: number;
   total_followers: number;
   orders_this_month_by_status: Record<string, number>;
+  sales_chart: { month: string; total: number }[];
+  top_products: {
+    id: number;
+    name: string;
+    image: string | null;
+    price: number;
+    total_sales: number;
+    total_quantity: number;
+    avg_rating: number;
+  }[];
+  category_wise_product_count: { category_name: string; product_count: number }[];
 }
 
 export default function DashboardScreen() {
@@ -77,6 +96,18 @@ export default function DashboardScreen() {
     { label: "Cancelled", keys: ["Canceled", "Cancelled"], icon: "close-circle-outline" as const, color: "#ef4444" },
   ];
 
+  // Sales chart data
+  const chartData = data?.sales_chart ?? [];
+  const maxSale = Math.max(...chartData.map((d) => d.total), 1);
+
+  // Top products
+  const topProducts = data?.top_products ?? [];
+
+  // Last month comparison
+  const thisMonth = data?.this_month_sales ?? 0;
+  const lastMonth = data?.last_month_sales ?? 0;
+  const growthPct = lastMonth > 0 ? Math.round(((thisMonth - lastMonth) / lastMonth) * 100) : thisMonth > 0 ? 100 : 0;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -115,6 +146,39 @@ export default function DashboardScreen() {
           </Text>
         </View>
 
+        {/* ── Sales Chart ── */}
+        {chartData.length > 0 && (
+          <View style={styles.sectionCard}>
+            <View style={styles.chartHeader}>
+              <Text style={styles.sectionTitle}>Monthly Sales</Text>
+              <View style={[styles.growthBadge, { backgroundColor: growthPct >= 0 ? "#D1FAE5" : "#FEE2E2" }]}>
+                <Ionicons
+                  name={growthPct >= 0 ? "trending-up" : "trending-down"}
+                  size={12}
+                  color={growthPct >= 0 ? "#059669" : "#DC2626"}
+                />
+                <Text style={[styles.growthText, { color: growthPct >= 0 ? "#059669" : "#DC2626" }]}>
+                  {growthPct > 0 ? "+" : ""}{growthPct}%
+                </Text>
+              </View>
+            </View>
+            <View style={styles.chartContainer}>
+              {chartData.slice(-6).map((item, idx) => {
+                const height = Math.max((item.total / maxSale) * 100, 4);
+                return (
+                  <View key={idx} style={styles.barCol}>
+                    <Text style={styles.barValue}>
+                      {item.total >= 1000 ? `${(item.total / 1000).toFixed(0)}k` : item.total}
+                    </Text>
+                    <View style={[styles.bar, { height, backgroundColor: idx === chartData.slice(-6).length - 1 ? BRAND.primary : BRAND.primaryLight }]} />
+                    <Text style={styles.barLabel}>{item.month.slice(0, 3)}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* ── Orders This Month ── */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Orders This Month</Text>
@@ -134,6 +198,43 @@ export default function DashboardScreen() {
             );
           })}
         </View>
+
+        {/* ── Top Products ── */}
+        {topProducts.length > 0 && (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Top Products</Text>
+            {topProducts.slice(0, 5).map((product, idx) => {
+              const imgUrl = getImageUrl(product.image);
+              return (
+                <View key={product.id} style={styles.topProductRow}>
+                  <Text style={styles.topProductRank}>{idx + 1}</Text>
+                  <View style={styles.topProductImageWrap}>
+                    {imgUrl ? (
+                      <Image source={{ uri: imgUrl }} style={styles.topProductImage} />
+                    ) : (
+                      <View style={styles.topProductImagePlaceholder}>
+                        <Ionicons name="cube-outline" size={16} color="#d1d5db" />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.topProductInfo}>
+                    <Text style={styles.topProductName} numberOfLines={1}>{product.name}</Text>
+                    <View style={styles.topProductStats}>
+                      <Text style={styles.topProductSales}>৳{product.total_sales.toLocaleString()}</Text>
+                      <Text style={styles.topProductQty}>{product.total_quantity} sold</Text>
+                    </View>
+                  </View>
+                  {product.avg_rating > 0 && (
+                    <View style={styles.topProductRating}>
+                      <Ionicons name="star" size={11} color="#f59e0b" />
+                      <Text style={styles.topProductRatingText}>{product.avg_rating.toFixed(1)}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* ── Pending Amount ── */}
         <View style={[styles.sectionCard, { backgroundColor: "#FFF7ED", borderColor: "#FED7AA" }]}>
@@ -216,6 +317,50 @@ const styles = StyleSheet.create({
     borderColor: "#f3f4f6",
   },
   sectionTitle: { fontSize: 15, fontWeight: "600", color: "#1a1a2e", marginBottom: 12 },
+  chartHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  growthBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  growthText: { fontSize: 11, fontWeight: "600" },
+  chartContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    height: 140,
+    paddingTop: 16,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  barValue: {
+    fontSize: 9,
+    color: "#9ca3af",
+    marginBottom: 4,
+    fontWeight: "500",
+  },
+  bar: {
+    width: 28,
+    borderRadius: 6,
+    minHeight: 4,
+  },
+  barLabel: {
+    fontSize: 10,
+    color: "#6b7280",
+    marginTop: 6,
+    fontWeight: "500",
+  },
   orderRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -227,6 +372,39 @@ const styles = StyleSheet.create({
   orderRowLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   orderLabel: { fontSize: 14, color: "#374151" },
   orderCount: { fontSize: 15, fontWeight: "600", color: "#1a1a2e" },
+  topProductRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f9fafb",
+    gap: 10,
+  },
+  topProductRank: { fontSize: 13, fontWeight: "700", color: "#9ca3af", width: 20, textAlign: "center" },
+  topProductImageWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#f9fafb",
+  },
+  topProductImage: { width: "100%", height: "100%", resizeMode: "cover" },
+  topProductImagePlaceholder: { width: "100%", height: "100%", alignItems: "center", justifyContent: "center", backgroundColor: "#f3f4f6" },
+  topProductInfo: { flex: 1 },
+  topProductName: { fontSize: 13, fontWeight: "600", color: "#1a1a2e" },
+  topProductStats: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
+  topProductSales: { fontSize: 12, fontWeight: "600", color: BRAND.primary },
+  topProductQty: { fontSize: 11, color: "#9ca3af" },
+  topProductRating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: "#FFFBEB",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  topProductRatingText: { fontSize: 10, fontWeight: "600", color: "#92400e" },
   pendingAmount: { fontSize: 28, fontWeight: "700", color: "#ea580c" },
   errorContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   errorText: { fontSize: 16, fontWeight: "600", color: "#6b7280" },

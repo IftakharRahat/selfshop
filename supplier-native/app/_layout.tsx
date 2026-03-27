@@ -60,6 +60,29 @@ export default function RootLayout() {
             {/* Auth — slide up (modal feel) */}
             <Stack.Screen name="login" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
             <Stack.Screen name="register" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+
+            {/* Account sub-screens — platform default drill-in */}
+            <Stack.Screen name="account/profile" />
+            <Stack.Screen name="account/kyc" />
+            <Stack.Screen name="account/notifications" />
+
+            {/* Product sub-screens */}
+            <Stack.Screen name="product/form" />
+            <Stack.Screen name="product/[id]" />
+            <Stack.Screen name="product/variants" />
+
+            {/* Order sub-screens */}
+            <Stack.Screen name="order/[id]" />
+
+            {/* Account extended screens */}
+            <Stack.Screen name="account/earnings" />
+            <Stack.Screen name="account/payouts" />
+            <Stack.Screen name="account/inventory" />
+            <Stack.Screen name="account/shipping" />
+            <Stack.Screen name="account/reviews" />
+            <Stack.Screen name="account/product-reviews" />
+            <Stack.Screen name="account/discounts" />
+            <Stack.Screen name="account/reports" />
           </Stack>
           <Toaster
             position="top-center"

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { BRAND } from "@/lib/constants";
@@ -122,7 +123,7 @@ export default function ProductsScreen() {
             const status = STATUS_BADGE[item.status] ?? { bg: "#F3F4F6", text: "#374151", label: item.status };
 
             return (
-              <View style={styles.productCard}>
+              <TouchableOpacity style={styles.productCard} onPress={() => router.push(`/product/${item.id}`)} activeOpacity={0.7}>
                 <View style={styles.productImageWrap}>
                   {imgUrl ? (
                     <Image source={{ uri: imgUrl }} style={styles.productImage} />
@@ -152,12 +153,21 @@ export default function ProductsScreen() {
                     <Text style={styles.qtyText}>Qty: {item.qty}</Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
           ListFooterComponent={<View style={{ height: 100 }} />}
         />
       )}
+
+      {/* FAB — Create Product */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/product/form")}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={26} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -235,4 +245,20 @@ const styles = StyleSheet.create({
   qtyText: { fontSize: 11, color: "#6b7280" },
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   emptyText: { fontSize: 14, color: "#9ca3af" },
+  fab: {
+    position: "absolute",
+    bottom: 100,
+    right: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: BRAND.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 6,
+    shadowColor: BRAND.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
 });
