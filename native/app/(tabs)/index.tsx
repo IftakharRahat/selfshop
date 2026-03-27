@@ -19,6 +19,7 @@ import { HomeSkeleton } from "@/components/skeleton";
 import { CategoryChip } from "@/components/category-chip";
 import { ProductCard } from "@/components/product-card";
 import apiClient from "@/lib/api-client";
+import { useSession } from "@/lib/auth-client";
 
 const { width } = Dimensions.get("window");
 
@@ -175,6 +176,21 @@ export default function HomeScreen() {
   const promoSections: any[] = promotionalSections.data ?? [];
   const supplierList: any[] = popularSuppliers.data ?? [];
 
+  /* ── Notification badge count ── */
+  const { data: session } = useSession();
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications-count"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/user-notification?per_page=1&page=1");
+      return data?.data ?? data;
+    },
+    enabled: !!session?.user,
+    staleTime: 60 * 1000,
+  });
+  const unreadCount = (notificationsQuery.data?.data ?? []).filter(
+    (n: any) => !n.read_at,
+  ).length;
+
   if (newProducts.isLoading && categories.isLoading) {
     return <HomeSkeleton />;
   }
@@ -186,6 +202,27 @@ export default function HomeScreen() {
         <Text fontSize="$7" fontWeight="bold" color="#1A1A2E">
           SelfShop
         </Text>
+        <View style={styles.headerRight}>
+          <Pressable
+            style={styles.headerIconButton}
+            onPress={() => router.push("/account/notifications" as any)}
+          >
+            <Ionicons name="notifications-outline" size={22} color="#1A1A2E" />
+            {unreadCount > 0 && (
+              <View style={styles.headerBadge}>
+                <Text style={styles.headerBadgeText}>
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            style={styles.headerIconButton}
+            onPress={() => router.push("/account/my-shop" as any)}
+          >
+            <Ionicons name="storefront-outline" size={22} color="#1A1A2E" />
+          </Pressable>
+        </View>
       </View>
 
       {/* Search Bar */}
@@ -543,9 +580,44 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 56,
     paddingBottom: 8,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    backgroundColor: "#E5005F",
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#F5F5F5",
+  },
+  headerBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#fff",
   },
   section: {
     paddingHorizontal: 20,

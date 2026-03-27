@@ -58,7 +58,7 @@ export default function MyShopScreen() {
   const meQuery = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/me");
+      const { data } = await apiClient.get("/user-profile");
       return data?.data ?? data;
     },
     staleTime: 5 * 60 * 1000,

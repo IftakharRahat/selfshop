@@ -44,12 +44,11 @@ export default function EditProfileScreen() {
 
   const updateMutation = useMutation({
     mutationFn: () =>
-      apiClient.put("/user/profile", {
+      apiClient.post("/update-profile", {
         name: ownerName,
-        phone: phoneNumber || null,
         address: address || null,
-        whatsapp: whatsapp || null,
-        facebook: facebook || null,
+        shop_name: null,
+        dob: null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });

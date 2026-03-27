@@ -207,7 +207,7 @@ export default function DashboardScreen() {
                   </View>
                 )}
               </Pressable>
-              <Pressable style={styles.settingsButton} onPress={() => router.push("/account/edit-profile")}>
+              <Pressable style={styles.settingsButton} onPress={() => router.push("/account/settings")}>
                 <Ionicons name="settings-outline" size={22} color="#fff" />
               </Pressable>
             </View>
@@ -374,58 +374,10 @@ export default function DashboardScreen() {
               onPress={() => router.push("/account/edit-profile")}
             />
             <MenuItem
-              icon="cash-outline"
-              label="Income History"
-              subtitle="View your earnings"
-              onPress={() => router.push("/account/income-history" as any)}
-            />
-            <MenuItem
-              icon="trending-up-outline"
-              label="Order Income"
-              subtitle="Per-order profit breakdown"
-              onPress={() => router.push("/account/order-income" as any)}
-            />
-            <MenuItem
-              icon="shield-checkmark-outline"
-              label="Fraud Checker"
-              subtitle="Verify customer phone numbers"
-              onPress={() => router.push("/account/fraud-checker" as any)}
-            />
-            <MenuItem
-              icon="add-circle-outline"
-              label="Product Request"
-              subtitle="Request new products"
-              onPress={() => router.push("/account/product-request" as any)}
-            />
-            <MenuItem
-              icon="trophy-outline"
-              label="Event Challenges"
-              subtitle="Participate and earn rewards"
-              onPress={() => router.push("/account/events" as any)}
-            />
-            <MenuItem
-              icon="book-outline"
-              label="Free Courses"
-              subtitle="Learn and grow for free"
-              onPress={() => router.push("/account/free-courses" as any)}
-            />
-            <MenuItem
-              icon="people-outline"
-              label="Team Members"
-              subtitle="View your team"
-              onPress={() => router.push("/account/team-members" as any)}
-            />
-            <MenuItem
               icon="location-outline"
               label="Addresses"
               subtitle="Manage delivery locations"
               onPress={() => router.push("/account/addresses")}
-            />
-            <MenuItem
-              icon="lock-closed-outline"
-              label="Change Password"
-              subtitle="Update your password"
-              onPress={() => router.push("/account/change-password")}
             />
             <MenuItem
               icon="chatbubble-outline"
@@ -434,10 +386,10 @@ export default function DashboardScreen() {
               onPress={() => router.push("/account/tickets")}
             />
             <MenuItem
-              icon="help-circle-outline"
-              label="FAQ"
-              subtitle="Frequently asked questions"
-              onPress={() => router.push("/account/faq")}
+              icon="settings-outline"
+              label="Settings"
+              subtitle="Password, legal, and more"
+              onPress={() => router.push("/account/settings")}
             />
           </View>
         </View>

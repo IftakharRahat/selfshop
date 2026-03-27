@@ -31,14 +31,6 @@ export default function AccountScreen() {
     enabled: isLoggedIn,
   });
 
-  const announcementsQuery = useQuery({
-    queryKey: ["announcements"],
-    queryFn: async () => {
-      const { data } = await apiClient.get("/announcements");
-      return data?.data ?? data ?? { announcements: [] };
-    },
-  });
-
   // Order status counts
   const orderCounts = useMemo(() => {
     const orders = ordersQuery.data?.orders ?? [];
@@ -53,7 +45,6 @@ export default function AccountScreen() {
   }, [ordersQuery.data]);
 
   const profile = profileQuery.data;
-  const announcements = announcementsQuery.data?.announcements ?? [];
 
   if (!isLoggedIn) {
     return <GuestView />;
@@ -66,7 +57,7 @@ export default function AccountScreen() {
         <Text fontSize="$7" fontWeight="bold" color="#1A1A2E">
           Profile
         </Text>
-        <Pressable style={styles.settingsIcon}>
+        <Pressable style={styles.settingsIcon} onPress={() => router.push("/account/settings")}>
           <Ionicons name="settings-outline" size={22} color="#1A1A2E" />
         </Pressable>
       </View>
@@ -93,23 +84,6 @@ export default function AccountScreen() {
           )}
         </View>
       </View>
-
-      {/* Announcement Card */}
-      {announcements.length > 0 && (
-        <View style={styles.section}>
-          <View style={styles.announcementCard}>
-            <View style={styles.announcementContent}>
-              <Text fontSize="$4" fontWeight="bold" color="#1A1A2E">
-                📢 {announcements[0].title}
-              </Text>
-              <Text fontSize="$2" color="#8E8E93" numberOfLines={2} mt="$1">
-                {announcements[0].content}
-              </Text>
-            </View>
-            <Ionicons name="arrow-forward-circle" size={28} color="#E5005F" />
-          </View>
-        </View>
-      )}
 
       {/* My Orders */}
       <View style={styles.section}>
@@ -147,11 +121,8 @@ export default function AccountScreen() {
         </View>
       </View>
 
-      {/* General */}
+      {/* Quick Access */}
       <View style={styles.menuGroup}>
-        <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
-          General
-        </Text>
         <View style={styles.menuCard}>
           <MenuItem
             icon="person-outline"
@@ -166,100 +137,16 @@ export default function AccountScreen() {
             onPress={() => router.push("/account/addresses")}
           />
           <MenuItem
-            icon="card-outline"
-            label="Payment Methods"
-            subtitle="Add or remove payment cards"
-          />
-          <MenuItem
-            icon="lock-closed-outline"
-            label="Change Password"
-            subtitle="Update your account password"
-            onPress={() => router.push("/account/change-password")}
-          />
-        </View>
-      </View>
-
-      {/* Support */}
-      <View style={styles.menuGroup}>
-        <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
-          Support
-        </Text>
-        <View style={styles.menuCard}>
-          <MenuItem
             icon="chatbubble-outline"
             label="Support Tickets"
             subtitle="Get help with your orders"
             onPress={() => router.push("/account/tickets")}
           />
           <MenuItem
-            icon="help-circle-outline"
-            label="FAQ"
-            subtitle="Frequently asked questions"
-            onPress={() => router.push("/account/faq")}
-          />
-          <MenuItem
-            icon="megaphone-outline"
-            label="Announcements"
-            subtitle="Latest news and updates"
-            badge={announcements.length > 0 ? announcements.length : undefined}
-          />
-        </View>
-      </View>
-
-      {/* Legal & Info */}
-      <View style={styles.menuGroup}>
-        <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
-          Legal & Info
-        </Text>
-        <View style={styles.menuCard}>
-          <MenuItem
-            icon="information-circle-outline"
-            label="About Us"
-            subtitle="Learn about SelfShop"
-            onPress={() => router.push("/about-us" as any)}
-          />
-          <MenuItem
-            icon="shield-outline"
-            label="Privacy Policy"
-            subtitle="How we handle your data"
-            onPress={() => router.push("/privacy-policy" as any)}
-          />
-          <MenuItem
-            icon="document-text-outline"
-            label="Terms & Conditions"
-            subtitle="Terms of service"
-            onPress={() => router.push("/terms-and-conditions" as any)}
-          />
-          <MenuItem
-            icon="arrow-undo-outline"
-            label="Return Policy"
-            subtitle="Returns and refunds"
-            onPress={() => router.push("/return-policy" as any)}
-          />
-        </View>
-      </View>
-
-      {/* More */}
-      <View style={styles.menuGroup}>
-        <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
-          More
-        </Text>
-        <View style={styles.menuCard}>
-          <MenuItem
-            icon="chatbubble-ellipses-outline"
-            label="Contact & Support"
-            subtitle="Get help or send a message"
-            onPress={() => router.push("/contact" as any)}
-          />
-          <MenuItem
-            icon="star-outline"
-            label="Rate Us"
-            subtitle="Share your feedback"
-          />
-          <MenuItem
-            icon="share-social-outline"
-            label="Invite Friends"
-            subtitle="Spread the word!"
+            icon="settings-outline"
+            label="Settings"
+            subtitle="Password, legal, and more"
+            onPress={() => router.push("/account/settings")}
           />
         </View>
       </View>
