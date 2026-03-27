@@ -1,110 +1,132 @@
 import {
   View,
   ScrollView,
-  Image,
   StyleSheet,
   Pressable,
   ActivityIndicator,
   Alert,
+  Linking,
+  Image,
 } from "react-native";
 import { Text } from "tamagui";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  pending: { color: "#E5005F", bg: "#FDF2F8", label: "Pending" },
-  confirmed: { color: "#2196F3", bg: "#E3F2FD", label: "Confirmed" },
-  processing: { color: "#9C27B0", bg: "#F3E5F5", label: "Processing" },
-  shipped: { color: "#00BCD4", bg: "#E0F7FA", label: "Shipped" },
-  delivered: { color: "#4CAF50", bg: "#E8F5E9", label: "Delivered" },
-  cancelled: { color: "#DC2626", bg: "#FEF2F2", label: "Cancelled" },
+const ACCENT = "#E5005F";
+
+/* ── Image URL helper ── */
+const IMAGE_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
+
+function resolveImageUrl(path?: string | null): string | null {
+  if (!path || path.trim().length < 2) return null;
+  const p = path.trim();
+  if (p.startsWith("http")) return p;
+  const clean = p.replace(/^\//, "");
+  if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
+  if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
+  return `${IMAGE_BASE}/storage/${clean}`;
+}
+
+const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
+  Pending: { color: "#92400E", bg: "#FEF3C7" },
+  Accepted: { color: "#065F46", bg: "#D1FAE5" },
+  Confirmed: { color: "#1E40AF", bg: "#DBEAFE" },
+  Processing: { color: "#3730A3", bg: "#E0E7FF" },
+  Ontheway: { color: "#155E75", bg: "#CFFAFE" },
+  "On the way": { color: "#155E75", bg: "#CFFAFE" },
+  "Shipped to warehouse": { color: "#1E40AF", bg: "#DBEAFE" },
+  Shipped: { color: "#1E40AF", bg: "#DBEAFE" },
+  Delivered: { color: "#065F46", bg: "#D1FAE5" },
+  Canceled: { color: "#991B1B", bg: "#FEE2E2" },
+  Cancelled: { color: "#991B1B", bg: "#FEE2E2" },
+  Rejected: { color: "#991B1B", bg: "#FEE2E2" },
 };
 
+function formatBDT(v: number | string | undefined | null): string {
+  const n = parseFloat(String(v ?? 0)) || 0;
+  return `৳${n.toLocaleString("en-BD")}`;
+}
+
 export default function OrderDetailScreen() {
-  const params = useLocalSearchParams<{ orderNumber?: string; invoiceID?: string; id?: string }>();
-  const invoiceID = params.invoiceID ?? params.orderNumber ?? "";
+  const params = useLocalSearchParams<{ invoiceID?: string; id?: string }>();
+  const invoiceID = (params.invoiceID ?? "").trim().replace(/^[^A-Za-z0-9]+/, "");
+  const orderId = params.id ?? "";
   const queryClient = useQueryClient();
 
+  /* ── Fetch order using track-order (same as web) ── */
   const orderQuery = useQuery({
-    queryKey: ["order", invoiceID],
+    queryKey: ["order-detail", invoiceID, orderId],
     queryFn: async () => {
-      // Try reseller track-order API first (works with invoiceID)
-      const { data } = await apiClient.get(`/track-order?invoiceID=${invoiceID}`);
-      return data?.data ?? data;
+      const searchParams = new URLSearchParams();
+      if (invoiceID) searchParams.set("invoiceID", invoiceID);
+      if (orderId) searchParams.set("id", orderId);
+      const res = await apiClient.get(`/track-order?${searchParams.toString()}`);
+      const apiResponse = res.data;
+      return apiResponse?.data ?? apiResponse;
     },
-    enabled: !!invoiceID,
+    enabled: !!invoiceID || !!orderId,
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (orderId: number) => apiClient.post(`/orders/${orderId}/cancel`),
+    mutationFn: (id: number) => apiClient.post(`/orders/${id}/cancel`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["order", invoiceID] });
+      queryClient.invalidateQueries({ queryKey: ["order-detail"] });
       Alert.alert("Success", "Order cancelled successfully");
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message || err?.message || "Failed to cancel order");
+      Alert.alert("Error", err?.response?.data?.message || "Failed to cancel order");
     },
   });
 
-  // track-order returns the order directly, consumer /orders returns { order: {...} }
-  const orderData = orderQuery.data?.order ?? orderQuery.data;
+  const order = orderQuery.data;
 
   if (orderQuery.isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#E5005F" />
-      </View>
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Order Detail", headerShadowVisible: false }} />
+        <View style={styles.center}><ActivityIndicator size="large" color={ACCENT} /></View>
+      </>
     );
   }
 
-  if (!orderData) {
+  if (!order) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: true, title: "Order Detail" }} />
-        <View style={styles.emptyState}>
-          <Text fontSize="$4" color="#8E8E93">
-            Order not found
-          </Text>
+        <Stack.Screen options={{ headerShown: true, title: "Order Detail", headerShadowVisible: false }} />
+        <View style={styles.center}>
+          <Ionicons name="receipt-outline" size={48} color="#D1D5DB" />
+          <Text fontSize="$4" fontWeight="600" color="#6B7280" mt="$3">Order not found</Text>
+          <Pressable onPress={() => router.back()} style={{ marginTop: 16 }}>
+            <Text fontSize="$3" fontWeight="600" color={ACCENT}>← Go Back</Text>
+          </Pressable>
         </View>
       </>
     );
   }
 
-  // Handle both consumer and reseller field names
-  const displayStatus = orderData.customer_status ?? orderData.display_status ?? orderData.status ?? "Pending";
-  const statusKey = displayStatus.toLowerCase().replace(/\s+/g, "");
-  const status = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pending;
-  const canCancel = statusKey === "pending";
-  const orderTitle = orderData.invoiceID ?? orderData.orderNumber ?? orderData.order_number ?? "Order";
-  const date = orderData.orderDate ?? (orderData.createdAt ?? orderData.created_at
-    ? new Date(orderData.createdAt ?? orderData.created_at).toLocaleDateString("en-BD", {
-        day: "numeric", month: "long", year: "numeric",
-      })
-    : "");
-  const items = orderData.products ?? orderData.items ?? [];
-  const customerInfo = orderData.customers ?? {};
-  const shippingName = customerInfo.customerName ?? orderData.shippingName ?? orderData.shipping_name ?? "";
-  const shippingPhone = customerInfo.customerPhone ?? orderData.shippingPhone ?? orderData.shipping_phone ?? "";
-  const shippingAddress = customerInfo.customerAddress ?? orderData.shippingAddress ?? orderData.shipping_address ?? "";
-  const paymentMethod = orderData.payment_method ?? orderData.paymentMethod ?? "";
+  /* ── Read fields matching web API response ── */
+  const displayStatus = order.customer_status ?? order.display_status ?? order.status ?? "Pending";
+  const statusStyle = STATUS_COLORS[displayStatus] ?? STATUS_COLORS.Pending;
+  const customer = order.customers ?? {};
+  const courier = order.couriers ?? {};
+  const orderProducts: any[] = order.orderproducts ?? order.order_products ?? order.products ?? order.items ?? order.order_items ?? [];
+  const subTotal = parseFloat(order.subTotal) || 0;
+  const profit = parseFloat(order.profit) || 0;
+  const deliveryCharge = parseFloat(order.deliveryCharge) || 0;
+  const total = subTotal + deliveryCharge;
+  const canCancel = displayStatus.toLowerCase() === "pending";
 
   function handleCancel() {
-    Alert.alert(
-      "Cancel Order",
-      "Are you sure you want to cancel this order?",
-      [
-        { text: "No", style: "cancel" },
-        {
-          text: "Yes, Cancel",
-          style: "destructive",
-          onPress: () => cancelMutation.mutate(orderData.id),
-        },
-      ],
-    );
+    Alert.alert("Cancel Order", "Are you sure you want to cancel this order?", [
+      { text: "No", style: "cancel" },
+      { text: "Yes, Cancel", style: "destructive", onPress: () => cancelMutation.mutate(order.id) },
+    ]);
   }
 
   return (
@@ -112,97 +134,162 @@ export default function OrderDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: orderTitle,
+          title: order.invoiceID ?? "Order Detail",
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: "#fff" },
+          headerStyle: { backgroundColor: "#F8F8FA" },
         }}
       />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Status Card */}
-        <View style={styles.statusCard}>
-          <View style={[styles.statusBadgeLarge, { backgroundColor: status.bg }]}>
-            <Text fontSize="$4" fontWeight="bold" color={status.color as any}>
-              {status.label}
-            </Text>
-          </View>
-          <Text fontSize="$2" color="#8E8E93" mt="$2">
-            {date}
-          </Text>
-        </View>
-
-        {/* Items */}
-        <View style={styles.section}>
-          <Text fontSize="$4" fontWeight="bold" color="#1A1A2E" mb="$3">
-            Items ({items.length})
-          </Text>
-          {items.map((item: any, idx: number) => (
-            <View key={item.id ?? idx} style={styles.itemRow}>
-              <Image
-                source={{ uri: item.productImage ?? item.product_image ?? item.ViewProductImage }}
-                style={styles.itemImage}
-                resizeMode="cover"
-              />
-              <View style={styles.itemInfo}>
-                <Text fontSize="$3" fontWeight="600" color="#1A1A2E" numberOfLines={2}>
-                  {item.productName ?? item.product_name ?? item.ProductName ?? "Product"}
-                </Text>
-                <Text fontSize="$2" color="#8E8E93">
-                  {item.productSize ?? item.product_size ?? ""} × {item.quantity ?? 1}
-                </Text>
-              </View>
-              <Text fontSize="$3" fontWeight="bold" color="#1A1A2E">
-                ৳{item.totalPrice ?? item.total_price ?? item.sellingPrice ?? item.price ?? 0}
-              </Text>
+        {/* Status & Invoice Header */}
+        <View style={styles.headerCard}>
+          <View style={styles.headerTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.invoiceText}>{order.invoiceID}</Text>
+              <Text style={styles.dateText}>{order.orderDate}</Text>
             </View>
-          ))}
+            <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
+              <Text style={[styles.statusText, { color: statusStyle.color }]}>{displayStatus}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Shipping Info */}
+        {/* Tracking Info (if available) */}
+        {(order.tracking_number || order.carrybee_tracking_code) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tracking & Shipment</Text>
+            {order.tracking_number && (
+              <View style={styles.infoRow}>
+                <Ionicons name="barcode-outline" size={16} color="#6B7280" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoLabel}>Tracking Number</Text>
+                  <Text style={styles.infoValue}>{order.tracking_number}</Text>
+                </View>
+              </View>
+            )}
+            {order.carrybee_tracking_code && (
+              <Pressable
+                style={styles.trackButton}
+                onPress={() => Linking.openURL(
+                  order.trackingLink || `https://merchant.carrybee.com/order-track/${order.carrybee_tracking_code}`
+                )}
+              >
+                <Ionicons name="navigate-outline" size={14} color="#fff" />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>Track Delivery</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* Customer Info */}
         <View style={styles.section}>
-          <Text fontSize="$4" fontWeight="bold" color="#1A1A2E" mb="$3">
-            Shipping Information
-          </Text>
-          {shippingName ? <InfoRow icon="person-outline" label={shippingName} /> : null}
-          {shippingPhone ? <InfoRow icon="call-outline" label={shippingPhone} /> : null}
-          {shippingAddress ? <InfoRow icon="location-outline" label={shippingAddress} /> : null}
-          {paymentMethod ? (
-            <InfoRow
-              icon="card-outline"
-              label={paymentMethod.replace(/_/g, " ").toUpperCase()}
-            />
-          ) : null}
+          <Text style={styles.sectionTitle}>Customer Information</Text>
+          {customer.customerName && (
+            <View style={styles.infoRow}>
+              <Ionicons name="person-outline" size={16} color="#6B7280" />
+              <Text style={styles.infoValue}>{customer.customerName}</Text>
+            </View>
+          )}
+          {customer.customerPhone && (
+            <Pressable style={styles.infoRow} onPress={() => Linking.openURL(`tel:${customer.customerPhone}`)}>
+              <Ionicons name="call-outline" size={16} color="#6B7280" />
+              <Text style={[styles.infoValue, { color: ACCENT }]}>{customer.customerPhone}</Text>
+            </Pressable>
+          )}
+          {customer.customerAddress && (
+            <View style={styles.infoRow}>
+              <Ionicons name="location-outline" size={16} color="#6B7280" />
+              <Text style={[styles.infoValue, { flex: 1 }]}>{customer.customerAddress}</Text>
+            </View>
+          )}
+          {courier.courierName && (
+            <View style={styles.infoRow}>
+              <Ionicons name="bus-outline" size={16} color="#6B7280" />
+              <Text style={styles.infoValue}>Courier: {courier.courierName}</Text>
+            </View>
+          )}
         </View>
 
-        {/* Pricing */}
+        {/* Products */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Products ({orderProducts.length})</Text>
+          {orderProducts.map((item: any, idx: number) => {
+            const costPrice = parseFloat(item.productPrice) || 0;
+            const qty = parseInt(item.quantity) || 1;
+            const itemTotal = costPrice * qty;
+            return (
+              <View key={item.id ?? idx} style={styles.productRow}>
+                {(() => {
+                  const imgUri = resolveImageUrl(item.product?.ViewProductImage);
+                  return imgUri ? (
+                    <Image
+                      source={{ uri: imgUri }}
+                      style={styles.productImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.productImagePlaceholder}>
+                      <Ionicons name="cube-outline" size={16} color="#9CA3AF" />
+                    </View>
+                  );
+                })()}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.productName} numberOfLines={2}>
+                    {item.productName ?? item.ProductName ?? "Product"}
+                  </Text>
+                  <Text style={styles.productMeta}>
+                    ৳{costPrice.toLocaleString("en-BD")} × {qty}
+                  </Text>
+                  {item.fulfillment_status && item.fulfillment_status !== "pending" && (
+                    <View style={[styles.miniPill, {
+                      backgroundColor: item.fulfillment_status === "delivered" ? "#D1FAE5" : "#DBEAFE"
+                    }]}>
+                      <Text style={{
+                        fontSize: 10, fontWeight: "600",
+                        color: item.fulfillment_status === "delivered" ? "#065F46" : "#1E40AF"
+                      }}>
+                        {item.fulfillment_status.charAt(0).toUpperCase() + item.fulfillment_status.slice(1)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.productTotal}>{formatBDT(itemTotal)}</Text>
+              </View>
+            );
+          })}
+          {orderProducts.length === 0 && (
+            <Text style={{ fontSize: 13, color: "#9CA3AF", textAlign: "center", paddingVertical: 12 }}>
+              No products found
+            </Text>
+          )}
+        </View>
+
+        {/* Pricing Summary */}
         <View style={styles.section}>
           <View style={styles.priceRow}>
-            <Text fontSize="$3" color="#8E8E93">Subtotal</Text>
-            <Text fontSize="$3" color="#1A1A2E">৳{orderData.subtotal}</Text>
+            <Text style={styles.priceLabel}>Resell Price</Text>
+            <Text style={styles.priceValue}>{formatBDT(subTotal)}</Text>
           </View>
           <View style={styles.priceRow}>
-            <Text fontSize="$3" color="#8E8E93">Shipping</Text>
-            <Text fontSize="$3" color="#1A1A2E">৳{orderData.shippingCost ?? orderData.shipping_cost}</Text>
+            <Text style={styles.priceLabel}>Seller Profit</Text>
+            <Text style={[styles.priceValue, { color: "#059669" }]}>{formatBDT(profit)}</Text>
           </View>
-          {Number(orderData.discount) > 0 && (
+          {deliveryCharge > 0 && (
             <View style={styles.priceRow}>
-              <Text fontSize="$3" color="#4CAF50">Discount</Text>
-              <Text fontSize="$3" color="#4CAF50">-৳{orderData.discount}</Text>
+              <Text style={styles.priceLabel}>Delivery Charge</Text>
+              <Text style={styles.priceValue}>{formatBDT(deliveryCharge)}</Text>
             </View>
           )}
           <View style={[styles.priceRow, styles.totalRow]}>
-            <Text fontSize="$5" fontWeight="bold" color="#1A1A2E">Total</Text>
-            <Text fontSize="$5" fontWeight="bold" color="#E5005F">৳{orderData.total}</Text>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>{formatBDT(total)}</Text>
           </View>
         </View>
 
         {/* Cancel Button */}
         {canCancel && (
-          <View style={styles.section}>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
             <Pressable
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && { opacity: 0.8 },
-              ]}
+              style={({ pressed }) => [styles.cancelButton, pressed && { opacity: 0.8 }]}
               onPress={handleCancel}
               disabled={cancelMutation.isPending}
             >
@@ -210,10 +297,8 @@ export default function OrderDetailScreen() {
                 <ActivityIndicator color="#DC2626" />
               ) : (
                 <>
-                  <Ionicons name="close-circle-outline" size={20} color="#DC2626" />
-                  <Text fontSize="$4" fontWeight="600" color="#DC2626" ml="$2">
-                    Cancel Order
-                  </Text>
+                  <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#DC2626" }}>Cancel Order</Text>
                 </>
               )}
             </Pressable>
@@ -226,87 +311,60 @@ export default function OrderDetailScreen() {
   );
 }
 
-function InfoRow({ icon, label }: { icon: string; label: string | null }) {
-  if (!label) return null;
-  return (
-    <View style={styles.infoRow}>
-      <Ionicons name={icon as any} size={16} color="#8E8E93" />
-      <Text fontSize="$3" color="#1A1A2E" ml="$2">
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F8F8" },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
+  container: { flex: 1, backgroundColor: "#F8F8FA" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F8FA", paddingBottom: 60 },
+
+  headerCard: {
+    margin: 16, marginBottom: 0, backgroundColor: "#fff", borderRadius: 16,
+    padding: 16, borderWidth: 1, borderColor: "#F0F0F5",
   },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statusCard: {
-    backgroundColor: "#fff",
-    padding: 20,
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  statusBadgeLarge: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
+  headerTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  invoiceText: { fontSize: 16, fontWeight: "800", color: "#1A1A2E" },
+  dateText: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
+  statusPill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14 },
+  statusText: { fontSize: 12, fontWeight: "700" },
+
   section: {
-    backgroundColor: "#fff",
-    padding: 16,
-    marginTop: 8,
+    margin: 16, marginBottom: 0, backgroundColor: "#fff", borderRadius: 16,
+    padding: 16, borderWidth: 1, borderColor: "#F0F0F5",
   },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F5F5F5",
-    gap: 12,
+  sectionTitle: { fontSize: 13, fontWeight: "700", color: "#6B7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 5 },
+  infoLabel: { fontSize: 10, color: "#9CA3AF" },
+  infoValue: { fontSize: 13, fontWeight: "500", color: "#1A1A2E" },
+
+  trackButton: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+    backgroundColor: "#2D2A5D", borderRadius: 8, paddingVertical: 8, marginTop: 8,
   },
-  itemImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "#F8F8F8",
+
+  productRow: {
+    flexDirection: "row", alignItems: "flex-start", gap: 10,
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F5F5FA",
   },
-  itemInfo: { flex: 1, gap: 2 },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
+  productImage: {
+    width: 36, height: 36, borderRadius: 8, marginTop: 2,
   },
-  priceRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
+  productImagePlaceholder: {
+    width: 36, height: 36, borderRadius: 8, backgroundColor: "#F5F5FA",
+    justifyContent: "center", alignItems: "center", marginTop: 2,
   },
-  totalRow: {
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-    paddingTop: 12,
-    marginTop: 6,
-  },
+  productName: { fontSize: 13, fontWeight: "600", color: "#1A1A2E" },
+  productMeta: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  productTotal: { fontSize: 14, fontWeight: "700", color: "#1A1A2E" },
+  miniPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: 4, alignSelf: "flex-start" },
+
+  priceRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 5 },
+  priceLabel: { fontSize: 13, color: "#6B7280" },
+  priceValue: { fontSize: 13, fontWeight: "600", color: "#1A1A2E" },
+  totalRow: { borderTopWidth: 1, borderTopColor: "#F0F0F5", paddingTop: 10, marginTop: 6 },
+  totalLabel: { fontSize: 15, fontWeight: "800", color: "#1A1A2E" },
+  totalValue: { fontSize: 15, fontWeight: "800", color: ACCENT },
+
   cancelButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-    backgroundColor: "#FEF2F2",
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+    paddingVertical: 14, borderRadius: 14, borderWidth: 1, borderColor: "#FECACA", backgroundColor: "#FEF2F2",
   },
 });

@@ -330,6 +330,99 @@ export function CategoriesSkeleton() {
   );
 }
 
+/** Supplier grid skeleton — filter chips + 2-col supplier cards */
+export function SupplierGridSkeleton() {
+  const screenWidth = require("react-native").Dimensions.get("window").width;
+  const cardW = (screenWidth - 48) / 2;
+
+  const SkeletonCard = () => (
+    <View style={{ width: cardW, backgroundColor: "#fff", borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: "#F0F0F5" }}>
+      {/* Banner */}
+      <SkeletonBlock width="100%" height={64} borderRadius={0} />
+      {/* Logo */}
+      <View style={{ marginTop: -20, marginLeft: 12 }}>
+        <SkeletonBlock width={40} height={40} borderRadius={12} />
+      </View>
+      {/* Name + meta */}
+      <View style={{ padding: 10, paddingTop: 6, gap: 6 }}>
+        <SkeletonBlock width="80%" height={13} />
+        <SkeletonBlock width="60%" height={11} />
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: "#F8F8FA" }}>
+      {/* Filter chips */}
+      <View style={[p.row, { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, gap: 8 }]}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonBlock key={i} width={90} height={38} borderRadius={10} />
+        ))}
+      </View>
+      {/* Supplier cards grid */}
+      {Array.from({ length: 3 }).map((_, row) => (
+        <View key={row} style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 12 }}>
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Supplier detail skeleton — banner + vendor info + category chips + product grid */
+export function SupplierDetailSkeleton() {
+  return (
+    <View style={p.container}>
+      {/* Banner */}
+      <SkeletonBlock width="100%" height={140} borderRadius={0} />
+      {/* Vendor card */}
+      <View style={{ marginHorizontal: 16, marginTop: -20, backgroundColor: "#fff", borderRadius: 16, padding: 14, borderWidth: 1, borderColor: "#F0F0F0" }}>
+        <View style={[p.row, { alignItems: "flex-start", gap: 12 }]}>
+          <SkeletonBlock width={56} height={56} borderRadius={16} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <SkeletonBlock width="70%" height={16} borderRadius={6} />
+            <SkeletonBlock width="50%" height={11} />
+            <SkeletonBlock width="35%" height={11} />
+          </View>
+        </View>
+        {/* Follow row */}
+        <View style={[p.row, { justifyContent: "space-between", marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F0F0F5" }]}>
+          <View style={{ alignItems: "center", gap: 4 }}>
+            <SkeletonBlock width={40} height={16} borderRadius={4} />
+            <SkeletonBlock width={50} height={10} />
+          </View>
+          <SkeletonBlock width={100} height={38} borderRadius={24} />
+        </View>
+      </View>
+      {/* Category chips */}
+      <View style={[p.row, { paddingHorizontal: 16, marginTop: 14, gap: 8 }]}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonBlock key={i} width={70} height={34} borderRadius={10} />
+        ))}
+      </View>
+      {/* Products header */}
+      <View style={[p.row, { paddingHorizontal: 16, marginTop: 14, gap: 6 }]}>
+        <SkeletonBlock width={100} height={16} borderRadius={6} />
+        <SkeletonBlock width={30} height={14} />
+      </View>
+      {/* Product grid */}
+      <View style={[p.row, { flexWrap: "wrap", paddingHorizontal: 16, marginTop: 12, gap: 12 }]}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <View key={i} style={p.gridCard}>
+            <SkeletonBlock width="100%" height={130} borderRadius={0} />
+            <View style={{ padding: 10, gap: 6 }}>
+              <SkeletonBlock width="75%" height={12} />
+              <SkeletonBlock width="45%" height={12} />
+              <SkeletonBlock width="35%" height={16} borderRadius={4} />
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 /* ═══ SHARED PRESET STYLES ═══ */
 const HALF_WIDTH = "47%";
 const p = StyleSheet.create({

@@ -1,0 +1,284 @@
+import { View, ScrollView, StyleSheet, Pressable } from "react-native";
+import { Text } from "tamagui";
+import { Stack, router } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
+
+import apiClient from "@/lib/api-client";
+
+function MenuItem({
+  icon,
+  label,
+  subtitle,
+  badge,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  subtitle: string;
+  badge?: number;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.menuItem,
+        pressed && { backgroundColor: "#FAFAFA" },
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.menuItemIcon}>
+        <Ionicons name={icon as any} size={20} color="#E5005F" />
+      </View>
+      <View style={styles.menuItemContent}>
+        <Text fontSize="$4" fontWeight="600" color="#1A1A2E">
+          {label}
+        </Text>
+        <Text fontSize="$2" color="#8E8E93">
+          {subtitle}
+        </Text>
+      </View>
+      <View style={styles.menuItemRight}>
+        {badge !== undefined && (
+          <View style={styles.menuBadge}>
+            <Text fontSize={10} fontWeight="bold" color="#fff">
+              {badge}
+            </Text>
+          </View>
+        )}
+        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+      </View>
+    </Pressable>
+  );
+}
+
+export default function SettingsScreen() {
+  const announcementsQuery = useQuery({
+    queryKey: ["announcements"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/announcements");
+      return data?.data ?? data ?? { announcements: [] };
+    },
+  });
+
+  const announcements = announcementsQuery.data?.announcements ?? [];
+
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: "Settings",
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: "#F8F8F8" },
+        }}
+      />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Account */}
+        <View style={styles.menuGroup}>
+          <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
+            Account
+          </Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="lock-closed-outline"
+              label="Change Password"
+              subtitle="Update your account password"
+              onPress={() => router.push("/account/change-password")}
+            />
+            <MenuItem
+              icon="card-outline"
+              label="Payment Methods"
+              subtitle="Add or remove payment cards"
+            />
+          </View>
+        </View>
+
+        {/* Reseller Tools */}
+        <View style={styles.menuGroup}>
+          <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
+            Reseller Tools
+          </Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="cash-outline"
+              label="Income History"
+              subtitle="View your earnings"
+              onPress={() => router.push("/account/income-history" as any)}
+            />
+            <MenuItem
+              icon="trending-up-outline"
+              label="Order Income"
+              subtitle="Per-order profit breakdown"
+              onPress={() => router.push("/account/order-income" as any)}
+            />
+            <MenuItem
+              icon="shield-checkmark-outline"
+              label="Fraud Checker"
+              subtitle="Verify customer phone numbers"
+              onPress={() => router.push("/account/fraud-checker" as any)}
+            />
+            <MenuItem
+              icon="add-circle-outline"
+              label="Product Request"
+              subtitle="Request new products"
+              onPress={() => router.push("/account/product-request" as any)}
+            />
+            <MenuItem
+              icon="trophy-outline"
+              label="Event Challenges"
+              subtitle="Participate and earn rewards"
+              onPress={() => router.push("/account/events" as any)}
+            />
+            <MenuItem
+              icon="book-outline"
+              label="Free Courses"
+              subtitle="Learn and grow for free"
+              onPress={() => router.push("/account/free-courses" as any)}
+            />
+            <MenuItem
+              icon="people-outline"
+              label="Team Members"
+              subtitle="View your team"
+              onPress={() => router.push("/account/team-members" as any)}
+            />
+          </View>
+        </View>
+
+        {/* Support */}
+        <View style={styles.menuGroup}>
+          <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
+            Support
+          </Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="help-circle-outline"
+              label="FAQ"
+              subtitle="Frequently asked questions"
+              onPress={() => router.push("/account/faq")}
+            />
+            <MenuItem
+              icon="megaphone-outline"
+              label="Announcements"
+              subtitle="Latest news and updates"
+              badge={announcements.length > 0 ? announcements.length : undefined}
+            />
+            <MenuItem
+              icon="chatbubble-ellipses-outline"
+              label="Contact & Support"
+              subtitle="Get help or send a message"
+              onPress={() => router.push("/contact" as any)}
+            />
+          </View>
+        </View>
+
+        {/* Legal & Info */}
+        <View style={styles.menuGroup}>
+          <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
+            Legal & Info
+          </Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="information-circle-outline"
+              label="About Us"
+              subtitle="Learn about SelfShop"
+              onPress={() => router.push("/about-us" as any)}
+            />
+            <MenuItem
+              icon="shield-outline"
+              label="Privacy Policy"
+              subtitle="How we handle your data"
+              onPress={() => router.push("/privacy-policy" as any)}
+            />
+            <MenuItem
+              icon="document-text-outline"
+              label="Terms & Conditions"
+              subtitle="Terms of service"
+              onPress={() => router.push("/terms-and-conditions" as any)}
+            />
+            <MenuItem
+              icon="arrow-undo-outline"
+              label="Return Policy"
+              subtitle="Returns and refunds"
+              onPress={() => router.push("/return-policy" as any)}
+            />
+          </View>
+        </View>
+
+        {/* More */}
+        <View style={styles.menuGroup}>
+          <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
+            More
+          </Text>
+          <View style={styles.menuCard}>
+            <MenuItem
+              icon="star-outline"
+              label="Rate Us"
+              subtitle="Share your feedback"
+            />
+            <MenuItem
+              icon="share-social-outline"
+              label="Invite Friends"
+              subtitle="Spread the word!"
+            />
+          </View>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F8F8F8",
+  },
+  menuGroup: {
+    paddingHorizontal: 20,
+    marginTop: 16,
+  },
+  menuCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5F5F5",
+  },
+  menuItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FDF2F8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  menuItemContent: {
+    flex: 1,
+    gap: 1,
+  },
+  menuItemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  menuBadge: {
+    backgroundColor: "#E5005F",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+});

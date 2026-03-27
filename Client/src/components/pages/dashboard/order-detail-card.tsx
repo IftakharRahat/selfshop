@@ -2,6 +2,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { Package } from "lucide-react";
+import { getImageUrl } from "@/lib/utils";
 
 const statusStyles: Record<string, string> = {
 	Shipped: "bg-blue-50 text-blue-700 border-blue-200",
@@ -131,12 +134,23 @@ export default function OrderDetailCard({
 					const qty = parseInt(item.quantity) || 1;
 					const itemTotal = costPrice * qty;
 					return (
-						<div
-							key={item.id}
-							className="flex flex-wrap items-start justify-between gap-y-1 text-sm py-2 border-b border-gray-100 last:border-0"
-						>
-							<div className="flex-1 min-w-0">
-								<span className="text-gray-700">{item.productName} <span className="text-gray-400">x{item.quantity}</span></span>
+						<div key={item.id} className="flex flex-wrap items-start justify-between gap-y-1 text-sm py-2 border-b border-gray-100 last:border-0">
+							<div className="flex items-start gap-2.5 flex-1 min-w-0">
+								{item.product?.ViewProductImage ? (
+									<Image
+										src={getImageUrl(item.product.ViewProductImage)}
+										alt={item.productName || "Product"}
+										width={36}
+										height={36}
+										className="w-9 h-9 rounded-lg object-cover border border-gray-100 flex-shrink-0"
+									/>
+								) : (
+									<div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+										<Package className="w-4 h-4 text-gray-400" />
+									</div>
+								)}
+								<div className="min-w-0">
+									<span className="text-gray-700">{item.productName} <span className="text-gray-400">x{item.quantity}</span></span>
 								{(item.tracking_number || item.fulfillment_status) && (
 									<div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
 										{item.fulfillment_status && item.fulfillment_status !== "pending" && (
@@ -149,6 +163,7 @@ export default function OrderDetailCard({
 										)}
 									</div>
 								)}
+								</div>
 							</div>
 							<div className="text-right">
 								<span className="font-medium text-gray-900">Tk {itemTotal.toLocaleString()}</span>

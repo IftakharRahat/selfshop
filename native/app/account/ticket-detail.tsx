@@ -34,7 +34,7 @@ export default function TicketDetailScreen() {
   const ticketQuery = useQuery({
     queryKey: ["ticket", ticketId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/tickets/${ticketId}`);
+      const { data } = await apiClient.get(`/view-tikit/${ticketId}`);
       return data?.data ?? data;
     },
     enabled: !!ticketId,
@@ -42,8 +42,8 @@ export default function TicketDetailScreen() {
 
   const replyMutation = useMutation({
     mutationFn: () =>
-      apiClient.post(`/tickets/${ticketId}/reply`, {
-        message: replyText,
+      apiClient.post(`/replay-tikit/${ticketId}`, {
+        replay: replyText,
       }),
     onSuccess: () => {
       setReplyText("");

@@ -33,15 +33,15 @@ export default function AddressFormScreen() {
   const addressesQuery = useQuery({
     queryKey: ["addresses"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/addresses");
-      return data?.data ?? data ?? { addresses: [] };
+      const { data } = await apiClient.get("/shipping-addresses");
+      return data?.data ?? data ?? [];
     },
     enabled: isEditing,
   });
 
   useEffect(() => {
     if (isEditing && addressesQuery.data) {
-      const addresses = addressesQuery.data.addresses ?? [];
+      const addresses = Array.isArray(addressesQuery.data) ? addressesQuery.data : (addressesQuery.data.addresses ?? []);
       const addr = addresses.find(
         (a: any) => a.id === Number(addressId),
       );
@@ -62,19 +62,16 @@ export default function AddressFormScreen() {
     mutationFn: async () => {
       const payload = {
         label,
-        recipient_name: recipientName,
+        name: recipientName,
         phone,
         address: addressText,
-        city,
-        area: area || undefined,
-        postal_code: postalCode || undefined,
         is_default: isDefault,
       };
 
       if (isEditing) {
-        return apiClient.put(`/addresses/${addressId}`, payload);
+        return apiClient.put(`/shipping-addresses/${addressId}`, payload);
       }
-      return apiClient.post("/addresses", payload);
+      return apiClient.post("/shipping-addresses", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });

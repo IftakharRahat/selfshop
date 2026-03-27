@@ -22,7 +22,7 @@ export default function CreateTicketScreen() {
 
   const createMutation = useMutation({
     mutationFn: () =>
-      apiClient.post("/tickets", { subject, message, priority }),
+      apiClient.post("/create-supportticket", { subject, message, priority }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       Alert.alert("Success", "Support ticket created!", [

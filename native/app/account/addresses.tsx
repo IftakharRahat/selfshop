@@ -11,14 +11,14 @@ export default function AddressesScreen() {
   const addressesQuery = useQuery({
     queryKey: ["addresses"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/addresses");
-      return data?.data ?? data ?? { addresses: [] };
+      const { data } = await apiClient.get("/shipping-addresses");
+      return data?.data ?? data ?? [];
     },
   });
-  const addresses = addressesQuery.data?.addresses ?? [];
+  const addresses = Array.isArray(addressesQuery.data) ? addressesQuery.data : (addressesQuery.data?.addresses ?? []);
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiClient.delete(`/addresses/${id}`),
+    mutationFn: (id: number) => apiClient.delete(`/shipping-addresses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
     },
@@ -28,7 +28,7 @@ export default function AddressesScreen() {
   });
 
   const setDefaultMutation = useMutation({
-    mutationFn: (id: number) => apiClient.post(`/addresses/${id}/set-default`),
+    mutationFn: (id: number) => apiClient.post(`/shipping-addresses/${id}/set-default`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
     },

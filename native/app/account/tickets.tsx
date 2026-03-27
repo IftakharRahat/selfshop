@@ -23,7 +23,7 @@ export default function SupportTicketsScreen() {
   const ticketsQuery = useQuery({
     queryKey: ["tickets"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/tickets");
+      const { data } = await apiClient.get("/get-supporttickets");
       return data?.data ?? data ?? { tickets: [] };
     },
   });
