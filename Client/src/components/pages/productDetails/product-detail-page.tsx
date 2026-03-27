@@ -1010,10 +1010,10 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																	<div className="hidden sm:flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
 																		<input
 																			type="number"
-																			min={Math.ceil(displayPrice)}
+																			min={displayPrice}
 																			value={rowSellingPrice}
 																			onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
-																			placeholder={`≥${Math.ceil(displayPrice)}`}
+																			placeholder={`≥${formatBDT(displayPrice)}`}
 																			className={`w-20 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
 																		/>
 																	</div>
@@ -1037,10 +1037,10 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																<span className="text-[10px] text-gray-500 font-semibold uppercase shrink-0">My Price:</span>
 																<input
 																	type="number"
-																	min={Math.ceil(displayPrice)}
+																	min={displayPrice}
 																	value={rowSellingPrice}
 																	onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
-																	placeholder={`≥${Math.ceil(displayPrice)}`}
+																	placeholder={`≥${formatBDT(displayPrice)}`}
 																	className={`w-24 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
 																/>
 																<span className="text-sm shrink-0">
@@ -1183,13 +1183,21 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 									: (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
 								const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
 								const spNum = singleSP ? parseFloat(singleSP) : 0;
-								const isTooLow = singleSP !== "" && spNum < effectiveUnitPrice;
+
+								// Compute the minimum selling price from the active variant/size (not the global effectiveUnitPrice)
+								const activeVar = variants[activeVariantIdx];
+								const activeSize = activeVar?.sizes?.[activeSizeIdx];
+								const activeVarQty = activeSize ? (variantQuantities[activeVar?.id]?.[activeSize.size_name] || 0) : 0;
+								const minSellingPrice = activeSize
+									? getSizePrice(activeSize, activeVarQty)
+									: effectiveUnitPrice;
+								const isTooLow = singleSP !== "" && spNum < minSellingPrice;
 								return (
 									<div className="space-y-3">
 										<h3 className="font-medium text-gray-900">Your selling price</h3>
 										<input
 											type="number"
-											placeholder={`Enter your selling price (≥${Math.ceil(effectiveUnitPrice)})`}
+											placeholder={`Enter your selling price (≥${formatBDT(minSellingPrice)})`}
 											value={singleSP}
 											onChange={(e) => {
 												const val = e.target.value;
@@ -1219,7 +1227,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 											className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isTooLow ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
 										/>
 										{isTooLow && (
-											<p className="text-red-500 text-sm mt-1">Price must be at least ৳{formatBDT(effectiveUnitPrice)}</p>
+											<p className="text-red-500 text-sm mt-1">Price must be at least ৳{formatBDT(minSellingPrice)}</p>
 										)}
 										{totalEarnings > 0 && totalQuantity > 0 && (
 											<p className="text-green-600 text-sm mt-1">
