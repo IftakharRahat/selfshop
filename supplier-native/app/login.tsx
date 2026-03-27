@@ -15,11 +15,12 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
 import { BRAND } from "@/lib/constants";
-import { login } from "@/lib/auth-client";
+import { login, useSession } from "@/lib/auth-client";
 import { queryClient } from "@/lib/query-client";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
+  const { signIn } = useSession();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,10 +34,10 @@ export default function LoginScreen() {
 
     setIsSubmitting(true);
     try {
-      await login(phone.trim(), password);
+      const session = await login(phone.trim(), password);
       queryClient.clear();
+      signIn(session);
       toast.success("Welcome back!");
-      router.replace("/(tabs)");
     } catch (err: any) {
       const message = err?.response?.data?.message ?? err?.message ?? "Login failed";
       toast.error(message);

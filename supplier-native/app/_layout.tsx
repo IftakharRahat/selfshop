@@ -10,7 +10,7 @@ import { TamaguiProvider } from "tamagui";
 import { Toaster } from "sonner-native";
 
 import { queryClient } from "@/lib/query-client";
-import { useSession } from "@/lib/auth-client";
+import { useSession, AuthProvider } from "@/lib/auth-client";
 import { tamaguiConfig } from "../tamagui.config";
 
 SplashScreen.preventAutoHideAsync();
@@ -37,14 +37,16 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" translucent backgroundColor="transparent" />
         <GestureHandlerRootView style={styles.container}>
-          <AuthGate />
-          <Toaster
-            position="top-center"
-            offset={60}
-            swipeToDismissDirection="up"
-            richColors
-            closeButton
-          />
+          <AuthProvider>
+            <AuthGate />
+            <Toaster
+              position="top-center"
+              offset={60}
+              swipeToDismissDirection="up"
+              richColors
+              closeButton
+            />
+          </AuthProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
     </TamaguiProvider>

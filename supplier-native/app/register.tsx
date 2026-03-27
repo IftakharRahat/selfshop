@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
 import { BRAND } from "@/lib/constants";
-import { register } from "@/lib/auth-client";
+import { register, useSession } from "@/lib/auth-client";
 import { queryClient } from "@/lib/query-client";
 import apiClient from "@/lib/api-client";
 import DraggableBottomSheet from "@/components/DraggableBottomSheet";
@@ -26,6 +26,7 @@ const BUSINESS_TYPES = ["Manufacturer", "Wholesaler", "Distributor", "Importer",
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
+  const { signIn } = useSession();
   const [step, setStep] = useState(1);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -97,7 +98,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setIsSubmitting(true);
     try {
-      await register({
+      const session = await register({
         name: name.trim(), phone: phone.trim(), password,
         company_name: companyName.trim(),
         business_type: businessType || undefined,
@@ -107,8 +108,8 @@ export default function RegisterScreen() {
         pickup_address: pickupAddress.trim() || undefined,
       });
       queryClient.clear();
+      signIn(session);
       toast.success("Registration successful! Welcome aboard.");
-      router.replace("/(tabs)");
     } catch (err: any) {
       const message =
         err?.response?.data?.message ??

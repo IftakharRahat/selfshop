@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import apiClient, { TOKEN_KEY } from "./api-client";
 
 interface User {
@@ -14,7 +14,23 @@ interface Session {
   token: string;
 }
 
-// ── Auth functions ──
+interface AuthContextValue {
+  session: Session | null;
+  isLoading: boolean;
+  signIn: (session: Session) => void;
+  signOut: () => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue>({
+  session: null,
+  isLoading: true,
+  signIn: () => {},
+  signOut: async () => {},
+  refetch: async () => {},
+});
+
+// ── Auth functions (plain, no state) ──
 
 export async function login(phone: string, password: string): Promise<Session> {
   const { data } = await apiClient.post("/login", { email: phone, password });
@@ -55,13 +71,9 @@ export async function logout(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
-export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
-}
+// ── Provider ──
 
-// ── React hook ──
-
-export function useSession() {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -72,7 +84,6 @@ export function useSession() {
         setSession(null);
         return;
       }
-
       const { data } = await apiClient.get("/user");
       const user = data?.data ?? data;
       setSession({ user, token });
@@ -88,10 +99,25 @@ export function useSession() {
     checkSession();
   }, [checkSession]);
 
+  const signIn = useCallback((s: Session) => {
+    setSession(s);
+  }, []);
+
   const signOut = useCallback(async () => {
     await logout();
     setSession(null);
   }, []);
 
-  return { data: session, isLoading, refetch: checkSession, signOut };
+  return (
+    <AuthContext.Provider value={{ session, isLoading, signIn, signOut, refetch: checkSession }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// ── Hook ──
+
+export function useSession() {
+  const ctx = useContext(AuthContext);
+  return { data: ctx.session, isLoading: ctx.isLoading, signIn: ctx.signIn, signOut: ctx.signOut, refetch: ctx.refetch };
 }
