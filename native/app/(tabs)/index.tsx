@@ -106,6 +106,42 @@ export default function HomeScreen() {
     staleTime: 60 * 1000,
   });
 
+  const brands = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/brands");
+      return (data?.data ?? data ?? []).map((b: any) => ({
+        id: b.id,
+        name: b.brand_name ?? b.name ?? "",
+        icon: resolveImageUrl(b.brand_icon ?? b.icon),
+        slug: b.slug,
+      }));
+    },
+  });
+
+  const promotionalSections = useQuery({
+    queryKey: ["promotional-sections"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/promotional-sections");
+      return (data?.data ?? []).map((s: any) => ({
+        ...s,
+        banner_image: resolveImageUrl(s.banner_image),
+        products: (s.products ?? []).map((p: any) => ({
+          ...p,
+          ViewProductImage: resolveImageUrl(p.ViewProductImage),
+        })),
+      }));
+    },
+  });
+
+  const popularSuppliers = useQuery({
+    queryKey: ["popular-vendors"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/popular-vendors");
+      return data?.data ?? data ?? [];
+    },
+  });
+
   const bannerList = sliders.data ?? [];
 
   // Auto-scroll banners
@@ -135,6 +171,9 @@ export default function HomeScreen() {
   const allFeatured = featuredProducts.data ?? [];
   const newArrivals = newProducts.data ?? [];
   const categoryList = categories.data ?? [];
+  const brandList: any[] = brands.data ?? [];
+  const promoSections: any[] = promotionalSections.data ?? [];
+  const supplierList: any[] = popularSuppliers.data ?? [];
 
   if (newProducts.isLoading && categories.isLoading) {
     return <HomeSkeleton />;
@@ -222,6 +261,59 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {/* Popular Suppliers */}
+      {supplierList.length > 0 && (
+        <View style={styles.sectionContainer}>
+          <SectionHeader title="Popular Suppliers" onSeeAll={() => router.push("/all-suppliers" as any)} />
+          <FlatList
+            data={supplierList.slice(0, 10)}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.supplierScrollList}
+            keyExtractor={(item: any) => String(item.id)}
+            renderItem={({ item }: any) => {
+              const logo = resolveImageUrl(item.shop_logo ?? item.logo);
+              const name = item.shop_name ?? item.company_name ?? item.name ?? "Supplier";
+              const totalProducts = item.total_products ?? item.products_count ?? 0;
+              const rating = item.rating ?? item.avg_rating ?? 0;
+              return (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.supplierCard,
+                    pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
+                  ]}
+                  onPress={() => router.push({ pathname: "/supplier/[slug]", params: { slug: item.slug ?? item.id } } as any)}
+                >
+                  {/* Logo */}
+                  <View style={styles.supplierLogoWrap}>
+                    {logo ? (
+                      <Image source={{ uri: logo }} style={styles.supplierLogo} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.supplierLogo, { backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" }]}>
+                        <Ionicons name="storefront" size={20} color="#9CA3AF" />
+                      </View>
+                    )}
+                  </View>
+                  {/* Name */}
+                  <Text numberOfLines={1} style={styles.supplierName}>{name}</Text>
+                  {/* Meta */}
+                  <View style={styles.supplierMeta}>
+                    <Ionicons name="cube-outline" size={11} color="#6B7280" />
+                    <Text style={styles.supplierMetaText}>{totalProducts}</Text>
+                    {rating > 0 && (
+                      <>
+                        <Ionicons name="star" size={11} color="#F59E0B" />
+                        <Text style={styles.supplierMetaText}>{Number(rating).toFixed(1)}</Text>
+                      </>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            }}
+          />
+        </View>
+      )}
+
       {/* Flash Sale Banner */}
       {flashSale.data?.products?.length > 0 && (
         <Pressable
@@ -259,6 +351,99 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       )}
+
+      {/* ── Promotional Sections (Offer Banners) ── */}
+      {promoSections.length > 0 && promoSections.map((section: any) => {
+        const sectionProducts = section.products ?? [];
+        if (sectionProducts.length === 0) return null;
+
+        if (section.layout_type === "slider") {
+          /* Slider layout: title + horizontal product carousel */
+          return (
+            <View key={section.id} style={[styles.sectionContainer, section.bg_color ? { backgroundColor: section.bg_color } : undefined]}>
+              <SectionHeader
+                title={section.title?.toUpperCase() ?? ""}
+                onSeeAll={() => {}}
+              />
+              <FlatList
+                data={sectionProducts}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.productList}
+                keyExtractor={(item: any) => String(item.id)}
+                renderItem={({ item }: any) => (
+                  <ProductCard
+                    name={item.ProductName}
+                    price={String(item.storefront_price ?? item.ProductSalePrice ?? item.ProductRegularPrice)}
+                    image={item.ViewProductImage}
+                    slug={item.ProductSlug}
+                    variant="horizontal"
+                  />
+                )}
+              />
+            </View>
+          );
+        }
+
+        /* Card layout: banner image + title + product previews */
+        return (
+          <View key={section.id} style={styles.promoCard}>
+            {/* Banner */}
+            {section.banner_image ? (
+              <Image
+                source={{ uri: section.banner_image }}
+                style={styles.promoBanner}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.promoBanner, { backgroundColor: "#F9E8EF" }]}>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: "#E5005F" }}>
+                  {section.title}
+                </Text>
+              </View>
+            )}
+
+            {/* Title bar */}
+            <View style={styles.promoTitleBar}>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: "#E5005F" }}>
+                {section.title?.toUpperCase()}
+              </Text>
+              <Pressable
+                style={styles.promoExploreBtn}
+                onPress={() => router.push({ pathname: "/collection/[slug]", params: { slug: section.slug ?? "" } } as any)}
+              >
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>Explore</Text>
+              </Pressable>
+            </View>
+
+            {/* 2-product preview */}
+            <View style={styles.promoProductRow}>
+              {sectionProducts.slice(0, 2).map((product: any) => (
+                <Pressable
+                  key={product.id}
+                  style={styles.promoProductItem}
+                  onPress={() => router.push({ pathname: "/product-detail", params: { slug: product.ProductSlug } } as any)}
+                >
+                  {product.ViewProductImage ? (
+                    <Image
+                      source={{ uri: product.ViewProductImage }}
+                      style={styles.promoProductImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.promoProductImage, { backgroundColor: "#F0F0F5", justifyContent: "center", alignItems: "center" }]}>
+                      <Ionicons name="image-outline" size={24} color="#ccc" />
+                    </View>
+                  )}
+                  <Text numberOfLines={2} style={{ fontSize: 12, color: "#374151", fontWeight: "500", textAlign: "center" }}>
+                    {product.ProductName}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        );
+      })}
 
       {/* Featured Products */}
       {allFeatured.length > 0 && (
@@ -301,6 +486,40 @@ export default function HomeScreen() {
                 slug={item.ProductSlug}
                 variant="horizontal"
               />
+            )}
+          />
+        </View>
+      )}
+
+      {/* ── Most Popular Brands ── */}
+      {brandList.length > 0 && (
+        <View style={styles.sectionContainer}>
+          <Text style={styles.brandsTitle}>Most Popular Brands</Text>
+          <FlatList
+            data={brandList}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.brandList}
+            keyExtractor={(item: any) => String(item.id)}
+            renderItem={({ item }: any) => (
+              <Pressable
+                style={styles.brandCard}
+                onPress={() => router.push({ pathname: "/brand/[slug]", params: { slug: item.slug } } as any)}
+              >
+                {item.icon ? (
+                  <Image
+                    source={{ uri: item.icon }}
+                    style={styles.brandIcon}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <View style={[styles.brandIcon, { backgroundColor: "#F3F4F6", justifyContent: "center", alignItems: "center" }]}>
+                    <Text style={{ fontSize: 10, fontWeight: "600", color: "#9CA3AF", textAlign: "center" }}>
+                      {item.name}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
             )}
           />
         </View>
@@ -394,6 +613,119 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: 20,
     gap: 12,
+  },
+  /* ── Brands ── */
+  brandsTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#322F35",
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  brandList: {
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  brandCard: {
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#F0F0F5",
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 6,
+  },
+  brandIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+  },
+  /* ── Promotional Sections ── */
+  promoCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#FCE4EC",
+  },
+  promoBanner: {
+    width: "100%",
+    height: 130,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  promoTitleBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  promoExploreBtn: {
+    backgroundColor: "#E5005F",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  promoProductRow: {
+    flexDirection: "row",
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    gap: 12,
+  },
+  promoProductItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
+  },
+  promoProductImage: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 10,
+  },
+  /* ── Suppliers ── */
+  supplierScrollList: {
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  supplierCard: {
+    width: 120,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#F0F0F5",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  supplierLogoWrap: {
+    marginBottom: 8,
+  },
+  supplierLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F9FAFB",
+  },
+  supplierName: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1A1A2E",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  supplierMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  supplierMetaText: {
+    fontSize: 10,
+    color: "#6B7280",
   },
 });
 

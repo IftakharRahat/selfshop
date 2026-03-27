@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
+import { ProductGridSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -83,9 +84,7 @@ export default function BrandProductsScreen() {
           }
           ListEmptyComponent={
             productsQuery.isLoading ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator size="large" color={ACCENT} />
-              </View>
+              <ProductGridSkeleton />
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="cube-outline" size={48} color="#D1D5DB" />

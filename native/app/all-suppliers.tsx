@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  Text as RNText,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
@@ -16,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SupplierGridSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -62,11 +64,11 @@ export default function AllSuppliersScreen() {
   }, [queryClient, activeFilter]);
 
   const renderSupplier = ({ item }: { item: any }) => {
-    const logo = resolveImageUrl(item.shop_logo ?? item.logo);
-    const banner = resolveImageUrl(item.shop_banner ?? item.banner);
-    const name = item.shop_name ?? item.company_name ?? item.name ?? "Supplier";
-    const totalProducts = item.total_products ?? item.products_count ?? 0;
-    const rating = item.rating ?? item.avg_rating ?? 0;
+    const logo = resolveImageUrl(item.logo_path ?? item.shop_logo ?? item.logo);
+    const banner = resolveImageUrl(item.banner_path ?? item.shop_banner ?? item.banner);
+    const name = item.company_name ?? item.shop_name ?? item.name ?? "Supplier";
+    const totalProducts = item.products_count ?? item.total_products ?? 0;
+    const rating = item.avg_product_rating ?? item.rating ?? item.avg_rating ?? 0;
 
     return (
       <Pressable
@@ -146,9 +148,14 @@ export default function AllSuppliersScreen() {
                 style={[styles.filterChip, isActive && styles.filterChipActive]}
                 onPress={() => setActiveFilter(opt.value)}
               >
-                <Text style={[styles.filterChipText, isActive && { color: "#fff" }]}>
+                <RNText
+                  style={[
+                    styles.filterChipText,
+                    isActive && styles.filterChipTextActive,
+                  ]}
+                >
                   {opt.label}
-                </Text>
+                </RNText>
               </Pressable>
             );
           })}
@@ -173,9 +180,7 @@ export default function AllSuppliersScreen() {
           }
           ListEmptyComponent={
             suppliersQuery.isLoading ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator size="large" color={ACCENT} />
-              </View>
+              <SupplierGridSkeleton />
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="storefront-outline" size={48} color="#D1D5DB" />
@@ -194,14 +199,17 @@ export default function AllSuppliersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F8FA" },
 
-  filterRow: { padding: 16, paddingBottom: 8, gap: 8 },
+  filterRow: { padding: 16, paddingBottom: 8, gap: 8, alignItems: "center" as const },
   filterChip: {
+    minHeight: 38,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: "#E5E7EB",
     backgroundColor: "#fff",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   filterChipActive: {
     borderColor: ACCENT,
@@ -209,8 +217,11 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "600" as const,
     color: "#374151",
+  },
+  filterChipTextActive: {
+    color: "#fff",
   },
 
   gridContent: { padding: 16, paddingBottom: 40 },

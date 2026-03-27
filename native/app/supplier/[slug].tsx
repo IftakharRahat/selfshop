@@ -18,6 +18,7 @@ import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
+import { SupplierDetailSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -51,6 +52,7 @@ export default function SupplierDetailScreen() {
       return data?.data ?? data;
     },
     enabled: !!slug,
+    placeholderData: (prev: any) => prev,
   });
 
   const followStatusQuery = useQuery({
@@ -109,8 +111,8 @@ export default function SupplierDetailScreen() {
   if (supplierQuery.isLoading) {
     return (
       <>
-        <Stack.Screen options={{ headerShown: true, title: "Supplier", headerShadowVisible: false }} />
-        <View style={styles.loadingState}><ActivityIndicator size="large" color={ACCENT} /></View>
+        <Stack.Screen options={{ headerShown: true, title: "Supplier", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SupplierDetailSkeleton />
       </>
     );
   }
