@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import MicrosoftClarity from "@/components/providers/MicrosoftClarity";
 import { Toaster } from "sonner";
 import MyContextProvider from "@/lib/MyContextProvider";
 import SessionProviderForNextAuth from "@/nextAuth/SessionProviderForNextAuth";
@@ -62,6 +63,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
+			<head>
+				<MicrosoftClarity />
+			</head>
 			<body
 				suppressHydrationWarning={true}
 				className={`${poppins.variable} antialiased font-poppins`}
