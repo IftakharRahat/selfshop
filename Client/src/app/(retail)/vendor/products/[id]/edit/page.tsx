@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(() => import("@/components/shared/RichTextEditor"), { ssr: false });
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -235,7 +237,6 @@ export default function VendorEditProductPage() {
 		setSaving(true);
 		const formData = new FormData();
 		formData.append("ProductName", f.name);
-		formData.append("ProductBreaf", f.short_description);
 		formData.append("ProductDetails", f.description);
 		formData.append("ProductResellerPrice", f.base_price || "0");
 		formData.append("ProductRegularPrice", f.regular_price || "0");
@@ -468,12 +469,14 @@ export default function VendorEditProductPage() {
 							<div className="space-y-3">
 								<h2 className="text-sm font-semibold text-gray-900">Product description</h2>
 								<label className="flex flex-col text-sm font-medium text-gray-700">
-									Short description
-									<textarea rows={2} value={f.short_description} onChange={set("short_description")} className={inputCls} />
-								</label>
-								<label className="flex flex-col text-sm font-medium text-gray-700">
 									Description
-									<textarea rows={4} value={f.description} onChange={set("description")} className={inputCls} />
+									<div className="mt-1">
+										<RichTextEditor
+											value={f.description}
+											onChange={(html) => setF((prev) => ({ ...prev, description: html }))}
+											placeholder="Write your product description here... You can also paste formatted text from Google Docs or Word."
+										/>
+									</div>
 								</label>
 							</div>
 						</div>
