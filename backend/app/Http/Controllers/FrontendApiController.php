@@ -1560,7 +1560,7 @@ class FrontendApiController extends Controller
     public function orders($slug)
     {
         $id = Auth::user()->id;
-        $query = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+        $query = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
             ->where('user_id', $id);
 
         $slugLower = strtolower((string) $slug);
@@ -1622,7 +1622,7 @@ class FrontendApiController extends Controller
     {
         // Prefer lookup by unique order id if provided
         if ($request->filled('id')) {
-            $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+            $orders = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
                 ->where('user_id', Auth::id())
                 ->where('id', $request->id)
                 ->first();
@@ -1652,7 +1652,7 @@ class FrontendApiController extends Controller
             ], 404);
         }
 
-        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])
+        $orders = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
             ->where('user_id', Auth::id())
             ->where(function ($q) use ($rawInvoiceId, $invoiceId) {
                 $q->where('invoiceID', $invoiceId);
@@ -1692,7 +1692,7 @@ class FrontendApiController extends Controller
 
         $orders = Order::with([
             'customers',
-            'orderproducts',
+            'orderproducts.product:id,ProductName,ViewProductImage',
             'couriers',
             'cities',
             'zones',

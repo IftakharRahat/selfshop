@@ -119,19 +119,23 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 							className="bg-gray-50/60 border border-gray-100 rounded-xl p-3"
 						>
 							<div className="flex items-center gap-3 mb-2.5">
-								{order.products?.[0]?.ViewProductImage ? (
-									<Image
-										src={getImageUrl(order.products[0].ViewProductImage)}
-										alt="Product"
-										width={40}
-										height={40}
-										className="w-10 h-10 rounded-lg object-cover border border-gray-100"
-									/>
-								) : (
-									<div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-										<Package className="w-4 h-4 text-gray-400" />
-									</div>
-								)}
+								{(() => {
+									const img = order.orderproducts?.[0]?.product?.ViewProductImage
+										|| order.products?.[0]?.ViewProductImage;
+									return img ? (
+										<Image
+											src={getImageUrl(img)}
+											alt="Product"
+											width={40}
+											height={40}
+											className="w-10 h-10 rounded-lg object-cover border border-gray-100"
+										/>
+									) : (
+										<div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+											<Package className="w-4 h-4 text-gray-400" />
+										</div>
+									);
+								})()}
 								<div className="flex-1 min-w-0">
 									<p className="text-sm font-semibold text-gray-900 truncate">
 										{order.invoiceID}
@@ -261,11 +265,12 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 									className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
 								>
 									<td className="p-4">
-										{order.products?.[0]?.ViewProductImage ? (
+										{(() => {
+										const img = order.orderproducts?.[0]?.product?.ViewProductImage
+											|| order.products?.[0]?.ViewProductImage;
+										return img ? (
 											<Image
-												src={getImageUrl(
-													order.products[0].ViewProductImage,
-												)}
+												src={getImageUrl(img)}
 												alt="Product"
 												width={36}
 												height={36}
@@ -275,7 +280,8 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 											<div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
 												<Package className="w-4 h-4 text-gray-400" />
 											</div>
-										)}
+										);
+									})()}
 									</td>
 
 									<td className="p-4 text-sm font-medium text-gray-900">
