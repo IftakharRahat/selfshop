@@ -132,48 +132,129 @@ export default function VendorProfilePage() {
 		}
 	};
 
+	const vendor = data?.data?.vendor ?? null;
+
 	return (
 		<WithVendorAuth>
 			<div className="space-y-6">
-				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-					<div>
-						<h1 className="text-2xl font-bold text-gray-900 mb-1">
-							Vendor account &amp; profile
-						</h1>
-						<p className="text-gray-600 text-sm">
-							Update your business identity, contact details, and base address.
-							This information is used for KYC and order fulfillment.
-						</p>
-					</div>
-					{vendorStatus && (
-						<div className="flex flex-col items-start md:items-end gap-1">
-							<span className="text-xs uppercase tracking-wide text-gray-500">
-								Account status
-							</span>
-							<span
-								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${vendorStatus === "approved"
-									? "bg-emerald-100 text-emerald-700"
-									: vendorStatus === "rejected"
-										? "bg-red-100 text-red-700"
-										: "bg-amber-100 text-amber-700"
-									}`}
-							>
-								{vendorStatus.charAt(0).toUpperCase() +
-									vendorStatus.slice(1)}
-							</span>
-							<span
-								className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${isVerifiedBadge
-									? "bg-sky-100 text-sky-700"
-									: "bg-gray-100 text-gray-600"
-									}`}
-							>
-								{isVerifiedBadge
-									? "Verified badge enabled"
-									: "Verified badge not granted"}
-							</span>
+				{/* ── Supplier Info Card ── */}
+				{vendor && (
+					<div className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+						{/* Gradient Header */}
+						<div className="relative bg-gradient-to-r from-[#2d2a5d] via-[#3b3878] to-[#4a45a0] px-5 py-6 sm:px-8 sm:py-8">
+							{/* Decorative circles */}
+							<div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
+							<div className="absolute bottom-0 left-20 w-24 h-24 bg-white/5 rounded-full translate-y-1/2" />
+
+							<div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
+								{/* Logo */}
+								<div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/10 border-2 border-white/20 backdrop-blur-sm overflow-hidden flex-shrink-0 flex items-center justify-center">
+									{existingLogo ? (
+										<Image
+											src={getImageUrl(existingLogo)}
+											alt={companyName || "Supplier logo"}
+											width={96}
+											height={96}
+											className="w-full h-full object-cover"
+										/>
+									) : (
+										<span className="text-3xl font-bold text-white/60">
+											{(companyName || "S").charAt(0).toUpperCase()}
+										</span>
+									)}
+								</div>
+
+								{/* Identity Info */}
+								<div className="flex-1 min-w-0">
+									<div className="flex flex-wrap items-center gap-2 mb-1">
+										<span className="text-white/60 text-xs font-mono tracking-wider bg-white/10 px-2.5 py-0.5 rounded-full">
+											SID-{String(vendor.id).padStart(5, "0")}
+										</span>
+										{vendorStatus && (
+											<span
+												className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+													vendorStatus === "approved"
+														? "bg-emerald-400/20 text-emerald-300"
+														: vendorStatus === "rejected"
+															? "bg-red-400/20 text-red-300"
+															: "bg-amber-400/20 text-amber-300"
+												}`}
+											>
+												{vendorStatus}
+											</span>
+										)}
+										{isVerifiedBadge && (
+											<span className="inline-flex items-center gap-1 rounded-full bg-sky-400/20 text-sky-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+												✓ Verified
+											</span>
+										)}
+									</div>
+									<h2 className="text-xl sm:text-2xl font-bold text-white truncate">
+										{companyName || "Your Business"}
+									</h2>
+									{businessType && (
+										<p className="text-white/50 text-sm mt-0.5">{businessType}</p>
+									)}
+									{vendor.slug && (
+										<p className="text-white/40 text-xs font-mono mt-1">
+											selfshop.com/supplier/{vendor.slug}
+										</p>
+									)}
+								</div>
+
+								{/* View Profile Button */}
+								{vendor.slug && (
+									<a
+										href={`/supplier/${vendor.slug}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium backdrop-blur-sm transition-all self-start sm:self-center"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+										View Public Profile
+									</a>
+								)}
+							</div>
 						</div>
-					)}
-				</div>
+
+						{/* Stats Bar */}
+						<div className="bg-white px-5 sm:px-8 py-4 flex flex-wrap gap-6 sm:gap-10">
+							<div className="flex items-center gap-3">
+								<div className="w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center">
+									<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E5005F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+								</div>
+								<div>
+									<p className="text-lg font-bold text-gray-900">{vendor.followers_count ?? 0}</p>
+									<p className="text-xs text-gray-500">Followers</p>
+								</div>
+							</div>
+
+							<div className="flex items-center gap-3">
+								<div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+									<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4a45a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+								</div>
+								<div>
+									<p className="text-lg font-bold text-gray-900">{vendor.total_products ?? 0}</p>
+									<p className="text-xs text-gray-500">Products</p>
+								</div>
+							</div>
+
+							{vendor.created_at && (
+								<div className="flex items-center gap-3">
+									<div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+									</div>
+									<div>
+										<p className="text-sm font-semibold text-gray-900">
+											{new Date(vendor.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+										</p>
+										<p className="text-xs text-gray-500">Member since</p>
+									</div>
+								</div>
+							)}
+						</div>
+					</div>
+				)}
 
 				{/* Shop Branding — Logo & Banner */}
 				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">

@@ -105,9 +105,9 @@ export default function DashboardSidebar({
 	};
 
 	return (
-		<aside className="w-full bg-white  sticky top-0 h-full max-h-[calc(100vh-75px)] overflow-hidden">
+		<aside className="w-full bg-white h-full flex flex-col overflow-hidden">
 			{/* User Info */}
-			<div className="p-5 bg-gradient-to-br from-[#E5005F] to-[#b80050]">
+			<div className="p-5 bg-gradient-to-br from-[#E5005F] to-[#b80050] flex-shrink-0">
 				<div className="flex items-center gap-3 mb-3">
 					{/* Avatar */}
 					<div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center flex-shrink-0">
@@ -140,7 +140,7 @@ export default function DashboardSidebar({
 			</div>
 
 			{/* Navigation Menu */}
-			<nav className="p-4 overflow-hidden overflow-y-auto  h-full max-h-[calc(100vh-300px)]">
+			<nav className="p-4 flex-1 min-h-0 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
 				<ul className="space-y-2">
 					{menuItems.map((item, index) => {
 						const isActive = pathname === item.href;
