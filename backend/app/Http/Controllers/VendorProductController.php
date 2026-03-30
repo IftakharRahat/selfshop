@@ -150,6 +150,7 @@ class VendorProductController extends Controller
         $product->Discount = $request->input('Discount', 0);
         $product->vendor_approval_status = 'pending';
         $product->status = 'Inactive';
+        $product->frature = 1;
         if (Schema::hasColumn('products', 'allow_dropship')) {
             $product->allow_dropship = (bool) $request->input('allow_dropship', false);
         }
@@ -787,6 +788,7 @@ class VendorProductController extends Controller
             $product->Discount = $data['Discount'] ?? 0;
             $product->vendor_approval_status = 'pending';
             $product->status = 'Inactive';
+            $product->frature = 1;
             $product->ProductImage = 'public/images/product/default.jpg';
             $product->ViewProductImage = 'public/images/product/default.jpg';
             if (Schema::hasColumn('products', 'allow_dropship')) {
@@ -974,25 +976,18 @@ class VendorProductController extends Controller
 
         $totalQty = 0;
         $minPrice = null;
-        $firstAvailablePrice = null;
 
         foreach ($variants as $variant) {
-            $variantBestPrice = null;
-
             if ($variant->sizes->isEmpty()) {
                 $totalQty += (int) $variant->qty;
                 $vPrice = (float) ($variant->price ?: 0);
-                if ($vPrice > 0) {
-                    $variantBestPrice = $vPrice;
-                    if ($minPrice === null || $vPrice < $minPrice) {
-                        $minPrice = $vPrice;
-                    }
+                if ($vPrice > 0 && ($minPrice === null || $vPrice < $minPrice)) {
+                    $minPrice = $vPrice;
                 }
             } else {
                 foreach ($variant->sizes as $size) {
                     $totalQty += (int) $size->qty;
 
-                    // Get the best price for this size (base or bulk)
                     $pricesToCompare = [];
                     $sPrice = (float) ($size->price ?: 0);
                     if ($sPrice > 0) {
@@ -1010,42 +1005,38 @@ class VendorProductController extends Controller
 
                     if (!empty($pricesToCompare)) {
                         $bestSizePrice = min($pricesToCompare);
-                        if ($variantBestPrice === null || $bestSizePrice < $variantBestPrice) {
-                            $variantBestPrice = $bestSizePrice;
-                        }
                         if ($minPrice === null || $bestSizePrice < $minPrice) {
                             $minPrice = $bestSizePrice;
                         }
                     }
                 }
             }
-
-            // Capture the first non-zero price we encounter to use as the "Lead" price
-            if ($firstAvailablePrice === null && $variantBestPrice !== null && $variantBestPrice > 0) {
-                $firstAvailablePrice = $variantBestPrice;
-            }
         }
 
+        // Only update total qty from variants (stock aggregation)
         $product->qty = $totalQty;
+
+        // Update min_sell_price and wholesale price for storefront "starting from" display.
         if ($minPrice !== null && $minPrice > 0) {
-            $product->ProductResellerPrice = $minPrice;
-        }
-        
-        // Use the first non-zero price found for the storefront markup, fallback to minPrice
-        $rawCardPrice = $firstAvailablePrice ?? $minPrice ?? (float) $product->ProductResellerPrice;
-        
-        if ($rawCardPrice > 0) {
+            $product->min_sell_price = $minPrice;
+            $product->ProductWholesalePrice = $minPrice;
+
+            // Update storefront sale price (with commission) based on min variant price
             $commissionService = app(\App\Services\VendorCommissionService::class);
-            $product->ProductRegularPrice = $commissionService->getStorefrontPrice(
-                (float) $rawCardPrice,
+            $storefrontPrice = $commissionService->getStorefrontPrice(
+                (float) $minPrice,
                 (int) $product->vendor_id,
                 (int) $product->category_id
             );
-            
-            // If ProductSalePrice was 0 or unset, sync it or keep it proportional? 
-            // Usually if it's 0 it shows as 0. Let's ensure it's at least the regular price if regular > 0 and sale is 0.
-            if ((float)$product->ProductSalePrice <= 0) {
-                $product->ProductSalePrice = $product->ProductRegularPrice;
+            $product->ProductSalePrice = $storefrontPrice;
+
+            // If vendor didn't set base/regular prices (wholesale mode where those fields
+            // are hidden), fill them from variant prices so the product card displays correctly.
+            if ((float) $product->ProductResellerPrice <= 0) {
+                $product->ProductResellerPrice = $minPrice;
+            }
+            if ((float) $product->ProductRegularPrice <= 0) {
+                $product->ProductRegularPrice = $storefrontPrice;
             }
         }
 

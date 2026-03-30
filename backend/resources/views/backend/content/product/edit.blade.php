@@ -387,11 +387,20 @@
                         </div>
                         <div class="admin-card-body">
                             <div class="form-group">
-                                <label>Short Description <span class="required-star">*</span></label>
-                                <textarea class="form-control" name="ProductBreaf" rows="2">{{ $product->ProductBreaf }}</textarea>
-                            </div>
-                            <div class="form-group">
                                 <label>Product Description <span class="required-star">*</span></label>
+                                <div id="customToolbar" style="display:flex;gap:6px;padding:6px 8px;background:#f8f9fa;border:1px solid #d1d5db;border-bottom:none;border-radius:5px 5px 0 0;flex-wrap:wrap;align-items:center;">
+                                    <select id="fontSizeSelect" title="Font Size" style="height:32px;border:1px solid #d1d5db;border-radius:4px;padding:0 8px;font-size:13px;cursor:pointer;background:#fff;">
+                                        <option value="">Font Size</option>
+                                        <option value="1">Small</option>
+                                        <option value="3">Normal</option>
+                                        <option value="5">Large</option>
+                                        <option value="7">Huge</option>
+                                    </select>
+                                    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:32px;border:1px solid #d1d5db;border-radius:4px;background:#fff;cursor:pointer;" title="Text Color">
+                                        <span id="colorLabel" style="font-weight:800;font-size:16px;color:#374151;pointer-events:none;z-index:1;border-bottom:3px solid #000;padding-bottom:1px;">A</span>
+                                        <input type="color" id="fontColorPicker" value="#000000" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0;">
+                                    </div>
+                                </div>
                                 <textarea class="form-control" id="ProductDetails" name="ProductDetails" rows="5">{{ $product->ProductDetails }}</textarea>
                             </div>
                         </div>
@@ -484,7 +493,32 @@
                                 $('#minicategory_id').val(sub)
                             }
 
-                            $('#ProductDetails').summernote();
+                            $('#ProductDetails').summernote({
+                                toolbar: [
+                                    ['style', ['style']],
+                                    ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                                    ['para', ['ul', 'ol', 'paragraph']],
+                                    ['table', ['table']],
+                                    ['insert', ['link', 'picture', 'video']],
+                                    ['view', ['fullscreen', 'codeview', 'help']]
+                                ]
+                            });
+
+                            $('#fontSizeSelect').on('change', function() {
+                                var val = $(this).val();
+                                if (val) {
+                                    $('#ProductDetails').summernote('focus');
+                                    document.execCommand('fontSize', false, val);
+                                    $(this).val('');
+                                }
+                            });
+
+                            $('#fontColorPicker').on('input', function() {
+                                var color = $(this).val();
+                                $('#colorLabel').css('border-bottom-color', color);
+                                $('#ProductDetails').summernote('focus');
+                                document.execCommand('foreColor', false, color);
+                            });
                         });
 
                         function setsubcategory() {

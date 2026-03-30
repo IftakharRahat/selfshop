@@ -95,11 +95,18 @@ export default function VendorOrderDetailPage() {
 			   </div>`
 			: '';
 
-		const invoiceDate = order.orderDate ?? new Date().toLocaleDateString();
+	const invoiceDate = order.orderDate ?? new Date().toLocaleDateString();
 
-		const logoUrl = window.location.origin + '/icon/main_site_icon_with_label.png';
+	const resellerLabel = (() => {
+		const shop = detail.reseller?.shop_name || '';
+		const name = detail.reseller?.name || '';
+		if (shop && name) return `${shop} : ${name}`;
+		if (shop) return shop;
+		if (name) return name;
+		return 'Shop';
+	})();
 
-		const html = `<!DOCTYPE html>
+	const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
@@ -112,7 +119,7 @@ export default function VendorOrderDetailPage() {
 		.header { background: linear-gradient(135deg, #2d2a5d 0%, #4338ca 100%); padding: 36px 32px; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 		.header-left h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
 		.header-left .subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
-		.header-logo img { height: 48px; width: auto; }
+		.header-shop { font-size: 16px; font-weight: 400; color: rgba(255,255,255,0.9); text-align: right; max-width: 260px; line-height: 1.4; }
 		.meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 24px 32px; border-bottom: 1px solid #f3f4f6; }
 		.meta-block h3 { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 4px; }
 		.meta-block p { font-size: 15px; font-weight: 600; color: #111827; }
@@ -137,8 +144,8 @@ export default function VendorOrderDetailPage() {
 				<h1>INVOICE</h1>
 				<p class="subtitle">${order.invoiceID}</p>
 			</div>
-			<div class="header-logo">
-				<img src="${logoUrl}" alt="SelfShop" />
+			<div class="header-shop">
+				${resellerLabel}
 			</div>
 		</div>
 		<div class="meta">
@@ -177,19 +184,21 @@ export default function VendorOrderDetailPage() {
 			</div>
 		</div>
 	</div>
-	<script>window.onload = () => window.print();</script>
+	<script>
+		window.onload = () => {
+			setTimeout(() => {
+				window.print();
+			}, 300);
+		};
+		window.onafterprint = () => window.close();
+	</script>
 </body>
 </html>`;
 
 		const blob = new Blob([html], { type: 'text/html' });
 		const url = URL.createObjectURL(blob);
-		const win = window.open(url, '_blank');
-		if (win) {
-			win.onafterprint = () => {
-				URL.revokeObjectURL(url);
-				win.close();
-			};
-		}
+		window.open(url, '_blank', 'noopener,noreferrer');
+		setTimeout(() => URL.revokeObjectURL(url), 10000);
 	};
 
 	const openTrackingModal = () => {

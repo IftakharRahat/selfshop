@@ -27,6 +27,9 @@ export interface VendorProfile {
 	pickup_zone_id?: number | null;
 	pickup_area_id?: number | null;
 	pickup_address?: string | null;
+	followers_count?: number;
+	total_products?: number;
+	created_at?: string | null;
 }
 
 export interface VendorKycDocument {
@@ -155,6 +158,7 @@ export interface VendorOrderDetail {
 		carrybee_status?: string | null;
 	};
 	customer: { customerName: string; customerPhone: string; customerAddress: string } | null;
+	reseller?: { shop_name?: string | null; name?: string | null } | null;
 	line_items: Array<{
 		id: number;
 		product_id: number;

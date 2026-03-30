@@ -48,7 +48,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 				open={drawerOpen}
 				width={280}
 				styles={{
-					body: { padding: 0 },
+					body: { padding: 0, height: '100%' },
 					header: { display: "none" },
 				}}
 				className="lg:hidden"

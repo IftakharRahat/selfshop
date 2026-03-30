@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+const RichTextEditor = dynamic(() => import("@/components/shared/RichTextEditor"), { ssr: false });
 import { useRouter } from "next/navigation";
 import WithVendorAuth from "../../WithVendorAuth";
 import { toast } from "sonner";
@@ -126,6 +128,7 @@ export default function VendorNewProductPage() {
 	}, [selectedSubcategoryId]);
 
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
+	const [descriptionHtml, setDescriptionHtml] = useState<string>("");
 
 
 
@@ -145,10 +148,7 @@ export default function VendorNewProductPage() {
 		if (brandVal) {
 			formData.append("brand_id", brandVal);
 		}
-		const brief = (form.querySelector('[name="short_description"]') as HTMLTextAreaElement).value;
-		const details = (form.querySelector('[name="description"]') as HTMLTextAreaElement).value;
-		if (brief) formData.append("ProductBreaf", brief);
-		if (details) formData.append("ProductDetails", details);
+		if (descriptionHtml) formData.append("ProductDetails", descriptionHtml);
 		const basePrice = (form.querySelector('[name="base_price"]') as HTMLInputElement)?.value;
 		formData.append("ProductResellerPrice", basePrice || "0");
 		const regularPrice = (form.querySelector('[name="regular_price"]') as HTMLInputElement)?.value;
@@ -456,20 +456,14 @@ export default function VendorNewProductPage() {
 									Product description
 								</h2>
 								<label className="flex flex-col text-sm font-medium text-gray-700">
-									Short description
-									<textarea
-										name="short_description"
-										rows={2}
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-									/>
-								</label>
-								<label className="flex flex-col text-sm font-medium text-gray-700">
 									Description
-									<textarea
-										name="description"
-										rows={4}
-										className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-									/>
+									<div className="mt-1">
+										<RichTextEditor
+											value={descriptionHtml}
+											onChange={setDescriptionHtml}
+											placeholder="Write your product description here... You can also paste formatted text from Google Docs or Word."
+										/>
+									</div>
 								</label>
 							</div>
 						</div>

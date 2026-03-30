@@ -23,10 +23,15 @@ class Product extends Model
      */
     public function getStorefrontPriceAttribute(): ?float
     {
-        $base = (float) ($this->ProductResellerPrice
-            ?? $this->ProductSalePrice
-            ?? $this->ProductRegularPrice
-            ?? 0);
+        $base = (float) ($this->ProductResellerPrice ?: 0);
+
+        // If base price is 0 (vendor relies on variant prices), use min_sell_price
+        if ($base <= 0) {
+            $base = (float) ($this->min_sell_price
+                ?? $this->ProductSalePrice
+                ?? $this->ProductRegularPrice
+                ?? 0);
+        }
 
         if ($base <= 0 || !$this->vendor_id) {
             return $base > 0 ? $base : null;

@@ -31,7 +31,12 @@ class VendorNotificationController extends Controller
         $unreadOnly = $request->boolean('unread_only', false);
 
         $query = $user->notifications()
-            ->whereJsonContains('data->meta->audience', 'supplier')
+            ->where(function ($q) {
+                // VendorPanelNotification stores audience_type at top level
+                $q->whereJsonContains('data->audience_type', 'supplier')
+                   // PushNotificationService stores audience inside meta
+                   ->orWhereJsonContains('data->meta->audience', 'supplier');
+            })
             ->orderByDesc('created_at');
         if ($unreadOnly) {
             $query->whereNull('read_at');
@@ -60,7 +65,10 @@ class VendorNotificationController extends Controller
             'data' => [
                 'notifications' => $notifications,
                 'unread_count' => $user->unreadNotifications()
-                    ->whereJsonContains('data->meta->audience', 'supplier')
+                    ->where(function ($q) {
+                        $q->whereJsonContains('data->audience_type', 'supplier')
+                           ->orWhereJsonContains('data->meta->audience', 'supplier');
+                    })
                     ->count(),
                 'pagination' => [
                     'current_page' => $items->currentPage(),

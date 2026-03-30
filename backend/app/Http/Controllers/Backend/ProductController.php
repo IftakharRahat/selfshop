@@ -14,6 +14,7 @@ use App\Models\Purchase;
 use App\Models\Brand;
 use App\Models\ProductPriceTier;
 use App\Models\Varient;
+use App\Helpers\StorageHelper;
 use App\Services\VendorAdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -150,22 +151,14 @@ class ProductController extends Controller
 
         $productImg = $request->file('ProductImage');
         if ($productImg) {
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
-            $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
-                . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
-            $path = $productImg->storeAs('admin/products', $safeName, 'r2');
-            $fullUrl = $r2BaseUrl . '/' . $path;
+            $fullUrl = StorageHelper::store($productImg, 'admin/products');
             $product->ProductImage = $fullUrl;
             $product->ViewProductImage = $fullUrl;
         }
         $product->youtube_link = $request->youtube_link;
         if ($request->hasFile('PostImage')) {
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             foreach ($request->file('PostImage') as $imgfiles) {
-                $safeName = Str::slug(pathinfo($imgfiles->getClientOriginalName(), PATHINFO_FILENAME))
-                    . '_' . Str::random(8) . '.' . $imgfiles->getClientOriginalExtension();
-                $path = $imgfiles->storeAs('admin/products/gallery', $safeName, 'r2');
-                $imageData[] = $r2BaseUrl . '/' . $path;
+                $imageData[] = StorageHelper::store($imgfiles, 'admin/products/gallery');
             }
             $product->PostImage = json_encode($imageData);
         };
@@ -188,11 +181,7 @@ class ProductController extends Controller
         $product->MetaDescription = $request->MetaDescription;
         $meta_imageImg = $request->file('meta_image');
         if ($meta_imageImg) {
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
-            $safeName = Str::slug(pathinfo($meta_imageImg->getClientOriginalName(), PATHINFO_FILENAME))
-                . '_' . Str::random(8) . '.' . $meta_imageImg->getClientOriginalExtension();
-            $path = $meta_imageImg->storeAs('admin/products/meta', $safeName, 'r2');
-            $product->meta_image = $r2BaseUrl . '/' . $path;
+            $product->meta_image = StorageHelper::store($meta_imageImg, 'admin/products/meta');
         }
 
         $product->ProductSku = $this->sku();
@@ -200,11 +189,11 @@ class ProductController extends Controller
         $product->ProductResellerPrice = $request->ProductResellerPrice;
         $product->ProductRegularPrice = $request->ProductRegularPrice;
         $product->ProductSalePrice = $request->ProductSalePrice;
-        $product->Discount = $request->Discount;
+        $product->Discount = $request->Discount ?? 0;
         $product->min_sell_price = $request->min_sell_price;
 
         $product->qty = $request->qty;
-        $product->low_stock = $request->low_stock;
+        $product->low_stock = $request->low_stock ?? 0;
         if (isset($request->show_stock)) {
             $product->show_stock = 'On';
         } else {
@@ -248,8 +237,8 @@ class ProductController extends Controller
         }
         $product->shipping_days = $request->shipping_days;
 
-        $product->ex_pack = $request->ex_pack;
-        $product->ex_dvc = $request->ex_dvc;
+        $product->ex_pack = $request->ex_pack ?? 0;
+        $product->ex_dvc = $request->ex_dvc ?? 0;
 
         if (isset($request->mart_status)) {
             $product->mart_status = 'On';
@@ -261,7 +250,7 @@ class ProductController extends Controller
         } else {
             $product->reseller_status = 'Off';
         }
-        $product->reseller_bonus = $request->reseller_bonus;
+        $product->reseller_bonus = $request->reseller_bonus ?? 0;
         $product->selling_type = $request->input('selling_type', 'both');
 
         $result = $product->save();
@@ -427,11 +416,7 @@ class ProductController extends Controller
 
         $productImg = $request->file('ProductImage');
         if ($productImg) {
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
-            $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
-                . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
-            $path = $productImg->storeAs('admin/products', $safeName, 'r2');
-            $fullUrl = $r2BaseUrl . '/' . $path;
+            $fullUrl = StorageHelper::store($productImg, 'admin/products');
             $product->ProductImage = $fullUrl;
             $product->ViewProductImage = $fullUrl;
         }
@@ -450,12 +435,8 @@ class ProductController extends Controller
 
         // Add newly uploaded images
         if ($request->hasFile('PostImage')) {
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
             foreach ($request->file('PostImage') as $imgfiles) {
-                $safeName = Str::slug(pathinfo($imgfiles->getClientOriginalName(), PATHINFO_FILENAME))
-                    . '_' . Str::random(8) . '.' . $imgfiles->getClientOriginalExtension();
-                $path = $imgfiles->storeAs('admin/products/gallery', $safeName, 'r2');
-                $imageData[] = $r2BaseUrl . '/' . $path;
+                $imageData[] = StorageHelper::store($imgfiles, 'admin/products/gallery');
             }
         }
 
@@ -479,11 +460,7 @@ class ProductController extends Controller
         $product->MetaDescription = $request->MetaDescription;
         $meta_imageImg = $request->file('meta_image');
         if ($meta_imageImg) {
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
-            $safeName = Str::slug(pathinfo($meta_imageImg->getClientOriginalName(), PATHINFO_FILENAME))
-                . '_' . Str::random(8) . '.' . $meta_imageImg->getClientOriginalExtension();
-            $path = $meta_imageImg->storeAs('admin/products/meta', $safeName, 'r2');
-            $product->meta_image = $r2BaseUrl . '/' . $path;
+            $product->meta_image = StorageHelper::store($meta_imageImg, 'admin/products/meta');
         }
 
         // Preserve SKU for vendor products; regenerate for others
@@ -617,9 +594,9 @@ class ProductController extends Controller
 
         if ($product) {
             if (isset($request->shop_id)) {
-                return redirect()->back()->with('success', 'Product updated successfully.');
+                return redirect('admin/shop/products')->with('success', 'Product updated successfully.');
             } else {
-                return redirect()->back()->with('success', 'Product updated successfully.');
+                return redirect('admin/products')->with('success', 'Product updated successfully.');
             }
         } else {
             return redirect()->back()->with('success', 'Something went wrong. Please try again.');

@@ -223,7 +223,19 @@
 
                         <script type="text/javascript">
                         $(document).ready(function() {
-                            $('#editProductDetails').summernote();
+                            $('#editProductDetails').summernote({
+                                toolbar: [
+                                    ['style', ['style']],
+                                    ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                                    ['fontname', ['fontname']],
+                                    ['fontsize', ['fontsize']],
+                                    ['color', ['color']],
+                                    ['para', ['ul', 'ol', 'paragraph']],
+                                    ['table', ['table']],
+                                    ['insert', ['link', 'picture', 'video']],
+                                    ['view', ['fullscreen', 'codeview', 'help']]
+                                ]
+                            });
                             }); `);
                     $('#previmg').html('');
                     var prevSrc = data.ProductImage && data.ProductImage.startsWith('http') ? data.ProductImage : '../' + data.ProductImage;

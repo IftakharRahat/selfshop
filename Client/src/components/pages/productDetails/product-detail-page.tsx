@@ -112,7 +112,7 @@ function DesktopTabs({
 				{activeTab === "description" ? (
 					<div
 						dangerouslySetInnerHTML={{ __html: description }}
-						className="text-gray-700 leading-relaxed w-full overflow-hidden"
+						className="product-description text-gray-700 leading-relaxed w-full overflow-hidden"
 					/>
 				) : (
 					<ProductReviewsSection productId={productId} />

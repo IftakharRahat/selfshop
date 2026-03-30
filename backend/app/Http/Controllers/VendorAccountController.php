@@ -27,6 +27,12 @@ class VendorAccountController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
+        // Append computed stats for the supplier info card
+        if ($vendor) {
+            $vendor->followers_count = $vendor->followers()->count();
+            $vendor->total_products = $vendor->products()->count();
+        }
+
         return response()->json([
             'status' => true,
             'data' => [

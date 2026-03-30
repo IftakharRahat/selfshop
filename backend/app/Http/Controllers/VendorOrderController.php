@@ -202,6 +202,7 @@ class VendorOrderController extends Controller
 
         $order = Order::with([
             'customer',
+            'users:id,name,shop_name',
             'orderproducts' => function ($q) use ($vendor) {
                 $q->whereHas('product', fn($p) => $p->where('vendor_id', $vendor->id))
                     ->with('product:id,ProductName,ProductSku,ViewProductImage,vendor_id');
@@ -221,6 +222,7 @@ class VendorOrderController extends Controller
 
         $vendorSubtotal = $vendorOrderProducts->sum(fn($op) => (float) $op->productPrice * (int) $op->quantity);
         $customer = $order->customer;
+        $reseller = $order->users; // reseller who placed the order
 
         return response()->json([
             'status' => true,
@@ -276,6 +278,10 @@ class VendorOrderController extends Controller
                         ? str_repeat('*', max(0, strlen($customer->customerPhone) - 4)) . substr($customer->customerPhone, -4)
                         : null,
                     'customerAddress' => $customer->customerAddress,
+                ] : null,
+                'reseller' => $reseller ? [
+                    'shop_name' => $reseller->shop_name,
+                    'name' => $reseller->name,
                 ] : null,
                 'vendor_subtotal' => round($vendorSubtotal, 2),
             ],
