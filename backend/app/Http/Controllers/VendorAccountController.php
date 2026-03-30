@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorKycDocument;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -31,6 +32,13 @@ class VendorAccountController extends Controller
         if ($vendor) {
             $vendor->followers_count = $vendor->followers()->count();
             $vendor->total_products = $vendor->products()->count();
+            // Average rating across all reviews on this vendor's products
+            $vendor->avg_rating = round(
+                (float) Review::whereIn('product_id', function ($query) use ($vendor) {
+                    $query->select('id')->from('products')->where('vendor_id', $vendor->id);
+                })->avg('rating'),
+                1
+            );
         }
 
         return response()->json([

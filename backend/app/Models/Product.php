@@ -97,6 +97,11 @@ class Product extends Model
             ->where(function ($q) {
                 $q->whereNull('vendor_id')
                     ->orWhere('vendor_approval_status', 'approved');
+            })
+            ->where(function ($q) {
+                // Hide stock-out products (frature = 0 means out of stock)
+                $q->where('frature', '!=', 0)
+                    ->orWhereNull('frature');
             });
     }
 }

@@ -635,8 +635,8 @@ class FrontendApiController extends Controller
 
         // Add paginated products and total product count for each category
         foreach ($categories as $category) {
-            $category->products = Product::where('category_id', $category->id)
-                ->where('status', 'Active')
+            $category->products = Product::visibleOnStorefront()
+                ->where('category_id', $category->id)
                 ->select(
                     'id',
                     'category_id',
@@ -652,9 +652,9 @@ class FrontendApiController extends Controller
                 )
                 ->paginate($limit);
 
-            // Total active products in this category
-            $category->totalproduct = Product::where('category_id', $category->id)
-                ->where('status', 'Active')
+            // Total visible products in this category
+            $category->totalproduct = Product::visibleOnStorefront()
+                ->where('category_id', $category->id)
                 ->count();
         }
 
@@ -949,6 +949,10 @@ class FrontendApiController extends Controller
         if ($product->vendor_id && ($product->vendor_approval_status ?? '') !== 'approved') {
             return response()->json(['status' => false, 'message' => 'Product not found'], 404);
         }
+        // Hide stock-out products from storefront
+        if ($product->frature === 0 || $product->frature === '0') {
+            return response()->json(['status' => false, 'message' => 'Product not found'], 404);
+        }
 
         // Mask vendor identity for privately approved suppliers
         if ($product->vendor && $product->vendor->approval_type === 'private') {
@@ -1003,7 +1007,8 @@ class FrontendApiController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['string', 'max:255'],
+            'email' => ['required', 'string', 'size:11', 'regex:/^01[3-9]\d{8}$/'],
+            'password' => ['required', 'string', 'min:6'],
         ]);
 
         // Accept both refer_by (expected) and refer_code (legacy frontend key).

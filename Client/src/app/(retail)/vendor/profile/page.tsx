@@ -239,19 +239,15 @@ export default function VendorProfilePage() {
 								</div>
 							</div>
 
-							{vendor.created_at && (
-								<div className="flex items-center gap-3">
-									<div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-									</div>
-									<div>
-										<p className="text-sm font-semibold text-gray-900">
-											{new Date(vendor.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-										</p>
-										<p className="text-xs text-gray-500">Member since</p>
-									</div>
+							<div className="flex items-center gap-3">
+								<div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+									<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
 								</div>
-							)}
+								<div>
+									<p className="text-lg font-bold text-gray-900">{vendor.avg_rating ?? 0}</p>
+									<p className="text-xs text-gray-500">Avg Rating</p>
+								</div>
+							</div>
 						</div>
 					</div>
 				)}
