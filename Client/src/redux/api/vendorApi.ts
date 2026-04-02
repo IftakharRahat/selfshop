@@ -37,6 +37,7 @@ export interface VendorKycDocument {
 	vendor_id: number;
 	document_type: string;
 	document_number?: string | null;
+	document_path?: string | null;
 	status: "pending" | "approved" | "rejected";
 	created_at: string;
 }
