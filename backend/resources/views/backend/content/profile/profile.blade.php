@@ -365,28 +365,8 @@
                     </div>
                 </div>
 
-                {{-- Change Password --}}
-                <div class="admin-content-card mb-4">
-                    <div class="admin-card-header">
-                        <h6 class="admin-card-title"><i class="bi bi-shield-lock me-2"></i>Change Password</h6>
-                    </div>
-                    <div class="admin-card-body">
-                        <div class="password-section">
-                            <div class="profile-field-group">
-                                <label>Old Password</label>
-                                <input type="password" class="form-control" name="old_password"
-                                    autocomplete="old-password" placeholder="Enter current password">
-                            </div>
-                            <div class="profile-field-group mb-0">
-                                <label>New Password</label>
-                                <input type="password" class="form-control" name="password"
-                                    autocomplete="new-password" placeholder="Enter new password">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </div> {{-- end col-lg-5 --}}
+        </div> {{-- end row --}}
 
         {{-- Save Button --}}
         <div class="d-flex justify-content-end mb-4">
@@ -395,10 +375,97 @@
             </button>
         </div>
     </form>
+
+    {{-- ═══ SEPARATE PASSWORD CHANGE FORM ═══ --}}
+    <div class="row">
+        <div class="col-lg-5 ms-auto">
+            <form action="{{ url('admin/update/password') }}" method="POST">
+                @csrf
+                <div class="admin-content-card mb-4">
+                    <div class="admin-card-header">
+                        <h6 class="admin-card-title"><i class="bi bi-shield-lock me-2"></i>Change Password</h6>
+                    </div>
+                    <div class="admin-card-body">
+                        @if(session('password_error'))
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert" style="font-size:13px;">
+                                <i class="bi bi-exclamation-triangle me-1"></i> {{ session('password_error') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+                        @if(session('password_success'))
+                            <div class="alert alert-success alert-dismissible fade show" role="alert" style="font-size:13px;">
+                                <i class="bi bi-check-circle me-1"></i> {{ session('password_success') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        @endif
+                        @if($errors->any())
+                            <div class="alert alert-danger" style="font-size:13px;">
+                                <ul class="mb-0">
+                                    @foreach($errors->all() as $err)
+                                        <li>{{ $err }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                        <div class="password-section">
+                            <div class="profile-field-group">
+                                <label>Current Password <span style="color:#ef4444;">*</span></label>
+                                <input type="password" class="form-control" name="old_password" required
+                                    autocomplete="current-password" placeholder="Enter current password">
+                            </div>
+                            <div class="profile-field-group">
+                                <label>New Password <span style="color:#ef4444;">*</span> <span class="text-muted" style="font-size:11px;">(min 8 characters)</span></label>
+                                <input type="password" class="form-control" name="password" id="profileNewPassword" required
+                                    autocomplete="new-password" placeholder="Enter new password" minlength="8">
+                            </div>
+                            <div class="profile-field-group mb-0">
+                                <label>Confirm New Password <span style="color:#ef4444;">*</span></label>
+                                <input type="password" class="form-control" name="password_confirmation" id="profileConfirmPassword" required
+                                    placeholder="Confirm new password">
+                                <div id="profilePasswordMismatch" style="font-size:12px;color:#ef4444;margin-top:4px;display:none;">
+                                    <i class="bi bi-x-circle me-1"></i> Passwords do not match!
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-profile-save">
+                                <i class="bi bi-lock me-1"></i> Change Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
-    $(document).ready(function() {});
+    $(document).ready(function() {
+        // Real-time password match check
+        $('#profileConfirmPassword').on('input', function() {
+            var newPass = $('#profileNewPassword').val();
+            var confirmPass = $(this).val();
+            if (confirmPass.length > 0 && newPass !== confirmPass) {
+                $('#profilePasswordMismatch').show();
+                $(this).css('border-color', '#ef4444');
+            } else {
+                $('#profilePasswordMismatch').hide();
+                $(this).css('border-color', '');
+            }
+        });
+
+        // Prevent password form submission if passwords don't match
+        $('form[action*="update/password"]').on('submit', function(e) {
+            var newPass = $('#profileNewPassword').val();
+            var confirmPass = $('#profileConfirmPassword').val();
+            if (newPass !== confirmPass) {
+                e.preventDefault();
+                $('#profilePasswordMismatch').show();
+                $('#profileConfirmPassword').css('border-color', '#ef4444');
+                return false;
+            }
+        });
+    });
 </script>
 
 @endsection

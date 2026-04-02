@@ -371,16 +371,19 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-/* Name */
+/* Name — fixed 2-line height so cards stay aligned */
 .supplier-name {
   font-size: 0.75rem;
   font-weight: 600;
   color: #111827;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   width: 100%;
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: calc(2 * 1em * 1.3);
 }
 
 @media (min-width: 640px) {
@@ -396,11 +399,13 @@ body {
   gap: 0.25rem;
   color: #9ca3af;
   font-size: 0.625rem;
+  min-height: 1rem;
 }
 
 @media (min-width: 640px) {
   .supplier-city {
     font-size: 0.75rem;
+    min-height: 1.125rem;
   }
 }
 
@@ -410,6 +415,7 @@ body {
   align-items: center;
   gap: 0.25rem;
   color: #f59e0b;
+  min-height: 1rem;
 }
 
 .supplier-rating-value {
@@ -430,7 +436,7 @@ body {
   }
 }
 
-/* Product count badge */
+/* Product count badge — always at bottom */
 .supplier-product-count {
   font-size: 0.625rem;
   color: #E5005F;
@@ -438,6 +444,7 @@ body {
   padding: 0.125rem 0.625rem;
   border-radius: 9999px;
   font-weight: 500;
+  margin-top: auto;
 }
 
 @media (min-width: 640px) {

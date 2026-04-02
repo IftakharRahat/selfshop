@@ -10,6 +10,7 @@ import {
 	BadgeCheck,
 	Store,
 	ChevronRight,
+	ChevronLeft,
 	Search,
 	UserPlus,
 	UserCheck,
@@ -36,13 +37,15 @@ export default function SupplierDetailsComponent({
 	const [selectedCategory, setSelectedCategory] = useState<
 		number | undefined
 	>(undefined);
+	const [currentPage, setCurrentPage] = useState(1);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [bannerError, setBannerError] = useState(false);
 	const [logoError, setLogoError] = useState(false);
 
-	const { data, isLoading, isError } = useGetSupplierDetailsQuery({
+	const { data, isLoading, isError, isFetching } = useGetSupplierDetailsQuery({
 		slug,
 		category: selectedCategory,
+		page: currentPage,
 	});
 
 	const [activeTab, setActiveTab] = useState("all");
@@ -106,6 +109,12 @@ export default function SupplierDetailsComponent({
 	const categories = data.data.categories || [];
 	const products = data.data.products?.data || [];
 	const totalProducts = data.data.products?.total || 0;
+	const lastPage = data.data.products?.last_page || 1;
+
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+		window.scrollTo({ top: 0, behavior: "smooth" });
+	};
 	const initials = vendor.company_name
 		.split(" ")
 		.map((w: string) => w[0])
@@ -309,7 +318,7 @@ export default function SupplierDetailsComponent({
 
 								{/* Category pills */}
 								<button
-									onClick={() => setSelectedCategory(undefined)}
+									onClick={() => { setSelectedCategory(undefined); setCurrentPage(1); }}
 									className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${!selectedCategory
 										? "bg-[#E5005F] text-white border-[#E5005F]"
 										: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
@@ -320,7 +329,7 @@ export default function SupplierDetailsComponent({
 								{categories.map((cat: any) => (
 									<button
 										key={cat.id}
-										onClick={() => setSelectedCategory(cat.id)}
+										onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); }}
 										className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${selectedCategory === cat.id
 											? "bg-[#E5005F] text-white border-[#E5005F]"
 											: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
@@ -404,11 +413,62 @@ export default function SupplierDetailsComponent({
 								)}
 							</div>
 						) : (
-							<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-								{filteredProducts.map((product: any) => (
-									<ProductCard key={product.id} product={product} />
-								))}
-							</div>
+							<>
+								<div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 ${isFetching ? 'opacity-50 pointer-events-none' : ''}`}>
+									{filteredProducts.map((product: any) => (
+										<ProductCard key={product.id} product={product} />
+									))}
+								</div>
+
+								{/* Pagination */}
+								{lastPage > 1 && (
+									<div className="flex items-center justify-center gap-1.5 mt-8">
+										<button
+											onClick={() => handlePageChange(currentPage - 1)}
+											disabled={currentPage === 1 || isFetching}
+											className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+										>
+											<ChevronLeft className="w-4 h-4" />
+											<span className="hidden sm:inline">Previous</span>
+										</button>
+
+										{Array.from({ length: lastPage }, (_, i) => i + 1)
+											.filter(page => {
+												if (lastPage <= 7) return true;
+												if (page === 1 || page === lastPage) return true;
+												return Math.abs(page - currentPage) <= 1;
+											})
+											.map((page, idx, arr) => (
+												<span key={page} className="flex items-center">
+													{idx > 0 && arr[idx - 1] !== page - 1 && (
+														<span className="px-1.5 text-gray-400 text-sm">...</span>
+													)}
+													<button
+														onClick={() => handlePageChange(page)}
+														disabled={isFetching}
+														className={`min-w-[36px] h-9 text-sm rounded-lg border transition-colors cursor-pointer ${
+															currentPage === page
+																? "bg-[#E5005F] text-white border-[#E5005F]"
+																: "border-gray-200 hover:bg-gray-50 text-gray-700"
+														}`}
+													>
+														{page}
+													</button>
+												</span>
+											))
+										}
+
+										<button
+											onClick={() => handlePageChange(currentPage + 1)}
+											disabled={currentPage === lastPage || isFetching}
+											className="flex items-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+										>
+											<span className="hidden sm:inline">Next</span>
+											<ChevronRight className="w-4 h-4" />
+										</button>
+									</div>
+								)}
+							</>
 						)}
 					</div>
 				</div>

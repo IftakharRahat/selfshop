@@ -97,8 +97,8 @@ export default function VendorProfilePage() {
 			if (country) formData.append("country", country);
 			if (city) formData.append("city", city);
 			if (addressLine1) formData.append("address_line_1", addressLine1);
-			if (logoFile) formData.append("logo_path", logoFile);
-			if (bannerFile) formData.append("banner_path", bannerFile);
+			if (logoFile && isVerifiedBadge) formData.append("logo_path", logoFile);
+			if (bannerFile && isVerifiedBadge) formData.append("banner_path", bannerFile);
 			if (pickupCityId) formData.append("pickup_city_id", String(pickupCityId));
 			if (pickupZoneId) formData.append("pickup_zone_id", String(pickupZoneId));
 			if (pickupAreaId) formData.append("pickup_area_id", String(pickupAreaId));
@@ -257,72 +257,93 @@ export default function VendorProfilePage() {
 				)}
 
 				{/* Shop Branding — Logo & Banner */}
-				<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
-					<div>
-						<h2 className="text-lg font-semibold text-gray-900 mb-1">
+				{isVerifiedBadge ? (
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100 space-y-5">
+						<div>
+							<h2 className="text-lg font-semibold text-gray-900 mb-1">
+								Shop branding
+							</h2>
+							<p className="text-sm text-gray-500">
+								Upload your shop logo and cover banner. These are displayed on your public storefront.
+							</p>
+						</div>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+							{/* Logo */}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Shop logo
+									<span className="text-gray-400 font-normal ml-1">(max 5MB)</span>
+								</label>
+								{existingLogo && !logoFile && (
+									<div className="mb-3 w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-50">
+										<Image
+											src={getImageUrl(existingLogo)}
+											alt="Current logo"
+											width={96}
+											height={96}
+											className="w-full h-full object-cover"
+										/>
+									</div>
+								)}
+								<R2ImageUploader
+									value={logoFile}
+									existingImageUrl={existingLogo ? getImageUrl(existingLogo) : undefined}
+									onChange={(file) => setLogoFile(file)}
+									accept="image/*"
+									maxSizeMB={5}
+									compact
+								/>
+							</div>
+
+							{/* Banner */}
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Cover banner
+									<span className="text-gray-400 font-normal ml-1">(max 5MB, recommended 1200×300)</span>
+								</label>
+								{existingBanner && !bannerFile && (
+									<div className="mb-3 w-full h-24 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+										<Image
+											src={getImageUrl(existingBanner)}
+											alt="Current banner"
+											width={600}
+											height={150}
+											className="w-full h-full object-cover"
+										/>
+									</div>
+								)}
+								<R2ImageUploader
+									value={bannerFile}
+									existingImageUrl={existingBanner ? getImageUrl(existingBanner) : undefined}
+									onChange={(file) => setBannerFile(file)}
+									accept="image/*"
+									maxSizeMB={5}
+									compact
+								/>
+							</div>
+						</div>
+					</div>
+				) : (
+					<div className="rounded-xl bg-white p-4 sm:p-6 shadow-sm border border-gray-100">
+						<h2 className="text-lg font-semibold text-gray-900 mb-3">
 							Shop branding
 						</h2>
-						<p className="text-sm text-gray-500">
-							Upload your shop logo and cover banner. These are displayed on your public storefront.
-						</p>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-						{/* Logo */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Shop logo
-								<span className="text-gray-400 font-normal ml-1">(max 5MB)</span>
-							</label>
-							{existingLogo && !logoFile && (
-								<div className="mb-3 w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-50">
-									<Image
-										src={getImageUrl(existingLogo)}
-										alt="Current logo"
-										width={96}
-										height={96}
-										className="w-full h-full object-cover"
-									/>
-								</div>
-							)}
-							<R2ImageUploader
-								value={logoFile}
-								existingImageUrl={existingLogo ? getImageUrl(existingLogo) : undefined}
-								onChange={(file) => setLogoFile(file)}
-								accept="image/*"
-								maxSizeMB={5}
-								compact
-							/>
-						</div>
-
-						{/* Banner */}
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Cover banner
-								<span className="text-gray-400 font-normal ml-1">(max 5MB, recommended 1200×300)</span>
-							</label>
-							{existingBanner && !bannerFile && (
-								<div className="mb-3 w-full h-24 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
-									<Image
-										src={getImageUrl(existingBanner)}
-										alt="Current banner"
-										width={600}
-										height={150}
-										className="w-full h-full object-cover"
-									/>
-								</div>
-							)}
-							<R2ImageUploader
-								value={bannerFile}
-								existingImageUrl={existingBanner ? getImageUrl(existingBanner) : undefined}
-								onChange={(file) => setBannerFile(file)}
-								accept="image/*"
-								maxSizeMB={5}
-								compact
-							/>
+						<div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+								<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+								<path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+							</svg>
+							<div>
+								<p className="font-semibold text-sm text-amber-800">Verification Required</p>
+								<p className="text-xs text-amber-600 mt-1">
+									Only verified suppliers can upload a shop logo and cover banner.
+									Submit your KYC documents below and wait for admin approval to unlock this feature.
+								</p>
+							</div>
 						</div>
 					</div>
-				</div>
+				)}
 
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 					<form
@@ -498,37 +519,77 @@ export default function VendorProfilePage() {
 									No documents submitted yet.
 								</p>
 							) : (
-								<ul className="space-y-1 max-h-40 overflow-y-auto text-xs">
-									{(kycData.data?.documents ?? []).map((doc) => (
+								<ul className="space-y-2 max-h-64 overflow-y-auto text-xs">
+									{(kycData.data?.documents ?? []).map((doc) => {
+										const docUrl = doc.document_path ? getImageUrl(doc.document_path) : null;
+										const isImage = docUrl && /\.(jpg|jpeg|png|webp|gif)$/i.test(docUrl);
+										return (
 										<li
 											key={doc.id}
-											className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2 py-1"
+											className="rounded-lg bg-gray-50 border border-gray-100 p-2.5"
 										>
-											<div className="flex flex-col">
-												<span className="font-medium text-gray-800">
-													{doc.document_type}
-													{doc.document_number
-														? ` • ${doc.document_number}`
-														: ""}
-												</span>
-												<span className="text-[10px] text-gray-500">
-													{new Date(
-														doc.created_at,
-													).toLocaleString()}
-												</span>
+											<div className="flex items-start gap-3">
+												{/* Document Preview */}
+												{docUrl && (
+													<a href={docUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0">
+														{isImage ? (
+															<Image
+																src={docUrl}
+																alt={doc.document_type}
+																width={56}
+																height={56}
+																className="w-14 h-14 rounded-md object-cover border border-gray-200 hover:border-indigo-400 transition-colors"
+															/>
+														) : (
+															<div className="w-14 h-14 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center hover:border-indigo-400 transition-colors">
+																<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+																	<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+																	<polyline points="14 2 14 8 20 8"/>
+																	<line x1="16" y1="13" x2="8" y2="13"/>
+																	<line x1="16" y1="17" x2="8" y2="17"/>
+																</svg>
+															</div>
+														)}
+													</a>
+												)}
+												{/* Info */}
+												<div className="flex-1 min-w-0">
+													<div className="flex items-center justify-between gap-2">
+														<span className="font-medium text-gray-800 capitalize">
+															{doc.document_type.replace(/_/g, " ")}
+															{doc.document_number
+																? ` • ${doc.document_number}`
+																: ""}
+														</span>
+														<span
+															className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 ${doc.status === "approved"
+																? "bg-emerald-100 text-emerald-700"
+																: doc.status === "rejected"
+																	? "bg-red-100 text-red-700"
+																	: "bg-amber-100 text-amber-700"
+																}`}
+														>
+															{doc.status}
+														</span>
+													</div>
+													<span className="text-[10px] text-gray-500">
+														{new Date(doc.created_at).toLocaleString()}
+													</span>
+													{docUrl && (
+														<a
+															href={docUrl}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="block text-[10px] text-indigo-500 hover:text-indigo-700 mt-0.5"
+														>
+															View full document ↗
+														</a>
+													)}
+												</div>
 											</div>
-											<span
-												className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${doc.status === "approved"
-													? "bg-emerald-100 text-emerald-700"
-													: doc.status === "rejected"
-														? "bg-red-100 text-red-700"
-														: "bg-amber-100 text-amber-700"
-													}`}
-											>
-												{doc.status}
-											</span>
 										</li>
-									))}
+									);
+									})}
 								</ul>
 							)}
 						</div>

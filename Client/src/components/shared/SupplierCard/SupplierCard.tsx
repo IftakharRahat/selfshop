@@ -75,26 +75,34 @@ export default function SupplierCard({ supplier }: { supplier: SupplierItem }) {
                     {supplier.company_name}
                 </p>
 
-                {/* City */}
-                {supplier.city && (
-                    <div className="supplier-city">
-                        <MapPin className="w-3 h-3" />
-                        <span>{supplier.city}</span>
-                    </div>
-                )}
+                {/* City — always render for consistent height */}
+                <div className="supplier-city">
+                    {supplier.city ? (
+                        <>
+                            <MapPin className="w-3 h-3" />
+                            <span>{supplier.city}</span>
+                        </>
+                    ) : (
+                        <span>&nbsp;</span>
+                    )}
+                </div>
 
-                {/* Rating */}
-                {(supplier.avg_product_rating ?? 0) > 0 && (
-                    <div className="supplier-rating">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="supplier-rating-value">
-                            {supplier.avg_product_rating}
-                        </span>
-                        <span className="supplier-rating-count">
-                            ({supplier.review_count})
-                        </span>
-                    </div>
-                )}
+                {/* Rating — always render for consistent height */}
+                <div className="supplier-rating">
+                    {(supplier.avg_product_rating ?? 0) > 0 ? (
+                        <>
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span className="supplier-rating-value">
+                                {supplier.avg_product_rating}
+                            </span>
+                            <span className="supplier-rating-count">
+                                ({supplier.review_count})
+                            </span>
+                        </>
+                    ) : (
+                        <span>&nbsp;</span>
+                    )}
+                </div>
 
                 {/* Product count badge */}
                 <span className="supplier-product-count">

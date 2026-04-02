@@ -106,6 +106,20 @@ class VendorAccountController extends Controller
         // Get existing vendor to clean up old files
         $existingVendor = Vendor::where('user_id', $user->id)->first();
 
+        // Only verified vendors can upload logo/banner
+        if ($request->hasFile('logo_path') || $request->hasFile('banner_path')) {
+            if (!$existingVendor || !$existingVendor->is_verified_badge) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Only verified suppliers can upload profile and cover photos.',
+                    'errors' => [
+                        'logo_path' => ['Verified badge required for photo uploads.'],
+                        'banner_path' => ['Verified badge required for photo uploads.'],
+                    ],
+                ], 403);
+            }
+        }
+
         // Handle logo upload
         if ($request->hasFile('logo_path')) {
             // Delete old logo from R2 if exists
