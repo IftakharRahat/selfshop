@@ -3777,7 +3777,13 @@ public function popularVendors(Request $request)
     $sort = $request->input('sort', 'best_rated');
 
     $vendors = Vendor::where('status', 'approved')
-        ->withCount('products')
+        ->withCount(['products' => function ($q) {
+            $q->where('status', 'Active')
+                ->where(function ($sub) {
+                    $sub->whereNull('vendor_id')
+                        ->orWhere('vendor_approval_status', 'approved');
+                });
+        }])
         ->get([
             'id',
             'user_id',
