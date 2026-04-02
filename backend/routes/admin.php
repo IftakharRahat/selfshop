@@ -116,6 +116,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('profile/{id}', [AdminController::class, 'profilebyid']);
     Route::post('update/profile', [AdminController::class, 'updateprofile']);
     Route::post('update/profile/{id}', [AdminController::class, 'updateprofileby']);
+    Route::post('update/password', [AdminController::class, 'updatepassword']);
 
     // role & permission
     Route::resource('roles', RolesController::class, ['names' => 'admin.roles']);

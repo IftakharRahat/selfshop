@@ -41,6 +41,13 @@ class AdminController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:admins,email',
+            'password' => 'required|string|min:8',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
         $admin = new Admin();
         $admin->name = $request->name;
         $admin->email = $request->email;
@@ -62,6 +69,13 @@ class AdminController extends Controller
 
     public function hrexestore(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:admins,email',
+            'password' => 'required|string|min:8',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
         $admin = new Admin();
         $admin->name = $request->name;
         $admin->email = $request->email;
@@ -167,17 +181,11 @@ class AdminController extends Controller
 
     public function updateprofile(Request $request)
     {
-
-        $time = microtime('.') * 10000;
         $adm_id = Auth::guard('admin')->user()->id;
         $admin = Admin::where('id', $adm_id)->first();
 
-        if (isset($request->password)) {
-            if (! $admin || ! Hash::check($request->input('old_password'), $admin->password)) {
-                return back()->with('error', 'Current password is incorrect.');
-            } else {
-                $admin->password = Hash::make($request->password);
-            }
+        if (!$admin) {
+            return back()->with('error', 'Admin not found.');
         }
 
         $admin->shop_name = $request->shop_name;
@@ -217,7 +225,39 @@ class AdminController extends Controller
         }
 
         $admin->save();
-        return redirect()->back()->with('message', 'Shop Profile Update Successfully');
+        return redirect()->back()->with('message', 'Profile updated successfully.');
+    }
+
+    /**
+     * Change the authenticated admin's password (separate from profile update).
+     */
+    public function updatepassword(Request $request)
+    {
+        $request->validate([
+            'old_password' => 'required|string',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|string|same:password',
+        ], [
+            'old_password.required' => 'Current password is required.',
+            'password.required' => 'New password is required.',
+            'password.min' => 'New password must be at least 8 characters.',
+            'password_confirmation.same' => 'Passwords do not match.',
+        ]);
+
+        $admin = Admin::find(Auth::guard('admin')->user()->id);
+
+        if (!$admin) {
+            return back()->with('password_error', 'Admin not found.');
+        }
+
+        if (!Hash::check($request->old_password, $admin->password)) {
+            return back()->with('password_error', 'Current password is incorrect.');
+        }
+
+        $admin->password = Hash::make($request->password);
+        $admin->save();
+
+        return redirect()->back()->with('password_success', 'Password changed successfully.');
     }
 
 
@@ -230,6 +270,12 @@ class AdminController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'phone' => 'nullable|string|max:50',
+            'status' => 'required|in:Active,Inactive',
+        ]);
 
         $admin = Admin::findOrfail($id);
         $admin->name = $request->name;
@@ -248,7 +294,14 @@ class AdminController extends Controller
                 $staf->update();
             }
         }
-        if ($request->password) {
+        if ($request->filled('password')) {
+            if (strlen($request->password) < 8) {
+                return redirect()->back()->with('error', 'Password must be at least 8 characters.');
+            }
+            // Server-side confirmation check
+            if ($request->password !== $request->confirmpassword) {
+                return redirect()->back()->with('error', 'Password and confirmation do not match.');
+            }
             $admin->password = Hash::make($request->password);
         }
         $admin->add_by = Auth::guard('admin')->user()->id;
