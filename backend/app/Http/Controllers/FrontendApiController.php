@@ -3774,7 +3774,7 @@ class FrontendApiController extends Controller
  */
 public function popularVendors(Request $request)
 {
-    $sort = $request->input('sort', 'best_rated');
+    $sort = $request->input('sort', 'popular');
 
     $vendors = Vendor::where('status', 'approved')
         ->withCount(['products' => function ($q) {
@@ -3784,6 +3784,8 @@ public function popularVendors(Request $request)
                         ->orWhere('vendor_approval_status', 'approved');
                 });
         }])
+        ->withCount('followers')
+        ->withCount('earnings as total_sales_count')
         ->get([
             'id',
             'user_id',
@@ -3798,11 +3800,10 @@ public function popularVendors(Request $request)
             'created_at',
         ]);
 
-    // Compute average rating across all products for each vendor
+    // Compute average rating for each vendor
     foreach ($vendors as $vendor) {
         $productIds = Product::where('vendor_id', $vendor->id)->pluck('id');
-        $reviews = Review::whereIn('product_id', $productIds)
-            ->where('status', 'Active');
+        $reviews = Review::whereIn('product_id', $productIds)->where('status', 'Active');
         $vendor->avg_product_rating = round($reviews->avg('rating') ?? 0, 1);
         $vendor->review_count = $reviews->count();
 
@@ -3820,8 +3821,44 @@ public function popularVendors(Request $request)
             $sorted = $vendors->sortByDesc('created_at')->values();
             break;
         case 'best_rated':
-        default:
             $sorted = $vendors->sortByDesc('avg_product_rating')->values();
+            break;
+        case 'popular':
+        default:
+            // ── Composite Popularity Score ──
+            // Weights: rating 30%, sales 30%, followers 25%, products 15%
+            $maxRating    = $vendors->max('avg_product_rating') ?: 1;
+            $maxSales     = $vendors->max('total_sales_count')  ?: 1;
+            $maxFollowers = $vendors->max('followers_count')     ?: 1;
+            $maxProducts  = $vendors->max('products_count')      ?: 1;
+
+            foreach ($vendors as $vendor) {
+                $normRating    = $vendor->avg_product_rating / $maxRating;
+                $normSales     = $vendor->total_sales_count  / $maxSales;
+                $normFollowers = $vendor->followers_count     / $maxFollowers;
+                $normProducts  = $vendor->products_count      / $maxProducts;
+
+                $vendor->popularity_score = round(
+                    ($normRating    * 0.30) +
+                    ($normSales     * 0.30) +
+                    ($normFollowers * 0.25) +
+                    ($normProducts  * 0.15),
+                    4
+                );
+            }
+
+            $vendorArray = $vendors->all();
+            usort($vendorArray, function ($a, $b) {
+                // Primary: popularity_score desc
+                $cmp = $b->popularity_score <=> $a->popularity_score;
+                if ($cmp !== 0) return $cmp;
+                // Tiebreaker 1: products_count desc
+                $cmp = $b->products_count <=> $a->products_count;
+                if ($cmp !== 0) return $cmp;
+                // Tiebreaker 2: avg_product_rating desc
+                return $b->avg_product_rating <=> $a->avg_product_rating;
+            });
+            $sorted = collect($vendorArray)->values();
             break;
     }
 

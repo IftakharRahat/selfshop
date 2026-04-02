@@ -10,8 +10,8 @@ import { useGetPopularSuppliersQuery } from "@/redux/features/home/homeApi";
 const ITEMS_PER_PAGE = 30;
 
 const FILTER_OPTIONS = [
+    { value: "popular", label: "Popular" },
     { value: "best_rated", label: "Best Rated" },
-    { value: "top_supplier", label: "Top Supplier" },
     { value: "recent", label: "Recent Supplier" },
 ] as const;
 
@@ -20,7 +20,7 @@ function AllSuppliersContent() {
     const searchParams = useSearchParams();
 
     // Read filter & page from URL search params (preserved in browser history)
-    const activeFilter = searchParams.get("filter") || "best_rated";
+    const activeFilter = searchParams.get("filter") || "popular";
     const currentPage = parseInt(searchParams.get("page") || "1", 10);
 
     const { data, isLoading, isFetching } = useGetPopularSuppliersQuery(activeFilter);
