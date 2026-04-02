@@ -3844,7 +3844,13 @@ public function popularVendors(Request $request)
                     });
                 }
             })
-            ->withCount('products')
+            ->withCount(['products' => function ($q) {
+                $q->where('status', 'Active')
+                    ->where(function ($sub) {
+                        $sub->whereNull('vendor_id')
+                            ->orWhere('vendor_approval_status', 'approved');
+                    });
+            }])
             ->first();
 
         if (!$vendor) {
