@@ -67,6 +67,16 @@
                 </div>
             </a>
         </div>
+        <div class="col-md-2">
+            <a href="{{ route('admin.vendors.index', ['branding' => 'pending']) }}" class="text-decoration-none">
+                <div class="admin-content-card" style="{{ request('branding') === 'pending' ? 'border: 2px solid #f59e0b;' : '' }}">
+                    <div class="admin-card-body text-center">
+                        <div class="small text-muted">Pending Branding</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">{{ number_format($summary['pending_branding'] ?? 0) }}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <div class="admin-content-card">
@@ -115,7 +125,12 @@
                         @forelse($vendors as $vendor)
                         <tr>
                             <td>{{ $vendor->id }}</td>
-                            <td><strong>{{ $vendor->company_name }}</strong></td>
+                            <td>
+                                <strong>{{ $vendor->company_name }}</strong>
+                                @if($vendor->pending_logo_path || $vendor->pending_banner_path)
+                                    <a href="{{ route('admin.vendors.show', $vendor->id) }}" class="badge bg-warning text-dark ms-1" style="font-size: 10px; text-decoration: none;" title="Pending branding changes">Pending</a>
+                                @endif
+                            </td>
                             <td>{{ $vendor->contact_name ?? $vendor->contact_email ?? '-' }}</td>
                             <td>{{ $vendor->user->email ?? '-' }}</td>
                             <td>

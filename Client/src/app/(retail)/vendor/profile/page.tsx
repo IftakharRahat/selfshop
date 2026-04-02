@@ -49,6 +49,8 @@ export default function VendorProfilePage() {
 	const [bannerFile, setBannerFile] = useState<File | null>(null);
 	const [existingLogo, setExistingLogo] = useState<string>("");
 	const [existingBanner, setExistingBanner] = useState<string>("");
+	const [pendingLogoUrl, setPendingLogoUrl] = useState<string>("");
+	const [pendingBannerUrl, setPendingBannerUrl] = useState<string>("");
 
 	const [kycType, setKycType] = useState("");
 	const [kycNumber, setKycNumber] = useState("");
@@ -73,6 +75,8 @@ export default function VendorProfilePage() {
 			setIsVerifiedBadge(Boolean(vendor.is_verified_badge));
 			setExistingLogo(vendor.logo_path ?? "");
 			setExistingBanner(vendor.banner_path ?? "");
+			setPendingLogoUrl(vendor.pending_logo_path ?? "");
+			setPendingBannerUrl(vendor.pending_banner_path ?? "");
 			setPickupCityId(vendor.pickup_city_id ?? null);
 			setPickupZoneId(vendor.pickup_zone_id ?? null);
 			setPickupAreaId(vendor.pickup_area_id ?? null);
@@ -104,10 +108,17 @@ export default function VendorProfilePage() {
 			if (pickupAreaId) formData.append("pickup_area_id", String(pickupAreaId));
 			if (pickupAddress) formData.append("pickup_address", pickupAddress);
 
-			await saveProfile(formData).unwrap();
+			const result = await saveProfile(formData).unwrap();
+			const hadBranding = Boolean(logoFile) || Boolean(bannerFile);
 			setLogoFile(null);
 			setBannerFile(null);
-			toast.success("Profile saved successfully.");
+			if (hadBranding) {
+				if (logoFile) setPendingLogoUrl("pending");
+				if (bannerFile) setPendingBannerUrl("pending");
+				toast.success(result?.message || "Profile saved. Your logo/banner changes are pending admin approval.");
+			} else {
+				toast.success("Profile saved successfully.");
+			}
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Unable to save profile. Please try again.");
@@ -266,6 +277,16 @@ export default function VendorProfilePage() {
 							<p className="text-sm text-gray-500">
 								Upload your shop logo and cover banner. These are displayed on your public storefront.
 							</p>
+							{(pendingLogoUrl || pendingBannerUrl) && (
+								<div className="mt-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+									<p className="text-sm text-amber-800 font-medium">
+										Your {pendingLogoUrl && pendingBannerUrl ? 'logo & banner' : pendingLogoUrl ? 'logo' : 'banner'} update is pending admin approval.
+									</p>
+									<p className="text-xs text-amber-600 mt-1">
+										Your current images will remain visible until the changes are approved.
+									</p>
+								</div>
+							)}
 						</div>
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -294,6 +315,18 @@ export default function VendorProfilePage() {
 									maxSizeMB={5}
 									compact
 								/>
+								{pendingLogoUrl && pendingLogoUrl !== "pending" && (
+									<div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
+										<Image
+											src={getImageUrl(pendingLogoUrl)}
+											alt="Pending logo"
+											width={40}
+											height={40}
+											className="w-10 h-10 rounded-full object-cover border-2 border-amber-300"
+										/>
+										<span className="text-xs text-amber-700 font-medium">Pending approval</span>
+									</div>
+								)}
 							</div>
 
 							{/* Banner */}
@@ -321,6 +354,18 @@ export default function VendorProfilePage() {
 									maxSizeMB={5}
 									compact
 								/>
+								{pendingBannerUrl && pendingBannerUrl !== "pending" && (
+									<div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
+										<Image
+											src={getImageUrl(pendingBannerUrl)}
+											alt="Pending banner"
+											width={120}
+											height={40}
+											className="w-[120px] h-10 rounded object-cover border-2 border-amber-300"
+										/>
+										<span className="text-xs text-amber-700 font-medium">Pending approval</span>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
