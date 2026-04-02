@@ -16,6 +16,8 @@ class Vendor extends Model
         'business_type',
         'logo_path',
         'banner_path',
+        'pending_logo_path',
+        'pending_banner_path',
         'contact_name',
         'contact_email',
         'contact_phone',

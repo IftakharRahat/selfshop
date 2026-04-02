@@ -24,10 +24,16 @@ class VendorController extends Controller
     {
         $status = strtolower((string) $request->input('status', ''));
         $search = trim((string) $request->input('search', ''));
+        $branding = $request->input('branding', '');
 
         $vendorsQuery = Vendor::with('user')
             ->when(in_array($status, ['pending', 'approved', 'rejected', 'suspended'], true), function ($query) use ($status) {
                 $query->where('status', $status);
+            })
+            ->when($branding === 'pending', function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNotNull('pending_logo_path')->orWhereNotNull('pending_banner_path');
+                });
             })
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
@@ -49,6 +55,9 @@ class VendorController extends Controller
             'pending' => Vendor::where('status', 'pending')->count(),
             'rejected' => Vendor::where('status', 'rejected')->count(),
             'suspended' => Vendor::where('status', 'suspended')->count(),
+            'pending_branding' => Vendor::where(function ($q) {
+                $q->whereNotNull('pending_logo_path')->orWhereNotNull('pending_banner_path');
+            })->count(),
         ];
 
         if ($request->wantsJson() || $request->get('format') === 'json') {
@@ -295,6 +304,107 @@ class VendorController extends Controller
             return response()->json(['status' => true, 'message' => 'Verified badge removed']);
         }
         return redirect()->back()->with('message', 'Verified badge removed.');
+    }
+
+    /**
+     * Approve pending logo/banner changes for a vendor.
+     * POST /admin/vendors/{vendor}/approve-branding
+     * Accepts ?type=logo|banner (defaults to both)
+     */
+    public function approveBranding(Request $request, Vendor $vendor)
+    {
+        $type = $request->input('type', 'all');
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+        $updated = false;
+
+        // Approve pending logo
+        if (in_array($type, ['logo', 'all']) && $vendor->pending_logo_path) {
+            if ($vendor->logo_path) {
+                $oldPath = str_replace($r2BaseUrl . '/', '', $vendor->logo_path);
+                \Storage::disk('r2')->delete($oldPath);
+            }
+            $vendor->logo_path = $vendor->pending_logo_path;
+            $vendor->pending_logo_path = null;
+            $updated = true;
+        }
+
+        // Approve pending banner
+        if (in_array($type, ['banner', 'all']) && $vendor->pending_banner_path) {
+            if ($vendor->banner_path) {
+                $oldPath = str_replace($r2BaseUrl . '/', '', $vendor->banner_path);
+                \Storage::disk('r2')->delete($oldPath);
+            }
+            $vendor->banner_path = $vendor->pending_banner_path;
+            $vendor->pending_banner_path = null;
+            $updated = true;
+        }
+
+        if ($updated) {
+            $vendor->save();
+        }
+
+        $label = $type === 'logo' ? 'Logo' : ($type === 'banner' ? 'Banner' : 'Branding');
+        return redirect()->back()->with('message', "{$label} change approved and now live.");
+    }
+
+    /**
+     * Reject pending logo/banner changes for a vendor.
+     * POST /admin/vendors/{vendor}/reject-branding
+     * Accepts ?type=logo|banner (defaults to both)
+     */
+    public function rejectBranding(Request $request, Vendor $vendor)
+    {
+        $type = $request->input('type', 'all');
+        $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
+        // Reject pending logo
+        if (in_array($type, ['logo', 'all']) && $vendor->pending_logo_path) {
+            $path = str_replace($r2BaseUrl . '/', '', $vendor->pending_logo_path);
+            \Storage::disk('r2')->delete($path);
+            $vendor->pending_logo_path = null;
+        }
+
+        // Reject pending banner
+        if (in_array($type, ['banner', 'all']) && $vendor->pending_banner_path) {
+            $path = str_replace($r2BaseUrl . '/', '', $vendor->pending_banner_path);
+            \Storage::disk('r2')->delete($path);
+            $vendor->pending_banner_path = null;
+        }
+
+        $vendor->save();
+
+        $label = $type === 'logo' ? 'Logo' : ($type === 'banner' ? 'Banner' : 'Branding');
+        return redirect()->back()->with('message', "{$label} change rejected.");
+    }
+
+    /**
+     * Approve a KYC document.
+     * POST /admin/vendors/kyc/{document}/approve
+     */
+    public function approveKyc(\App\Models\VendorKycDocument $document)
+    {
+        $document->status = 'approved';
+        $document->verified_at = now();
+        $document->verified_by = Auth::guard('admin')->id();
+        $document->review_notes = null;
+        $document->save();
+
+        return redirect()->back()->with('message', "KYC document ({$document->document_type}) approved.");
+    }
+
+    /**
+     * Reject a KYC document.
+     * POST /admin/vendors/kyc/{document}/reject
+     */
+    public function rejectKyc(Request $request, \App\Models\VendorKycDocument $document)
+    {
+        $document->status = 'rejected';
+        $document->verified_at = now();
+        $document->verified_by = Auth::guard('admin')->id();
+        $document->review_notes = $request->input('review_notes');
+        $document->save();
+
+        return redirect()->back()->with('message', "KYC document ({$document->document_type}) rejected.");
     }
 
     /**

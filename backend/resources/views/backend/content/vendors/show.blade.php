@@ -169,6 +169,81 @@
                 </div>
             </div>
 
+            {{-- Pending Branding Changes --}}
+            @if($vendor->pending_logo_path || $vendor->pending_banner_path)
+            <div class="admin-content-card mb-3" style="border: 2px solid #f59e0b;">
+                <div class="admin-card-header" style="background: #fef3c7;">
+                    <h6 class="admin-card-title" style="color: #92400e;">
+                        Pending Branding Changes
+                    </h6>
+                </div>
+                <div class="admin-card-body">
+                    @if($vendor->pending_logo_path)
+                    <div class="mb-3 pb-3" style="border-bottom: 1px solid #fde68a;">
+                        <p class="small fw-bold mb-2">Logo Change</p>
+                        <div class="d-flex gap-3 align-items-start">
+                            <div class="text-center">
+                                <p class="small text-muted mb-1">Current</p>
+                                @if($vendor->logo_path)
+                                    <img src="{{ $vendor->logo_path }}" alt="Current logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0;">
+                                @else
+                                    <div style="width: 80px; height: 80px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #94a3b8;">No logo</div>
+                                @endif
+                            </div>
+                            <div style="align-self: center; font-size: 20px; color: #94a3b8;">&rarr;</div>
+                            <div class="text-center">
+                                <p class="small text-muted mb-1">Pending</p>
+                                <img src="{{ $vendor->pending_logo_path }}" alt="Pending logo" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid #f59e0b;">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <form action="{{ route('admin.vendors.approve-branding', $vendor->id) }}" method="post">
+                                @csrf
+                                <input type="hidden" name="type" value="logo">
+                                <button type="submit" class="btn btn-sm btn-success">Approve Logo</button>
+                            </form>
+                            <form action="{{ route('admin.vendors.reject-branding', $vendor->id) }}" method="post">
+                                @csrf
+                                <input type="hidden" name="type" value="logo">
+                                <button type="submit" class="btn btn-sm btn-danger">Reject Logo</button>
+                            </form>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($vendor->pending_banner_path)
+                    <div class="mb-1">
+                        <p class="small fw-bold mb-2">Banner/Cover Change</p>
+                        <div class="mb-2">
+                            <p class="small text-muted mb-1">Current</p>
+                            @if($vendor->banner_path)
+                                <img src="{{ $vendor->banner_path }}" alt="Current banner" style="width: 100%; max-height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #e2e8f0;">
+                            @else
+                                <div style="width: 100%; height: 60px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #94a3b8;">No banner</div>
+                            @endif
+                        </div>
+                        <div>
+                            <p class="small text-muted mb-1">Pending</p>
+                            <img src="{{ $vendor->pending_banner_path }}" alt="Pending banner" style="width: 100%; max-height: 100px; object-fit: cover; border-radius: 8px; border: 2px solid #f59e0b;">
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <form action="{{ route('admin.vendors.approve-branding', $vendor->id) }}" method="post">
+                                @csrf
+                                <input type="hidden" name="type" value="banner">
+                                <button type="submit" class="btn btn-sm btn-success">Approve Banner</button>
+                            </form>
+                            <form action="{{ route('admin.vendors.reject-branding', $vendor->id) }}" method="post">
+                                @csrf
+                                <input type="hidden" name="type" value="banner">
+                                <button type="submit" class="btn btn-sm btn-danger">Reject Banner</button>
+                            </form>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             {{-- KYC Documents --}}
             <div class="admin-content-card mb-3">
                 <div class="admin-card-header">
@@ -179,24 +254,52 @@
                         <p class="small mb-0 text-muted">No KYC documents submitted yet.</p>
                     @else
                         @foreach($vendor->kycDocuments as $doc)
-                            <div class="mb-2 pb-2" style="border-bottom: 1px solid var(--admin-border, #f1f5f9);">
-                                <strong class="small">{{ $doc->document_type }}</strong>
-                                @if($doc->document_number)
-                                    <span class="small text-muted"> - {{ $doc->document_number }}</span>
-                                @endif
-                                <br>
-                                <span class="small">Status:
-                                    @if($doc->status === 'approved')
-                                        <span class="badge bg-success">Approved</span>
-                                    @elseif($doc->status === 'rejected')
-                                        <span class="badge bg-danger">Rejected</span>
-                                    @else
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                            <div class="mb-3 pb-3" style="border-bottom: 1px solid var(--admin-border, #f1f5f9);">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong class="small">{{ $doc->document_type }}</strong>
+                                        @if($doc->document_number)
+                                            <span class="small text-muted"> - {{ $doc->document_number }}</span>
+                                        @endif
+                                        <br>
+                                        <span class="small">Status:
+                                            @if($doc->status === 'approved')
+                                                <span class="badge bg-success">Approved</span>
+                                            @elseif($doc->status === 'rejected')
+                                                <span class="badge bg-danger">Rejected</span>
+                                            @else
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            @endif
+                                        </span>
+                                        <br><small class="text-muted">{{ $doc->created_at?->format('Y-m-d H:i') }}</small>
+                                        @if($doc->review_notes)
+                                            <br><small class="text-danger">Notes: {{ $doc->review_notes }}</small>
+                                        @endif
+                                    </div>
+                                    @if($doc->document_path)
+                                        <a href="{{ $doc->document_path }}" target="_blank" class="btn btn-sm btn-outline-secondary" style="font-size: 11px;">View file</a>
                                     @endif
-                                </span>
-                                <br><small class="text-muted">{{ $doc->created_at?->format('Y-m-d H:i') }}</small>
-                                @if($doc->document_path)
-                                    <br><a href="{{ asset('storage/'.$doc->document_path) }}" target="_blank" class="small" style="color: var(--admin-primary, #2d2a5d);">View file</a>
+                                </div>
+
+                                {{-- Approve / Reject actions --}}
+                                @if($doc->status !== 'approved')
+                                    <div class="d-flex gap-2 mt-2">
+                                        <form action="{{ route('admin.vendors.approve-kyc', $doc->id) }}" method="post">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                        </form>
+                                        @if($doc->status !== 'rejected')
+                                            <form action="{{ route('admin.vendors.reject-kyc', $doc->id) }}" method="post" class="d-flex gap-1">
+                                                @csrf
+                                                <input type="text" name="review_notes" placeholder="Reason (optional)" class="form-control form-control-sm" style="width: 160px;">
+                                                <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                @else
+                                    <div class="mt-2">
+                                        <small class="text-muted">Verified {{ $doc->verified_at?->format('Y-m-d H:i') }}</small>
+                                    </div>
                                 @endif
                             </div>
                         @endforeach
