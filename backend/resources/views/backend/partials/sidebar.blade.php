@@ -13,6 +13,7 @@
             $admin = $adm && $adm->add_by ? App\Models\Admin::where('id', Auth::guard('admin')->user()->id)->where('add_by', 1)->first() : $adm;
             $admin = $admin ?? $adm;
             $isFullAdmin = $adm && $adm->isFullAdmin();
+            $isStaffAdmin = $adm && $adm->isStaffAdmin();
             if ($adm && $adm->isShopAdmin()) {
                 $orders =  App\Models\Order::where('store_id', Auth::guard('admin')->user()->id);
             } elseif ($adm->hasRole('Manager') || $adm->hasRole('manager')) {
@@ -45,7 +46,7 @@
                 <i class="bi bi-bell"></i> Send Notification
             </a>
 
-            @if($isFullAdmin)
+            @if($isFullAdmin || $isStaffAdmin)
             {{-- ═══ CATALOG ═══ --}}
             <small class="nav-section-title">Catalog</small>
             <div class="nav-item dropdown">
@@ -66,6 +67,7 @@
                     <a href="{{ route('admin.promotional-sections.index') }}" class="dropdown-item">Promotional Sections</a>
                 </div>
             </div>
+            @if($isFullAdmin)
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-palette"></i> Attributes</a>
                 <div class="bg-transparent border-0 dropdown-menu">
@@ -74,11 +76,12 @@
                 </div>
             </div>
             @endif
+            @endif
 
             <a href="{{ route('admin.products.index') }}" class="nav-item nav-link {{ request()->is('admin/products*') ? 'active-nav' : '' }}">
                 <i class="bi bi-box-seam"></i> Products
             </a>
-            @if($isFullAdmin)
+            @if($isFullAdmin || $isStaffAdmin)
             <a href="{{ url('admin/shop/products') }}" class="nav-item nav-link {{ request()->is('admin/shop/products*') ? 'active-nav' : '' }}">
                 <i class="bi bi-shop-window"></i> Shops Products
             </a>
@@ -113,7 +116,7 @@
             </div>
 
             @if($adm->isFullAdmin())
-            {{-- ═══ MANAGEMENT ═══ --}}
+            {{-- ═══ MANAGEMENT (Full Admin Only) ═══ --}}
             <small class="nav-section-title">Management</small>
             <a href="{{ route('admin.basicinfos.index') }}" class="nav-item nav-link {{ request()->is('admin/basicinfos*') ? 'active-nav' : '' }}">
                 <i class="bi bi-gear"></i> Settings
@@ -140,19 +143,8 @@
             </div>
             @endif
 
-            @if($isFullAdmin)
-            {{-- ═══ USERS ═══ --}}
-            <small class="nav-section-title">Users</small>
-            <div class="nav-item dropdown">
-                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-people"></i> Users</a>
-                <div class="bg-transparent border-0 dropdown-menu">
-                    <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
-                    <a href="{{ route('admin.manage-users') }}" class="dropdown-item">Manage Users</a>
-                    <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
-                </div>
-            </div>
-
-            {{-- ═══ SUPPLIERS ═══ --}}
+            @if($isFullAdmin || $isStaffAdmin)
+            {{-- ═══ SUPPLIERS (Full Admin + Staff) ═══ --}}
             <small class="nav-section-title">Suppliers</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-truck"></i> Suppliers</a>
@@ -167,8 +159,27 @@
                     <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier Payout Requests</a>
                 </div>
             </div>
+            @endif
 
-            {{-- ═══ CONTENT ═══ --}}
+            @if($isFullAdmin || $isStaffAdmin)
+            {{-- ═══ USERS ═══ --}}
+            <small class="nav-section-title">Users</small>
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-people"></i> Users</a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    @if($isFullAdmin)
+                    <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
+                    @endif
+                    <a href="{{ route('admin.manage-users') }}" class="dropdown-item">Manage Users</a>
+                    @if($isFullAdmin)
+                    <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
+                    @endif
+                </div>
+            </div>
+            @endif
+
+            @if($isFullAdmin)
+            {{-- ═══ CONTENT (Full Admin Only) ═══ --}}
             <small class="nav-section-title">Content</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-file-earmark-text"></i> Pages</a>
