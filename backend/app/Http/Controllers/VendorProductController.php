@@ -80,7 +80,7 @@ class VendorProductController extends Controller
             'MetaKey' => 'nullable|string|max:500',
             'Discount' => 'nullable|numeric|min:0',
             'PostImage' => 'nullable|array',
-            'PostImage.*' => 'image|max:5120',
+            'PostImage.*' => 'file|mimes:jpeg,jpg,png,gif,bmp,svg,webp,heic,heif,avif|max:5120',
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
         ]);
@@ -246,7 +246,7 @@ class VendorProductController extends Controller
             'subcategory_id' => 'sometimes|exists:subcategories,id',
             'brand_id' => 'sometimes|exists:brands,id',
             'PostImage' => 'nullable|array',
-            'PostImage.*' => 'image|max:5120',
+            'PostImage.*' => 'file|mimes:jpeg,jpg,png,gif,bmp,svg,webp,heic,heif,avif|max:5120',
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
         ]);
