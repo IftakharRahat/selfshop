@@ -78,7 +78,12 @@ class OrderDeliveryService
         // 5. Create delivered comment for the customer
         $this->createDeliveredComment($order);
 
-        // 6. Send review prompts (non-blocking)
+        // 6. Send "Order Delivered" notification (non-blocking)
+        if ($user) {
+            $this->sendDeliveredNotification($order, $user);
+        }
+
+        // 7. Send review prompts (non-blocking)
         if ($user) {
             $this->sendReviewNotifications($order, $user);
         }
@@ -216,6 +221,28 @@ class OrderDeliveryService
         $comment->status = 1;
         $comment->type = 'Delivered';
         $comment->save();
+    }
+
+    /**
+     * Send "Order Delivered" bell notification to the user.
+     */
+    private function sendDeliveredNotification(Order $order, User $user): void
+    {
+        try {
+            $user->notify(new AdminBroadcastNotification(
+                '📦 Order Delivered',
+                'Your order #' . $order->invoiceID . ' has been delivered successfully! ৳' . $order->profit . ' has been added to your balance.',
+                null,
+                '/order/' . $order->invoiceID,
+                'all_user',
+                ['type' => 'order_delivered', 'order_id' => $order->id]
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('OrderDeliveryService: delivered notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
