@@ -1458,19 +1458,14 @@ class OrderController extends Controller
             }
         }
 
-        if ($order->courier_id || $status == 'Canceled') {
-            $order->status = $status;
-            $result = $order->save();
-            if ($result) {
-                $response['status'] = 'success';
-                $response['message'] = 'Successfully Update Status to ' . $request['status'];
-            } else {
-                $response['status'] = 'failed';
-                $response['message'] = 'Unsuccessful to update Status ' . $request['status'];
-            }
+        $order->status = $status;
+        $result = $order->save();
+        if ($result) {
+            $response['status'] = 'success';
+            $response['message'] = 'Successfully Update Status to ' . $request['status'];
         } else {
             $response['status'] = 'failed';
-            $response['message'] = 'Please Update order courier and try again !';
+            $response['message'] = 'Unsuccessful to update Status ' . $request['status'];
         }
 
         $comment = new Comment();
