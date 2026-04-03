@@ -271,7 +271,7 @@ class OrderController extends Controller
 
     public function vieworder($id)
     {
-        $orders = Order::with(['customers', 'orderproducts', 'couriers', 'cities', 'zones', 'admins'])->where('id', $id)->first();
+        $orders = Order::with(['customers', 'orderproducts.product', 'couriers', 'cities', 'zones', 'admins'])->where('id', $id)->first();
         if ($orders) {
             $meta = app(SteadfastOrderStatusService::class)->syncOrderStatus($orders, false);
             $orders->setAttribute('customer_status', $meta['customer_status']);
@@ -1436,15 +1436,12 @@ class OrderController extends Controller
         if ($order->status == 'Delivered') {
             if ($request['status'] == 'Delivered') {
             } else {
-                $user = User::where('id', $order->user_id)->first();
-                $user->order_bonus = $user->order_bonus - $order->order_bonus;
-                $user->sell_profit = $user->sell_profit - $order->profit;
-                $user->account_balance = $user->account_balance - $order->profit;
-                $user->update();
-                $this->markOrderIncomeCanceled($order);
+                // Reverse delivery credits (status moving away from Delivered)
+                app(\App\Services\OrderDeliveryService::class)->reverseDelivery($order);
             }
         } else {
             if ($order->status != 'Delivered' && $request['status'] == 'Delivered') {
+                // Admin-specific comment with admin_id
                 $comment = new Comment();
                 $comment->order_id = $id;
                 $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Delivered Successfully';
@@ -1454,65 +1451,10 @@ class OrderController extends Controller
                 $comment->type = 'Delivered';
                 $comment->save();
 
-                $user = User::where('id', $order->user_id)->first();
-                $user->order_bonus = $user->order_bonus + $order->order_bonus;
-                $user->sell_profit = $user->sell_profit + $order->profit;
-                $user->account_balance = $user->account_balance + $order->profit;
-                $user->update();
-                $this->recordOrderIncomePaid($order);
                 $order->deliveryDate = date('Y-m-d');
-                app(\App\Services\VendorCommissionService::class)->markEarningsAvailableForOrder($order->id);
 
-                // Send review notification for each product in the order
-                $orderProducts = Orderproduct::where('order_id', $order->id)->get();
-                foreach ($orderProducts as $op) {
-                    $product = Product::find($op->product_id);
-                    if ($product) {
-                        try {
-                            $user->notify(new AdminBroadcastNotification(
-                                'Rate Your Product',
-                                'Your order has been delivered! Please rate "' . $product->ProductName . '".',
-                                $product->ViewProductImage ?? null,
-                                '/product/' . $product->ProductSlug,
-                                'all_user',
-                                ['type' => 'review_prompt', 'product_id' => $product->id, 'order_id' => $order->id]
-                            ));
-                        } catch (\Throwable $e) {
-                            \Log::warning('OrderController: Failed to send review notification', [
-                                'order_id' => $order->id,
-                                'product_id' => $product->id,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
-                }
-
-                $opds = Orderproduct::where('order_id', $order->id)->get();
-                $wholesale = 0;
-                foreach ($opds as $opd) {
-
-                    $expss = Product::where('id', $opd->product_id)->first();
-                    if (isset($expss)) {
-                        $wholesale += $expss->ProductWholesalePrice * $opd->quantity;
-                    } else {
-                        $wholesale += 0;
-                    }
-                }
-                if ($order->store_id == 1) {
-                } else {
-                    $shop = Admin::where('id', $order->store_id)->first();
-                    $wp = new Vencomment();
-                    $wp->order_id = $order->invoiceID;
-                    $wp->type = 'Deposit';
-                    $wp->comment = 'Congratulations ! you get ' . $order->profit . ' TK from Order : ' . $order->invoiceID;
-                    $wp->amount = $wholesale;
-                    $wp->blance = $shop->account_balance + $wholesale;
-                    $wp->shop_id = $order->store_id;
-                    $wp->status = 'Paid';
-                    $wp->save();
-                    $shop->account_balance = $shop->account_balance + $wholesale;
-                    $shop->update();
-                }
+                // Use centralized delivery service for all financial operations
+                app(\App\Services\OrderDeliveryService::class)->markDelivered($order);
             }
         }
 
@@ -2329,12 +2271,8 @@ class OrderController extends Controller
                 if ($order->status == 'Delivered') {
                     if ($request['status'] == 'Delivered') {
                     } else {
-                        $user = User::where('id', $order->user_id)->first();
-                        $user->order_bonus = $user->order_bonus - $order->order_bonus;
-                        $user->sell_profit = $user->sell_profit - $order->profit;
-                        $user->account_balance = $user->account_balance - $order->profit;
-                        $user->update();
-                        $this->markOrderIncomeCanceled($order);
+                        // Reverse delivery credits (status moving away from Delivered)
+                        app(\App\Services\OrderDeliveryService::class)->reverseDelivery($order);
                     }
                 } else {
                     if ($order->status != 'Delivered' && $request['status'] == 'Delivered') {
@@ -2347,39 +2285,10 @@ class OrderController extends Controller
                         $comment->type = 'Delivered';
                         $comment->save();
 
-                        $user = User::where('id', $order->user_id)->first();
-                        $user->order_bonus = $user->order_bonus + $order->order_bonus;
-                        $user->sell_profit = $user->sell_profit + $order->profit;
-                        $user->account_balance = $user->account_balance + $order->profit;
-                        $user->update();
-                        $this->recordOrderIncomePaid($order);
                         $order->deliveryDate = date('Y-m-d');
 
-                        $opds = Orderproduct::where('order_id', $order->id)->get();
-                        $wholesale = 0;
-                        foreach ($opds as $opd) {
-                            $expss = Product::where('id', $opd->product_id)->first();
-                            if (isset($expss)) {
-                                $wholesale += $opd->quantity * $expss->ProductWholesalePrice;
-                            } else {
-                                $wholesale += 0;
-                            }
-                        }
-                        if ($order->store_id == 1) {
-                        } else {
-                            $shop = Admin::where('id', $order->store_id)->first();
-                            $wp = new Vencomment();
-                            $wp->order_id = $order->invoiceID;
-                            $wp->type = 'Deposit';
-                            $wp->comment = 'Congratulations ! you get ' . $order->profit . ' TK from Order : ' . $order->invoiceID;
-                            $wp->amount = $wholesale;
-                            $wp->blance = $shop->account_balance + $wholesale;
-                            $wp->shop_id = $order->store_id;
-                            $wp->status = 'Paid';
-                            $wp->save();
-                            $shop->account_balance = $shop->account_balance + $wholesale;
-                            $shop->update();
-                        }
+                        // Use centralized delivery service for all financial operations
+                        app(\App\Services\OrderDeliveryService::class)->markDelivered($order);
                     }
                 }
 

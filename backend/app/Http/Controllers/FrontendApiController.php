@@ -1538,6 +1538,7 @@ class FrontendApiController extends Controller
         $order->setAttribute('customer_status', $meta['customer_status']);
         $order->setAttribute('display_status', $meta['customer_status']);
         $order->setAttribute('steadfast_status', $meta['steadfast_status']);
+        $order->setAttribute('carrybee_status', $meta['carrybee_status'] ?? null);
         $order->setAttribute('steadfast_last_synced_at', $meta['steadfast_last_synced_at']);
         $order->setAttribute('warehouse_sent_at', $meta['warehouse_sent_at']);
 
@@ -2077,10 +2078,12 @@ class FrontendApiController extends Controller
     public function withdrawrequest(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'withdrew_amount' => ['required', 'numeric', 'min:0.01'],
+            'withdrew_amount' => ['required', 'numeric', 'min:50'],
             'paymenttype_id' => ['required', 'integer'],
             'to_account_number' => ['required', 'string', 'max:255'],
             'to_additional_info' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'withdrew_amount.min' => 'Minimum withdrawal amount is ৳50.',
         ]);
 
         if ($validator->fails()) {
@@ -2093,6 +2096,30 @@ class FrontendApiController extends Controller
 
         $id = Auth::id();
         $amount = (float) $request->withdrew_amount;
+
+        // Check for existing pending withdrawal requests
+        $pendingCount = Withdrew::where('user_id', $id)
+            ->where('status', 'Pending')
+            ->count();
+
+        if ($pendingCount > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You already have a pending withdrawal request. Please wait for it to be processed.',
+            ], 422);
+        }
+
+        // Rate limit: max 3 requests per day
+        $todayCount = Withdrew::where('user_id', $id)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
+
+        if ($todayCount >= 3) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have exceeded the maximum withdrawal requests for today. Please try again tomorrow.',
+            ], 429);
+        }
 
         try {
             DB::beginTransaction();
