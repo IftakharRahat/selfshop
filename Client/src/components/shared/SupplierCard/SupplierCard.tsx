@@ -100,7 +100,10 @@ export default function SupplierCard({ supplier }: { supplier: SupplierItem }) {
                             </span>
                         </>
                     ) : (
-                        <span>&nbsp;</span>
+                        <>
+                            <Star className="w-3 h-3 text-gray-300" />
+                            <span className="supplier-rating-none">No ratings</span>
+                        </>
                     )}
                 </div>
 
