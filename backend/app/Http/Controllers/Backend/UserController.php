@@ -35,11 +35,15 @@ class UserController extends Controller
         $membershipFilter = trim((string) $request->input('membership_filter', $request->input('membership', '')));
 
         if ($request['phone'] != '') {
-            $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
-        }
-
-        if ($request['startDate'] != '' && $request['endDate'] != '') {
-            $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+            $users->where(function ($q) use ($request) {
+                $q->where('users.email', 'LIKE', '%' . $request['phone'] . '%')
+                  ->orWhere('users.phone', 'LIKE', '%' . $request['phone'] . '%')
+                  ->orWhere('users.name', 'LIKE', '%' . $request['phone'] . '%');
+            });
+        } else {
+            if ($request['startDate'] != '' && $request['endDate'] != '') {
+                $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+            }
         }
 
         if ($statusFilter !== '') {
@@ -86,7 +90,11 @@ class UserController extends Controller
 
 
         if ($request['phone'] != '') {
-            $users = $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
+            $users = $users->where(function ($q) use ($request) {
+                $q->where('users.email', 'LIKE', '%' . $request['phone'] . '%')
+                  ->orWhere('users.phone', 'LIKE', '%' . $request['phone'] . '%')
+                  ->orWhere('users.name', 'LIKE', '%' . $request['phone'] . '%');
+            });
         } else {
             if ($request['startDate'] != '' && $request['endDate'] != '') {
                 $start = $request['startDate'] . ' 00:00:00';
@@ -136,11 +144,15 @@ class UserController extends Controller
         $membershipFilter = trim((string) $request->input('membership_filter', $request->input('membership', '')));
 
         if ($request['phone'] != '') {
-            $users->where('users.email', 'LIKE', '%' . $request['phone'] . '%');
-        }
-
-        if ($request['startDate'] != '' && $request['endDate'] != '') {
-            $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+            $users->where(function ($q) use ($request) {
+                $q->where('users.email', 'LIKE', '%' . $request['phone'] . '%')
+                  ->orWhere('users.phone', 'LIKE', '%' . $request['phone'] . '%')
+                  ->orWhere('users.name', 'LIKE', '%' . $request['phone'] . '%');
+            });
+        } else {
+            if ($request['startDate'] != '' && $request['endDate'] != '') {
+                $users->whereBetween('users.created_at', [$request['startDate'] . ' 00:00:00', $request['endDate'] . ' 23:59:59']);
+            }
         }
 
         if ($statusFilter !== '') {
