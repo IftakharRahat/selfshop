@@ -250,7 +250,7 @@
         });
 
         fetchFeed();
-        setInterval(fetchFeed, 60000);
+        setInterval(fetchFeed, 15000);
     })();
 </script>
 
