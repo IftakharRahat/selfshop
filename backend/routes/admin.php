@@ -116,6 +116,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('profile/{id}', [AdminController::class, 'profilebyid']);
     Route::post('update/profile', [AdminController::class, 'updateprofile']);
     Route::post('update/profile/{id}', [AdminController::class, 'updateprofileby']);
+    Route::post('update/password', [AdminController::class, 'updatepassword']);
 
     // role & permission
     Route::resource('roles', RolesController::class, ['names' => 'admin.roles']);
@@ -308,6 +309,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
     Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge');
     Route::post('vendors/{vendor}/remove-verified-badge', [VendorController::class, 'removeVerifiedBadge'])->name('admin.vendors.remove-verified-badge');
+    Route::post('vendors/{vendor}/approve-branding', [VendorController::class, 'approveBranding'])->name('admin.vendors.approve-branding');
+    Route::post('vendors/{vendor}/reject-branding', [VendorController::class, 'rejectBranding'])->name('admin.vendors.reject-branding');
+    Route::post('vendors/kyc/{document}/approve', [VendorController::class, 'approveKyc'])->name('admin.vendors.approve-kyc');
+    Route::post('vendors/kyc/{document}/reject', [VendorController::class, 'rejectKyc'])->name('admin.vendors.reject-kyc');
     Route::delete('vendors/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendors.destroy');
 
     // Product reviews (admin view & moderate)

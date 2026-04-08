@@ -114,50 +114,69 @@ class VendorAccountController extends Controller
         // Get existing vendor to clean up old files
         $existingVendor = Vendor::where('user_id', $user->id)->first();
 
-        // Handle logo upload
+        // Only verified vendors can upload logo/banner
+        if ($request->hasFile('logo_path') || $request->hasFile('banner_path')) {
+            if (!$existingVendor || !$existingVendor->is_verified_badge) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Only verified suppliers can upload profile and cover photos.',
+                    'errors' => [
+                        'logo_path' => ['Verified badge required for photo uploads.'],
+                        'banner_path' => ['Verified badge required for photo uploads.'],
+                    ],
+                ], 403);
+            }
+        }
+
+        // Handle logo upload → save to PENDING (admin must approve)
         if ($request->hasFile('logo_path')) {
-            // Delete old logo from R2 if exists
-            if ($existingVendor && $existingVendor->logo_path) {
-                $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
-                $oldPath = str_replace($r2BaseUrl . '/', '', $existingVendor->logo_path);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
+            // Delete old PENDING logo from R2 if exists (overwrite previous pending)
+            if ($existingVendor && $existingVendor->pending_logo_path) {
+                $oldPath = str_replace($r2BaseUrl . '/', '', $existingVendor->pending_logo_path);
                 Storage::disk('r2')->delete($oldPath);
             }
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
             $file = $request->file('logo_path');
             $safeName = 'logo_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
             $storedPath = $file->storeAs('vendor-branding', $safeName, 'r2');
-            $data['logo_path'] = $r2BaseUrl . '/' . $storedPath;
-        } else {
-            unset($data['logo_path']);
+            $data['pending_logo_path'] = $r2BaseUrl . '/' . $storedPath;
         }
+        unset($data['logo_path']); // Never write directly to live column
 
-        // Handle banner upload
+        // Handle banner upload → save to PENDING (admin must approve)
         if ($request->hasFile('banner_path')) {
-            // Delete old banner from R2 if exists
-            if ($existingVendor && $existingVendor->banner_path) {
-                $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
-                $oldPath = str_replace($r2BaseUrl . '/', '', $existingVendor->banner_path);
+            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
+            // Delete old PENDING banner from R2 if exists (overwrite previous pending)
+            if ($existingVendor && $existingVendor->pending_banner_path) {
+                $oldPath = str_replace($r2BaseUrl . '/', '', $existingVendor->pending_banner_path);
                 Storage::disk('r2')->delete($oldPath);
             }
-            $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+
             $file = $request->file('banner_path');
             $safeName = 'banner_' . Str::random(8) . '.' . $file->getClientOriginalExtension();
             $storedPath = $file->storeAs('vendor-branding', $safeName, 'r2');
-            $data['banner_path'] = $r2BaseUrl . '/' . $storedPath;
-        } else {
-            unset($data['banner_path']);
+            $data['pending_banner_path'] = $r2BaseUrl . '/' . $storedPath;
         }
+        unset($data['banner_path']); // Never write directly to live column
 
         $vendor = Vendor::updateOrCreate(
             ['user_id' => $user->id],
             $data
         );
 
+        $hasPendingBranding = $request->hasFile('logo_path') || $request->hasFile('banner_path');
+
         return response()->json([
             'status' => true,
-            'message' => 'Vendor profile saved',
+            'message' => $hasPendingBranding
+                ? 'Profile saved. Your logo/banner changes are pending admin approval.'
+                : 'Vendor profile saved',
             'data' => [
                 'vendor' => $vendor,
+                'pending_branding' => $hasPendingBranding,
             ],
         ]);
     }

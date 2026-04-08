@@ -171,8 +171,15 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	// ---- Transform Backend Data ----
 	const images = [
 		product.ViewProductImage,
-		...JSON.parse(product.PostImage || "[]").map((img: string) => `${img}`),
-	];
+		...(() => {
+			try {
+				const parsed = JSON.parse(product.PostImage || "[]");
+				return Array.isArray(parsed) ? parsed.map((img: string) => `${img}`) : [];
+			} catch {
+				return [];
+			}
+		})(),
+	].filter(Boolean);
 
 	const productData = {
 		name: product.ProductName,
@@ -188,11 +195,15 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			main: images,
 			thumbnails: images,
 		},
-		sizes: Array.isArray(product.size)
-			? product.size
-			: typeof product.size === "string"
-				? JSON.parse(product.size)
-				: [],
+		sizes: (() => {
+			try {
+				if (Array.isArray(product.size)) return product.size;
+				if (typeof product.size === "string") return JSON.parse(product.size);
+				return [];
+			} catch {
+				return [];
+			}
+		})(),
 		varients: product.varients || [],
 		priceTiers: product.price_tiers || [], // Ensure we have product-level tiers
 		vendor: product.vendor

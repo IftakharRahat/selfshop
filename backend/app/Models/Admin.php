@@ -101,4 +101,14 @@ class Admin extends Authenticatable
     {
         return $this->exists && $this->hasRole('Shop');
     }
+
+    /**
+     * Whether this admin is a staff/executive with limited menu access.
+     * Can see: Orders, Products, Shop Products, Categories, Banners,
+     * Notifications, Suppliers, and Users (Manage Users only).
+     */
+    public function isStaffAdmin(): bool
+    {
+        return $this->exists && $this->hasRole('Executive');
+    }
 }

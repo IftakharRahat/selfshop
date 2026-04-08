@@ -9,19 +9,23 @@ interface ProductDetailsComponentProps {
 }
 
 async function getSingleProduct(productId: string) {
-	const res = await fetch(
-		`${process.env.NEXT_PUBLIC_BASE_URL}/product-details/${productId}`,
-		{
-			method: "GET",
-			cache: "no-store", // or "force-cache" if you want caching
-		},
-	);
+	try {
+		const res = await fetch(
+			`${process.env.NEXT_PUBLIC_BASE_URL}/product-details/${productId}`,
+			{
+				method: "GET",
+				cache: "no-store",
+			},
+		);
 
-	if (!res.ok) {
-		throw new Error("Failed to fetch product details");
+		if (!res.ok) {
+			return null;
+		}
+
+		return res.json();
+	} catch {
+		return null;
 	}
-
-	return res.json();
 }
 
 export default async function ProductDetailsComponent({

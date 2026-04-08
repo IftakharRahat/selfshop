@@ -75,29 +75,95 @@ class VendorOrderController extends Controller
      */
     private function syncCarryBeeStatus(Order $order): void
     {
-        if (empty($order->carrybee_parcel_id)) {
+        if (empty($order->carrybee_parcel_id) && empty($order->carrybee_tracking_code)) {
             return;
         }
 
         // Don't re-sync terminal statuses
         $terminal = ['delivered', 'returned', 'returned-to-merchant', 'cancelled'];
         if (in_array(strtolower($order->carrybee_status ?? ''), $terminal, true)) {
+            // Even if carrybee_status is terminal, ensure the main order status is synced
+            $this->mapCarryBeeToOrderStatus($order);
             return;
         }
 
         try {
             $carryBee = app(\App\Services\CarryBeeService::class);
-            $details = $carryBee->getOrderDetails((string) $order->carrybee_parcel_id);
 
-            if (!empty($details['data']['transfer_status'])) {
-                $order->carrybee_status = (string) $details['data']['transfer_status'];
+            // Try primary ID first, fall back to tracking code
+            $lookupId = $order->carrybee_parcel_id ?: $order->carrybee_tracking_code;
+            $details = $carryBee->getOrderDetails((string) $lookupId);
+
+            // Try multiple response field paths for status
+            $newStatus = $details['data']['transfer_status']
+                ?? $details['data']['order_status']
+                ?? $details['data']['status']
+                ?? $details['transfer_status']
+                ?? $details['status']
+                ?? null;
+
+            if ($newStatus) {
+                $order->carrybee_status = (string) $newStatus;
+
+                // Map Carrybee status to main order status
+                $this->mapCarryBeeToOrderStatus($order);
+
                 $order->save();
             }
         } catch (\Throwable $e) {
-            \Log::warning('CarryBee status sync failed', [
+            \Log::warning('CarryBee status sync failed (vendor)', [
                 'order_id' => $order->id,
+                'lookup_id' => $lookupId ?? null,
                 'error'    => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Map Carrybee courier status to the main order status field.
+     * Updates orders.status when courier reports a terminal state.
+     */
+    private function mapCarryBeeToOrderStatus(Order $order): void
+    {
+        $cbStatus = strtolower($order->carrybee_status ?? '');
+        if ($cbStatus === '') {
+            return;
+        }
+
+        $currentStatus = strtolower($order->status ?? '');
+
+        // Don't downgrade from Delivered/Return/Paid (already terminal in our system)
+        if (in_array($currentStatus, ['delivered', 'return', 'paid'], true)) {
+            return;
+        }
+
+        if (str_contains($cbStatus, 'deliver')) {
+            $order->status = 'Delivered';
+            $order->deliveryDate = $order->deliveryDate ?? now()->format('Y-m-d');
+            $order->save();
+
+            // Credit reseller balance, record income, mark vendor earnings
+            try {
+                app(\App\Services\OrderDeliveryService::class)->markDelivered($order);
+            } catch (\Throwable $e) {
+                \Log::warning('CarryBee delivery service failed (vendor)', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } elseif (str_contains($cbStatus, 'return') || str_contains($cbStatus, 'cancelled')) {
+            $order->status = 'Return';
+            $order->completeDate = $order->completeDate ?? now()->format('Y-m-d');
+
+            // Restore stock on return
+            try {
+                app(\App\Services\StockService::class)->restoreForOrder($order->id);
+            } catch (\Throwable $e) {
+                \Log::warning('Stock restore on CarryBee return failed (vendor)', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 

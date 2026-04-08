@@ -170,11 +170,124 @@ class SteadfastOrderStatusService
 
         $order->save();
 
+        // ── Carrybee status sync (alongside Steadfast) ──
+        $this->syncCarryBeeStatus($order);
+
         return $this->statusPayload($order);
+    }
+
+    /**
+     * Sync order status from CarryBee API.
+     * Updates carrybee_status and maps to the main order status for terminal states.
+     */
+    public function syncCarryBeeStatus(Order $order): void
+    {
+        if (empty($order->carrybee_parcel_id) && empty($order->carrybee_tracking_code)) {
+            return;
+        }
+
+        // Don't re-sync if already terminal in carrybee_status AND order status is also terminal
+        $terminal = ['delivered', 'returned', 'returned-to-merchant', 'cancelled'];
+        $cbStatus = strtolower($order->carrybee_status ?? '');
+        $orderStatus = strtolower($order->status ?? '');
+        if (in_array($cbStatus, $terminal, true) && in_array($orderStatus, ['delivered', 'return', 'paid'], true)) {
+            return;
+        }
+
+        try {
+            $carryBee = app(\App\Services\CarryBeeService::class);
+
+            // Try primary ID first, fall back to tracking code
+            $lookupId = $order->carrybee_parcel_id ?: $order->carrybee_tracking_code;
+            $details = $carryBee->getOrderDetails((string) $lookupId);
+
+            // Log full response for debugging ID consistency
+            \Log::info('CarryBee sync response', [
+                'order_id' => $order->id,
+                'lookup_id' => $lookupId,
+                'response_keys' => array_keys($details),
+                'data_keys' => isset($details['data']) ? array_keys($details['data']) : [],
+            ]);
+
+            // Try multiple response field paths for status
+            $newCbStatus = $details['data']['transfer_status']
+                ?? $details['data']['order_status']
+                ?? $details['data']['status']
+                ?? $details['transfer_status']
+                ?? $details['status']
+                ?? null;
+
+            if ($newCbStatus) {
+                $order->carrybee_status = (string) $newCbStatus;
+
+                // Map Carrybee status to main order status for terminal states
+                $this->mapCarryBeeToOrderStatus($order);
+
+                $order->save();
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('CarryBee status sync failed', [
+                'order_id' => $order->id,
+                'lookup_id' => $lookupId ?? null,
+                'error'    => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Map Carrybee courier status to the main order status field.
+     */
+    private function mapCarryBeeToOrderStatus(Order $order): void
+    {
+        $cbStatus = strtolower($order->carrybee_status ?? '');
+        if ($cbStatus === '') {
+            return;
+        }
+
+        $currentStatus = strtolower($order->status ?? '');
+        // Don't downgrade from terminal statuses
+        if (in_array($currentStatus, ['delivered', 'return', 'paid'], true)) {
+            return;
+        }
+
+        if (str_contains($cbStatus, 'deliver')) {
+            $order->status = 'Delivered';
+            $order->deliveryDate = $order->deliveryDate ?? now()->format('Y-m-d');
+            $order->save();
+
+            // Credit reseller balance, record income, mark vendor earnings
+            try {
+                app(OrderDeliveryService::class)->markDelivered($order);
+            } catch (\Throwable $e) {
+                \Log::warning('CarryBee delivery service failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } elseif (str_contains($cbStatus, 'return') || str_contains($cbStatus, 'cancelled')) {
+            $order->status = 'Return';
+            $order->completeDate = $order->completeDate ?? now()->format('Y-m-d');
+
+            // Restore stock on return
+            try {
+                app(\App\Services\StockService::class)->restoreForOrder($order->id);
+            } catch (\Throwable $e) {
+                \Log::warning('Stock restore on CarryBee return failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     public function customerVisibleStatus(Order $order): string
     {
+        // Check Carrybee status first (if order was shipped via Carrybee)
+        $carrybeeDisplay = $this->mapCarryBeeToDisplay($order->carrybee_status ?? null);
+        if ($carrybeeDisplay !== null) {
+            return $carrybeeDisplay;
+        }
+
         $steadfastDisplay = $this->mapSteadfastToDisplay($order->steadfast_status);
         if ($steadfastDisplay !== null) {
             return $steadfastDisplay;
@@ -252,6 +365,56 @@ class SteadfastOrderStatusService
         return Str::title(str_replace('_', ' ', $rawStatus));
     }
 
+    /**
+     * Map Carrybee raw status to a customer-friendly display string.
+     */
+    public function mapCarryBeeToDisplay(?string $rawStatus): ?string
+    {
+        if (!$rawStatus) {
+            return null;
+        }
+
+        $status = Str::lower(trim($rawStatus));
+        if ($status === '' || $status === 'created') {
+            return null; // Don't override — 'created' just means order submitted
+        }
+
+        if (str_contains($status, 'deliver')) {
+            return 'Delivered';
+        }
+
+        if (str_contains($status, 'cancel') || str_contains($status, 'return')) {
+            return 'Returned';
+        }
+
+        if (str_contains($status, 'hold')) {
+            return 'On hold';
+        }
+
+        if (
+            str_contains($status, 'pickup') ||
+            str_contains($status, 'picked') ||
+            str_contains($status, 'transit') ||
+            str_contains($status, 'sorted') ||
+            str_contains($status, 'assigned') ||
+            str_contains($status, 'received') ||
+            str_contains($status, 'hub') ||
+            str_contains($status, 'on_the_way') ||
+            str_contains($status, 'on-the-way')
+        ) {
+            return 'On the way';
+        }
+
+        if (
+            str_contains($status, 'pending') ||
+            str_contains($status, 'processing')
+        ) {
+            return 'Processing';
+        }
+
+        return Str::title(str_replace(['-', '_'], ' ', $rawStatus));
+    }
+
     public function getStatusPayload(Order $order): array
     {
         return $this->statusPayload($order);
@@ -263,6 +426,7 @@ class SteadfastOrderStatusService
             'status' => (string) ($order->status ?? ''),
             'customer_status' => $this->customerVisibleStatus($order),
             'steadfast_status' => $order->steadfast_status,
+            'carrybee_status' => $order->carrybee_status ?? null,
             'steadfast_last_synced_at' => $order->steadfast_last_synced_at?->toIso8601String(),
             'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
         ];

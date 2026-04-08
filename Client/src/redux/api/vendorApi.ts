@@ -23,6 +23,8 @@ export interface VendorProfile {
 	verified_badge_by?: number | null;
 	logo_path?: string | null;
 	banner_path?: string | null;
+	pending_logo_path?: string | null;
+	pending_banner_path?: string | null;
 	pickup_city_id?: number | null;
 	pickup_zone_id?: number | null;
 	pickup_area_id?: number | null;
@@ -38,6 +40,7 @@ export interface VendorKycDocument {
 	vendor_id: number;
 	document_type: string;
 	document_number?: string | null;
+	document_path?: string | null;
 	status: "pending" | "approved" | "rejected";
 	created_at: string;
 }
@@ -320,7 +323,7 @@ export const vendorApi = baseApi.injectEndpoints({
 			providesTags: ["user"],
 		}),
 		upsertVendorProfile: build.mutation<
-			{ status: boolean; data?: { vendor: VendorProfile } },
+			{ status: boolean; message?: string; data?: { vendor: VendorProfile; pending_branding?: boolean } },
 			FormData
 		>({
 			query: (body) => ({

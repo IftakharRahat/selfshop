@@ -30,8 +30,10 @@ class VendorCampaignController extends Controller
             return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
         }
 
+        // Show campaigns that are active and haven't ended yet
         $campaigns = FlashSale::where('status', 'Active')
             ->where('vendor_registration', true)
+            ->where('end_time', '>=', now())
             ->withCount('products')
             ->orderByDesc('created_at')
             ->get()
@@ -40,6 +42,9 @@ class VendorCampaignController extends Controller
                     ->where('vendor_id', $vendor->id)
                     ->count();
                 $campaign->vendor_product_count = $vendorProductCount;
+                $campaign->is_active = $campaign->start_time <= now() && $campaign->end_time >= now();
+                $campaign->is_upcoming = $campaign->start_time > now();
+                $campaign->is_expired = $campaign->end_time < now();
                 return $campaign;
             });
 
@@ -60,7 +65,13 @@ class VendorCampaignController extends Controller
             return response()->json(['status' => false, 'message' => 'Vendor not found'], 403);
         }
 
-        $campaign = FlashSale::withCount('products')->findOrFail($id);
+        $campaign = FlashSale::withCount('products')->find($id);
+        if (!$campaign) {
+            return response()->json(['status' => false, 'message' => 'Campaign not found'], 404);
+        }
+        $campaign->is_active = $campaign->start_time && $campaign->end_time
+            && $campaign->start_time <= now() && $campaign->end_time >= now();
+        $campaign->is_expired = $campaign->end_time && $campaign->end_time < now();
 
         // Vendor's submitted products for this campaign
         $vendorProducts = FlashSaleProduct::where('flash_sale_id', $id)
@@ -90,7 +101,16 @@ class VendorCampaignController extends Controller
 
         $campaign = FlashSale::where('status', 'Active')
             ->where('vendor_registration', true)
-            ->findOrFail($id);
+            ->find($id);
+
+        if (!$campaign) {
+            return response()->json(['status' => false, 'message' => 'Campaign not found or not accepting registrations'], 404);
+        }
+
+        // Check if campaign has ended
+        if ($campaign->end_time && now()->gt($campaign->end_time)) {
+            return response()->json(['status' => false, 'message' => 'This campaign has ended'], 422);
+        }
 
         // Check registration deadline
         if ($campaign->registration_deadline && now()->gt($campaign->registration_deadline)) {
