@@ -30,6 +30,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'bulksms' => [
+        'api_key'   => env('BULKSMS_API_KEY', ''),
+        'sender_id' => env('BULKSMS_SENDER_ID', ''),
+    ],
+
     'carrybee' => [
         'base_url' => env('CARRYBEE_BASE_URL', 'https://developers.carrybee.com'),
         'client_id' => env('CARRYBEE_CLIENT_ID', ''),

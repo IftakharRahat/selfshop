@@ -33,7 +33,7 @@ class BulkSmsService
         $number = preg_replace('/^\+?88/', '', trim($number));
 
         try {
-            $response = Http::timeout(15)->post($this->apiUrl, [
+            $response = Http::timeout(15)->get($this->apiUrl, [
                 'api_key'  => $this->apiKey,
                 'type'     => 'text',
                 'number'   => $number,
