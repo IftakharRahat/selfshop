@@ -1196,13 +1196,22 @@
                                     '_token': token
                                 },
                                 success: function(data) {
-                                    swal("Category has been deleted!", {
-                                        icon: "success",
-                                    });
-                                    orderinfotbl.ajax.reload();
+                                    var res = typeof data === 'string' ? JSON.parse(data) : data;
+                                    if (res.status === 'success') {
+                                        swal("Order has been deleted!", {
+                                            icon: "success",
+                                        });
+                                        orderinfotbl.ajax.reload();
+                                    } else {
+                                        swal(res.message || "Failed to delete order.", {
+                                            icon: "error",
+                                        });
+                                    }
                                 },
                                 error: function(error) {
-                                    console.log('error');
+                                    swal("Failed to delete order. Please try again.", {
+                                        icon: "error",
+                                    });
                                 }
 
                             });
@@ -2418,13 +2427,22 @@
                                     '_token': token
                                 },
                                 success: function(data) {
-                                    swal("Category has been deleted!", {
-                                        icon: "success",
-                                    });
-                                    orderinfotbl.ajax.reload();
+                                    var res = typeof data === 'string' ? JSON.parse(data) : data;
+                                    if (res.status === 'success') {
+                                        swal("Order has been deleted!", {
+                                            icon: "success",
+                                        });
+                                        orderinfotbl.ajax.reload();
+                                    } else {
+                                        swal(res.message || "Failed to delete order.", {
+                                            icon: "error",
+                                        });
+                                    }
                                 },
                                 error: function(error) {
-                                    console.log('error');
+                                    swal("Failed to delete order. Please try again.", {
+                                        icon: "error",
+                                    });
                                 }
 
                             });

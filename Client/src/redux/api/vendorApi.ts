@@ -31,6 +31,7 @@ export interface VendorProfile {
 	pickup_address?: string | null;
 	followers_count?: number;
 	total_products?: number;
+	avg_rating?: number;
 	created_at?: string | null;
 }
 

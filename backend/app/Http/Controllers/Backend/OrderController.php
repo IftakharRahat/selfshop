@@ -2555,7 +2555,7 @@ class OrderController extends Controller
 
         if ($id) {
 
-            if ($admin->hasrole('superadmin')) {
+            if ($admin->hasrole('Superadmin')) {
                 $result = Order::find($id);
                 if ($result) {
                     $result->delete();
