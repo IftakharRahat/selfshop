@@ -1117,6 +1117,7 @@ private function createOrderDetails($orderId, $cartData, $request)
             $customer->save();
             
             # Create order products
+            $vendorIds = [];
             foreach ($items as $item) {
                 $orderProduct = new Orderproduct();
                 $orderProduct->order_id = $storeOrder->id;
@@ -1143,6 +1144,13 @@ private function createOrderDetails($orderId, $cartData, $request)
                 }
 
                 $orderProduct->save();
+
+                // Track vendor IDs for supplier notification
+                $productId = is_object($item) ? ($item->product_id ?? $item->id) : ($item['product_id'] ?? $item['id']);
+                $vendorId = Product::where('id', $productId)->value('vendor_id');
+                if ($vendorId) {
+                    $vendorIds[(int) $vendorId] = true;
+                }
                 
                 # Create notification
                 $notification = new Comment();
@@ -1154,6 +1162,17 @@ private function createOrderDetails($orderId, $cartData, $request)
 
             // Decrement product stock for this store order
             app(\App\Services\StockService::class)->decrementForOrder($storeOrder->id);
+
+            // Send SMS + Email to suppliers
+            if (!empty($vendorIds)) {
+                try {
+                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                    $customerName = $request->customer_name ?? $request->customerName ?? null;
+                    $supplierNotification->notify($storeOrder, array_keys($vendorIds), $customerName);
+                } catch (\Throwable $e) {
+                    Log::warning('Supplier SMS/Email notification failed (SSLCommerz)', ['error' => $e->getMessage()]);
+                }
+            }
         }
         
         return true;

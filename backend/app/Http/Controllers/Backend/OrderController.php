@@ -579,6 +579,7 @@ class OrderController extends Controller
             $customer->customerPhone = $request['data']['customerPhone'];
             $customer->customerAddress = $request['data']['customerAddress'];
             $customer->save();
+            $vendorIds = [];
             foreach ($products as $product) {
                 $orderProducts = new Orderproduct();
                 $orderProducts->order_id = $order->id;
@@ -590,10 +591,26 @@ class OrderController extends Controller
                 $orderProducts->quantity = $product['productQuantity'];
                 $orderProducts->productPrice = $product['productPrice'];
                 $orderProducts->save();
+
+                // Track vendor IDs for supplier notification
+                $vendorId = Product::where('id', $product['productID'])->value('vendor_id');
+                if ($vendorId) {
+                    $vendorIds[(int) $vendorId] = true;
+                }
             }
 
             // Decrement product stock
             app(\App\Services\StockService::class)->decrementForOrder($order->id);
+
+            // Send SMS + Email to suppliers
+            if (!empty($vendorIds)) {
+                try {
+                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                    $supplierNotification->notify($order, array_keys($vendorIds), $request['data']['customerName'] ?? null);
+                } catch (\Throwable $e) {
+                    \Log::warning('Supplier SMS/Email notification failed (admin order)', ['error' => $e->getMessage()]);
+                }
+            }
 
             $notification = new Comment();
             $notification->order_id = $order->id;
