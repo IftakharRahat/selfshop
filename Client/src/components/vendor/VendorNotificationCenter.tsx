@@ -26,7 +26,10 @@ export default function VendorNotificationCenter({ disabled = false }: Props) {
 	const panelRef = useRef<HTMLDivElement | null>(null);
 	const { data, isFetching } = useGetVendorNotificationsQuery(
 		{ per_page: 12, page: 1 },
-		{ skip: disabled },
+		{
+			skip: disabled,
+			pollingInterval: 15000, // Auto-refresh every 15 seconds
+		},
 	);
 	const [markRead, { isLoading: markingRead }] =
 		useMarkVendorNotificationReadMutation();
