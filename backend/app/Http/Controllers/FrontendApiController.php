@@ -2957,7 +2957,9 @@ class FrontendApiController extends Controller
 
         // 1. Handle Variant/Size specific base price
         if ($request->size || $request->color) {
-            $variant = $cartProduct->varients()->where('title', $request->color)->first();
+            $variant = $cartProduct->varients()->where(function ($q) use ($request) {
+                $q->where('title', $request->color)->orWhere('color_name', $request->color);
+            })->first();
             if ($variant) {
                 $sizeRecord = $variant->sizes()->where('size_name', $request->size)->first();
                 if ($sizeRecord && $sizeRecord->price > 0) {
@@ -2972,7 +2974,9 @@ class FrontendApiController extends Controller
         $qty = (int) $request->qty;
         if ($request->size || $request->color) {
             // Check for size-specific bulk tiers first
-            $variant = $cartProduct->varients()->where('title', $request->color)->first();
+            $variant = $cartProduct->varients()->where(function ($q) use ($request) {
+                $q->where('title', $request->color)->orWhere('color_name', $request->color);
+            })->first();
             if ($variant) {
                 $sizeRecord = $variant->sizes()->where('size_name', $request->size)->first();
                 if ($sizeRecord) {
@@ -3102,7 +3106,9 @@ class FrontendApiController extends Controller
 
             // 1. Variant/Size base price
             if ($cart->color || $cart->size) {
-                $variant = $product->varients()->where('title', $cart->color)->first();
+                $variant = $product->varients()->where(function ($q) use ($cart) {
+                    $q->where('title', $cart->color)->orWhere('color_name', $cart->color);
+                })->first();
                 if ($variant) {
                     $sizeRecord = $variant->sizes()->where('size_name', $cart->size)->first();
                     if ($sizeRecord && $sizeRecord->price > 0) {
@@ -3116,7 +3122,9 @@ class FrontendApiController extends Controller
             // 2. Bulk tier lookup
             if ($cart->color || $cart->size) {
                 // Size-specific bulk tiers
-                $variant = $product->varients()->where('title', $cart->color)->first();
+                $variant = $product->varients()->where(function ($q) use ($cart) {
+                    $q->where('title', $cart->color)->orWhere('color_name', $cart->color);
+                })->first();
                 if ($variant) {
                     $sizeRecord = $variant->sizes()->where('size_name', $cart->size)->first();
                     if ($sizeRecord) {
