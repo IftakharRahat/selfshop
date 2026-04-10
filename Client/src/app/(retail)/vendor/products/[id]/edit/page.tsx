@@ -143,11 +143,10 @@ export default function VendorEditProductPage() {
 				brand_id: String(p.brand_id ?? ""),
 			});
 
-			const hasBulk = Boolean((p as { is_wholesale?: boolean | number }).is_wholesale);
-			const hasDropship = Boolean((p as { allow_dropship?: boolean | number }).allow_dropship);
-
-			if (hasBulk && hasDropship) setSellingType('both');
-			else if (hasDropship) setSellingType('dropshipping');
+			// Read selling_type directly from the product data
+			const st = String((p as { selling_type?: string }).selling_type || '').toLowerCase();
+			if (st === 'both') setSellingType('both');
+			else if (st === 'dropshipping') setSellingType('dropshipping');
 			else setSellingType('wholesale');
 
 			setInitialized(true);

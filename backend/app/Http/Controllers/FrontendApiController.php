@@ -960,7 +960,7 @@ class FrontendApiController extends Controller
             $product->vendor->slug = $product->vendor->public_slug;
         }
 
-        $relatedproducts = Product::where('category_id', $product->category_id)->visibleOnStorefront()->latest()->paginate(12);
+        $relatedproducts = Product::where('category_id', $product->category_id)->where('id', '!=', $product->id)->visibleOnStorefront()->latest()->paginate(12);
 
         $flashSaleData = null;
         $activeFlashSale = FlashSale::active()->orderBy('end_time', 'asc')->first();
