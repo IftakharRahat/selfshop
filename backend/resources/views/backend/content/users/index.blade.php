@@ -105,12 +105,14 @@ $(document).ready(function() {
         },
         columns: [
             { data: 'id' },
-            { data: 'user' },
+            { data: 'user', name: 'name', orderable: false, searchable: false },
             { data: 'type', orderable: false, searchable: false },
             { data: 'email' },
-            { data: 'analytics' },
+            { data: 'analytics', orderable: false, searchable: false },
             {
                 "data": null,
+                orderable: false,
+                searchable: false,
                 render: function(data) {
                     if (data.status === 'Active') {
                         return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="Inactive" id="brandstatusBtn" data-id="' + data.id + '">Active</button>';
