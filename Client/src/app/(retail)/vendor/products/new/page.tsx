@@ -377,7 +377,7 @@ export default function VendorNewProductPage() {
 											<input
 												type="number"
 												min={0}
-												step="0.01"
+												step="any"
 												name="base_price"
 												value={basePrice}
 												onChange={(e) => setBasePrice(e.target.value)}
@@ -395,7 +395,7 @@ export default function VendorNewProductPage() {
 											Regular price (MSRP)
 											<input
 												type="number"
-												step="0.01"
+												step="any"
 												value={regularPrice}
 												onChange={(e) => setRegularPrice(e.target.value)}
 												name="regular_price"

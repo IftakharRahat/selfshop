@@ -75,9 +75,43 @@ const VendorRegisterPage = () => {
 				"Registration submitted. Admin will approve your vendor account.",
 			);
 			router.replace("/vendor/login");
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error(error);
-			toast.error("Registration failed");
+
+			// RTK Query wraps the server response in { status, data }
+			const err = error as { status?: number; data?: { message?: string; errors?: Record<string, string[]> } };
+			const fieldLabels: Record<string, string> = {
+				name: "Name",
+				phone: "Phone number",
+				password: "Password",
+				company_name: "Company name",
+				business_type: "Business type",
+				pickup_city_id: "City",
+				pickup_zone_id: "Zone",
+				pickup_area_id: "Area",
+				pickup_address: "Pickup address",
+			};
+
+			if (err?.data?.errors) {
+				// Show each validation error as a separate toast
+				const entries = Object.entries(err.data.errors);
+				for (const [field, messages] of entries) {
+					const label = fieldLabels[field] || field;
+					for (const msg of messages) {
+						// Replace raw field name with friendly label in message
+						const friendlyMsg = msg
+							.replace(/^The phone/, "This phone number")
+							.replace(/^The name/, "Name")
+							.replace(/^The password/, "Password")
+							.replace(/^The company name/, "Company name");
+						toast.error(`${label}: ${friendlyMsg}`);
+					}
+				}
+			} else if (err?.data?.message) {
+				toast.error(err.data.message);
+			} else {
+				toast.error("Registration failed. Please try again.");
+			}
 		}
 	};
 

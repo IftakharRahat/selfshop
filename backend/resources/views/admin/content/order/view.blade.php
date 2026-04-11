@@ -231,6 +231,156 @@
                     </table>
                 </div>
             </div>
+
+            {{-- Profit & Commission Breakdown --}}
+            <div class="admin-content-card mt-3" style="border: 2px solid #3b82f6; border-radius: 10px; overflow: hidden;">
+                <div style="background: #fff; padding: 16px 20px; border-bottom: 3px solid #3b82f6; display: flex; align-items: center; gap: 10px;">
+                    <span style="background: #3b82f6; color: #fff; width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px;">
+                        <i class="fas fa-chart-pie"></i>
+                    </span>
+                    <h5 style="margin: 0; font-weight: 700; color: #1e293b; font-size: 18px;">Profit &amp; Commission Breakdown</h5>
+                </div>
+                <div class="admin-card-body p-0">
+                    @php
+                        $commissionService = app(\App\Services\VendorCommissionService::class);
+                        $grandSellingPrice = 0;
+                        $grandBasePrice = 0;
+                        $grandStorefrontPrice = 0;
+                        $grandAdminCommission = 0;
+                        $grandSupplierShare = 0;
+                        $grandResellerProfit = 0;
+                    @endphp
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" style="font-size: 13px;">
+                            <thead style="background: #f1f5f9;">
+                                <tr>
+                                    <th style="padding: 10px 12px; font-weight: 600; color: #475569;">Product</th>
+                                    <th class="text-center" style="padding: 10px 8px; font-weight: 600; color: #475569;">Qty</th>
+                                    <th class="text-end" style="padding: 10px 8px; font-weight: 600; color: #475569;">Base Price<br><small class="text-muted fw-normal">(Supplier's price)</small></th>
+                                    <th class="text-end" style="padding: 10px 8px; font-weight: 600; color: #475569;">Storefront Price<br><small class="text-muted fw-normal">(After commission)</small></th>
+                                    <th class="text-end" style="padding: 10px 8px; font-weight: 600; color: #475569;">Reseller Sold At<br><small class="text-muted fw-normal">(Customer paid)</small></th>
+                                    <th class="text-end" style="padding: 10px 8px; font-weight: 600; color: #dc2626;">Admin Commission<br><small class="fw-normal">(Platform fee)</small></th>
+                                    <th class="text-end" style="padding: 10px 8px; font-weight: 600; color: #7c3aed;">Supplier Gets<br><small class="fw-normal">(Base × Qty)</small></th>
+                                    <th class="text-end" style="padding: 10px 8px; font-weight: 600; color: #059669;">Reseller Profit<br><small class="fw-normal">(Sold − Storefront)</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($orders->orderproducts as $op)
+                                    @php
+                                        $product = $op->product;
+                                        $qty = (int) $op->quantity;
+
+                                        // Base price = what the supplier/vendor set as their price
+                                        $basePrice = $product ? (float) $product->ProductResellerPrice : 0;
+
+                                        // Storefront price = base + admin commission (what's listed on site)
+                                        $storefrontPrice = 0;
+                                        $commissionRate = 0;
+                                        if ($product && $product->vendor_id) {
+                                            $commissionRate = $commissionService->getRateForProduct($product->vendor_id, $product->category_id);
+                                            $storefrontPrice = round($basePrice * (1 + $commissionRate / 100), 2);
+                                        } else {
+                                            // Non-vendor product: storefront = sale price or product price
+                                            $storefrontPrice = $product ? (float) ($product->ProductSalePrice ?: $product->ProductRegularPrice) : 0;
+                                        }
+
+                                        // Reseller selling price = what the reseller actually charged the customer
+                                        $resellerSoldAt = (float) ($op->selling_price ?: $op->productPrice ?: $storefrontPrice);
+
+                                        // Admin commission per unit = storefront - base
+                                        $adminCommissionPerUnit = round($storefrontPrice - $basePrice, 2);
+
+                                        // Line totals
+                                        $lineBaseCost = round($basePrice * $qty, 2);
+                                        $lineStorefront = round($storefrontPrice * $qty, 2);
+                                        $lineSellingPrice = round($resellerSoldAt * $qty, 2);
+                                        $lineAdminCommission = round($adminCommissionPerUnit * $qty, 2);
+                                        $lineSupplierShare = $lineBaseCost;
+                                        $lineResellerProfit = round($lineSellingPrice - $lineStorefront, 2);
+
+                                        $grandBasePrice += $lineBaseCost;
+                                        $grandStorefrontPrice += $lineStorefront;
+                                        $grandSellingPrice += $lineSellingPrice;
+                                        $grandAdminCommission += $lineAdminCommission;
+                                        $grandSupplierShare += $lineSupplierShare;
+                                        $grandResellerProfit += $lineResellerProfit;
+                                    @endphp
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 10px 12px;">
+                                            <strong>{{ $op->productName }}</strong>
+                                            @if($product && $product->vendor_id)
+                                                <br><small class="text-muted">Vendor product · {{ $commissionRate }}% comm.</small>
+                                            @else
+                                                <br><small class="text-muted">Admin/Direct product</small>
+                                            @endif
+                                        </td>
+                                        <td class="text-center" style="padding: 10px 8px;">{{ $qty }}</td>
+                                        <td class="text-end" style="padding: 10px 8px;">৳{{ number_format($basePrice, 2) }}</td>
+                                        <td class="text-end" style="padding: 10px 8px;">৳{{ number_format($storefrontPrice, 2) }}</td>
+                                        <td class="text-end" style="padding: 10px 8px; font-weight: 600;">৳{{ number_format($resellerSoldAt, 2) }}</td>
+                                        <td class="text-end" style="padding: 10px 8px; color: #dc2626;">৳{{ number_format($lineAdminCommission, 2) }}</td>
+                                        <td class="text-end" style="padding: 10px 8px; color: #7c3aed;">৳{{ number_format($lineSupplierShare, 2) }}</td>
+                                        <td class="text-end" style="padding: 10px 8px; color: {{ $lineResellerProfit >= 0 ? '#059669' : '#dc2626' }}; font-weight: 600;">
+                                            {{ $lineResellerProfit >= 0 ? '৳' : '-৳' }}{{ number_format(abs($lineResellerProfit), 2) }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="text-muted text-center py-3">No products found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot style="background: #f8fafc; border-top: 2px solid #e2e8f0;">
+                                <tr style="font-weight: 700; font-size: 14px;">
+                                    <td style="padding: 12px;" colspan="2"><strong>ORDER TOTALS</strong></td>
+                                    <td class="text-end" style="padding: 12px 8px;">৳{{ number_format($grandBasePrice, 2) }}</td>
+                                    <td class="text-end" style="padding: 12px 8px;">৳{{ number_format($grandStorefrontPrice, 2) }}</td>
+                                    <td class="text-end" style="padding: 12px 8px;">৳{{ number_format($grandSellingPrice, 2) }}</td>
+                                    <td class="text-end" style="padding: 12px 8px; color: #dc2626;">৳{{ number_format($grandAdminCommission, 2) }}</td>
+                                    <td class="text-end" style="padding: 12px 8px; color: #7c3aed;">৳{{ number_format($grandSupplierShare, 2) }}</td>
+                                    <td class="text-end" style="padding: 12px 8px; color: {{ $grandResellerProfit >= 0 ? '#059669' : '#dc2626' }};">
+                                        {{ $grandResellerProfit >= 0 ? '৳' : '-৳' }}{{ number_format(abs($grandResellerProfit), 2) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    {{-- Summary Cards --}}
+                    <div class="row g-3 p-3" style="border-top: 1px solid #e2e8f0;">
+                        <div class="col-md-3">
+                            <div style="background: #fef2f2; border-radius: 8px; padding: 16px; text-align: center;">
+                                <div style="font-size: 11px; font-weight: 600; color: #991b1b; text-transform: uppercase; letter-spacing: 0.05em;">Admin Commission</div>
+                                <div style="font-size: 22px; font-weight: 700; color: #dc2626; margin-top: 4px;">৳{{ number_format($grandAdminCommission, 2) }}</div>
+                                <div style="font-size: 11px; color: #6b7280;">Platform earning</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="background: #f5f3ff; border-radius: 8px; padding: 16px; text-align: center;">
+                                <div style="font-size: 11px; font-weight: 600; color: #5b21b6; text-transform: uppercase; letter-spacing: 0.05em;">Supplier Share</div>
+                                <div style="font-size: 22px; font-weight: 700; color: #7c3aed; margin-top: 4px;">৳{{ number_format($grandSupplierShare, 2) }}</div>
+                                <div style="font-size: 11px; color: #6b7280;">Vendor receives</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="background: #ecfdf5; border-radius: 8px; padding: 16px; text-align: center;">
+                                <div style="font-size: 11px; font-weight: 600; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">Reseller Profit</div>
+                                <div style="font-size: 22px; font-weight: 700; color: {{ $grandResellerProfit >= 0 ? '#059669' : '#dc2626' }}; margin-top: 4px;">
+                                    {{ $grandResellerProfit >= 0 ? '৳' : '-৳' }}{{ number_format(abs($grandResellerProfit), 2) }}
+                                </div>
+                                <div style="font-size: 11px; color: #6b7280;">Reseller margin</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="background: #eff6ff; border-radius: 8px; padding: 16px; text-align: center;">
+                                <div style="font-size: 11px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.05em;">Order Profit (Legacy)</div>
+                                <div style="font-size: 22px; font-weight: 700; color: #2563eb; margin-top: 4px;">৳{{ number_format((float)($orders->profit ?? 0), 2) }}</div>
+                                <div style="font-size: 11px; color: #6b7280;">orders.profit field</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         @endif
         <input type="hidden" name="_token" value="{{ csrf_token() }}" />
         {{-- //user role --}}
