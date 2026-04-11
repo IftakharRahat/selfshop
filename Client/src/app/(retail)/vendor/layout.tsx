@@ -136,14 +136,16 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 			return;
 		}
 
-		if (!hasVendorProfile && !isVendorProfilePage) {
-			router.replace("/vendor/profile");
+		// No vendor record found — account was deleted or never existed
+		if (!hasVendorProfile) {
+			dispatch(logout());
+			router.replace("/vendor/login");
 		}
 	}, [
+		dispatch,
 		hasVendorProfile,
 		isAuthPage,
 		isVendorProfileError,
-		isVendorProfilePage,
 		isVendorProfileResolved,
 		router,
 		token,
