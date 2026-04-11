@@ -39,6 +39,30 @@ const VendorLoginPage = () => {
 				}),
 			);
 
+			// Verify the user actually has a vendor/supplier profile
+			try {
+				const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+				const profileRes = await fetch(`${baseUrl}/vendor/profile`, {
+					headers: {
+						Accept: "application/json",
+						Authorization: `Bearer ${res.token}`,
+					},
+				});
+				const profileData = await profileRes.json().catch(() => ({}));
+
+				if (!profileRes.ok || !profileData?.data?.vendor) {
+					// No vendor profile — clear token and block access
+					dispatch(setUser({ user: null, access_token: null, refresh_token: null }));
+					toast.error("No supplier account found. Your account may have been deleted.");
+					return;
+				}
+			} catch {
+				// Network error checking profile — clear token to be safe
+				dispatch(setUser({ user: null, access_token: null, refresh_token: null }));
+				toast.error("Unable to verify supplier account. Please try again.");
+				return;
+			}
+
 			toast.success("Logged in successfully.");
 			router.replace("/vendor");
 		} catch (error: any) {
