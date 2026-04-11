@@ -56,6 +56,16 @@ class UserController extends Controller
 
         return Datatables::of($users)
 
+            ->filter(function ($query) {
+                $search = request('search')['value'] ?? '';
+                if ($search !== '') {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('users.name', 'LIKE', '%' . $search . '%')
+                          ->orWhere('users.email', 'LIKE', '%' . $search . '%')
+                          ->orWhere('users.phone', 'LIKE', '%' . $search . '%');
+                    });
+                }
+            }, true)
             ->editColumn('user', function ($users) {
                 $u = User::where('id', $users->id)->first();
                 return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#2d2a5d; font-weight:600;">' . $u->my_referral_code . '</a> )';
@@ -81,7 +91,7 @@ class UserController extends Controller
                 }
             })
 
-
+            ->rawColumns(['user', 'type', 'action', 'analytics'])
             ->escapeColumns([])->make(true);
     }
 
@@ -112,6 +122,16 @@ class UserController extends Controller
         }
 
         return Datatables::of($users)
+            ->filter(function ($query) {
+                $search = request('search')['value'] ?? '';
+                if ($search !== '') {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('users.name', 'LIKE', '%' . $search . '%')
+                          ->orWhere('users.email', 'LIKE', '%' . $search . '%')
+                          ->orWhere('users.phone', 'LIKE', '%' . $search . '%');
+                    });
+                }
+            }, true)
             ->editColumn('user', function ($users) {
                 $u = User::where('id', $users->id)->first();
                 return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
@@ -129,6 +149,7 @@ class UserController extends Controller
                 }
             })
 
+            ->rawColumns(['user', 'action', 'analytics'])
             ->escapeColumns([])->make(true);
     }
 
@@ -166,6 +187,16 @@ class UserController extends Controller
         }
 
         return Datatables::of($users)
+            ->filter(function ($query) {
+                $search = request('search')['value'] ?? '';
+                if ($search !== '') {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('users.name', 'LIKE', '%' . $search . '%')
+                          ->orWhere('users.email', 'LIKE', '%' . $search . '%')
+                          ->orWhere('users.phone', 'LIKE', '%' . $search . '%');
+                    });
+                }
+            }, true)
             ->editColumn('user', function ($users) {
                 $u = User::where('id', $users->id)->first();
                 return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#2d2a5d; font-weight:600;">' . $u->my_referral_code . '</a> )';
@@ -185,6 +216,7 @@ class UserController extends Controller
                     return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '';
                 }
             })
+            ->rawColumns(['user', 'type', 'analytics'])
             ->escapeColumns([])->make(true);
     }
 
