@@ -72,11 +72,12 @@ class UserController extends Controller
                 <a href="#" type="button" id="deleteBrandBtn" data-id="' . $users->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
             })
             ->addColumn('analytics', function ($users) {
+                $joinDate = optional($users->created_at)->format('Y-m-d h:i a') ?? 'N/A';
                 $inv = Resellerinvoice::where('user_id', $users->id)->first();
                 if (isset($inv)) {
-                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
+                    return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
                 } else {
-                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '';
+                    return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '';
                 }
             })
 
@@ -119,11 +120,12 @@ class UserController extends Controller
                 return '<a href="../users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>';
             })
             ->addColumn('analytics', function ($users) {
+                $joinDate = optional($users->created_at)->format('Y-m-d h:i a') ?? 'N/A';
                 $inv = Resellerinvoice::where('user_id', $users->id)->first();
                 if (isset($inv)) {
-                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
+                    return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
                 } else {
-                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '';
+                    return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '';
                 }
             })
 
@@ -175,11 +177,12 @@ class UserController extends Controller
                 return '<span class="badge" style="background:#2d2a5d;color:#fff;">User</span>';
             })
             ->addColumn('analytics', function ($users) {
+                $joinDate = optional($users->created_at)->format('Y-m-d h:i a') ?? 'N/A';
                 $inv = Resellerinvoice::where('user_id', $users->id)->first();
                 if (isset($inv)) {
-                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
+                    return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '<br>Invoice ID: ' . $inv->invoiceID . '<br>Inv Date: ' . $inv->inviceDate . '<br>Payment Date: ' . $inv->paymentDate . '<br>Payable: ' . $inv->payable_amount . '<br>Paid: ' . $inv->paid_amount . '<br><button class="btn btn-success btn-sm">' . $users->p_system . '</button>';
                 } else {
-                    return 'Join Date: ' . $users->created_at->format('Y-m-d h:i a') . '<br>Member Ship: ' . $users->membership_status . '';
+                    return 'Join Date: ' . $joinDate . '<br>Member Ship: ' . $users->membership_status . '';
                 }
             })
             ->escapeColumns([])->make(true);
