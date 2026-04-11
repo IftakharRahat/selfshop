@@ -413,14 +413,9 @@ class VendorController extends Controller
      */
     public function destroy(Vendor $vendor)
     {
-        // Revoke wholesaler status on the user (keep the user account)
         $user = $vendor->user;
-        if ($user) {
-            $user->is_verified_wholesaler = false;
-            $user->save();
-        }
 
-        // Cascade-delete all related records
+        // Cascade-delete all related vendor records
         $vendor->followers()->delete();
         $vendor->payouts()->delete();
         $vendor->payoutRequests()->delete();
@@ -433,6 +428,12 @@ class VendorController extends Controller
 
         $companyName = $vendor->company_name;
         $vendor->delete();
+
+        // Revoke all API tokens and delete the user account so they can no longer log in
+        if ($user) {
+            $user->tokens()->delete();          // Revoke all Sanctum tokens
+            $user->delete();                     // Remove the user account entirely
+        }
 
         if (request()->wantsJson()) {
             return response()->json(['status' => true, 'message' => "Supplier '{$companyName}' deleted."]);
