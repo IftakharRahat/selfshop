@@ -151,9 +151,9 @@
                                 <textarea class="form-control" name="address" rows="2" placeholder="Office address">{{ $webinfo->address }}</textarea>
                             </div>
                             <div class="form-group">
-                                <label>Account Opening Bonus</label>
+                                <label>Referral Bonus (%) <span class="text-muted" style="font-weight:400; font-size:12px;">— bonus given to referrer when referred user subscribes</span></label>
                                 <input type="text" class="form-control" name="bonus_percent"
-                                    value="{{ $webinfo->bonus_percent }}" placeholder="Bonus percentage">
+                                    value="{{ $webinfo->bonus_percent }}" placeholder="e.g. 10">
                             </div>
 
                             <div class="row">
@@ -276,12 +276,14 @@
                                 <textarea class="form-control" name="invoice_footer" rows="2" placeholder="Text shown at the bottom of invoices">{{ $webinfo->invoice_footer }}</textarea>
                             </div>
                             <div class="form-group">
-                                <label>Facebook Pixel <span class="text-muted">(paste full script)</span></label>
-                                <textarea class="form-control" name="facebook_pixel" rows="4" placeholder="<!-- Facebook Pixel Code -->">{{ $webinfo->facebook_pixel }}</textarea>
+                                <label>Facebook Pixel ID <span class="text-muted" style="font-weight:400; font-size:12px;">— just the numeric ID from Facebook Ads Manager</span></label>
+                                <input type="text" class="form-control" name="facebook_pixel_id"
+                                    value="{{ $webinfo->facebook_pixel_id }}" placeholder="e.g. 123456789012345">
                             </div>
                             <div class="form-group">
-                                <label>Google Analytics <span class="text-muted">(paste full script)</span></label>
-                                <textarea class="form-control" name="google_analytics" rows="4" placeholder="<!-- Global site tag (gtag.js) -->">{{ $webinfo->google_analytics }}</textarea>
+                                <label>GTM Container ID <span class="text-muted" style="font-weight:400; font-size:12px;">— from Google Tag Manager</span></label>
+                                <input type="text" class="form-control" name="gtm_id"
+                                    value="{{ $webinfo->gtm_id }}" placeholder="e.g. GTM-XXXXXXX">
                             </div>
                             <div class="form-group">
                                 <label>Marquee Text</label>

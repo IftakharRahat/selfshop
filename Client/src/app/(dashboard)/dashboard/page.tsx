@@ -9,9 +9,32 @@ import MetricCard from "@/components/pages/dashboard/metric-card";
 import OrderInsightCards from "@/components/pages/dashboard/order-insight-cards";
 import OrdersTable from "@/components/pages/dashboard/orders-table";
 import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { trackPurchase } from "@/lib/trackingEvents";
 
 export default function Dashboard() {
 	const { data } = useGetAllDashboardDataQuery(undefined);
+	const searchParams = useSearchParams();
+	const purchaseTracked = useRef(false);
+
+	// Fire Purchase event when redirected from payment gateway
+	useEffect(() => {
+		if (searchParams.get("payment") === "success" && !purchaseTracked.current) {
+			purchaseTracked.current = true;
+			const invoiceID = searchParams.get("invoiceID") || undefined;
+			trackPurchase({
+				transactionId: invoiceID,
+				currency: "BDT",
+			});
+			// Clean up URL params without triggering re-render
+			const url = new URL(window.location.href);
+			url.searchParams.delete("payment");
+			url.searchParams.delete("invoiceID");
+			url.searchParams.delete("expire_date");
+			window.history.replaceState({}, "", url.pathname);
+		}
+	}, [searchParams]);
 
 	// 🛠 FIXING API TYPO: blance → balance
 	const metrics = {

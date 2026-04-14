@@ -25,6 +25,7 @@ import {
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { trackLead } from "@/lib/trackingEvents";
 
 interface AuthModalProps {
 	open: boolean;
@@ -113,6 +114,8 @@ export default function AuthModal({
 					access_token: response?.data?.token,
 				}),
 			);
+			// Fire Lead tracking event on successful registration
+			trackLead({ method: "phone" });
 			form.resetFields();
 			onClose();
 			setIsPricingModalOpen(true);
