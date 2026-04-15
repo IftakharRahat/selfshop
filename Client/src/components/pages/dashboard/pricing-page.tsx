@@ -14,6 +14,7 @@ import {
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { trackInitiateCheckout } from "@/lib/trackingEvents";
 
 type PricingFeature = {
 	label: string;
@@ -125,6 +126,13 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 		const discount = normalizePrice(selectedPlan.discount_price);
 		const regular = normalizePrice(selectedPlan.price);
 		const amount = discount > 0 ? discount : regular;
+
+		// Fire InitiateCheckout tracking event
+		trackInitiateCheckout({
+			value: amount,
+			currency: "BDT",
+			packageName: selectedPlan.package_name,
+		});
 
 		const result = await handleAsyncWithToast(
 			async () =>

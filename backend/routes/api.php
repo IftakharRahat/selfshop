@@ -92,6 +92,15 @@ Route::get('/carrybee/debug', function () {
     ]);
 });
 
+// Tracking config — public, no auth required (must be outside guest middleware)
+Route::get('/tracking-config', function () {
+    $info = \App\Models\Basicinfo::first();
+    return response()->json([
+        'facebook_pixel_id' => $info->facebook_pixel_id ?? null,
+        'gtm_id' => $info->gtm_id ?? null,
+    ]);
+})->name('api.tracking-config');
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');
