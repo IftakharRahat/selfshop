@@ -103,6 +103,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             $webinfo->google_analytics='';
         }
 
+        // Save Google Analytics 4 Measurement ID (for standalone gtag.js)
+        $gaId = trim($request->google_analytics_id ?? '');
+        $webinfo->google_analytics_id = $gaId ?: null;
+
         if($request->marquee_text){
             $webinfo->marquee_text=$request->marquee_text;
         }else{
@@ -113,7 +117,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }else{
             $webinfo->chat_box='';
         }
-        $webinfo->update();
+        $webinfo->save();
         return redirect()->back()->with('message','Pixel & Analytics updated successfully');
     }
 
@@ -165,7 +169,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }else{
             $webinfo->youtube=null;
         }
-        $webinfo->update();
+        $webinfo->save();
         return redirect()->back()->with('message','Social Links updated successfully');
     }
 
@@ -261,7 +265,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
 
 
-        $webinfo->update();
+        $webinfo->save();
         return redirect()->back()->with('message','Shipping info updated successfully');
     }
 
