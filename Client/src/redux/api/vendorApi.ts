@@ -333,6 +333,16 @@ export const vendorApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ["user"],
 		}),
+		changeVendorPassword: build.mutation<
+			{ status: boolean; message?: string },
+			{ old_password: string; password: string; password_confirmation: string }
+		>({
+			query: (body) => ({
+				url: "/vendor/change-password",
+				method: "POST",
+				body,
+			}),
+		}),
 		getVendorKycDocuments: build.query<
 			{ status: boolean; data?: { documents: VendorKycDocument[] } },
 			void
@@ -1257,6 +1267,7 @@ export const {
 	useRegisterVendorMutation,
 	useGetVendorProfileQuery,
 	useUpsertVendorProfileMutation,
+	useChangeVendorPasswordMutation,
 	useGetVendorKycDocumentsQuery,
 	useCreateVendorKycDocumentMutation,
 	useGetVendorProductsQuery,

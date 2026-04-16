@@ -118,6 +118,15 @@ const VendorLoginPage = () => {
 					</button>
 				</form>
 
+				<p className="text-xs text-center">
+					<Link
+						href="/vendor/forgot-password"
+						className="text-[#2d2a5d] hover:underline font-medium"
+					>
+						Forgot your password?
+					</Link>
+				</p>
+
 				<p className="text-xs text-gray-600 text-center">
 					New to SelfShop Supplier?{" "}
 					<Link
