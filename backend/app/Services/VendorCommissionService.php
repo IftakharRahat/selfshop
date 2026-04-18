@@ -80,8 +80,28 @@ class VendorCommissionService
                 continue;
             }
 
-            // Vendor receives exactly their base price (ProductResellerPrice)
-            $basePrice = (float) ($product->ProductResellerPrice ?? $op->productPrice);
+            // Vendor receives exactly their base price (ProductResellerPrice), unless varied by color/size
+            $variantPrice = null;
+            if ($op->color) {
+                $varient = \App\Models\Varient::where('product_id', $product->id)
+                    ->where('color_name', $op->color)
+                    ->first();
+                if ($varient) {
+                    if ($op->size) {
+                        $size = \App\Models\VariantSize::where('varient_id', $varient->id)
+                            ->where('size_name', $op->size)
+                            ->first();
+                        if ($size && $size->price > 0) {
+                            $variantPrice = $size->price;
+                        }
+                    }
+                    if ($variantPrice === null && $varient->price > 0) {
+                        $variantPrice = $varient->price;
+                    }
+                }
+            }
+            
+            $basePrice = (float) ($variantPrice ?? $product->ProductResellerPrice ?? $op->productPrice);
             $netAmount = round($basePrice * (int) $op->quantity, 2);
 
             // Storefront price (commission inclusive)

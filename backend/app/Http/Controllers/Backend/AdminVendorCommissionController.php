@@ -82,18 +82,9 @@ class AdminVendorCommissionController extends Controller
             $product->save();
         }
 
-        $this->vendorNotificationService->notifyAllVendors(
-            'Commission updated',
-            'Admin updated commission for category "' . $category->category_name . '" to ' . round((float) $validated['commission_percent'], 2) . '%.',
-            'info',
-            [
-                'category_id' => $category->id,
-                'category_name' => $category->category_name,
-                'commission_percent' => round((float) $validated['commission_percent'], 2),
-                'event' => 'vendor_commission_updated',
-            ],
-            '/vendor/products/new'
-        );
+        // Commission update notification removed per client request —
+        // suppliers should not be notified about commission changes.
+
 
         return redirect()->back()->with('message', 'Commission updated for ' . $category->category_name . '.');
     }
