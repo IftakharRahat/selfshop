@@ -107,7 +107,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 	const [showLogoutModal, setShowLogoutModal] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 	const isAuthPage =
-		pathname === "/vendor/login" || pathname === "/vendor/register";
+		pathname === "/vendor/login" || pathname === "/vendor/register" || pathname === "/vendor/forgot-password";
 	const isVendorProfilePage = pathname === "/vendor/profile";
 	const shouldLoadVendorProfile = !isAuthPage && Boolean(token);
 	const {

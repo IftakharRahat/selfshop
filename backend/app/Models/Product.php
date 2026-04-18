@@ -93,15 +93,15 @@ class Product extends Model
      */
     public function scopeVisibleOnStorefront($query)
     {
-        return $query->where('status', 'Active')
+        return $query->where('products.status', 'Active')
             ->where(function ($q) {
-                $q->whereNull('vendor_id')
-                    ->orWhere('vendor_approval_status', 'approved');
+                $q->whereNull('products.vendor_id')
+                    ->orWhere('products.vendor_approval_status', 'approved');
             })
             ->where(function ($q) {
                 // Hide stock-out products (frature = 0 means out of stock)
-                $q->where('frature', '!=', 0)
-                    ->orWhereNull('frature');
+                $q->where('products.frature', '!=', 0)
+                    ->orWhereNull('products.frature');
             });
     }
 }

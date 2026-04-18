@@ -98,6 +98,7 @@ Route::get('/tracking-config', function () {
     return response()->json([
         'facebook_pixel_id' => $info->facebook_pixel_id ?? null,
         'gtm_id' => $info->gtm_id ?? null,
+        'google_analytics_id' => $info->google_analytics_id ?? null,
     ]);
 })->name('api.tracking-config');
 
@@ -281,6 +282,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Account & profile
         Route::get('/profile', [VendorAccountController::class, 'profile'])->name('api.vendor.profile');
         Route::post('/profile', [VendorAccountController::class, 'upsertProfile'])->name('api.vendor.profile.upsert');
+        Route::post('/change-password', [VendorAccountController::class, 'changePassword'])->name('api.vendor.change-password');
 
         // KYC documents
         Route::get('/kyc-documents', [VendorAccountController::class, 'kycDocuments'])->name('api.vendor.kyc.index');

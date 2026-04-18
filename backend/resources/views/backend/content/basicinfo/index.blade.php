@@ -286,6 +286,11 @@
                                     value="{{ $webinfo->gtm_id }}" placeholder="e.g. GTM-XXXXXXX">
                             </div>
                             <div class="form-group">
+                                <label>Google Analytics ID <span class="text-muted" style="font-weight:400; font-size:12px;">— GA4 Measurement ID (gtag.js)</span></label>
+                                <input type="text" class="form-control" name="google_analytics_id"
+                                    value="{{ $webinfo->google_analytics_id }}" placeholder="e.g. G-XXXXXXXXXX">
+                            </div>
+                            <div class="form-group">
                                 <label>Marquee Text</label>
                                 <textarea class="form-control" name="marquee_text" id="marquee_text" rows="2" placeholder="Scrolling announcement text">{{ $webinfo->marquee_text }}</textarea>
                             </div>

@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import MicrosoftClarity from "@/components/providers/MicrosoftClarity";
 import FacebookPixel from "@/components/providers/FacebookPixel";
 import GoogleTagManager from "@/components/providers/GoogleTagManager";
+import GoogleAnalytics from "@/components/providers/GoogleAnalytics";
 import { Toaster } from "sonner";
 import MyContextProvider from "@/lib/MyContextProvider";
 import SessionProviderForNextAuth from "@/nextAuth/SessionProviderForNextAuth";
@@ -74,6 +75,7 @@ export default function RootLayout({
 			>
 				<FacebookPixel />
 				<GoogleTagManager />
+				<GoogleAnalytics />
 				<MyContextProvider>
 					<SessionProviderForNextAuth>
 						<ReduxStoreProvider>

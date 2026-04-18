@@ -918,18 +918,92 @@ class FrontendApiController extends Controller
 
     public function search(Request $request)
     {
-        $products = Product::visibleOnStorefront()->where('ProductName', 'LIKE', '%' . $request->keywords . '%')->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'selling_type')->get();
+        $rawSearch = trim($request->keywords ?? '');
+        $limit = $request->input('limit', 20);
 
-        if ($products->count() == 0) {
+        if ($rawSearch === '') {
             return response()->json([
                 'status' => false,
-                'message' => 'No products fuound with this keywords',
+                'message' => 'Please enter a search term',
+            ], 400);
+        }
+
+        // Split into individual keywords and filter out very short ones (1 char)
+        $keywords = array_values(array_filter(
+            explode(' ', $rawSearch),
+            fn($w) => mb_strlen(trim($w)) >= 2
+        ));
+        $keywords = array_map('trim', $keywords);
+
+        // If all keywords were too short, fall back to original search string
+        if (empty($keywords)) {
+            $keywords = [trim($rawSearch)];
+        }
+
+        $selects = [
+            'products.id', 'products.category_id', 'products.subcategory_id',
+            'products.brand_id', 'products.ProductName', 'products.ProductSlug',
+            'products.ProductRegularPrice', 'products.ProductSalePrice',
+            'products.ProductResellerPrice', 'products.min_sell_price',
+            'products.Discount', 'products.ViewProductImage',
+            'products.vendor_id', 'products.selling_type',
+        ];
+
+        $query = Product::visibleOnStorefront()
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('subcategories', 'products.subcategory_id', '=', 'subcategories.id')
+            ->leftJoin('brands', 'products.brand_id', '=', 'brands.id');
+
+        // WHERE: at least one keyword matches in any searchable field
+        $query->where(function ($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $escaped = addcslashes($word, '%_');
+                $q->orWhere('products.ProductName', 'LIKE', "%{$escaped}%")
+                  ->orWhere('categories.category_name', 'LIKE', "%{$escaped}%")
+                  ->orWhere('subcategories.sub_category_name', 'LIKE', "%{$escaped}%")
+                  ->orWhere('brands.brand_name', 'LIKE', "%{$escaped}%")
+                  ->orWhere('products.MetaKey', 'LIKE', "%{$escaped}%")
+                  ->orWhere('products.ProductDetails', 'LIKE', "%{$escaped}%");
+            }
+        });
+
+        // Build relevance score expression
+        // ProductName match = 3pts, Category/Sub/Brand/Meta = 2pts, Description = 1pt
+        $scoreParts = [];
+        foreach ($keywords as $word) {
+            $escaped = addcslashes($word, '%_');
+            $safe = str_replace("'", "''", $escaped);
+            $scoreParts[] = "(CASE WHEN products.ProductName LIKE '%{$safe}%' THEN 3 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN categories.category_name LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN subcategories.sub_category_name LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN brands.brand_name LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN products.MetaKey LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN products.ProductDetails LIKE '%{$safe}%' THEN 1 ELSE 0 END)";
+        }
+
+        // Bonus: exact phrase match in product name gets extra 5 points
+        $safeRaw = str_replace("'", "''", addcslashes($rawSearch, '%_'));
+        $scoreParts[] = "(CASE WHEN products.ProductName LIKE '%{$safeRaw}%' THEN 5 ELSE 0 END)";
+
+        $scoreExpr = implode('+', $scoreParts);
+
+        $products = $query
+            ->selectRaw(implode(', ', $selects) . ", ({$scoreExpr}) as relevance_score")
+            ->orderByDesc('relevance_score')
+            ->paginate($limit);
+
+        if ($products->total() == 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No products found with this keywords',
+                'total' => 0,
             ], 404);
         }
 
         return response()->json([
             'status' => true,
             'message' => 'Products found with this keywords successfully',
+            'total' => $products->total(),
             'data' => $products
         ], 200);
     }
