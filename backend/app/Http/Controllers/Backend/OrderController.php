@@ -1776,7 +1776,7 @@ class OrderController extends Controller
         $start = $request->startDate;
         $end = $request->endDate;
 
-        $orders = DB::table('orders')->where('status', 'Delivered')->whereBetween('deliveryDate', [$start, $end])->get();
+        $orders = DB::table('orders')->where('status', 'Delivered')->whereBetween('orderDate', [$start, $end])->get();
         $sales = 0;
         $purchese = 0;
         foreach ($orders as $order) {
@@ -1812,20 +1812,20 @@ class OrderController extends Controller
 
         $pendingprofit = $pendingsales - $pendingpurchese;
 
-        $response['profit'] = $profit;
-        $response['pendingprofit'] = $pendingprofit;
+        $response['profit'] = round($profit, 2);
+        $response['pendingprofit'] = round($pendingprofit, 2);
         $response['order'] = $orders->count();
         $response['pendingorder'] = $pendingorders->count();
 
-        $response['resellerprofit'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('deliveryDate', [$start, $end])->get()->sum('profit');
-        $response['resellerorder'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('deliveryDate', [$start, $end])->get()->count();
+        $response['resellerprofit'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('orderDate', [$start, $end])->get()->sum('profit');
+        $response['resellerorder'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('orderDate', [$start, $end])->get()->count();
         $response['resellerpendingprofit'] = DB::table('orders')->whereIn('status', ['Processing', 'Ontheway', 'Confirmed', 'Packageing'])->whereBetween('orderDate', [$start, $end])->get()->sum('profit');
         $response['resellerpendingorder'] = DB::table('orders')->whereIn('status', ['Processing', 'Ontheway', 'Confirmed', 'Packageing'])->whereBetween('orderDate', [$start, $end])->get()->count();
 
-        $response['totalprofit'] = $profit + $response['resellerprofit'];
-        $response['totalpendingprofit'] = $pendingprofit + $response['resellerpendingprofit'];
-        $response['totalpendingorder'] = $pendingorders->count() + $response['resellerpendingorder'];
-        $response['totalorder'] = $orders->count() + $response['resellerorder'];
+        $response['totalprofit'] = round($profit + $response['resellerprofit'], 2);
+        $response['totalpendingprofit'] = round($pendingprofit + $response['resellerpendingprofit'], 2);
+        $response['totalpendingorder'] = $pendingorders->count();
+        $response['totalorder'] = $orders->count();
 
         $response['status'] = 'success';
         return json_encode($response);
