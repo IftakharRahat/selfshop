@@ -45,6 +45,10 @@ export default function VendorPayoutsPage() {
 			toast.error("Amount cannot exceed your available balance.");
 			return;
 		}
+		if (accounts.length === 0) {
+			toast.error("Please add a payout account first.");
+			return;
+		}
 		if (pendingRequestAmount > 0) {
 			toast.error("You already have a pending payout request.");
 			return;
@@ -120,7 +124,7 @@ export default function VendorPayoutsPage() {
 								</div>
 							)}
 							<button
-								disabled={submitting || availableBalance <= 0 || pendingRequestAmount > 0}
+								disabled={submitting || availableBalance <= 0 || pendingRequestAmount > 0 || accounts.length === 0}
 								onClick={handleRequest}
 								className="self-end sm:self-auto px-4 py-2 rounded-lg bg-[#2d2a5d] text-white text-sm font-medium hover:bg-[#252947] disabled:opacity-50 disabled:cursor-not-allowed"
 							>

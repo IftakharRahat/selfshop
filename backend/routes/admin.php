@@ -305,6 +305,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('admin.vendors.edit');
     Route::put('vendors/{vendor}', [VendorController::class, 'update'])->name('admin.vendors.update');
     Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show');
+    Route::get('vendors/{vendor}/sales-summary', [VendorController::class, 'salesSummary'])->name('admin.vendors.sales-summary');
     Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
     Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge');

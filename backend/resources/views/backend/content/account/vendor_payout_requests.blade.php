@@ -86,11 +86,27 @@
                                     <small class="text-muted">{{ $req->vendor->contact_email ?? '' }}</small>
                                 </td>
                                 <td>
-                                    @if($req->payoutAccount)
-                                        {{ $req->payoutAccount->account_name ?? $req->payoutAccount->channel_type }}<br>
-                                        <small class="text-muted">***{{ substr($req->payoutAccount->account_number ?? '', -4) }}</small>
+                                    @php
+                                        $acct = $req->payoutAccount
+                                            ?? $req->vendor?->payoutAccounts?->firstWhere('is_default', true)
+                                            ?? $req->vendor?->payoutAccounts?->first();
+                                    @endphp
+                                    @if($acct)
+                                        <strong class="small">{{ ucfirst($acct->channel_type) }}</strong>
+                                        @if($acct->provider_name)
+                                            <span class="small text-muted">- {{ $acct->provider_name }}</span>
+                                        @endif
+                                        <br>
+                                        <small class="text-muted">{{ $acct->account_name }}</small><br>
+                                        <small class="fw-bold">{{ $acct->account_number }}</small>
+                                        @if($acct->routing_number)
+                                            <br><small class="text-muted">Routing: {{ $acct->routing_number }}</small>
+                                        @endif
+                                        @if(!$req->payoutAccount)
+                                            <br><span class="badge bg-warning text-dark" style="font-size:10px;">default</span>
+                                        @endif
                                     @else
-                                        —
+                                        <span class="text-danger small">No account</span>
                                     @endif
                                 </td>
                                 <td>৳{{ number_format((float)$req->amount, 2) }}</td>
@@ -104,11 +120,10 @@
                                     @endif
                                 </td>
                                 <td>
+                                    <a href="{{ route('admin.vendors.sales-summary', $req->vendor_id) }}" class="btn btn-outline-primary btn-sm" title="View supplier details">View</a>
                                     @if($req->status === 'pending')
                                         <button type="button" class="btn btn-success btn-sm btn-approve" data-id="{{ $req->id }}">Approve</button>
                                         <button type="button" class="btn btn-danger btn-sm btn-reject" data-id="{{ $req->id }}">Reject</button>
-                                    @else
-                                        —
                                     @endif
                                 </td>
                             </tr>
@@ -189,3 +204,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endsection
+

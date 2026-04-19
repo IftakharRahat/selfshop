@@ -91,6 +91,9 @@ class OrderDeliveryService
         // 7. Credit legacy shop account (for non-vendor store orders)
         $this->creditLegacyShopAccount($order);
 
+        // 8. Notify vendor(s)/supplier(s) about successful delivery
+        $this->notifyVendorsAboutDelivery($order);
+
         Log::info('OrderDeliveryService: order marked delivered', [
             'order_id' => $order->id,
             'invoice' => $order->invoiceID,
@@ -317,6 +320,45 @@ class OrderDeliveryService
             $shop->save();
         } catch (\Throwable $e) {
             Log::warning('OrderDeliveryService: legacy shop credit failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notify vendor(s)/supplier(s) that their products in this order have been delivered.
+     */
+    private function notifyVendorsAboutDelivery(Order $order): void
+    {
+        try {
+            $vendorIds = Orderproduct::where('order_id', $order->id)
+                ->join('products', 'orderproducts.product_id', '=', 'products.id')
+                ->whereNotNull('products.vendor_id')
+                ->distinct()
+                ->pluck('products.vendor_id');
+
+            if ($vendorIds->isEmpty()) {
+                return;
+            }
+
+            $notificationService = app(VendorAdminNotificationService::class);
+            foreach ($vendorIds as $vendorId) {
+                $notificationService->notifyVendorById(
+                    (int) $vendorId,
+                    'Order Delivered',
+                    'Order #' . $order->invoiceID . ' has been delivered successfully.',
+                    'success',
+                    [
+                        'order_id' => $order->id,
+                        'invoice_id' => $order->invoiceID,
+                        'event' => 'order_delivered',
+                    ],
+                    '/vendor/orders'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('OrderDeliveryService: vendor delivery notification failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

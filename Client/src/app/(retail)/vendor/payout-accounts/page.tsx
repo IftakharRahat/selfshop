@@ -34,7 +34,7 @@ const EMPTY_FORM: FormState = {
 
 function channelLabel(t: string): string {
 	if (t === "bank") return "Bank";
-	if (t === "mobile_wallet") return "Mobile wallet";
+	if (t === "mobile_wallet") return "bKash";
 	return "Other";
 }
 
@@ -69,6 +69,10 @@ export default function VendorPayoutAccountsPage() {
 	const handleSubmit = async () => {
 		if (!form.account_name.trim() || !form.account_number.trim()) {
 			toast.error("Please enter an account name and account number.");
+			return;
+		}
+		if (form.channel_type === "mobile_wallet" && !form.provider_name) {
+			toast.error("Please select a provider.");
 			return;
 		}
 		try {
@@ -177,28 +181,51 @@ export default function VendorPayoutAccountsPage() {
 						<div className="space-y-3">
 							<div>
 								<label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-								<select value={form.channel_type} onChange={(e) => setField("channel_type", e.target.value as ChannelType)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+								<select value={form.channel_type} onChange={(e) => { const v = e.target.value as ChannelType; setField("channel_type", v); if (v === "mobile_wallet") setField("provider_name", "bKash"); else setField("provider_name", ""); }} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
 									<option value="bank">Bank</option>
-									<option value="mobile_wallet">Mobile wallet</option>
+									<option value="mobile_wallet">bKash</option>
 									<option value="other">Other</option>
 								</select>
 							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Provider / Bank name</label>
-								<input type="text" value={form.provider_name} onChange={(e) => setField("provider_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. bKash, Bank name" />
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Account name *</label>
-								<input type="text" value={form.account_name} onChange={(e) => setField("account_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Name on account" />
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Account number *</label>
-								<input type="text" value={form.account_number} onChange={(e) => setField("account_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Account or wallet number" />
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Routing number (optional)</label>
-								<input type="text" value={form.routing_number} onChange={(e) => setField("routing_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="For banks" />
-							</div>
+
+							{form.channel_type === "mobile_wallet" ? (
+								<>
+									<div className="rounded-lg px-4 py-3 mb-1" style={{ backgroundColor: "#E2136E15", border: "1px solid #E2136E40" }}>
+										<p className="text-sm font-bold" style={{ color: "#E2136E" }}>bKash</p>
+										<p className="text-xs text-gray-500">Enter your bKash account details below</p>
+									</div>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">bKash account name *</label>
+										<input type="text" value={form.account_name} onChange={(e) => setField("account_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Name registered on bKash" />
+									</div>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">bKash number *</label>
+										<input type="tel" value={form.account_number} onChange={(e) => setField("account_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="01XXXXXXXXX" />
+									</div>
+								</>
+							) : (
+								<>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">{form.channel_type === "bank" ? "Bank name" : "Provider name"}</label>
+										<input type="text" value={form.provider_name} onChange={(e) => setField("provider_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder={form.channel_type === "bank" ? "e.g. Dutch-Bangla Bank, BRAC Bank" : "Provider name"} />
+									</div>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">Account name *</label>
+										<input type="text" value={form.account_name} onChange={(e) => setField("account_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Name on account" />
+									</div>
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-1">Account number *</label>
+										<input type="text" value={form.account_number} onChange={(e) => setField("account_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Account number" />
+									</div>
+									{form.channel_type === "bank" && (
+										<div>
+											<label className="block text-sm font-medium text-gray-700 mb-1">Routing number (optional)</label>
+											<input type="text" value={form.routing_number} onChange={(e) => setField("routing_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Bank routing number" />
+										</div>
+									)}
+								</>
+							)}
+
 							<div>
 								<label className="inline-flex items-center gap-2 cursor-pointer">
 									<input type="checkbox" checked={form.is_default} onChange={(e) => setField("is_default", e.target.checked)} className="accent-indigo-600" />
@@ -216,4 +243,3 @@ export default function VendorPayoutAccountsPage() {
 		</WithVendorAuth>
 	);
 }
-
