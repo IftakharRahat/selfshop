@@ -129,6 +129,24 @@
                     </div>
                 @endif
 
+                <div class="dash-toolbar">
+                    <div class="dash-presets">
+                        <button class="dash-preset-btn date-preset" data-preset="today">Today</button>
+                        <button class="dash-preset-btn date-preset" data-preset="week">This Week</button>
+                        <button class="dash-preset-btn active date-preset" data-preset="month">This Month</button>
+                        <button class="dash-preset-btn date-preset" data-preset="year">This Year</button>
+                        <button class="dash-preset-btn date-preset" data-preset="all">All Time</button>
+                    </div>
+                    <div class="dash-filter-group">
+                        <label>FROM</label>
+                        <input type="date" id="filter_from_date" class="form-control">
+                    </div>
+                    <div class="dash-filter-group">
+                        <label>TO</label>
+                        <input type="date" id="filter_to_date" class="form-control">
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table table-centered table-borderless table-hover mb-0" id="orderinfo" width="100%">
                         <thead>
@@ -200,6 +218,10 @@
                 var orderinfotbl = $('#orderinfo').DataTable({
                     ajax: {
                         url: "{{ url('admin/admin_order/') }}" + '/' + orderstatus,
+                        data: function (d) {
+                            d.from_date = $('#filter_from_date').val();
+                            d.to_date = $('#filter_to_date').val();
+                        }
                     },
                     ordering: false,
                     processing: true,
@@ -299,6 +321,10 @@
                 var orderinfotbl = $('#orderinfo').DataTable({
                     ajax: {
                         url: "{{ url('admin/admin_order/') }}" + '/' + orderstatus,
+                        data: function (d) {
+                            d.from_date = $('#filter_from_date').val();
+                            d.to_date = $('#filter_to_date').val();
+                        }
                     },
                     ordering: false,
                     processing: true,
@@ -1489,7 +1515,75 @@
 
 
 
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            // Wait a moment for tables to initialize
+            setTimeout(function() {
+                var theTable = (typeof orderinfotbl !== 'undefined' && orderinfotbl !== null) ? orderinfotbl : $('#orderinfo').DataTable();
 
+                // Set default to This Month
+                var today = new Date();
+                var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                function formatDate(date) {
+                    var d = new Date(date),
+                        month = '' + (d.getMonth() + 1),
+                        day = '' + d.getDate(),
+                        year = d.getFullYear();
+
+                    if (month.length < 2) month = '0' + month;
+                    if (day.length < 2) day = '0' + day;
+
+                    return [year, month, day].join('-');
+                }
+
+                $('#filter_from_date').val(formatDate(firstDay));
+                $('#filter_to_date').val(formatDate(today));
+
+                // Date Picker Change Event
+                $('#filter_from_date, #filter_to_date').on('change', function() {
+                    $('.date-preset').removeClass('active');
+                    theTable.ajax.reload();
+                });
+
+                // Preset Buttons Click Event
+                $('.date-preset').on('click', function() {
+                    $('.date-preset').removeClass('active');
+                    $(this).addClass('active');
+
+                    var preset = $(this).data('preset');
+                    var fromDate = '';
+                    var toDate = '';
+                    var dt = new Date();
+
+                    if (preset === 'today') {
+                        fromDate = formatDate(dt);
+                        toDate = formatDate(dt);
+                    } else if (preset === 'week') {
+                        var first = dt.getDate() - dt.getDay() + (dt.getDay() === 0 ? -6 : 1); // Monday
+                        var firstDate = new Date(dt.setDate(first));
+                        fromDate = formatDate(firstDate);
+                        toDate = formatDate(new Date());
+                    } else if (preset === 'month') {
+                        dt = new Date();
+                        fromDate = formatDate(new Date(dt.getFullYear(), dt.getMonth(), 1));
+                        toDate = formatDate(new Date());
+                    } else if (preset === 'year') {
+                        dt = new Date();
+                        fromDate = formatDate(new Date(dt.getFullYear(), 0, 1));
+                        toDate = formatDate(new Date());
+                    } else if (preset === 'all') {
+                        fromDate = '';
+                        toDate = '';
+                    }
+
+                    $('#filter_from_date').val(fromDate);
+                    $('#filter_to_date').val(toDate);
+                    theTable.ajax.reload();
+                });
+            }, 500);
         });
     </script>
 

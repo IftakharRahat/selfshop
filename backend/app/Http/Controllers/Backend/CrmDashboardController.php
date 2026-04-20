@@ -84,7 +84,10 @@ class CrmDashboardController extends Controller
         $totalSalesRevenue = (float) $salesRevenueQuery
             ->sum(DB::raw('COALESCE(subTotal, 0) + COALESCE(paymentAmount, 0)'));
 
-        $commissionRevenueQuery = VendorEarning::query();
+        $commissionRevenueQuery = VendorEarning::query()
+            ->whereHas('order', function ($q) {
+                $q->where('status', 'Delivered');
+            });
         $applyDateRangeDatetime($commissionRevenueQuery, 'created_at');
         $totalCommissionRevenue = (float) $commissionRevenueQuery->sum('commission_amount');
 
@@ -95,7 +98,7 @@ class CrmDashboardController extends Controller
         $totalSubscriptionRevenue = (float) $subscriptionRevenueQuery
             ->sum(DB::raw('CASE WHEN COALESCE(paid_amount, 0) > 0 THEN paid_amount ELSE COALESCE(payable_amount, 0) END'));
 
-        $usersBaseQuery = User::query();
+        $usersBaseQuery = User::doesntHave('vendor');
         $applyDateRangeDatetime($usersBaseQuery, 'created_at');
 
         $allUsers = (clone $usersBaseQuery)->count();

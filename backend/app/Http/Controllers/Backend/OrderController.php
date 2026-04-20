@@ -1185,6 +1185,15 @@ class OrderController extends Controller
             $orders = $orders->where('orders.status', 'like', $abc);
         }
 
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+        if (!empty($fromDate)) {
+            $orders = $orders->whereDate('orders.orderDate', '>=', $fromDate);
+        }
+        if (!empty($toDate)) {
+            $orders = $orders->whereDate('orders.orderDate', '<=', $toDate);
+        }
+
         // Global Search
         $globalSearch = $request->input('search.value');
         if (!empty($globalSearch)) {
@@ -1239,7 +1248,7 @@ class OrderController extends Controller
                 return $name . '<br>' . $phone . '<br>' . $address . '<br> <span style="color:red;font-weight:bold;">' . $entry . '</span><br><button class="btn btn-success btn-sm" style="margin: 4px;padding: 0px 4px;" data-num="' . ($orders->customerPhone ?? '') . '" data-inv="' . $orders->invoiceID . '" id="checkfraud">Check</button>';
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->updated_at ? $orders->updated_at->diffForHumans() : '';
+                $ago = $orders->created_at ? $orders->created_at->diffForHumans() : '';
                 return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . ($orders->web_ID ?? '') . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
