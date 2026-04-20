@@ -85,6 +85,7 @@ export default function RootLayout() {
             <Stack.Screen name="product-detail" />
             <Stack.Screen name="category-products" />
             <Stack.Screen name="collection/[slug]" />
+            <Stack.Screen name="section/[slug]" />
             <Stack.Screen name="search" options={{ animation: "fade_from_bottom" }} />
 
             {/* Account sub-screens — platform default drill-in */}

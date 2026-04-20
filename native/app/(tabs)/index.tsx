@@ -14,6 +14,7 @@ import { Text } from "tamagui";
 import { useQuery } from "@tanstack/react-query";
 
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { SearchBar } from "@/components/search-bar";
 import { HomeSkeleton } from "@/components/skeleton";
 import { CategoryChip } from "@/components/category-chip";
@@ -422,59 +423,78 @@ export default function HomeScreen() {
           );
         }
 
-        /* Card layout: banner image + title + product previews */
+        /* Card layout – premium redesign */
         return (
           <View key={section.id} style={styles.promoCard}>
-            {/* Banner */}
-            {section.banner_image ? (
-              <Image
-                source={{ uri: section.banner_image }}
-                style={styles.promoBanner}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={[styles.promoBanner, { backgroundColor: "#F9E8EF" }]}>
-                <Text style={{ fontSize: 16, fontWeight: "700", color: "#E5005F" }}>
-                  {section.title}
-                </Text>
-              </View>
-            )}
-
-            {/* Title bar */}
-            <View style={styles.promoTitleBar}>
-              <Text style={{ fontSize: 15, fontWeight: "800", color: "#E5005F" }}>
-                {section.title?.toUpperCase()}
-              </Text>
-              <Pressable
-                style={styles.promoExploreBtn}
-                onPress={() => router.push({ pathname: "/collection/[slug]", params: { slug: section.slug ?? "" } } as any)}
+            {/* Banner with gradient overlay */}
+            <View style={styles.promoBannerWrap}>
+              {section.banner_image ? (
+                <Image
+                  source={{ uri: section.banner_image }}
+                  style={styles.promoBanner}
+                  resizeMode="cover"
+                />
+              ) : (
+                <LinearGradient
+                  colors={["#FF4081", "#E5005F"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.promoBanner}
+                >
+                  <Text style={{ fontSize: 20, fontWeight: "800", color: "#fff", letterSpacing: 1 }}>
+                    {section.title?.toUpperCase()}
+                  </Text>
+                </LinearGradient>
+              )}
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.55)"]}
+                style={styles.promoBannerOverlay}
               >
-                <Text style={{ fontSize: 11, fontWeight: "700", color: "#fff" }}>Explore</Text>
-              </Pressable>
+                <Text style={styles.promoBannerTitle}>
+                  {section.title?.toUpperCase()}
+                </Text>
+                <Pressable
+                  style={styles.promoExploreBtn}
+                  onPress={() => router.push({ pathname: "/section/[slug]", params: { slug: section.slug ?? "" } } as any)}
+                >
+                  <Text style={styles.promoExploreBtnText}>Explore</Text>
+                  <Ionicons name="arrow-forward" size={12} color="#fff" />
+                </Pressable>
+              </LinearGradient>
             </View>
 
-            {/* 2-product preview */}
+            {/* Product preview cards */}
             <View style={styles.promoProductRow}>
-              {sectionProducts.slice(0, 2).map((product: any) => (
+              {sectionProducts.slice(0, 3).map((product: any) => (
                 <Pressable
                   key={product.id}
-                  style={styles.promoProductItem}
+                  style={({ pressed }) => [
+                    styles.promoProductItem,
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+                  ]}
                   onPress={() => router.push({ pathname: "/product-detail", params: { slug: product.ProductSlug } } as any)}
                 >
-                  {product.ViewProductImage ? (
-                    <Image
-                      source={{ uri: product.ViewProductImage }}
-                      style={styles.promoProductImage}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View style={[styles.promoProductImage, { backgroundColor: "#F0F0F5", justifyContent: "center", alignItems: "center" }]}>
-                      <Ionicons name="image-outline" size={24} color="#ccc" />
-                    </View>
-                  )}
-                  <Text numberOfLines={2} style={{ fontSize: 12, color: "#374151", fontWeight: "500", textAlign: "center" }}>
+                  <View style={styles.promoProductImageWrap}>
+                    {product.ViewProductImage ? (
+                      <Image
+                        source={{ uri: product.ViewProductImage }}
+                        style={styles.promoProductImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.promoProductImage, styles.promoProductImagePlaceholder]}>
+                        <Ionicons name="image-outline" size={22} color="#D1D5DB" />
+                      </View>
+                    )}
+                  </View>
+                  <Text numberOfLines={2} style={styles.promoProductName}>
                     {product.ProductName}
                   </Text>
+                  {(product.storefront_price || product.ProductSalePrice) && (
+                    <Text style={styles.promoProductPrice}>
+                      ৳{product.storefront_price ?? product.ProductSalePrice}
+                    </Text>
+                  )}
                 </Pressable>
               ))}
             </View>
@@ -714,50 +734,112 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 8,
   },
-  /* ── Promotional Sections ── */
+  /* ── Promotional Sections (Premium) ── */
   promoCard: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    borderRadius: 20,
     overflow: "hidden",
     backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#FCE4EC",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  promoBannerWrap: {
+    position: "relative",
+    width: "100%",
+    height: 160,
   },
   promoBanner: {
     width: "100%",
-    height: 130,
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
   },
-  promoTitleBar: {
+  promoBannerOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    paddingTop: 40,
+  },
+  promoBannerTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#fff",
+    letterSpacing: 0.8,
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+    flex: 1,
   },
   promoExploreBtn: {
-    backgroundColor: "#E5005F",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  promoExploreBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
   },
   promoProductRow: {
     flexDirection: "row",
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    gap: 10,
   },
   promoProductItem: {
     flex: 1,
     alignItems: "center",
-    gap: 6,
+    backgroundColor: "#FAFAFA",
+    borderRadius: 14,
+    paddingBottom: 10,
+    overflow: "hidden",
+  },
+  promoProductImageWrap: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: "#F5F5F7",
   },
   promoProductImage: {
     width: "100%",
-    aspectRatio: 1,
-    borderRadius: 10,
+    height: "100%",
+  },
+  promoProductImagePlaceholder: {
+    backgroundColor: "#F0F0F5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  promoProductName: {
+    fontSize: 11,
+    color: "#374151",
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 6,
+    lineHeight: 15,
+  },
+  promoProductPrice: {
+    fontSize: 13,
+    color: "#1A1A2E",
+    fontWeight: "800",
+    marginTop: 2,
   },
   /* ── Suppliers ── */
   supplierScrollList: {
