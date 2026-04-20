@@ -181,12 +181,14 @@ export default function R2ImageUploader({
                 {/* ─── Preview state ─── */}
                 {showPreview && isImage ? (
                     <div className="relative">
+                        {(localPreview || previewUrl) && (
                         <img
-                            src={localPreview || previewUrl || ""}
+                            src={localPreview || previewUrl}
                             alt="Preview"
                             className={`rounded-lg object-cover border border-gray-200 shadow-sm ${compact ? "max-h-24" : "max-h-36"
                                 }`}
                         />
+                        )}
                         {/* Clear button */}
                         <button
                             type="button"

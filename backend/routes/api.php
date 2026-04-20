@@ -51,46 +51,7 @@ Route::get('/carrybee/cities', [\App\Http\Controllers\CarryBeeController::class,
 Route::get('/carrybee/cities/{cityId}/zones', [\App\Http\Controllers\CarryBeeController::class, 'zones'])->name('api.carrybee.zones');
 Route::get('/carrybee/cities/{cityId}/zones/{zoneId}/areas', [\App\Http\Controllers\CarryBeeController::class, 'areas'])->name('api.carrybee.areas');
 
-// TEMP: Diagnostic endpoint — remove after debugging
-Route::get('/carrybee/debug', function () {
-    $config = [
-        'base_url' => config('services.carrybee.base_url') ?: 'EMPTY',
-        'client_id' => config('services.carrybee.client_id') ?: 'EMPTY',
-        'client_secret' => config('services.carrybee.client_secret') ? substr(config('services.carrybee.client_secret'), 0, 8) . '...' : 'EMPTY',
-        'client_context' => config('services.carrybee.client_context') ? substr(config('services.carrybee.client_context'), 0, 8) . '...' : 'EMPTY',
-    ];
 
-    $storeResult = null;
-    $storeId = null;
-    try {
-        $cb = app(\App\Services\CarryBeeService::class);
-        $storeResult = $cb->createStore([
-            'name' => 'Debug Test ' . time(),
-            'contact_person_name' => 'Debug',
-            'contact_person_number' => '01700000099',
-            'address' => 'Debug Test Dhaka',
-            'city_id' => 14,
-            'zone_id' => 1,
-            'area_id' => 1,
-        ]);
-        $storeId = $storeResult['data']['id'] ?? null;
-    } catch (\Throwable $e) {
-        $storeResult = ['error' => $e->getMessage()];
-    }
-
-    // Check fillable
-    $vendor = new \App\Models\Vendor();
-    $fillable = $vendor->getFillable();
-    $hasCarrybeeField = in_array('carrybee_store_id', $fillable);
-
-    return response()->json([
-        'config' => $config,
-        'store_create_result' => $storeResult,
-        'extracted_store_id' => $storeId,
-        'vendor_fillable_has_carrybee_store_id' => $hasCarrybeeField,
-        'vendor_fillable' => $fillable,
-    ]);
-});
 
 // Tracking config — public, no auth required (must be outside guest middleware)
 Route::get('/tracking-config', function () {
