@@ -112,9 +112,10 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Supplier ID</th>
                             <th>Company</th>
                             <th>Contact</th>
-                            <th>User (email)</th>
+                            <th>User (Email)</th>
                             <th>Status</th>
                             <th>Badge</th>
                             <th>Registered</th>
@@ -126,13 +127,19 @@
                         <tr>
                             <td>{{ $vendor->id }}</td>
                             <td>
+                                <a href="{{ url('admin/vendor-autologin/' . $vendor->id) }}"
+                                   target="_blank" style="color:#2d2a5d; font-weight:600;">
+                                    {{ $vendor->supplier_code }}
+                                </a>
+                            </td>
+                            <td>
                                 <strong>{{ $vendor->company_name }}</strong>
                                 @if($vendor->pending_logo_path || $vendor->pending_banner_path)
                                     <a href="{{ route('admin.vendors.show', $vendor->id) }}" class="badge bg-warning text-dark ms-1" style="font-size: 10px; text-decoration: none;" title="Pending branding changes">Pending</a>
                                 @endif
                             </td>
-                            <td>{{ $vendor->contact_name ?? $vendor->contact_email ?? '-' }}</td>
-                            <td>{{ $vendor->user->email ?? '-' }}</td>
+                            <td>{{ $vendor->contact_phone ?? $vendor->user->phone ?? '-' }}</td>
+                            <td>{{ $vendor->user->name ?? $vendor->user->email ?? '-' }}</td>
                             <td>
                                 @if($vendor->status === 'pending')
                                     <span class="badge bg-warning text-dark">Pending</span>
@@ -187,7 +194,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No supplier registrations yet.</td>
+                            <td colspan="9" class="text-center text-muted py-4">No supplier registrations yet.</td>
                         </tr>
                         @endforelse
                     </tbody>
