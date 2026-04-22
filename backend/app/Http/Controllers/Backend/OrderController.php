@@ -717,7 +717,18 @@ class OrderController extends Controller
                 return $orders->customerName . '<br>' . $orders->customerPhone . '<br>' . $orders->customerAddress . '<br>' . $orders->entry_complete;
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->created_at ? $orders->created_at->diffForHumans() : '';
+                $ago = '';
+                try {
+                    $raw = $orders->created_at;
+                    if (empty($raw) && !empty($orders->orderDate)) {
+                        $raw = $orders->orderDate;
+                    }
+                    if (!empty($raw)) {
+                        $ago = \Carbon\Carbon::parse($raw)->diffForHumans();
+                    }
+                } catch (\Throwable $e) {
+                    $ago = '';
+                }
                 return '<a href="https://localhost/resellbd/admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . $orders->web_ID . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
@@ -1248,7 +1259,18 @@ class OrderController extends Controller
                 return $name . '<br>' . $phone . '<br>' . $address . '<br> <span style="color:red;font-weight:bold;">' . $entry . '</span><br><button class="btn btn-success btn-sm" style="margin: 4px;padding: 0px 4px;" data-num="' . ($orders->customerPhone ?? '') . '" data-inv="' . $orders->invoiceID . '" id="checkfraud">Check</button>';
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->created_at ? $orders->created_at->diffForHumans() : '';
+                $ago = '';
+                try {
+                    $raw = $orders->created_at;
+                    if (empty($raw) && !empty($orders->orderDate)) {
+                        $raw = $orders->orderDate;
+                    }
+                    if (!empty($raw)) {
+                        $ago = \Carbon\Carbon::parse($raw)->diffForHumans();
+                    }
+                } catch (\Throwable $e) {
+                    $ago = '';
+                }
                 return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . ($orders->web_ID ?? '') . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
@@ -1409,9 +1431,9 @@ class OrderController extends Controller
             // Restore product stock on cancellation
             app(\App\Services\StockService::class)->restoreForOrder($order->id);
 
-            $user = User::where('id', $order->user_id)->first();
-            $user->account_balance = $user->account_balance + $order->paymentAmount;
-            $user->update();
+            // Refund delivery charge to reseller wallet (with audit record + notification)
+            app(\App\Services\OrderDeliveryService::class)->refundDeliveryCharge($order);
+
             $comment = new Comment();
             $comment->order_id = $id;
             $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Canceled.Please contact support';
@@ -2262,9 +2284,9 @@ class OrderController extends Controller
                 $order = Order::find($id);
                 $customer = Customer::where('order_id', $order->id)->first();
                 if ($order->status != 'Canceled' && $status == 'Canceled') {
-                    $user = User::where('id', $order->user_id)->first();
-                    $user->account_balance = $user->account_balance + $order->paymentAmount;
-                    $user->update();
+                    // Refund delivery charge to reseller wallet (with audit record + notification)
+                    app(\App\Services\OrderDeliveryService::class)->refundDeliveryCharge($order);
+
                     $comment = new Comment();
                     $comment->order_id = $id;
                     $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Canceled.Please contact support';

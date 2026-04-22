@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Comment;
+use App\Models\Chargededuct;
 use App\Models\Income;
 use App\Models\Order;
 use App\Models\Orderproduct;
@@ -122,6 +123,88 @@ class OrderDeliveryService
             'order_id' => $order->id,
             'profit_reversed' => $order->profit,
         ]);
+    }
+
+    /**
+     * Refund delivery charge to reseller wallet on order cancellation/rejection.
+     * Idempotent — safe to call multiple times for the same order.
+     *
+     * Called from:
+     * - VendorOrderController (vendor rejects/cancels)
+     * - OrderController (admin cancels — single or bulk)
+     */
+    public function refundDeliveryCharge(Order $order): bool
+    {
+        $deliveryCharge = (float) $order->deliveryCharge;
+
+        // Guard: skip if no delivery charge to refund
+        if ($deliveryCharge <= 0) {
+            Log::info('OrderDeliveryService: skip refund — no delivery charge', [
+                'order_id' => $order->id,
+            ]);
+            return false;
+        }
+
+        // Guard: don't double-refund — check for existing refund record
+        $alreadyRefunded = Chargededuct::where('user_id', $order->user_id)
+            ->where('comment', 'LIKE', '%refund%' . $order->invoiceID . '%')
+            ->exists();
+
+        if ($alreadyRefunded) {
+            Log::info('OrderDeliveryService: skip refund — already refunded', [
+                'order_id' => $order->id,
+                'invoice' => $order->invoiceID,
+            ]);
+            return false;
+        }
+
+        $user = User::find($order->user_id);
+        if (!$user) {
+            Log::warning('OrderDeliveryService: skip refund — user not found', [
+                'order_id' => $order->id,
+                'user_id' => $order->user_id,
+            ]);
+            return false;
+        }
+
+        // Credit delivery charge back to wallet
+        $user->account_balance = (float) $user->account_balance + $deliveryCharge;
+        $user->save();
+
+        // Create audit record
+        $chargededuct = new Chargededuct();
+        $chargededuct->user_id = $user->id;
+        $chargededuct->comment = 'Delivery charge refund of ৳' . $deliveryCharge . ' for cancelled order #' . $order->invoiceID;
+        $chargededuct->amount = $deliveryCharge;
+        $chargededuct->status = 'Refund';
+        $chargededuct->save();
+
+        // Send notification to reseller
+        try {
+            $user->notify(new AdminBroadcastNotification(
+                '💰 Delivery Charge Refunded',
+                '৳' . $deliveryCharge . ' delivery charge has been refunded to your wallet for cancelled order #' . $order->invoiceID,
+                null,
+                '/order/' . $order->invoiceID,
+                'all_user',
+                ['type' => 'delivery_refund', 'order_id' => $order->id, 'amount' => $deliveryCharge]
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('OrderDeliveryService: refund notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::info('OrderDeliveryService: delivery charge refunded', [
+            'order_id' => $order->id,
+            'invoice' => $order->invoiceID,
+            'amount' => $deliveryCharge,
+            'user_id' => $user->id,
+            'new_balance' => $user->account_balance,
+        ]);
+
+        return true;
     }
 
     /**

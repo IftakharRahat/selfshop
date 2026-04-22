@@ -323,6 +323,10 @@
             toastr.success(@json(session('message')));
         @endif
 
+        @if (Session::has('success'))
+            toastr.success(@json(session('success')));
+        @endif
+
         @if (Session::has('error'))
             toastr.error(@json(session('error')));
         @endif

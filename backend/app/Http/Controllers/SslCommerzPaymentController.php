@@ -756,7 +756,8 @@ public function packagePaymentIPN(Request $request)
                 'courier_id' => 26,
                 'transaction_id' => $post_data['tran_id'],
                 'user_id' => Auth::id(),
-
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
         $sslc = new SslCommerzNotification();

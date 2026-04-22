@@ -2458,7 +2458,8 @@ class FrontendApiController extends Controller
     public function incomehistory()
     {
         $user = User::where('id', Auth::user()->id)->first();
-        $messages = Income::where('user_id', $user->id)
+        
+        $incomes = Income::where('user_id', $user->id)
             ->latest()
             ->get()
             ->map(function ($income) {
@@ -2495,6 +2496,26 @@ class FrontendApiController extends Controller
 
                 return $income;
             });
+
+        $refunds = Chargededuct::where('user_id', $user->id)
+            ->where('status', 'Refund')
+            ->latest()
+            ->get()
+            ->map(function ($cd) {
+                $cd->product_price = 0;
+                
+                // Extract invoice from comment: "Delivery charge refund of ৳100 for cancelled order #SS00234"
+                $invoice = null;
+                if (preg_match('/#([a-zA-Z0-9_-]+)/', $cd->comment, $matches)) {
+                    $invoice = $matches[1];
+                }
+                $cd->order_invoice = $invoice ? 'Refund: ' . $invoice : 'Delivery Refund';
+                
+                return $cd;
+            });
+
+        $messages = $incomes->concat($refunds)->sortByDesc('created_at')->values();
+
         return response()->json([
             'status' => true,
             'message' => 'Income History',
@@ -3478,7 +3499,8 @@ class FrontendApiController extends Controller
                     'transaction_id' => $post_data['tran_id'],
                     'user_id' => Auth::id(),
                     'status' => 'Pending',
-
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
 
             try {

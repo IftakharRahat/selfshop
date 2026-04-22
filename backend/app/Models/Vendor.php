@@ -53,6 +53,14 @@ class Vendor extends Model
     ];
 
     /**
+     * Generate a unique supplier code for admin display (e.g. SUP00068).
+     */
+    public function getSupplierCodeAttribute(): string
+    {
+        return 'SUP' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Generate the masked supplier ID for privately approved vendors.
      */
     public function getPrivateIdAttribute(): string

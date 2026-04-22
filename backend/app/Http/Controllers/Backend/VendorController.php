@@ -509,5 +509,23 @@ class VendorController extends Controller
         }
         return redirect()->route('admin.vendors.index')->with('message', "Supplier '{$companyName}' has been permanently deleted.");
     }
+    /**
+     * Auto-login as the vendor's user account in the storefront.
+     * GET /admin/vendor-autologin/{vendor}
+     */
+    public function autologin(Vendor $vendor)
+    {
+        $user = User::find($vendor->user_id);
+        if (!$user) {
+            return redirect()->back()->with('error', 'User account not found for this supplier.');
+        }
+
+        // Generate a Sanctum token for the target user (same as user autologin)
+        $token = $user->createToken('admin-impersonate')->plainTextToken;
+
+        // Redirect to the Next.js frontend with the token
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'https://selfshop.com.bd'), '/');
+        return redirect($frontendUrl . '/impersonate?token=' . urlencode($token));
+    }
 }
 

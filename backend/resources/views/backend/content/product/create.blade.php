@@ -1,876 +1,561 @@
 @extends('backend.master')
-
 @section('maincontent')
-@section('title')
-    {{ env('APP_NAME') }}- Products
-@endsection
+@section('title'){{ env('APP_NAME') }}- Products @endsection
 
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap-switch-button@1.1.0/css/bootstrap-switch-button.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap-switch-button@1.1.0/dist/bootstrap-switch-button.min.js"></script>
-{{-- summernote --}}
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
 
 <style>
-    /* ---- Product Create Page ---- */
-    .product-create-wrapper {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-    .product-create-wrapper label {
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--admin-text, #1e293b);
-        margin-bottom: 4px;
-    }
-    .product-create-wrapper .admin-content-card .admin-card-body {
-        padding: 20px;
-    }
-    .product-create-wrapper .admin-card-header .admin-card-title {
-        font-size: 14px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.03em;
-    }
-    .product-create-wrapper .form-group {
-        margin-bottom: 16px;
-    }
-    .product-create-wrapper .form-group:last-child {
-        margin-bottom: 0;
-    }
-    .required-star {
-        color: #ef4444;
-        margin-left: 2px;
-    }
-
-    /* File upload dropzone */
-    .file-upload-zone {
-        border: 2px dashed var(--admin-border, #e2e8f0);
-        border-radius: 10px;
-        padding: 24px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: var(--admin-bg, #f8fafc);
-        position: relative;
-    }
-    .file-upload-zone:hover {
-        border-color: var(--admin-primary, #2d2a5d);
-        background: #f0f0ff;
-    }
-    .file-upload-zone input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
-        width: 100%;
-        height: 100%;
-    }
-    .file-upload-zone .upload-icon {
-        font-size: 28px;
-        color: var(--admin-text-muted, #94a3b8);
-        margin-bottom: 8px;
-    }
-    .file-upload-zone .upload-text {
-        font-size: 13px;
-        color: var(--admin-text-muted, #94a3b8);
-    }
-    .file-upload-zone .upload-text strong {
-        color: var(--admin-primary, #2d2a5d);
-    }
-    .thumbnail-preview {
-        margin-top: 12px;
-    }
-    .thumbnail-preview img {
-        max-height: 120px;
-        border-radius: 8px;
-        border: 1px solid var(--admin-border, #e2e8f0);
-    }
-
-    /* Gallery previews */
-    #prevFile {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-    }
-    #prevFile .postImg {
-        width: calc(25% - 6px) !important;
-        float: none !important;
-        position: relative;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid var(--admin-border, #e2e8f0);
-    }
-    #prevFile .postImg img {
-        width: 100%;
-        padding: 0 !important;
-        border-radius: 8px;
-    }
-    #prevFile .postImg span {
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(239,68,68,0.9);
-        color: #fff;
-        border-radius: 50%;
-        font-size: 16px;
-        line-height: 1;
-        cursor: pointer;
-        margin: 0 !important;
-    }
-
-    /* Attribute checkboxes */
-    .attr-checkbox-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 4px;
-    }
-    .attr-checkbox-grid label {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        background: var(--admin-bg, #f8fafc);
-        border: 1px solid var(--admin-border, #e2e8f0);
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 400;
-        cursor: pointer;
-        transition: all 0.15s ease;
-        margin-bottom: 0;
-    }
-    .attr-checkbox-grid label:hover {
-        border-color: var(--admin-primary, #2d2a5d);
-        background: #f0f0ff;
-    }
-    .attr-checkbox-grid input[type="checkbox"]:checked + span {
-        color: var(--admin-primary, #2d2a5d);
-        font-weight: 600;
-    }
-    .attr-checkbox-grid label:has(input:checked) {
-        border-color: var(--admin-primary, #2d2a5d);
-        background: var(--admin-primary-lighter, #eef0ff);
-    }
-
-    /* Toggle row */
-    .toggle-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    .toggle-row:last-child {
-        border-bottom: none;
-    }
-    .toggle-row label {
-        margin-bottom: 0;
-    }
-
-    /* Price tier row */
-    .tier-row {
-        background: var(--admin-bg, #f8fafc) !important;
-        border: 1px solid var(--admin-border, #e2e8f0) !important;
-        border-radius: 8px !important;
-    }
-    .tier-row label {
-        color: var(--admin-text, #1e293b) !important;
-        font-size: 12px !important;
-    }
-
-    /* Submit area */
-    .product-submit-area {
-        padding: 20px 0;
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-    }
-    .product-submit-area .btn-submit-product {
-        padding: 10px 40px;
-        font-size: 14px;
-        font-weight: 600;
-        border-radius: 8px;
-        background: var(--admin-primary, #2d2a5d);
-        border: none;
-        color: #fff;
-        transition: all 0.2s ease;
-    }
-    .product-submit-area .btn-submit-product:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(45, 42, 93, 0.3);
-    }
-
-    /* Note/summernote override */
-    .note-editor.note-frame {
-        border: 1px solid var(--admin-border, #e2e8f0) !important;
-        border-radius: 8px !important;
-        overflow: hidden;
-    }
-    .note-editor .note-toolbar {
-        background: var(--admin-bg, #f8fafc) !important;
-        border-bottom: 1px solid var(--admin-border, #e2e8f0) !important;
-    }
-
-    /* DataTable filter override for this page */
-    #roleinfo_length, #roleinfo_filter, #roleinfo_info { color: var(--admin-text, #1e293b); }
-
-    /* Search input hide */
-    #orderinfo_filter input[type="search"] { display: none; }
+body{background:#f3f4f6}
+.sp-wrap{max-width:1200px;margin:0 auto;padding-bottom:50px}
+.sp-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:16px}
+.sp-label{font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;display:block}
+.sp-input{width:100%;padding:8px 12px;font-size:14px;border:1px solid #d1d5db;border-radius:8px;outline:none;transition:border .2s}
+.sp-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.sp-select{width:100%;padding:8px 12px;font-size:14px;border:1px solid #d1d5db;border-radius:8px;background:#fff}
+.sp-btn{padding:8px 20px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all .2s}
+.sp-btn-primary{background:#2d2a5d;color:#fff}.sp-btn-primary:hover{background:#252947}
+.sp-btn-indigo{background:#4f46e5;color:#fff}.sp-btn-indigo:hover{background:#4338ca}
+.sp-btn-danger{background:#fee2e2;color:#dc2626;font-size:12px;padding:4px 8px}.sp-btn-danger:hover{background:#fecaca}
+.selling-card{display:flex;align-items:center;gap:12px;border:2px solid #e5e7eb;border-radius:12px;padding:14px;cursor:pointer;transition:all .2s}
+.selling-card:hover{border-color:#9ca3af}
+.selling-card.active-wholesale{border-color:#22c55e;background:#f0fdf4}
+.selling-card.active-dropshipping{border-color:#3b82f6;background:#eff6ff}
+.selling-card.active-both{border-color:#f59e0b;background:#fffbeb}
+.selling-card input[type=radio]{width:16px;height:16px}
+.variant-section{background:rgba(238,242,255,.3);border:1px solid #c7d2fe;border-radius:12px;padding:20px;margin-top:16px}
+.variant-item{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:12px;position:relative}
+.size-item{background:#f9fafb;border:1px solid #f3f4f6;border-radius:8px;padding:10px;margin-bottom:8px}
+.bulk-section{padding-left:16px;border-left:2px solid #c7d2fe;margin-top:8px}
+.bulk-row{display:flex;align-items:center;gap:8px;font-size:12px;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #eef2ff;margin-bottom:4px}
+.switch-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f3f4f6}
+.switch-row:last-child{border:none}
+.file-zone{border:2px dashed #d1d5db;border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:border .2s}
+.file-zone:hover{border-color:#6366f1}
 </style>
 
 <div class="container-fluid pt-4 px-4">
-    <div class="product-create-wrapper">
+<div class="sp-wrap">
+    <div class="pagetitle mb-3">
+        <nav><ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{url('/admindashboard')}}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url('admin/products') }}">Products</a></li>
+            <li class="breadcrumb-item active">Add New Product</li>
+        </ol></nav>
+    </div>
 
-        {{-- Breadcrumb --}}
-        <div class="pagetitle row mb-3">
-            <div class="col-12">
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ url('/admindashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item"><a href="{{ url('admin/shop/products') }}">Products</a></li>
-                        <li class="breadcrumb-item active">Create New Product</li>
-                    </ol>
-                </nav>
+    <div class="sp-card"><h5 style="font-weight:700;margin:0">Add new product</h5><p class="text-muted mb-0" style="font-size:13px">Fill in the required fields to create a product.</p></div>
+
+    <form id="productForm" enctype="multipart/form-data">
+        @csrf
+        <div class="row g-3">
+            {{-- LEFT COLUMN --}}
+            <div class="col-lg-8">
+                <div class="sp-card">
+                    {{-- Selling Type Cards --}}
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="selling-card active-wholesale" id="st-wholesale" onclick="setSellingType('wholesale')">
+                                <input type="radio" name="selling_type_radio" value="wholesale" checked>
+                                <div><strong style="font-size:14px">🏭 Wholesale</strong><br><span style="font-size:11px;color:#6b7280">Bulk pricing tiers</span></div>
+                            </label>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="selling-card" id="st-dropshipping" onclick="setSellingType('dropshipping')">
+                                <input type="radio" name="selling_type_radio" value="dropshipping">
+                                <div><strong style="font-size:14px">🚀 Dropshipping</strong><br><span style="font-size:11px;color:#6b7280">Single price & stock</span></div>
+                            </label>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="selling-card" id="st-both" onclick="setSellingType('both')">
+                                <input type="radio" name="selling_type_radio" value="both">
+                                <div><strong style="font-size:14px">🔄 Both</strong><br><span style="font-size:11px;color:#6b7280">Wholesale + Dropship</span></div>
+                            </label>
+                        </div>
+                    </div>
+                    <input type="hidden" name="selling_type" id="selling_type" value="wholesale">
+
+                    {{-- Product Name --}}
+                    <div class="mb-3">
+                        <label class="sp-label">Product name *</label>
+                        <input type="text" name="ProductName" class="sp-input" required>
+                    </div>
+
+                    {{-- Unit / Weight / Min Qty / Tags --}}
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3"><label class="sp-label">Unit (e.g. Pc, Kg)</label><input type="text" name="unit" class="sp-input" placeholder="Pc"></div>
+                        <div class="col-md-3"><label class="sp-label">Weight (kg)</label><input type="number" name="product_weight" class="sp-input" value="0" min="0" step="0.01"></div>
+                        <div class="col-md-3"><label class="sp-label">Minimum purchase qty</label><input type="number" name="minimum_qty" class="sp-input" value="1" min="1"></div>
+                        <div class="col-md-3"><label class="sp-label">Tags (comma separated)</label><input type="text" name="MetaKey" class="sp-input" placeholder="tag1, tag2"></div>
+                    </div>
+                </div>
+
+                {{-- Price & Stock (conditional - matches supplier layout exactly) --}}
+                <div class="sp-card" id="priceStockSection" style="display:none">
+                    <h6 style="font-weight:700;font-size:14px">Product price & stock</h6>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6"><label class="sp-label">Base price (reseller)</label><input type="number" name="ProductResellerPrice" class="sp-input" min="0" step="any" value="0"></div>
+                        <div class="col-md-6"><label class="sp-label">Regular price (MSRP)</label><input type="number" name="ProductRegularPrice" class="sp-input" min="0" step="any" placeholder="Manual entry (optional)"></div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6"><label class="sp-label">Quantity</label><input type="number" name="qty" class="sp-input" min="0" value="0"></div>
+                        <div class="col-md-6"><label class="sp-label">Low stock warning at</label><input type="number" name="low_stock" class="sp-input" min="0" value="0"></div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6"><label class="sp-label">SKU</label><input type="text" name="ProductSku" class="sp-input" placeholder="Auto-generated"></div>
+                        <div class="col-md-6"><label class="sp-label">Discount</label><input type="number" name="Discount" class="sp-input" min="0" step="0.01" value="0"></div>
+                    </div>
+                    <p class="sp-label mt-2 mb-1">Stock visibility</p>
+                    <div class="d-flex gap-3" style="font-size:13px">
+                        <label class="d-inline-flex align-items-center gap-1"><input type="radio" name="stock_visibility" value="quantity" checked> Show stock quantity</label>
+                        <label class="d-inline-flex align-items-center gap-1"><input type="radio" name="stock_visibility" value="text"> Show stock text only</label>
+                        <label class="d-inline-flex align-items-center gap-1"><input type="radio" name="stock_visibility" value="hide"> Hide stock</label>
+                    </div>
+                </div>
+                {{-- Hidden admin-only price fields (auto-synced from base price) --}}
+                <input type="hidden" name="ProductSalePrice" value="0">
+                <input type="hidden" name="ProductWholesalePrice" value="0">
+                <input type="hidden" name="min_sell_price" value="0">
+
+                {{-- Product Description --}}
+                <div class="sp-card">
+                    <h6 style="font-weight:700;font-size:14px">Product description</h6>
+                    <label class="sp-label">Description</label>
+                    <textarea class="form-control" id="ProductDetails" name="ProductDetails" rows="5"></textarea>
+                </div>
+
+                {{-- VARIANT BUILDER (inside left column, right after description - matches supplier) --}}
+                <div class="variant-section">
+                    <h6 style="font-weight:700;font-size:14px;color:#312e81">🎨 Product Variants (Colors & Sizes)</h6>
+                    <p style="font-size:12px;color:#4338ca">Add color variants first, then attach available sizes to each color.</p>
+                    <div class="sp-card d-flex flex-wrap gap-3 align-items-end">
+                        <div style="flex:1;min-width:140px"><label class="sp-label">Color Name *</label><input type="text" id="newColorName" class="sp-input" placeholder="e.g. Red"></div>
+                        <div style="width:70px"><label class="sp-label">Color</label><input type="color" id="newColorCode" value="#000000" style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;cursor:pointer"></div>
+                        <div style="flex:1;min-width:160px"><label class="sp-label">Variant Title (Optional)</label><input type="text" id="newColorTitle" class="sp-input" placeholder="defaults to color name"></div>
+                        <div style="flex:1;min-width:160px"><label class="sp-label">Color Image (Optional)</label><input type="file" id="newColorImage" class="sp-input" accept="image/*"></div>
+                        <div><button type="button" class="sp-btn sp-btn-indigo" onclick="addVariant()">Add Color</button></div>
+                    </div>
+                    <div id="variantsList" class="mt-3"></div>
+                </div>
+            </div>
+
+            {{-- RIGHT COLUMN --}}
+            <div class="col-lg-4">
+                {{-- Category --}}
+                <div class="sp-card">
+                    <h6 style="font-weight:700;font-size:14px">Product category</h6>
+                    <div class="mb-2"><label class="sp-label">Category *</label>
+                        <select name="category_id" id="category_id" class="sp-select" required onchange="loadSubcategories()">
+                            <option value="">Select category</option>
+                            @foreach($categories as $cat)<option value="{{$cat->id}}">{{$cat->category_name}}</option>@endforeach
+                        </select>
+                    </div>
+                    <div class="mb-2"><label class="sp-label">Subcategory</label>
+                        <select name="subcategory_id" id="subcategory_id" class="sp-select" onchange="loadMinicategories()"><option value="">Select subcategory</option></select>
+                    </div>
+                    <div class="mb-2"><label class="sp-label">Child category</label>
+                        <select name="minicategory_id" id="minicategory_id" class="sp-select"><option value="">Select subcategory first</option></select>
+                    </div>
+                    <div class="mb-2"><label class="sp-label">Brand</label>
+                        <select name="brand_id" class="sp-select">
+                            <option value="">Select brand</option>
+                            @foreach($brands as $b)<option value="{{$b->id}}">{{$b->brand_name}}</option>@endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- Images --}}
+                <div class="sp-card">
+                    <h6 style="font-weight:700;font-size:14px">Product Images</h6>
+                    <label class="sp-label">Gallery Images</label>
+                    <div class="file-zone mb-2" onclick="document.getElementById('PostImage').click()">
+                        <input type="file" name="PostImage[]" id="PostImage" multiple style="display:none" accept="image/*" onchange="previewGallery()">
+                        <div>📁 Click or drag images to upload</div><small class="text-muted">Max 5MB per file</small>
+                    </div>
+                    <div id="galleryPreview" class="d-flex flex-wrap gap-1 mb-3"></div>
+                    <label class="sp-label">Thumbnail Image</label>
+                    <div class="file-zone" onclick="document.getElementById('ProductImage').click()">
+                        <input type="file" name="ProductImage" id="ProductImage" style="display:none" accept="image/*" onchange="previewThumb()">
+                        <div>📷 Click to upload thumbnail</div><small class="text-muted">Max 5MB</small>
+                    </div>
+                    <div id="thumbPreview" class="mt-2"></div>
+                </div>
+
+                {{-- YouTube --}}
+                <div class="sp-card">
+                    <label class="sp-label">YouTube Embed Code</label>
+                    <input type="text" name="youtube_link" class="sp-input" placeholder="Paste YouTube embed URL here">
+                </div>
+
+                {{-- Admin Settings --}}
+                <div class="sp-card">
+                    <h6 style="font-weight:700;font-size:14px">⚙️ Admin Settings</h6>
+                    <p class="text-muted" style="font-size:11px">These options are admin-only and not available to suppliers.</p>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6"><label class="sp-label">Extra Packing ৳</label><input type="number" name="ex_pack" class="sp-input" value="0"></div>
+                        <div class="col-6"><label class="sp-label">Extra Delivery ৳</label><input type="number" name="ex_dvc" class="sp-input" value="0"></div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6"><label class="sp-label">Reseller Bonus ৳</label><input type="number" name="reseller_bonus" class="sp-input" value="0"></div>
+                        <div class="col-6"><label class="sp-label">Shipping Days</label><input type="text" name="shipping_days" class="sp-input"></div>
+                    </div>
+                </div>
+
+                {{-- SEO --}}
+                <div class="sp-card">
+                    <h6 style="font-weight:700;font-size:14px">🔍 SEO Meta</h6>
+                    <div class="mb-2"><label class="sp-label">Meta Title</label><input type="text" name="MetaTitle" class="sp-input"></div>
+                    <div class="mb-2"><label class="sp-label">Meta Description</label><textarea name="MetaDescription" class="sp-input" rows="2"></textarea></div>
+                    <div><label class="sp-label">Meta Image</label><input type="file" name="meta_image" class="sp-input"></div>
+                </div>
             </div>
         </div>
 
-        <form name="form" id="myForm" action="{{ url('admin/products') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="row">
-                {{-- ============ LEFT COLUMN ============ --}}
-                <div class="col-lg-7">
+        {{-- Variant builder has been moved inside the left column above --}}
 
-                    {{-- Product Information --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Product Information</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            @if ($shop=='Yes')
-                                <div class="form-group">
-                                    <label>Choose Shop <span class="required-star">*</span></label>
-                                    <select class="form-control" id="shop_id" name="shop_id">
-                                        <option>Select Shop</option>
-                                        @forelse (App\Models\Admin::where('add_by',Auth::guard('admin')->user()->id)->where('type','Shop')->get() as $shop)
-                                            <option value="{{ $shop->id }}">
-                                                @if (isset($shop->shop_name))
-                                                {{ $shop->shop_name }}
-                                                @else
-                                                {{ $shop->name }}
-                                                @endif
-                                            </option>
-                                        @empty
-                                        @endforelse
-                                    </select>
-                                </div>
-                            @endif
-                            <div class="form-group">
-                                <label>Product Name <span class="required-star">*</span></label>
-                                <input type="text" name="ProductName" id="ProductName" class="form-control" required>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Categories <span class="required-star">*</span></label>
-                                        <select class="form-control" onchange="setsubcategory()" id="category_id" name="category_id" required>
-                                            <option>Select Category</option>
-                                            @forelse ($categories as $category)
-                                                <option value="{{ $category->id }}">{{ $category->category_name }}</option>
-                                            @empty
-                                            @endforelse
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Sub Category</label>
-                                        <select name="subcategory_id" id="subcategory_id" onchange="setminicategory()" class="form-control">
-                                            <option value="">Choose Sub-Category</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Mini Category</label>
-                                        <select name="minicategory_id" id="minicategory_id" class="form-control">
-                                            <option value="">Choose Mini-Category</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Brand <span class="required-star">*</span></label>
-                                        <select class="form-control" id="brand_id" name="brand_id">
-                                            <option>Select Brand</option>
-                                            @forelse ($brands as $brand)
-                                                <option value="{{ $brand->id }}">{{ $brand->brand_name }}</option>
-                                            @empty
-                                            @endforelse
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Weight (in kg) <span class="required-star">*</span></label>
-                                        <input type="text" id="product_weight" name="product_weight" class="form-control" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Minimum Purchase Qty <span class="required-star">*</span></label>
-                                        <input type="text" id="minimum_qty" value="1" name="minimum_qty" class="form-control" required>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Product Images --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Product Images</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Thumbnail Image <span class="required-star">*</span></label>
-                                        <div class="file-upload-zone">
-                                            <input type="file" name="ProductImage" id="ProductImage" onchange="loadFile(event)">
-                                            <div class="upload-icon"><i class="bi bi-image"></i></div>
-                                            <div class="upload-text"><strong>Click to upload</strong> thumbnail</div>
-                                        </div>
-                                        <div class="thumbnail-preview">
-                                            <img id="prevImage" style="display:none;" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Gallery Images</label>
-                                        <div class="file-upload-zone">
-                                            <input type="file" onchange="prevPost_Img()" name="PostImage[]" id="PostImage" multiple>
-                                            <div class="upload-icon"><i class="bi bi-images"></i></div>
-                                            <div class="upload-text"><strong>Click to upload</strong> gallery images</div>
-                                        </div>
-                                        <div id="prevFile"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Product Video --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Product Video</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="form-group">
-                                <label>YouTube Embed Code</label>
-                                <input type="text" name="youtube_link" id="youtube_link" class="form-control" placeholder="Paste YouTube embed URL here">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Product Attributes --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Product Attributes</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="form-group">
-                                <label>Colours</label>
-                                <div class="attr-checkbox-grid">
-                                    @forelse ($colors as $color)
-                                        <label>
-                                            <input type="checkbox" name="color[]" value="{{ $color->value }}">
-                                            <span>{{ $color->value }}</span>
-                                        </label>
-                                    @empty
-                                    @endforelse
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Sizes</label>
-                                <div class="attr-checkbox-grid">
-                                    @forelse ($sizes as $size)
-                                        <label>
-                                            <input type="checkbox" name="size[]" value="{{ $size->value }}">
-                                            <span>{{ $size->value }}</span>
-                                        </label>
-                                    @empty
-                                    @endforelse
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Weights</label>
-                                <div class="attr-checkbox-grid">
-                                    @forelse ($weights as $weight)
-                                        <label>
-                                            <input type="checkbox" name="weight[]" value="{{ $weight->value }}">
-                                            <span>{{ $weight->value }}</span>
-                                        </label>
-                                    @empty
-                                    @endforelse
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Product Description --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Product Description</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="form-group">
-                                <label>Product Description</label>
-                                <div id="customToolbar" style="display:flex;gap:6px;padding:6px 8px;background:#f8f9fa;border:1px solid #d1d5db;border-bottom:none;border-radius:5px 5px 0 0;flex-wrap:wrap;align-items:center;">
-                                    <select id="fontSizeSelect" title="Font Size" style="height:32px;border:1px solid #d1d5db;border-radius:4px;padding:0 8px;font-size:13px;cursor:pointer;background:#fff;">
-                                        <option value="">Font Size</option>
-                                        <option value="1">Small</option>
-                                        <option value="3">Normal</option>
-                                        <option value="5">Large</option>
-                                        <option value="7">Huge</option>
-                                    </select>
-                                    <div style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:32px;border:1px solid #d1d5db;border-radius:4px;background:#fff;cursor:pointer;" title="Text Color">
-                                        <span id="colorLabel" style="font-weight:800;font-size:16px;color:#374151;pointer-events:none;z-index:1;border-bottom:3px solid #000;padding-bottom:1px;">A</span>
-                                        <input type="color" id="fontColorPicker" value="#000000" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;top:0;left:0;">
-                                    </div>
-                                </div>
-                                <textarea class="form-control" id="ProductDetails" name="ProductDetails" rows="5"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- SEO Meta --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">SEO Meta</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="form-group">
-                                <label>Meta Title</label>
-                                <input type="text" name="MetaTitle" id="MetaTitle" class="form-control">
-                            </div>
-                            <div class="form-group">
-                                <label>Meta Description</label>
-                                <textarea class="form-control" name="MetaDescription" rows="2"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Meta Keywords</label>
-                                <textarea class="form-control" name="MetaKey" rows="2"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Meta Image</label>
-                                <input type="file" name="meta_image" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-
-                    <script type="text/javascript">
-                        $(document).ready(function() {
-                            $('#ProductDetails').summernote({
-                                toolbar: [
-                                    ['style', ['style']],
-                                    ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-                                    ['para', ['ul', 'ol', 'paragraph']],
-                                    ['table', ['table']],
-                                    ['insert', ['link', 'picture', 'video']],
-                                    ['view', ['fullscreen', 'codeview', 'help']]
-                                ]
-                            });
-
-                            // Custom font size control
-                            $('#fontSizeSelect').on('change', function() {
-                                var val = $(this).val();
-                                if (val) {
-                                    $('#ProductDetails').summernote('focus');
-                                    document.execCommand('fontSize', false, val);
-                                    $(this).val('');
-                                }
-                            });
-
-                            // Custom color picker control
-                            $('#fontColorPicker').on('input', function() {
-                                var color = $(this).val();
-                                $('#colorLabel').css('border-bottom-color', color);
-                                $('#ProductDetails').summernote('focus');
-                                document.execCommand('foreColor', false, color);
-                            });
-                        });
-
-                        function setsubcategory() {
-                            var sub_id = $('#category_id').val();
-                            $.ajax({
-                                type: 'GET',
-                                url: '../get/subcategory/' + sub_id,
-
-                                success: function(data) {
-                                    $('#subcategory_id').html('');
-
-                                    for (var i = 0; i < data.length; i++) {
-                                        $('#subcategory_id').append(`
-                                                <option value="` + data[i].id + `" >` + data[i].sub_category_name + `</option>
-                                            `)
-                                    }
-                                },
-                                error: function(error) {
-                                    console.log('error');
-                                }
-                            });
-                        }
-                        function setminicategory() {
-                            var sub_id = $('#subcategory_id').val();
-                            $.ajax({
-                                type: 'GET',
-                                url: '../get/minicategory/' + sub_id,
-
-                                success: function(data) {
-                                    $('#minicategory_id').html('');
-
-                                    for (var i = 0; i < data.length; i++) {
-                                        $('#minicategory_id').append(`
-                                                <option value="` + data[i].id + `" >` + data[i].mini_category_name + `</option>
-                                            `)
-                                    }
-                                },
-                                error: function(error) {
-                                    console.log('error');
-                                }
-                            });
-                        }
-
-                    </script>
-
-                </div>
-
-                {{-- ============ RIGHT COLUMN ============ --}}
-                <div class="col-lg-5">
-
-                    {{-- Product Price + Stock --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Price & Stock</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Wholesale Price <span class="required-star">*</span></label>
-                                        <input type="text" id="ProductWholesalePrice" name="ProductWholesalePrice" class="form-control" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Reseller Price <span class="required-star">*</span></label>
-                                        <input type="text" id="ProductResellerPrice" name="ProductResellerPrice" class="form-control" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Regular Price <span class="required-star">*</span></label>
-                                        <input type="number" id="ProductRegularPrice" name="ProductRegularPrice" class="form-control" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Sell Offer Price <span class="required-star">*</span></label>
-                                        <input type="number" id="ProductSalePrice" name="ProductSalePrice" class="form-control" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Discount Percent (%)</label>
-                                        <input type="number" id="Discount" name="Discount" class="form-control">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Minimum Selling Price <span class="required-star">*</span></label>
-                                        <input type="number" id="min_sell_price" name="min_sell_price" class="form-control" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Quantity <span class="required-star">*</span></label>
-                                <input type="number" id="qty" name="qty" class="form-control" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Selling Type <span class="required-star">*</span></label>
-                                <select name="selling_type" id="selling_type" class="form-control" required>
-                                    <option value="both" selected>Both (Wholesale + Dropshipping)</option>
-                                    <option value="wholesale">Wholesale Only</option>
-                                    <option value="dropshipping">Dropshipping Only</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Wholesale Price Tiers --}}
-                    <div class="admin-content-card" id="priceTiersCard">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Wholesale Price Tiers</h6>
-                            <div class="admin-card-actions">
-                                <button type="button" class="btn btn-sm btn-success" onclick="addTierRow()">+ Add Tier</button>
-                            </div>
-                        </div>
-                        <div class="admin-card-body">
-                            <p class="text-muted mb-3" style="font-size: 13px;">Add quantity-based pricing tiers for wholesale orders.</p>
-                            <div id="tierRows"></div>
-                        </div>
-                    </div>
-
-                    <script>
-                        var tierCount = 0;
-                        function addTierRow(data) {
-                            data = data || {};
-                            tierCount++;
-                            var html = '<div class="tier-row mb-3 p-3" id="tierRow' + tierCount + '">' +
-                                '<div class="row align-items-end">' +
-                                '<div class="col-md-3 mb-2"><label>Variant / Label</label>' +
-                                '<input type="text" name="tiers[' + tierCount + '][variant_title]" class="form-control form-control-sm" placeholder="e.g. Base, M, L" value="' + (data.variant_title || '') + '"></div>' +
-                                '<div class="col-md-2 mb-2"><label>Min Qty <span class="required-star">*</span></label>' +
-                                '<input type="number" name="tiers[' + tierCount + '][min_qty]" class="form-control form-control-sm" placeholder="1" value="' + (data.min_qty || '') + '" required></div>' +
-                                '<div class="col-md-2 mb-2"><label>Max Qty</label>' +
-                                '<input type="number" name="tiers[' + tierCount + '][max_qty]" class="form-control form-control-sm" placeholder="Optional" value="' + (data.max_qty || '') + '"></div>' +
-                                '<div class="col-md-2 mb-2"><label>Unit Price <span class="required-star">*</span></label>' +
-                                '<input type="number" step="0.01" name="tiers[' + tierCount + '][unit_price]" class="form-control form-control-sm" placeholder="0.00" value="' + (data.unit_price || '') + '" required></div>' +
-                                '<div class="col-md-2 mb-2"><label>Delivery ৳</label>' +
-                                '<input type="number" step="0.01" name="tiers[' + tierCount + '][delivery_charge]" class="form-control form-control-sm" placeholder="0" value="' + (data.delivery_charge || '') + '"></div>' +
-                                '<div class="col-md-1 mb-2"><label style="color:transparent">X</label>' +
-                                '<button type="button" class="btn btn-danger btn-sm btn-block" onclick="removeTierRow(' + tierCount + ')" title="Remove tier">&times;</button></div>' +
-                                '</div></div>';
-                            document.getElementById('tierRows').insertAdjacentHTML('beforeend', html);
-                        }
-                        function removeTierRow(id) { var el = document.getElementById('tierRow' + id); if (el) el.remove(); }
-                        function toggleTiersCard() {
-                            var type = document.getElementById('selling_type').value;
-                            document.getElementById('priceTiersCard').style.display = (type === 'wholesale' || type === 'both') ? 'block' : 'none';
-                        }
-                        document.getElementById('selling_type').addEventListener('change', toggleTiersCard);
-                        document.addEventListener('DOMContentLoaded', toggleTiersCard);
-                    </script>
-
-                    {{-- Packing & Shipping --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Packing & Shipping</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Extra Packing Charge</label>
-                                        <input type="text" id="ex_pack" name="ex_pack" class="form-control" placeholder="0">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label>Extra Delivery Charge</label>
-                                        <input type="text" id="ex_dvc" name="ex_dvc" class="form-control" placeholder="0">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Low Stock Warning Quantity</label>
-                                <input type="text" id="low_stock" name="low_stock" class="form-control" placeholder="Enter low stock threshold">
-                            </div>
-                            <div class="form-group">
-                                <label>Estimated Shipping Days</label>
-                                <input type="text" name="shipping_days" class="form-control" placeholder="e.g. 3-5">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Visibility & Status --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Visibility & Status</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="toggle-row">
-                                <label>Show Stock Quantity</label>
-                                <input type="checkbox" name="show_stock" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Show Stock Text Only</label>
-                                <input type="checkbox" name="show_stock_text" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Any Web</label>
-                                <input type="checkbox" name="mart_status" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Only Reseller</label>
-                                <input type="checkbox" name="reseller_status" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Reseller Bonus --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Reseller Order Bonus</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="form-group">
-                                <label>Amount</label>
-                                <input type="text" name="reseller_bonus" class="form-control" placeholder="0">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Product Lists --}}
-                    <div class="admin-content-card">
-                        <div class="admin-card-header">
-                            <h6 class="admin-card-title">Featured Lists</h6>
-                        </div>
-                        <div class="admin-card-body">
-                            <div class="toggle-row">
-                                <label>Show In New Product List</label>
-                                <input type="checkbox" name="show_new_product" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Show In Hot Selling List</label>
-                                <input type="checkbox" name="hot_list" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Show In Ready To Boost List</label>
-                                <input type="checkbox" name="ready_bost" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Show In Profitable Product List</label>
-                                <input type="checkbox" name="profitable" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Show In Limited Offer List</label>
-                                <input type="checkbox" name="limited" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                            <div class="toggle-row">
-                                <label>Show In Summer Collection List</label>
-                                <input type="checkbox" name="summer" data-toggle="switchbutton" data-onstyle="success">
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            {{-- Submit --}}
-            <div class="product-submit-area">
-                <button type="submit" name="btn" class="btn btn-submit-product from-prevent-multiple-submits">
-                    <i class="bi bi-check-lg me-1"></i> Save Product
-                </button>
-            </div>
-        </form>
-        <input type="hidden" name="_token" value="{{ csrf_token() }}" />
-    </div>
+        {{-- Submit --}}
+        <div class="d-flex justify-content-end mt-3 mb-4">
+            <a href="{{ url('admin/products') }}" class="sp-btn" style="background:#e5e7eb;color:#374151;margin-right:8px">Cancel</a>
+            <button type="button" class="sp-btn sp-btn-primary" id="saveProductBtn" onclick="saveProduct()">
+                <span id="saveBtnText">Save product</span>
+                <span id="saveBtnSpinner" style="display:none">Saving...</span>
+            </button>
+        </div>
+    </form>
 </div>
-
-
+</div>
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
+<script>
+// ─── State ───
+var variants = []; // {id, title, color_name, color_code, imageFile, sizes:[{id,size_name,price,qty,bulkTiers:[{min_qty,max_qty,bulk_price}]}]}
+var sellingType = 'wholesale';
 
-<script type="text/javascript">
-    (function () {
-        $(document).ready(function () {
-            $("#myForm").on("submit", function () {
-                $(".from-prevent-multiple-submits").prop("disabled", true);
+$(document).ready(function(){
+    $('#ProductDetails').summernote({
+        height: 200,
+        toolbar: [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+            ['fontsize', ['fontsize']],
+            ['color', ['color']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'video']],
+            ['view', ['fullscreen', 'codeview', 'help']]
+        ]
+    });
+    updatePriceVisibility();
+});
+
+// ─── Selling Type ───
+function setSellingType(type) {
+    sellingType = type;
+    document.getElementById('selling_type').value = type;
+    document.querySelectorAll('.selling-card').forEach(function(el){
+        el.className = 'selling-card';
+    });
+    var el = document.getElementById('st-' + type);
+    if(type==='wholesale') el.classList.add('active-wholesale');
+    else if(type==='dropshipping') el.classList.add('active-dropshipping');
+    else el.classList.add('active-both');
+    el.querySelector('input[type=radio]').checked = true;
+    updatePriceVisibility();
+}
+
+function updatePriceVisibility() {
+    var show = sellingType === 'dropshipping' || sellingType === 'both';
+    document.getElementById('priceStockSection').style.display = show ? 'block' : 'none';
+}
+
+// ─── Category cascading ───
+function loadSubcategories() {
+    var catId = document.getElementById('category_id').value;
+    var sub = document.getElementById('subcategory_id');
+    var mini = document.getElementById('minicategory_id');
+    sub.innerHTML = '<option value="">Loading...</option>';
+    mini.innerHTML = '<option value="">Select subcategory first</option>';
+    if(!catId) { sub.innerHTML = '<option value="">Select subcategory</option>'; return; }
+    $.get('/admin/get/subcategory/' + catId, function(data){
+        sub.innerHTML = '<option value="">Select subcategory</option>';
+        data.forEach(function(s){ sub.innerHTML += '<option value="'+s.id+'">'+s.sub_category_name+'</option>'; });
+    });
+}
+function loadMinicategories() {
+    var subId = document.getElementById('subcategory_id').value;
+    var mini = document.getElementById('minicategory_id');
+    mini.innerHTML = '<option value="">Loading...</option>';
+    if(!subId) { mini.innerHTML = '<option value="">Select subcategory first</option>'; return; }
+    $.get('/admin/get/minicategory/' + subId, function(data){
+        if(data.length === 0) { mini.innerHTML = '<option value="">No child category</option>'; return; }
+        mini.innerHTML = '<option value="">Select child category</option>';
+        data.forEach(function(m){ mini.innerHTML += '<option value="'+m.id+'">'+m.mini_category_name+'</option>'; });
+    });
+}
+
+// ─── Image Preview ───
+function previewThumb() {
+    var f = document.getElementById('ProductImage').files[0];
+    if(f) document.getElementById('thumbPreview').innerHTML = '<img src="'+URL.createObjectURL(f)+'" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px">';
+}
+function previewGallery() {
+    var files = document.getElementById('PostImage').files;
+    var html = '';
+    for(var i=0;i<files.length;i++) html += '<img src="'+URL.createObjectURL(files[i])+'" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb">';
+    document.getElementById('galleryPreview').innerHTML = html;
+}
+
+// ─── Variant Builder ───
+function uid(){ return Math.random().toString(36).substr(2,8); }
+
+function addVariant() {
+    var name = document.getElementById('newColorName').value.trim();
+    if(!name) { alert('Color name is required'); return; }
+    variants.push({
+        id: uid(),
+        title: document.getElementById('newColorTitle').value.trim(),
+        color_name: name,
+        color_code: document.getElementById('newColorCode').value,
+        imageFile: document.getElementById('newColorImage').files[0] || null,
+        imagePreview: document.getElementById('newColorImage').files[0] ? URL.createObjectURL(document.getElementById('newColorImage').files[0]) : null,
+        sizes: []
+    });
+    document.getElementById('newColorName').value = '';
+    document.getElementById('newColorTitle').value = '';
+    document.getElementById('newColorCode').value = '#000000';
+    document.getElementById('newColorImage').value = '';
+    renderVariants();
+}
+
+function removeVariant(vid) {
+    variants = variants.filter(function(v){ return v.id !== vid; });
+    renderVariants();
+}
+
+function addSize(vid) {
+    var n = document.getElementById('sz_name_'+vid).value.trim();
+    var p = document.getElementById('sz_price_'+vid).value;
+    var q = document.getElementById('sz_qty_'+vid).value;
+    if(!n||!p){ alert('Size name and price required'); return; }
+    var v = variants.find(function(x){ return x.id===vid; });
+    v.sizes.push({ id:uid(), size_name:n, price:p, qty:q||'0', bulkTiers:[] });
+    document.getElementById('sz_name_'+vid).value='';
+    document.getElementById('sz_price_'+vid).value='';
+    document.getElementById('sz_qty_'+vid).value='0';
+    renderVariants();
+}
+
+function removeSize(vid, sid) {
+    var v = variants.find(function(x){ return x.id===vid; });
+    v.sizes = v.sizes.filter(function(s){ return s.id!==sid; });
+    renderVariants();
+}
+
+function addBulkTier(vid, sid) {
+    var mn = document.getElementById('bt_min_'+sid).value;
+    var mx = document.getElementById('bt_max_'+sid).value;
+    var pr = document.getElementById('bt_price_'+sid).value;
+    if(!mn||!pr){ alert('Min qty and bulk price required'); return; }
+    var v = variants.find(function(x){ return x.id===vid; });
+    var s = v.sizes.find(function(x){ return x.id===sid; });
+    s.bulkTiers.push({ min_qty:mn, max_qty:mx, bulk_price:pr });
+    document.getElementById('bt_min_'+sid).value='';
+    document.getElementById('bt_max_'+sid).value='';
+    document.getElementById('bt_price_'+sid).value='';
+    renderVariants();
+}
+
+function removeBulkTier(vid, sid, btIdx) {
+    var v = variants.find(function(x){ return x.id===vid; });
+    var s = v.sizes.find(function(x){ return x.id===sid; });
+    s.bulkTiers.splice(btIdx, 1);
+    renderVariants();
+}
+
+function renderVariants() {
+    var html = '';
+    variants.forEach(function(v){
+        html += '<div class="variant-item">';
+        html += '<button type="button" class="sp-btn-danger" style="position:absolute;top:10px;right:10px" onclick="removeVariant(\''+v.id+'\')">🗑 Remove</button>';
+        html += '<div class="d-flex gap-3 align-items-start" style="padding-right:80px">';
+        // Color preview
+        if(v.imagePreview) html += '<img src="'+v.imagePreview+'" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid #e5e7eb">';
+        else html += '<div style="width:56px;height:56px;border-radius:50%;background:'+v.color_code+';border:1px solid #d1d5db"></div>';
+        html += '<div style="flex:1">';
+        html += '<h6 style="font-weight:700;margin:0">'+v.color_name+' <span style="font-weight:400;color:#6b7280;font-size:13px">('+(v.title||'no title')+')</span></h6>';
+        html += '<p style="font-size:11px;color:#6b7280;margin:4px 0 12px">Add sizes and bulk pricing tiers for this color variant.</p>';
+
+        // Sizes
+        v.sizes.forEach(function(sz){
+            html += '<div class="size-item">';
+            html += '<div class="d-flex align-items-center gap-3 mb-2">';
+            html += '<div style="flex:1"><small style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase">Size</small><div style="font-weight:600">'+sz.size_name+'</div></div>';
+            html += '<div style="flex:1"><small style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase">Price</small><div style="font-weight:600;color:#4f46e5">৳'+Number(sz.price).toLocaleString()+'</div></div>';
+            html += '<div style="flex:1"><small style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase">Qty</small><div style="font-weight:600">'+sz.qty+'</div></div>';
+            html += '<button type="button" class="sp-btn-danger" onclick="removeSize(\''+v.id+'\',\''+sz.id+'\')">✕</button>';
+            html += '</div>';
+
+            // Bulk tiers
+            html += '<div class="bulk-section">';
+            html += '<small style="font-size:10px;font-weight:700;color:#312e81;text-transform:uppercase">Bulk Pricing Tiers</small>';
+            sz.bulkTiers.forEach(function(bt, btIdx){
+                html += '<div class="bulk-row"><span style="flex:1;font-weight:500">Qty: '+bt.min_qty+' - '+(bt.max_qty||'∞')+'</span>';
+                html += '<span style="font-weight:700;color:#4f46e5">৳'+Number(bt.bulk_price).toLocaleString()+'</span>';
+                html += '<button type="button" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px" onclick="removeBulkTier(\''+v.id+'\',\''+sz.id+'\','+btIdx+')">✕</button></div>';
             });
+            // Add tier form
+            html += '<div class="d-flex gap-1 align-items-end mt-1">';
+            html += '<input id="bt_min_'+sz.id+'" type="number" placeholder="Min" style="width:60px;font-size:11px;padding:4px;border:1px solid #d1d5db;border-radius:4px">';
+            html += '<input id="bt_max_'+sz.id+'" type="number" placeholder="Max" style="width:60px;font-size:11px;padding:4px;border:1px solid #d1d5db;border-radius:4px">';
+            html += '<input id="bt_price_'+sz.id+'" type="number" step="0.01" placeholder="Price" style="width:70px;font-size:11px;padding:4px;border:1px solid #d1d5db;border-radius:4px">';
+            html += '<button type="button" class="sp-btn sp-btn-indigo" style="font-size:10px;padding:4px 8px" onclick="addBulkTier(\''+v.id+'\',\''+sz.id+'\')">Add Tier</button>';
+            html += '</div></div></div>';
         });
-    })();
-</script>
 
-<script>
-    var loadFile = function(event) {
-        var output = document.getElementById('prevImage');
-        output.src = URL.createObjectURL(event.target.files[0]);
-        output.style.display = 'block';
-        output.onload = function() {
-            URL.revokeObjectURL(output.src) // free memory
-        }
-    };
-    var galleryloadFile = function(event) {
-        var output = document.getElementById('galleryprevImage');
-        output.src = URL.createObjectURL(event.target.files[0]);
-        output.onload = function() {
-            URL.revokeObjectURL(output.src) // free memory
-        }
-    };
-</script>
+        // Add size form
+        html += '<div style="background:rgba(238,242,255,.5);padding:10px;border-radius:8px;border:1px solid #c7d2fe;margin-top:8px">';
+        html += '<div class="mb-1"><label style="font-size:10px;font-weight:700;color:#312e81;text-transform:uppercase">Size Name</label><input id="sz_name_'+v.id+'" type="text" class="sp-input" placeholder="e.g. S, 40, Free" style="font-size:12px;padding:6px 8px"></div>';
+        html += '<div class="d-flex gap-2 align-items-end">';
+        html += '<div style="flex:1"><label style="font-size:10px;font-weight:700;color:#312e81;text-transform:uppercase">Price</label><input id="sz_price_'+v.id+'" type="number" step="0.01" class="sp-input" placeholder="Price" style="font-size:12px;padding:6px 8px"></div>';
+        html += '<div style="flex:1"><label style="font-size:10px;font-weight:700;color:#312e81;text-transform:uppercase">Qty</label><input id="sz_qty_'+v.id+'" type="number" class="sp-input" placeholder="Qty" value="0" style="font-size:12px;padding:6px 8px"></div>';
+        html += '<button type="button" class="sp-btn sp-btn-indigo" style="font-size:12px;white-space:nowrap" onclick="addSize(\''+v.id+'\')">Add Size</button>';
+        html += '</div></div>';
 
-<script>
-    var PostImages = [];
+        html += '</div></div></div>';
+    });
+    document.getElementById('variantsList').innerHTML = html;
+}
 
-    function prevPost_Img() {
-        var PostImage = document.getElementById('PostImage').files;
+// ─── Save Product ───
+function saveProduct() {
+    var btn = document.getElementById('saveProductBtn');
+    btn.disabled = true;
+    document.getElementById('saveBtnText').style.display = 'none';
+    document.getElementById('saveBtnSpinner').style.display = 'inline';
 
-        for (i = 0; i < PostImage.length; i++) {
-            if (check_duplicate(PostImage[i].name)) {
-                PostImages.push({
-                    "name": PostImage[i].name,
-                    "url": URL.createObjectURL(PostImage[i]),
-                    "file": PostImage[i],
+    var form = document.getElementById('productForm');
+    var fd = new FormData(form);
+    fd.set('ProductDetails', $('#ProductDetails').summernote('code'));
+    fd.set('selling_type', sellingType);
+
+    // Handle stock visibility
+    var sv = document.querySelector('input[name="stock_visibility"]:checked');
+    if(sv) fd.set('stock_visibility', sv.value);
+
+    // Handle switch buttons (checkboxes)
+    ['mart_status','reseller_status','show_new_product','hot_list','ready_bost','profitable','limited','summer'].forEach(function(n){
+        var cb = document.querySelector('input[name="'+n+'"]');
+        if(cb && cb.checked) fd.set(n, 'on');
+    });
+
+    $.ajax({
+        url: '/admin/products/ajax-store',
+        method: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        success: function(res) {
+            if(res.status && res.data && res.data.product) {
+                var productId = res.data.product.id;
+                // Save variants sequentially
+                saveVariantsSequential(productId, 0, function(){
+                    alert('Product created successfully!');
+                    window.location.href = '/admin/products';
                 });
             } else {
-                alert(PostImage[i].name + 'is already added to your list');
+                alert('Product saved but no ID returned.');
+                btn.disabled = false;
+                document.getElementById('saveBtnText').style.display = 'inline';
+                document.getElementById('saveBtnSpinner').style.display = 'none';
             }
-        }
-
-        document.getElementById("prevFile").innerHTML = PostImage_show();
-
-    }
-
-    function check_duplicate(name) {
-        var PostImage = true;
-        if (PostImages.length > 0) {
-            for (e = 0; e < PostImages.length; e++) {
-                if (PostImages[e].name == name) {
-                    PostImage = false;
-                    break;
-                }
+        },
+        error: function(xhr) {
+            var msg = 'Failed to create product.';
+            if(xhr.responseJSON && xhr.responseJSON.errors) {
+                var errs = xhr.responseJSON.errors;
+                msg = Object.values(errs).flat().join('\n');
+            } else if(xhr.responseJSON && xhr.responseJSON.message) {
+                msg = xhr.responseJSON.message;
             }
+            alert(msg);
+            btn.disabled = false;
+            document.getElementById('saveBtnText').style.display = 'inline';
+            document.getElementById('saveBtnSpinner').style.display = 'none';
         }
-        return PostImage;
-    }
+    });
+}
 
-    function PostImage_show() {
-        var PostImage = "";
-        PostImages.forEach((i) => {
-            PostImage += `<div class="postImg" style="width:25%;float:left;position:relative;">
-                                <img src="` + i.url + `" alt="" id="previewImage" style="border-radius: 10px;width:100%;padding:5px;">
-                                <span onclick="removeSelectedPostImage(` + PostImages.indexOf(i) + `)" style="position: absolute;right: 0;cursor: pointer;font-size: 31px;color: red;margin-top: -8px;margin-right: 8px;">&times</span>
-                            </div>`;
-        })
-        return PostImage;
-    }
+function saveVariantsSequential(productId, idx, done) {
+    if(idx >= variants.length) { done(); return; }
+    var v = variants[idx];
+    var vfd = new FormData();
+    vfd.append('title', v.title || v.color_name || 'Variant');
+    if(v.color_name) vfd.append('color_name', v.color_name);
+    if(v.color_code) vfd.append('color_code', v.color_code);
+    vfd.append('qty', '0');
+    vfd.append('price', '0');
+    if(v.imageFile) vfd.append('image', v.imageFile);
 
-    function removeSelectedPostImage(e) {
-        PostImages.splice(e, 1);
-        document.getElementById("prevFile").innerHTML = PostImage_show();
-    }
+    $.ajax({
+        url: '/admin/products/'+productId+'/variants-json',
+        method: 'POST',
+        data: vfd,
+        processData: false,
+        contentType: false,
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        success: function(res) {
+            var variantId = res.data && res.data.variant ? res.data.variant.id : null;
+            if(variantId && v.sizes.length > 0) {
+                saveSizesSequential(productId, variantId, v.sizes, 0, function(){
+                    saveVariantsSequential(productId, idx+1, done);
+                });
+            } else {
+                saveVariantsSequential(productId, idx+1, done);
+            }
+        },
+        error: function() {
+            console.error('Failed to add variant: ' + v.color_name);
+            saveVariantsSequential(productId, idx+1, done);
+        }
+    });
+}
 
+function saveSizesSequential(productId, variantId, sizes, idx, done) {
+    if(idx >= sizes.length) { done(); return; }
+    var s = sizes[idx];
+    $.ajax({
+        url: '/admin/products/'+productId+'/variants-json/'+variantId+'/sizes',
+        method: 'POST',
+        data: JSON.stringify({ size_name: s.size_name, qty: parseInt(s.qty)||0, price: s.price?parseFloat(s.price):null, status:'Active' }),
+        contentType: 'application/json',
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        success: function(res) {
+            var sizeId = res.data && res.data.size ? res.data.size.id : null;
+            if(sizeId && s.bulkTiers.length > 0) {
+                saveBulkSequential(productId, variantId, sizeId, s.bulkTiers, 0, function(){
+                    saveSizesSequential(productId, variantId, sizes, idx+1, done);
+                });
+            } else {
+                saveSizesSequential(productId, variantId, sizes, idx+1, done);
+            }
+        },
+        error: function() { saveSizesSequential(productId, variantId, sizes, idx+1, done); }
+    });
+}
+
+function saveBulkSequential(productId, variantId, sizeId, tiers, idx, done) {
+    if(idx >= tiers.length) { done(); return; }
+    var t = tiers[idx];
+    $.ajax({
+        url: '/admin/products/'+productId+'/variants-json/'+variantId+'/sizes/'+sizeId+'/bulk-prices',
+        method: 'POST',
+        data: JSON.stringify({ min_qty: parseInt(t.min_qty), max_qty: t.max_qty?parseInt(t.max_qty):null, bulk_price: parseFloat(t.bulk_price) }),
+        contentType: 'application/json',
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        success: function() { saveBulkSequential(productId, variantId, sizeId, tiers, idx+1, done); },
+        error: function() { saveBulkSequential(productId, variantId, sizeId, tiers, idx+1, done); }
+    });
+}
 </script>
-<!-- summernote css/js -->
-<link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-bs4.min.js"></script>
-
-
-
 @endsection
