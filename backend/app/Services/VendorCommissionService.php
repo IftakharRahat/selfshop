@@ -104,12 +104,13 @@ class VendorCommissionService
             $basePrice = (float) ($variantPrice ?? $product->ProductResellerPrice ?? $op->productPrice);
             $netAmount = round($basePrice * (int) $op->quantity, 2);
 
-            // Storefront price (commission inclusive)
+            // Storefront price (what customer paid)
             $lineTotal = round((float) $op->productPrice * (int) $op->quantity, 2);
 
-            // Admin commission is the difference
-            $commissionAmount = round($lineTotal - $netAmount, 2);
+            // Admin commission = vendor base price × admin-configured category rate
+            // NOT the price difference (which includes reseller profit too)
             $rate = $this->getRateForProduct($product->vendor_id, $product->category_id);
+            $commissionAmount = round($netAmount * $rate / 100, 2);
 
             $status = in_array($order->status, ['Delivered', 'Shipped'], true) ? 'available' : 'pending';
 
