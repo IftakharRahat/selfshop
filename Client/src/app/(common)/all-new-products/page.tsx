@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, Suspense } from "react";
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
@@ -12,28 +12,25 @@ const ITEMS_PER_PAGE = 30;
 function AllNewProductsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    
-    // We fetch all products, since the API doesn't seem to natively paginate the way we want
-    const [objectQuery] = useState([
-        { name: "page", value: 1 },
-        { name: "limit", value: 200 },
-    ]);
-    const { data, isLoading } = useGetAllNewProductsQuery({ objectQuery });
-    const allProducts: any[] = data?.data?.data || [];
 
     // Derive current page from URL
     const pageParam = searchParams.get("page");
-    const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+    const currentPage = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
 
-    const lastPage = Math.ceil(allProducts.length / ITEMS_PER_PAGE);
-    
-    // Safety check just in case URL page is too high
+    // Use server-side pagination: pass page + limit to the backend API
+    const { data, isLoading } = useGetAllNewProductsQuery({
+        objectQuery: [
+            { name: "page", value: currentPage },
+            { name: "limit", value: ITEMS_PER_PAGE },
+        ],
+    });
+
+    // Backend returns paginated response with data, last_page, current_page, total, etc.
+    const paginationData = data?.data;
+    const displayedProducts: any[] = paginationData?.data || [];
+    const lastPage: number = paginationData?.last_page || 1;
+    const totalProducts: number = paginationData?.total || 0;
     const validCurrentPage = currentPage > lastPage && lastPage > 0 ? lastPage : currentPage;
-
-    const displayedProducts = allProducts.slice(
-        (validCurrentPage - 1) * ITEMS_PER_PAGE,
-        validCurrentPage * ITEMS_PER_PAGE
-    );
 
     // Generate page numbers for pagination
     const getPageNumbers = () => {
@@ -53,6 +50,7 @@ function AllNewProductsContent() {
     };
 
     const handlePageChange = (page: number) => {
+        if (page < 1 || page > lastPage) return;
         router.push(`?page=${page}`, { scroll: false });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -70,6 +68,11 @@ function AllNewProductsContent() {
                     <span>Back to Home</span>
                 </button>
                 <h1 className="all-items-title">New Products</h1>
+                {!isLoading && totalProducts > 0 && (
+                    <span className="text-sm text-gray-500 ml-auto">
+                        {totalProducts} products
+                    </span>
+                )}
             </div>
 
             {/* Loading */}
@@ -136,7 +139,7 @@ function AllNewProductsContent() {
             )}
 
             {/* Empty */}
-            {!isLoading && allProducts.length === 0 && (
+            {!isLoading && displayedProducts.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16">
                     <div className="w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mb-3">
                         <ShoppingCart className="w-8 h-8 text-[#E5005F]/40" />
