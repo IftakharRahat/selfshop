@@ -30,12 +30,13 @@ export default function ProductDetailScreen() {
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const queryClient = useQueryClient();
   const [imgIdx, setImgIdx] = useState(0);
-  const [wishlisted, setWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
   const [descExpanded, setDescExpanded] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
+  const [showVariantSheet, setShowVariantSheet] = useState(false);
   const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
+  const defaultQtySet = useRef(false);
 
   // ── Variant / Size ordering state ──
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
@@ -226,6 +227,22 @@ export default function ProductDetailScreen() {
       bulk_prices: [],
     }));
   }
+
+  // Set default quantity to 1 on first load
+  useEffect(() => {
+    if (!defaultQtySet.current && sizesForTable.length > 0 && currentVarId !== undefined) {
+      const firstSize = sizesForTable[0];
+      if (firstSize && firstSize.qty > 0) {
+        setVariantQuantities((prev) => {
+          if (Object.keys(prev).length === 0) {
+            defaultQtySet.current = true;
+            return { [currentVarId]: { [firstSize.size_name]: 1 } };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [sizesForTable, currentVarId]);
 
   // Total quantity across all variants and sizes
   const totalQuantity = Object.values(variantQuantities)
@@ -463,14 +480,6 @@ export default function ProductDetailScreen() {
               <Ionicons name="arrow-back" size={22} color={DARK} />
             </Pressable>
           </Animated.View>
-          <Animated.View style={[s.overlayBtn, { top: insets.top + 8, right: 108, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
-            <Pressable
-              onPress={() => setWishlisted(p => { toast.success(!p ? "Added to wishlist" : "Removed from wishlist"); return !p; })}
-              hitSlop={8}
-            >
-              <Ionicons name={wishlisted ? "heart" : "heart-outline"} size={20} color={wishlisted ? "#EF4444" : DARK} />
-            </Pressable>
-          </Animated.View>
           {isLoggedIn && (
             <Animated.View
               style={[s.overlayBtn, { top: insets.top + 8, right: 60, backgroundColor: isInShop ? "#D1FAE5" : "rgba(255,255,255,0.95)", opacity: heroOverlayBtnOpacity }]}
@@ -595,30 +604,68 @@ export default function ProductDetailScreen() {
         {/* ═══ WHOLESALE BULK TIER BADGES ═══ */}
         {showWholesale && isResellerActive && (
           <View style={s.card}>
-            <Text fontSize="$3" fontWeight="700" color={DARK} mb="$2">Wholesale Pricing</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="layers-outline" size={16} color={ACCENT} />
+                <Text fontSize={14} fontWeight="700" color={DARK}>Wholesale Pricing</Text>
+              </View>
+              {totalQuantity > 0 && (
+                <View style={{ backgroundColor: "#FFF0F5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text fontSize={11} fontWeight="700" color={ACCENT}>{totalQuantity} pcs selected</Text>
+                </View>
+              )}
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {priceTiers.map((tier: any) => {
+              {priceTiers.map((tier: any, tierIdx: number) => {
                 const isActive = activeTier?.id === tier.id;
                 const qtyLabel = tier.max_qty ? `${tier.min_qty}-${tier.max_qty} Pcs` : `${tier.min_qty}+ Pcs`;
+                const tierPrice = parseFloat(tier.unit_price) * commissionFactor;
                 return (
                   <View
                     key={tier.id}
                     style={[
                       s.tierBadge,
-                      isActive && { borderColor: ACCENT, backgroundColor: "#FFF0F5" },
+                      isActive && { borderColor: ACCENT, backgroundColor: "#FFF0F5", transform: [{ scale: 1.04 }] },
                     ]}
                   >
+                    {isActive && (
+                      <View style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center" }}>
+                        <Ionicons name="checkmark" size={12} color="#fff" />
+                      </View>
+                    )}
                     <Text fontSize={14} fontWeight="800" color={isActive ? ACCENT : DARK}>
-                      ৳{formatBDT(parseFloat(tier.unit_price) * commissionFactor, 0)}
+                      ৳{formatBDT(tierPrice, 0)}
                     </Text>
                     <Text fontSize={10} fontWeight="600" color={isActive ? ACCENT : GREY}>{qtyLabel}</Text>
                   </View>
                 );
               })}
             </ScrollView>
-            {totalQuantity > 0 && (
-              <Text fontSize={11} color={GREY} mt="$1">Total selected: {totalQuantity} pcs</Text>
-            )}
+            {/* Contextual tier message */}
+            {(() => {
+              if (!activeTier) return null;
+              const nextTier = priceTiers.find((t: any) => t.min_qty > totalQuantity);
+              if (nextTier && totalQuantity > 0) {
+                const moreNeeded = nextTier.min_qty - totalQuantity;
+                return (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FFFBEB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                    <Ionicons name="flash" size={14} color="#D97706" />
+                    <Text fontSize={12} fontWeight="600" color="#92400E">
+                      Add {moreNeeded} more for ৳{formatBDT(parseFloat(nextTier.unit_price) * commissionFactor, 0)}/pc pricing!
+                    </Text>
+                  </View>
+                );
+              }
+              if (totalQuantity > 0) {
+                return (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text fontSize={12} fontWeight="600" color="#065F46">You're getting the best bulk price!</Text>
+                  </View>
+                );
+              }
+              return null;
+            })()}
           </View>
         )}
 
@@ -806,6 +853,25 @@ export default function ProductDetailScreen() {
                     })}
                   </ScrollView>
                 </View>
+              )}
+
+              {/* View All Variations button */}
+              {variants.length > 1 && (
+                <Pressable
+                  style={({ pressed }) => [
+                    {
+                      flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+                      backgroundColor: "#FFF0F5", borderRadius: 12, borderWidth: 1.5, borderColor: "#FFD6E7",
+                      paddingVertical: 12, marginBottom: 12,
+                    },
+                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+                  ]}
+                  onPress={() => setShowVariantSheet(true)}
+                >
+                  <Ionicons name="grid-outline" size={16} color={ACCENT} />
+                  <Text fontSize={13} fontWeight="700" color={ACCENT}>View All Variations ({variants.length} colors × {sizesForTable.length} sizes)</Text>
+                  <Ionicons name="chevron-forward" size={14} color={ACCENT} />
+                </Pressable>
               )}
 
               {/* Size Rows */}
@@ -1004,6 +1070,9 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
+        {/* ═══ REVIEWS & RATINGS ═══ */}
+        {productId && <ReviewsSection productId={productId} isLoggedIn={isLoggedIn} />}
+
         {/* ═══ RELATED PRODUCTS ═══ */}
         {relatedProducts.length > 0 && (
           <View style={{ paddingTop: 16 }}>
@@ -1042,13 +1111,6 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Pressable
-              style={s.fixedHeaderBtn}
-              onPress={() => setWishlisted(p => { toast.success(!p ? "Added to wishlist" : "Removed from wishlist"); return !p; })}
-              hitSlop={8}
-            >
-              <Ionicons name={wishlisted ? "heart" : "heart-outline"} size={20} color={wishlisted ? "#EF4444" : DARK} />
-            </Pressable>
             <Pressable style={s.fixedHeaderBtn} hitSlop={8}>
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
@@ -1152,6 +1214,361 @@ export default function ProductDetailScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
+
+      {/* ═══ VARIANT SELECTION BOTTOM SHEET ═══ */}
+      <Modal
+        visible={showVariantSheet}
+        transparent
+        statusBarTranslucent
+        animationType="slide"
+        onRequestClose={() => setShowVariantSheet(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%", paddingBottom: Math.max(insets.bottom, 16) }}>
+            {/* Handle + Header */}
+            <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#DDD" }} />
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F0F0F5" }}>
+              <View>
+                <Text fontSize={17} fontWeight="800" color={DARK}>All Variations</Text>
+                <Text fontSize={12} color={GREY}>{variants.length} colors · {sizesForTable.length} sizes</Text>
+              </View>
+              <Pressable onPress={() => setShowVariantSheet(false)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: BG, justifyContent: "center", alignItems: "center" }}>
+                <Ionicons name="close" size={20} color={DARK} />
+              </Pressable>
+            </View>
+
+            {/* Scrollable content */}
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+              {variants.map((v: any, vIdx: number) => {
+                const varId = v.id;
+                const varLabel = v.color_name || v.title || `Variant ${vIdx + 1}`;
+                const varSizes = v.sizes && v.sizes.length > 0
+                  ? v.sizes.map((sz: any) => ({ size_name: sz.size_name, price: sz.price, qty: sz.qty ?? 0, bulk_prices: sz.bulkPrices || sz.bulk_prices || [] }))
+                  : sizesForTable;
+                const varTotalQty = Object.values(variantQuantities[varId] ?? {}).reduce((sum: number, q: any) => sum + Number(q || 0), 0);
+
+                return (
+                  <View key={varId} style={{ borderBottomWidth: 1, borderBottomColor: "#F0F0F5" }}>
+                    {/* Variant header */}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: varTotalQty > 0 ? "#FFF8FB" : "#fff" }}>
+                      {v.image ? (
+                        <Image source={{ uri: v.image }} style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: BG }} resizeMode="cover" />
+                      ) : (
+                        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: v.color_code || BG, borderWidth: 1, borderColor: "#E5E5EA" }} />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text fontSize={14} fontWeight="700" color={DARK}>{varLabel}</Text>
+                        {varTotalQty > 0 && <Text fontSize={11} fontWeight="600" color={ACCENT}>{varTotalQty} selected</Text>}
+                      </View>
+                    </View>
+                    {/* Size rows */}
+                    {varSizes.map((sz: any) => {
+                      const size = sz.size_name;
+                      const qty = variantQuantities[varId]?.[size] || 0;
+                      const unitPrice = getSizePrice(sz, qty);
+                      return (
+                        <View key={`${varId}-${size}`} style={[{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, gap: 8 }, qty > 0 && { backgroundColor: "#FFF0F5" }]}>
+                          <Text style={{ flex: 1 }} fontSize={13} fontWeight="600" color={DARK}>{size === "Default" ? "Std" : size}</Text>
+                          <Text fontSize={12} fontWeight="600" color={GREY}>৳{formatBDT(unitPrice, 0)}</Text>
+                          <Text fontSize={11} color={sz.qty <= 0 ? "#EF4444" : "#999"} style={{ width: 40, textAlign: "center" }}>{sz.qty <= 0 ? "Out" : sz.qty}</Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                            <Pressable
+                              style={[s.miniStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
+                              onPress={() => handleQtyChange(varId, size, "decrease", sz.qty)}
+                              disabled={qty <= 0}
+                            >
+                              <Ionicons name="remove" size={14} color={qty <= 0 ? "#ccc" : DARK} />
+                            </Pressable>
+                            <View style={s.miniStepVal}>
+                              <Text fontSize={13} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
+                            </View>
+                            <Pressable
+                              style={[s.miniStepBtn, (qty >= sz.qty || sz.qty <= 0) && s.miniStepBtnDisabled]}
+                              onPress={() => handleQtyChange(varId, size, "increase", sz.qty)}
+                              disabled={qty >= sz.qty || sz.qty <= 0}
+                            >
+                              <Ionicons name="add" size={14} color={(qty >= sz.qty || sz.qty <= 0) ? "#ccc" : ACCENT} />
+                            </Pressable>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Bottom summary */}
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F0F0F5", gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text fontSize={12} color={GREY}>Total: {totalQuantity} pcs</Text>
+                <Text fontSize={18} fontWeight="800" color={ACCENT}>৳{formatBDT(getSelectedItems().reduce((sum, i) => sum + i.price * i.qty, 0), 0)}</Text>
+              </View>
+              <Pressable
+                onPress={() => setShowVariantSheet(false)}
+                style={({ pressed }) => [{ backgroundColor: ACCENT, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }, pressed && { opacity: 0.85 }]}
+              >
+                <Text fontSize={14} fontWeight="700" color="#fff">Done</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REVIEWS & RATINGS SECTION
+   ═══════════════════════════════════════════════════════════════ */
+function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((v) => (
+        <Ionicons key={v} name={v <= rating ? "star" : "star-outline"} size={size} color={v <= rating ? "#F59E0B" : "#D1D5DB"} />
+      ))}
+    </View>
+  );
+}
+
+function ReviewsSection({ productId, isLoggedIn }: { productId: number; isLoggedIn: boolean }) {
+  const [showWriteReview, setShowWriteReview] = useState(false);
+  const [editingReview, setEditingReview] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const queryClient = useQueryClient();
+
+  const reviewsQuery = useQuery({
+    queryKey: ["product-reviews", productId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/review/product/${productId}`);
+      return data?.data ?? data;
+    },
+    enabled: !!productId,
+  });
+
+  const checkReviewQuery = useQuery({
+    queryKey: ["check-review", productId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/review/check/${productId}`);
+      return data?.data ?? data;
+    },
+    enabled: !!productId && isLoggedIn,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data } = await apiClient.post("/review/store", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
+      queryClient.invalidateQueries({ queryKey: ["check-review", productId] });
+      toast.success("Review submitted!");
+      setShowWriteReview(false);
+      setRating(0);
+      setComment("");
+    },
+    onError: () => toast.error("Failed to submit review"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ reviewId, formData }: { reviewId: number; formData: FormData }) => {
+      const { data } = await apiClient.post(`/review/update/${reviewId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
+      queryClient.invalidateQueries({ queryKey: ["check-review", productId] });
+      toast.success("Review updated!");
+      setEditingReview(false);
+    },
+    onError: () => toast.error("Failed to update review"),
+  });
+
+  const reviews = reviewsQuery.data?.reviews ?? [];
+  const reviewCount = reviewsQuery.data?.review_count ?? 0;
+  const averageRating = Number(reviewsQuery.data?.average_rating ?? 0);
+  const canReview = checkReviewQuery.data?.can_review ?? false;
+  const hasReviewed = checkReviewQuery.data?.has_reviewed ?? false;
+  const existingReview = checkReviewQuery.data?.review ?? null;
+
+  const handleSubmit = () => {
+    if (rating === 0) { toast.error("Please select a rating"); return; }
+    const formData = new FormData();
+    formData.append("product_id", String(productId));
+    formData.append("rating", String(rating));
+    if (comment.trim()) formData.append("messages", comment.trim());
+    submitMutation.mutate(formData);
+  };
+
+  const handleUpdate = () => {
+    if (!existingReview || rating === 0) return;
+    const formData = new FormData();
+    formData.append("rating", String(rating));
+    if (comment.trim()) formData.append("messages", comment.trim());
+    updateMutation.mutate({ reviewId: existingReview.id, formData });
+  };
+
+  return (
+    <View style={[s.card, { marginTop: 10 }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Ionicons name="star" size={16} color="#F59E0B" />
+          <Text fontSize={14} fontWeight="700" color={DARK}>Reviews & Ratings</Text>
+        </View>
+        {reviewCount > 0 && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text fontSize={20} fontWeight="800" color={DARK}>{averageRating.toFixed(1)}</Text>
+            <Text fontSize={12} color={GREY}>({reviewCount})</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Rating distribution */}
+      {reviewCount > 0 && (
+        <View style={{ marginBottom: 16, backgroundColor: "#FAFAFA", borderRadius: 12, padding: 12 }}>
+          {[5, 4, 3, 2, 1].map((star) => {
+            const count = reviews.filter((r: any) => Math.round(r.rating) === star).length;
+            const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
+            return (
+              <View key={star} style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Text fontSize={11} color={GREY} style={{ width: 12 }}>{star}</Text>
+                <Ionicons name="star" size={10} color="#F59E0B" />
+                <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "#E5E7EB" }}>
+                  <View style={{ width: `${pct}%`, height: 6, borderRadius: 3, backgroundColor: "#F59E0B" } as any} />
+                </View>
+                <Text fontSize={10} color={GREY} style={{ width: 20, textAlign: "right" }}>{count}</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* User's existing review */}
+      {hasReviewed && existingReview && !editingReview && (
+        <View style={{ backgroundColor: "#ECFDF5", borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text fontSize={12} fontWeight="600" color="#065F46">Your review</Text>
+              <StarRating rating={existingReview.rating} size={12} />
+            </View>
+            {existingReview.messages && <Text fontSize={11} color="#065F46" numberOfLines={1} mt="$1">{existingReview.messages}</Text>}
+          </View>
+          <Pressable onPress={() => { setEditingReview(true); setRating(existingReview.rating); setComment(existingReview.messages ?? ""); }}>
+            <Text fontSize={12} fontWeight="700" color="#059669">Edit</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Edit review form */}
+      {editingReview && existingReview && (
+        <View style={{ backgroundColor: "#F0F9FF", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+          <Text fontSize={13} fontWeight="700" color={DARK} mb="$2">Edit Your Review</Text>
+          <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+            {[1, 2, 3, 4, 5].map((v) => (
+              <Pressable key={v} onPress={() => setRating(v)}>
+                <Ionicons name={v <= rating ? "star" : "star-outline"} size={28} color={v <= rating ? "#F59E0B" : "#D1D5DB"} />
+              </Pressable>
+            ))}
+          </View>
+          <TextInput
+            style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 10, fontSize: 13, color: DARK, backgroundColor: "#fff", minHeight: 60, textAlignVertical: "top" }}
+            value={comment}
+            onChangeText={setComment}
+            placeholder="Update your review..."
+            placeholderTextColor="#999"
+            multiline
+            maxLength={1000}
+          />
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+            <Pressable onPress={() => setEditingReview(false)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: "#E5E7EB" }}>
+              <Text fontSize={12} fontWeight="600" color={DARK}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleUpdate} disabled={updateMutation.isPending} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: ACCENT }}>
+              <Text fontSize={12} fontWeight="700" color="#fff">{updateMutation.isPending ? "Saving..." : "Update"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {/* Write new review */}
+      {canReview && !hasReviewed && (
+        showWriteReview ? (
+          <View style={{ backgroundColor: "#FFF0F5", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+            <Text fontSize={13} fontWeight="700" color={DARK} mb="$2">Write a Review</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+              {[1, 2, 3, 4, 5].map((v) => (
+                <Pressable key={v} onPress={() => setRating(v)}>
+                  <Ionicons name={v <= rating ? "star" : "star-outline"} size={28} color={v <= rating ? "#F59E0B" : "#D1D5DB"} />
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 10, fontSize: 13, color: DARK, backgroundColor: "#fff", minHeight: 60, textAlignVertical: "top" }}
+              value={comment}
+              onChangeText={setComment}
+              placeholder="Share your experience... (optional)"
+              placeholderTextColor="#999"
+              multiline
+              maxLength={1000}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+              <Pressable onPress={() => { setShowWriteReview(false); setRating(0); setComment(""); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: "#E5E7EB" }}>
+                <Text fontSize={12} fontWeight="600" color={DARK}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handleSubmit} disabled={submitMutation.isPending || rating === 0} style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: ACCENT }, (rating === 0) && { opacity: 0.5 }]}>
+                <Text fontSize={12} fontWeight="700" color="#fff">{submitMutation.isPending ? "Submitting..." : "Submit"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => setShowWriteReview(true)}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#FFF0F5", borderRadius: 10, paddingVertical: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FFD6E7" }}
+          >
+            <Ionicons name="create-outline" size={16} color={ACCENT} />
+            <Text fontSize={13} fontWeight="700" color={ACCENT}>Write a Review</Text>
+          </Pressable>
+        )
+      )}
+
+      {/* Review list */}
+      {reviews.length > 0 ? (
+        reviews.slice(0, 5).map((review: any) => (
+          <View key={review.id} style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#F0F0F5" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center" }}>
+                <Text fontSize={12} fontWeight="800" color="#fff">{(review.user?.name ?? "A")[0].toUpperCase()}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text fontSize={12} fontWeight="700" color={DARK}>{review.user?.name ?? "Anonymous"}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <StarRating rating={review.rating} size={11} />
+                  <Text fontSize={10} color={GREY}>{new Date(review.created_at).toLocaleDateString()}</Text>
+                </View>
+              </View>
+            </View>
+            {review.messages && (
+              <Text fontSize={12} color="#555" mt="$1" lineHeight={18}>{review.messages}</Text>
+            )}
+          </View>
+        ))
+      ) : (
+        !canReview && (
+          <View style={{ alignItems: "center", paddingVertical: 20 }}>
+            <Ionicons name="chatbubble-outline" size={32} color="#D1D5DB" />
+            <Text fontSize={12} color={GREY} mt="$2">No reviews yet</Text>
+          </View>
+        )
+      )}
     </View>
   );
 }
