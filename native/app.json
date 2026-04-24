@@ -48,6 +48,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "55e5a403-6d5d-4cb9-b2f0-5e955e7bd50d"
+      }
+    },
+    "owner": "shorno"
   }
 }
