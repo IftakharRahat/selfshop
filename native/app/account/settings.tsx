@@ -1,8 +1,9 @@
-import { View, ScrollView, StyleSheet, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Share } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
 
@@ -61,7 +62,33 @@ export default function SettingsScreen() {
     },
   });
 
+  const profileQuery = useQuery({
+    queryKey: ["profile"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/user");
+      return data?.data ?? data;
+    },
+  });
+
   const announcements = announcementsQuery.data?.announcements ?? [];
+  const referralCode = profileQuery.data?.my_referral_code ?? "";
+
+  const handleInviteFriends = async () => {
+    if (!referralCode) {
+      toast.error("Referral code not available");
+      return;
+    }
+    const referralLink = `https://selfshop.com.bd/register?ref=${referralCode}`;
+    try {
+      await Share.share({
+        message: `Join SelfShop and start your reselling business! Use my referral code: ${referralCode}\n\nSign up here: ${referralLink}`,
+        url: referralLink,
+        title: "Join SelfShop",
+      });
+    } catch {
+      toast.error("Failed to share");
+    }
+  };
 
   return (
     <>
@@ -219,7 +246,8 @@ export default function SettingsScreen() {
             <MenuItem
               icon="share-social-outline"
               label="Invite Friends"
-              subtitle="Spread the word!"
+              subtitle={referralCode ? `Code: ${referralCode}` : "Share your referral link"}
+              onPress={handleInviteFriends}
             />
           </View>
         </View>

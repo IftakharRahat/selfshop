@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   FlatList,
@@ -7,6 +7,8 @@ import {
   Pressable,
   Image,
   Dimensions,
+  TextInput,
+  Keyboard,
 } from "react-native";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
@@ -22,6 +24,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
   "https://api.selfshop.com.bd";
+
+const ACCENT = "#E5005F";
+const DARK = "#1A1A2E";
+const GREY = "#8E8E93";
+const BG = "#F5F5FA";
 
 function resolveImageUrl(path?: string | null): string | null {
   if (!path || path.trim().length < 2) return null;
@@ -42,6 +49,8 @@ export default function SectionScreen() {
 
   const [sectionTitle, setSectionTitle] = useState("");
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef<TextInput>(null);
 
   const {
     data,
@@ -77,7 +86,16 @@ export default function SectionScreen() {
     enabled: !!slug,
   });
 
-  const products = data?.pages.flatMap((p) => p.products) ?? [];
+  const allProducts = data?.pages.flatMap((p) => p.products) ?? [];
+
+  /* ── Client-side search filter ── */
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return allProducts;
+    return allProducts.filter((item: any) =>
+      (item.ProductName ?? "").toLowerCase().includes(q),
+    );
+  }, [allProducts, searchQuery]);
 
   const displayTitle = sectionTitle || slug?.replace(/_/g, " ") || "Products";
 
@@ -87,16 +105,21 @@ export default function SectionScreen() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    inputRef.current?.focus();
+  }, []);
+
   const renderFooter = () => {
     if (isFetchingNextPage) {
       return (
         <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color="#E5005F" />
+          <ActivityIndicator size="small" color={ACCENT} />
           <Text style={styles.footerText}>Loading more...</Text>
         </View>
       );
     }
-    if (!hasNextPage && products.length > 0) {
+    if (!hasNextPage && allProducts.length > 0 && !searchQuery) {
       return (
         <View style={styles.footerLoader}>
           <Text style={styles.footerTextDone}>All products loaded</Text>
@@ -108,14 +131,15 @@ export default function SectionScreen() {
 
   return (
     <View style={styles.container}>
+      {/* ═══ HEADER ═══ */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={22} color="#1A1A2E" />
+          <Ionicons name="arrow-back" size={22} color={DARK} />
         </Pressable>
         <Text
           fontSize="$5"
           fontWeight="bold"
-          color="#1A1A2E"
+          color={DARK}
           numberOfLines={1}
           style={{ flex: 1, textAlign: "center", textTransform: "capitalize" }}
         >
@@ -124,11 +148,37 @@ export default function SectionScreen() {
         <View style={{ width: 40 }} />
       </View>
 
+      {/* ═══ SEARCH BAR ═══ */}
+      <View style={styles.searchBar}>
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={18} color={GREY} />
+          <TextInput
+            ref={inputRef}
+            style={styles.searchInput}
+            placeholder="Search in this section..."
+            placeholderTextColor="#B0B0B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            onSubmitEditing={() => Keyboard.dismiss()}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={clearSearch} hitSlop={8}>
+              <View style={styles.clearBtn}>
+                <Ionicons name="close" size={14} color="#fff" />
+              </View>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       {isLoading ? (
         <ProductGridSkeleton />
       ) : isError ? (
         <View style={styles.center}>
-          <Ionicons name="alert-circle-outline" size={48} color="#E5005F" />
+          <Ionicons name="alert-circle-outline" size={48} color={ACCENT} />
           <Text color="#666" fontSize={15} mt="$3">
             Failed to load products
           </Text>
@@ -140,12 +190,13 @@ export default function SectionScreen() {
         </View>
       ) : (
         <FlatList
-          data={products}
+          data={filteredProducts}
           keyExtractor={(item: any) => String(item.id)}
           numColumns={2}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.columnWrapper}
           showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
           onEndReached={onEndReached}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={
@@ -165,23 +216,48 @@ export default function SectionScreen() {
                   </LinearGradient>
                 </View>
               )}
-              {products.length > 0 && (
-                <View style={styles.countBar}>
-                  <Ionicons name="grid-outline" size={14} color="#9CA3AF" />
-                  <Text style={styles.countText}>
-                    {products.length} product{products.length !== 1 ? "s" : ""}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.countBar}>
+                <Ionicons name="grid-outline" size={14} color="#9CA3AF" />
+                <Text style={styles.countText}>
+                  {searchQuery
+                    ? `${filteredProducts.length} of ${allProducts.length} product${allProducts.length !== 1 ? "s" : ""}`
+                    : `${allProducts.length} product${allProducts.length !== 1 ? "s" : ""}`}
+                </Text>
+              </View>
             </>
           }
           ListEmptyComponent={
             !isLoading ? (
               <View style={styles.center}>
-                <Ionicons name="cube-outline" size={48} color="#ccc" />
-                <Text color="#666" mt="$2">
-                  No products found in this section
-                </Text>
+                {searchQuery ? (
+                  <>
+                    <View style={styles.emptySearchIcon}>
+                      <Ionicons name="search-outline" size={40} color={ACCENT} />
+                    </View>
+                    <Text color={DARK} fontWeight="700" fontSize={16} mt="$3">
+                      No matches found
+                    </Text>
+                    <Text color="#666" fontSize={13} mt="$1" style={{ textAlign: "center", maxWidth: 260 }}>
+                      No products match "{searchQuery}" in this section
+                    </Text>
+                    <Pressable
+                      style={styles.clearSearchBtn}
+                      onPress={() => setSearchQuery("")}
+                    >
+                      <Ionicons name="close-circle-outline" size={16} color="#fff" />
+                      <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+                        Clear Search
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="cube-outline" size={48} color="#ccc" />
+                    <Text color="#666" mt="$2">
+                      No products found in this section
+                    </Text>
+                  </>
+                )}
               </View>
             ) : null
           }
@@ -228,6 +304,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  /* Search bar */
+  searchBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+    backgroundColor: "#fff",
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F5F5FA",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 44,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1A1A2E",
+    padding: 0,
+  },
+  clearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#C7C7CC",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   bannerWrap: {
     width: SCREEN_WIDTH - 32,
     height: 160,
@@ -274,6 +383,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 80,
+  },
+  emptySearchIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#FFF0F5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  clearSearchBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    backgroundColor: "#E5005F",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   retryBtn: {
     marginTop: 16,

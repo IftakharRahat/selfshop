@@ -275,27 +275,39 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Categories */}
+      {/* Categories – 2-row horizontal scroll */}
       {categoryList.length > 0 && (
         <View style={styles.sectionContainer}>
           <SectionHeader title="Categories" onSeeAll={() => router.push("/categories")} />
-          <ScrollView
+          <FlatList
+            data={
+              /* group into columns of 2 */
+              categoryList.reduce((cols: any[][], cat: any, idx: number) => {
+                if (idx % 2 === 0) cols.push([cat]);
+                else cols[cols.length - 1].push(cat);
+                return cols;
+              }, [] as any[][])
+            }
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoryList}
-          >
-            {categoryList.map((cat: any) => (
-              <CategoryChip
-                key={cat.id}
-                name={cat.category_name}
-                image={cat.category_icon}
-                onPress={() => router.push({
-                  pathname: "/category-products",
-                  params: { type: "category", slug: cat.slug, title: cat.category_name },
-                } as any)}
-              />
-            ))}
-          </ScrollView>
+            contentContainerStyle={styles.categoryGrid}
+            keyExtractor={(_: any, idx: number) => `cat-col-${idx}`}
+            renderItem={({ item: column }: any) => (
+              <View style={styles.categoryColumn}>
+                {column.map((cat: any) => (
+                  <CategoryChip
+                    key={cat.id}
+                    name={cat.category_name}
+                    image={cat.category_icon}
+                    onPress={() => router.push({
+                      pathname: "/category-products",
+                      params: { type: "category", slug: cat.slug, title: cat.category_name },
+                    } as any)}
+                  />
+                ))}
+              </View>
+            )}
+          />
         </View>
       )}
 
@@ -692,9 +704,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 12,
   },
-  categoryList: {
+  categoryGrid: {
     paddingHorizontal: 20,
-    gap: 12,
+    gap: 10,
+  },
+  categoryColumn: {
+    gap: 10,
+    alignItems: "center",
   },
   productList: {
     paddingHorizontal: 20,
