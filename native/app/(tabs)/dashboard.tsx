@@ -13,6 +13,7 @@ import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession, logout } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
@@ -56,6 +57,7 @@ function formatCurrency(value: number | string | undefined): string {
 }
 
 export default function DashboardScreen() {
+  const insets = useSafeAreaInsets();
   const { data: session, signOut } = useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
@@ -182,7 +184,7 @@ export default function DashboardScreen() {
           colors={["#E5005F", "#B8004C", "#8C003A"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
         >
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
@@ -484,7 +486,6 @@ const styles = StyleSheet.create({
 
   /* ── Header ── */
   headerGradient: {
-    paddingTop: 56,
     paddingBottom: 24,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,

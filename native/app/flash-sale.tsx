@@ -13,6 +13,7 @@ import { Stack, router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import apiClient from "@/lib/api-client";
 
@@ -74,6 +75,7 @@ function useCountdown(endTime: string | null): TimeLeft {
 }
 
 export default function FlashSaleScreen() {
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 
   const flashQuery = useQuery({
@@ -237,7 +239,7 @@ export default function FlashSaleScreen() {
           colors={["#3257D9", "#4A6AE5", "#6B83EF"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
         >
           {/* Back button */}
           <Pressable
@@ -343,7 +345,6 @@ const styles = StyleSheet.create({
 
   /* ── Header ── */
   headerGradient: {
-    paddingTop: 56,
     paddingBottom: 20,
     paddingHorizontal: 20,
   },

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
-  TextInput, Alert, StatusBar,
+  TextInput, Alert, StatusBar, Platform, Keyboard,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProductDetailSkeleton } from "@/components/skeleton";
@@ -46,6 +46,16 @@ export default function ProductDetailScreen() {
   // Scroll tracking for animated header
   const scrollY = useRef(new Animated.Value(0)).current;
   const HEADER_THRESHOLD = SW - 100; // Start fading in the solid header near end of hero image
+
+  // ── Keyboard-aware bottom padding ──
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) => setKbHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKbHeight(0));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   // Bottom sheet spring animation
   const sheetAnim = useRef(new Animated.Value(400)).current;
@@ -143,6 +153,50 @@ export default function ProductDetailScreen() {
   }, []);
   const imgViewCfg = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+  // Set default quantity to 1 on first load
+  // NOTE: Must be called before any early returns to satisfy Rules of Hooks
+  useEffect(() => {
+    if (!data || isLoading) return;
+    const product = data.product_details ?? data.product ?? data;
+    const variants: any[] = product.varients ?? [];
+    const currentVariant = variants[activeVariantIdx];
+    const currentVarId = currentVariant?.id ?? 0;
+    const stockQty = Number(product.qty ?? 0);
+
+    let sizesForEffect: Array<{ size_name: string; qty: number }> = [];
+    if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+      sizesForEffect = currentVariant.sizes.map((sz: any) => ({
+        size_name: sz.size_name,
+        qty: sz.qty ?? 0,
+      }));
+    } else {
+      const overrideStock = currentVariant ? currentVariant.qty ?? stockQty : stockQty;
+      const productSizes = Array.isArray(product.size)
+        ? product.size
+        : typeof product.size === "string"
+          ? (() => { try { return JSON.parse(product.size); } catch { return []; } })()
+          : [];
+      const legacySizes = productSizes.length > 0 ? productSizes : ["Default"];
+      sizesForEffect = legacySizes.map((sName: string) => ({
+        size_name: sName,
+        qty: overrideStock,
+      }));
+    }
+
+    if (!defaultQtySet.current && sizesForEffect.length > 0) {
+      const firstSize = sizesForEffect[0];
+      if (firstSize && firstSize.qty > 0) {
+        setVariantQuantities((prev) => {
+          if (Object.keys(prev).length === 0) {
+            defaultQtySet.current = true;
+            return { [currentVarId]: { [firstSize.size_name]: 1 } };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [data, isLoading, activeVariantIdx]);
+
   if (isLoading) return <ProductDetailSkeleton />;
   if (isError || !data) return (
     <View style={s.loadC}>
@@ -228,21 +282,6 @@ export default function ProductDetailScreen() {
     }));
   }
 
-  // Set default quantity to 1 on first load
-  useEffect(() => {
-    if (!defaultQtySet.current && sizesForTable.length > 0 && currentVarId !== undefined) {
-      const firstSize = sizesForTable[0];
-      if (firstSize && firstSize.qty > 0) {
-        setVariantQuantities((prev) => {
-          if (Object.keys(prev).length === 0) {
-            defaultQtySet.current = true;
-            return { [currentVarId]: { [firstSize.size_name]: 1 } };
-          }
-          return prev;
-        });
-      }
-    }
-  }, [sizesForTable, currentVarId]);
 
   // Total quantity across all variants and sizes
   const totalQuantity = Object.values(variantQuantities)
@@ -449,8 +488,10 @@ export default function ProductDetailScreen() {
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}
+        contentContainerStyle={{ paddingBottom: 130 + kbHeight }}
         scrollEventThrottle={16}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
@@ -671,7 +712,15 @@ export default function ProductDetailScreen() {
 
         {/* ═══ VENDOR CARD ═══ */}
         {vendorName ? (
-          <View style={s.card}>
+          <Pressable
+            style={({ pressed }) => [s.card, pressed && { opacity: 0.7 }]}
+            onPress={() => {
+              const vendorSlug = product.vendor?.slug || product.vendor?.id;
+              if (vendorSlug) {
+                router.push({ pathname: "/supplier/[slug]", params: { slug: String(vendorSlug) } } as any);
+              }
+            }}
+          >
             <View style={s.vendorRow}>
               <View style={s.vendorLogo}>
                 <Text fontSize={13} fontWeight="800" color="#fff">
@@ -686,7 +735,7 @@ export default function ProductDetailScreen() {
                 <Ionicons name="chevron-forward" size={14} color={GREY} />
               </View>
             </View>
-          </View>
+          </Pressable>
         ) : null}
 
         {/* ═══ ORDERING SECTION ═══ */}

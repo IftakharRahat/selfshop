@@ -15,6 +15,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
@@ -46,6 +47,7 @@ const PAGE_LIMIT = 20;
 
 export default function SectionScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const insets = useSafeAreaInsets();
 
   const [sectionTitle, setSectionTitle] = useState("");
   const [bannerImage, setBannerImage] = useState<string | null>(null);
@@ -132,7 +134,7 @@ export default function SectionScreen() {
   return (
     <View style={styles.container}>
       {/* ═══ HEADER ═══ */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={22} color={DARK} />
         </Pressable>
@@ -292,7 +294,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
-    paddingTop: 56,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F5",

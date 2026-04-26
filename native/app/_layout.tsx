@@ -58,64 +58,64 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <GestureHandlerRootView style={styles.container}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: "#fff" },
-              animation: "ios_from_right",
-              gestureEnabled: true,
-              fullScreenGestureEnabled: true,
-            }}
-          >
-            {/* Tab root — fade (instant feel) */}
-            <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: "#fff" },
+                animation: "ios_from_right",
+                gestureEnabled: true,
+                fullScreenGestureEnabled: true,
+              }}
+            >
+              {/* Tab root — fade (instant feel) */}
+              <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
 
-            {/* Auth — slide up (modal feel) */}
-            <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
-            <Stack.Screen name="login" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
-            <Stack.Screen name="register" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
-            <Stack.Screen name="forgot-password" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+              {/* Auth — slide up (modal feel) */}
+              <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+              <Stack.Screen name="login" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+              <Stack.Screen name="register" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
+              <Stack.Screen name="forgot-password" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
 
-            {/* Checkout & modals — slide up */}
-            <Stack.Screen name="pricing" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
-            <Stack.Screen name="invoice" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
-            <Stack.Screen name="order-confirmation" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
+              {/* Checkout & modals — slide up */}
+              <Stack.Screen name="pricing" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
+              <Stack.Screen name="invoice" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
+              <Stack.Screen name="order-confirmation" options={{ animation: "slide_from_bottom", gestureDirection: "vertical" }} />
 
-            {/* Content screens — platform default (iOS parallax card / Android material) */}
-            <Stack.Screen name="product-detail" />
-            <Stack.Screen name="category-products" />
-            <Stack.Screen name="collection/[slug]" />
-            <Stack.Screen name="section/[slug]" />
-            <Stack.Screen name="search" options={{ animation: "fade_from_bottom" }} />
+              {/* Content screens — platform default (iOS parallax card / Android material) */}
+              <Stack.Screen name="product-detail" />
+              <Stack.Screen name="category-products" />
+              <Stack.Screen name="collection/[slug]" />
+              <Stack.Screen name="section/[slug]" />
+              <Stack.Screen name="search" options={{ animation: "fade_from_bottom" }} />
 
-            {/* Account sub-screens — platform default drill-in */}
-            <Stack.Screen name="account/orders" />
-            <Stack.Screen name="account/order-detail" />
-            <Stack.Screen name="account/addresses" />
-            <Stack.Screen name="account/address-form" />
-            <Stack.Screen name="account/edit-profile" />
-            <Stack.Screen name="account/tickets" />
-            <Stack.Screen name="account/ticket-detail" />
-            <Stack.Screen name="account/create-ticket" />
-            <Stack.Screen name="account/faq" />
-            <Stack.Screen name="account/change-password" />
-            <Stack.Screen name="account/my-shop" />
-            <Stack.Screen name="account/reseller-shop" />
-            <Stack.Screen name="account/notifications" />
-            <Stack.Screen name="account/balance-transfer" />
-            <Stack.Screen name="account/income-history" />
-            <Stack.Screen name="account/team-members" />
-            <Stack.Screen name="account/referral" />
-            <Stack.Screen name="account/withdraw" />
-            <Stack.Screen name="account/track-order" />
-          </Stack>
-          <Toaster
-            position="top-center"
-            offset={60}
-            swipeToDismissDirection="up"
-            richColors
-            closeButton
-          />
+              {/* Account sub-screens — platform default drill-in */}
+              <Stack.Screen name="account/orders" />
+              <Stack.Screen name="account/order-detail" />
+              <Stack.Screen name="account/addresses" />
+              <Stack.Screen name="account/address-form" />
+              <Stack.Screen name="account/edit-profile" />
+              <Stack.Screen name="account/tickets" />
+              <Stack.Screen name="account/ticket-detail" />
+              <Stack.Screen name="account/create-ticket" />
+              <Stack.Screen name="account/faq" />
+              <Stack.Screen name="account/change-password" />
+              <Stack.Screen name="account/my-shop" />
+              <Stack.Screen name="account/reseller-shop" />
+              <Stack.Screen name="account/notifications" />
+              <Stack.Screen name="account/balance-transfer" />
+              <Stack.Screen name="account/income-history" />
+              <Stack.Screen name="account/team-members" />
+              <Stack.Screen name="account/referral" />
+              <Stack.Screen name="account/withdraw" />
+              <Stack.Screen name="account/track-order" />
+            </Stack>
+            <Toaster
+              position="top-center"
+              offset={60}
+              swipeToDismissDirection="up"
+              richColors
+              closeButton
+            />
         </GestureHandlerRootView>
       </QueryClientProvider>
     </TamaguiProvider>
