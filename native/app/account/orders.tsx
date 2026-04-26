@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
 import { OrdersSkeleton } from "@/components/skeleton";
+import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
 
 const ACCENT = "#E5005F";
 
@@ -90,6 +91,7 @@ export default function OrdersScreen() {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterKey>("all");
 
   /* ── Order Counts ── */
   const countQuery = useQuery({
@@ -129,9 +131,11 @@ export default function OrdersScreen() {
   const isSearching = normalizedSearch.length > 0;
 
   const filteredOrders = useMemo(() => {
-    if (!isSearching) return orders;
-
     return orders.filter((order) => {
+      if (!isWithinDateRange(order.orderDate ?? order.created_at, dateFilter)) return false;
+
+      if (!isSearching) return true;
+
       const searchableValues = [
         order.invoiceID,
         order.id,
@@ -150,7 +154,7 @@ export default function OrdersScreen() {
         String(value ?? "").toLowerCase().includes(normalizedSearch)
       );
     });
-  }, [orders, isSearching, normalizedSearch]);
+  }, [orders, isSearching, normalizedSearch, dateFilter]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -163,6 +167,11 @@ export default function OrdersScreen() {
   /* ── Handlers ── */
   const handleTabChange = (status: string) => {
     setActiveStatus(status);
+    setPage(1);
+  };
+
+  const handleDateFilterChange = (key: DateFilterKey) => {
+    setDateFilter(key);
     setPage(1);
   };
 
@@ -287,6 +296,9 @@ export default function OrdersScreen() {
             );
           })}
         </ScrollView>
+
+        {/* ── Date Filter ── */}
+        <DateFilter value={dateFilter} onChange={handleDateFilterChange} />
 
         {/* ── Orders List ── */}
         <View style={styles.searchSection}>
