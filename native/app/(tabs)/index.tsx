@@ -10,6 +10,7 @@ import {
   Image,
   type ViewToken,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "tamagui";
 import { useQuery } from "@tanstack/react-query";
 
@@ -58,6 +59,7 @@ function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => voi
 }
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef<FlatList>(null);
 
@@ -199,7 +201,7 @@ export default function HomeScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text fontSize="$7" fontWeight="bold" color="#1A1A2E">
           SelfShop
         </Text>
@@ -616,7 +618,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 56,
     paddingBottom: 8,
   },
   headerRight: {

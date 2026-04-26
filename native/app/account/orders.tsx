@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   FlatList,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ScrollView,
   Image,
+  TextInput,
 } from "react-native";
 import { Text } from "tamagui";
 import { router, Stack } from "expo-router";
@@ -62,10 +63,33 @@ function formatCurrency(value: number | string | undefined): string {
   return `৳${num.toLocaleString("en-BD")}`;
 }
 
+function parseMoney(value: unknown): number {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function hasMoneyValue(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== "";
+}
+
+function getOrderTotal(order: any): number {
+  if (hasMoneyValue(order?.subTotal) || hasMoneyValue(order?.deliveryCharge)) {
+    return (
+      parseMoney(order?.subTotal) +
+      parseMoney(order?.deliveryCharge) -
+      parseMoney(order?.discountCharge)
+    );
+  }
+
+  return parseMoney(order?.total ?? order?.paymentAmount ?? order?.payable_amount);
+}
+
 export default function OrdersScreen() {
   const queryClient = useQueryClient();
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   /* ── Order Counts ── */
   const countQuery = useQuery({
@@ -79,9 +103,16 @@ export default function OrdersScreen() {
 
   /* ── Orders by Status ── */
   const ordersQuery = useQuery({
-    queryKey: ["orders", activeStatus, page],
+    queryKey: ["orders", activeStatus, page, debouncedSearchQuery.trim()],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/order-data/${activeStatus}?page=${page}`);
+      const params = new URLSearchParams({ page: String(page) });
+      const search = debouncedSearchQuery.trim();
+
+      if (search) {
+        params.set("search", search);
+      }
+
+      const { data } = await apiClient.get(`/order-data/${activeStatus}?${params.toString()}`);
       return data;
     },
     staleTime: 30 * 1000,
@@ -94,10 +125,49 @@ export default function OrdersScreen() {
   const orders: any[] = Array.isArray(ordersList) ? ordersList : [];
   const lastPage = ordersRaw?.data?.last_page ?? ordersRaw?.last_page ?? 1;
   const counts = countQuery.data ?? {};
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const isSearching = normalizedSearch.length > 0;
+
+  const filteredOrders = useMemo(() => {
+    if (!isSearching) return orders;
+
+    return orders.filter((order) => {
+      const searchableValues = [
+        order.invoiceID,
+        order.id,
+        order.order_id,
+        order.orderId,
+        order.customers?.customerName,
+        order.customers?.customerPhone,
+        order.customer?.name,
+        order.customer?.phone,
+        order.status,
+        order.customer_status,
+        order.display_status,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value ?? "").toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [orders, isSearching, normalizedSearch]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 350);
+
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
   /* ── Handlers ── */
   const handleTabChange = (status: string) => {
     setActiveStatus(status);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
     setPage(1);
   };
 
@@ -107,7 +177,7 @@ export default function OrdersScreen() {
   }, [queryClient, activeStatus]);
 
   const loadMore = () => {
-    if (page < lastPage && !ordersQuery.isFetching) {
+    if (!isSearching && page < lastPage && !ordersQuery.isFetching) {
       setPage((p) => p + 1);
     }
   };
@@ -123,6 +193,7 @@ export default function OrdersScreen() {
     const displayStatus =
       order.customer_status ?? order.display_status ?? order.status ?? activeStatus;
     const statusStyle = STATUS_COLORS[displayStatus] ?? STATUS_COLORS.Pending;
+    const orderTotal = getOrderTotal(order);
 
     return (
       <Pressable
@@ -168,7 +239,7 @@ export default function OrdersScreen() {
                 {displayStatus}
               </Text>
             </View>
-            <Text style={styles.orderAmount}>{formatCurrency(order.total)}</Text>
+            <Text style={styles.orderAmount}>{formatCurrency(orderTotal)}</Text>
           </View>
         </View>
       </Pressable>
@@ -218,13 +289,38 @@ export default function OrdersScreen() {
         </ScrollView>
 
         {/* ── Orders List ── */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchInputWrap}>
+            <Ionicons name="search-outline" size={18} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              placeholder="Search by order ID or invoice"
+              placeholderTextColor="#9CA3AF"
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {isSearching && (
+              <Pressable
+                onPress={() => setSearchQuery("")}
+                hitSlop={8}
+                style={({ pressed }) => [styles.searchClearBtn, pressed && { opacity: 0.75 }]}
+              >
+                <Ionicons name="close" size={14} color="#fff" />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
         <FlatList
-          data={orders}
+          data={filteredOrders}
           renderItem={renderOrder}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[
             styles.listContent,
-            orders.length === 0 && { flex: 1 },
+            filteredOrders.length === 0 && { flex: 1 },
           ]}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           refreshControl={
@@ -243,8 +339,21 @@ export default function OrdersScreen() {
               <View style={styles.emptyState}>
                 <Ionicons name="receipt-outline" size={48} color="#D1D5DB" />
                 <Text fontSize="$4" fontWeight="600" color="#9CA3AF" mt="$3">
-                  No {activeStatus.toLowerCase()} orders
+                  {isSearching
+                    ? `No orders match "${searchQuery.trim()}"`
+                    : `No ${activeStatus.toLowerCase()} orders`}
                 </Text>
+                {isSearching && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.clearSearchButton,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                    onPress={() => setSearchQuery("")}
+                  >
+                    <Text style={styles.clearSearchText}>Clear Search</Text>
+                  </Pressable>
+                )}
               </View>
             )
           }
@@ -321,7 +430,52 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
 
-  /* ── Order Card ── */
+  /* Search */
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    backgroundColor: "#F8F8FA",
+  },
+  searchInputWrap: {
+    height: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+  },
+  searchInput: {
+    flex: 1,
+    color: "#1A1A2E",
+    fontSize: 14,
+    fontWeight: "500",
+    paddingVertical: 0,
+  },
+  searchClearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#C7C7CC",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  clearSearchButton: {
+    marginTop: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: ACCENT,
+  },
+  clearSearchText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  /* Order Card */
   orderCard: {
     backgroundColor: "#fff",
     borderRadius: 14,

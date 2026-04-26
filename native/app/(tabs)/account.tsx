@@ -4,11 +4,13 @@ import { Text } from "tamagui";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession, logout } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
 
 export default function AccountScreen() {
+  const insets = useSafeAreaInsets();
   const { data: session, signOut } = useSession();
   const isLoggedIn = !!session?.user;
 
@@ -47,13 +49,13 @@ export default function AccountScreen() {
   const profile = profileQuery.data;
 
   if (!isLoggedIn) {
-    return <GuestView />;
+    return <GuestView insets={insets} />;
   }
 
   return (
     <View style={styles.container}>
       {/* Sticky Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text fontSize="$7" fontWeight="bold" color="#1A1A2E">
           Profile
         </Text>
@@ -255,10 +257,10 @@ function MenuItem({
   );
 }
 
-function GuestView() {
+function GuestView({ insets }: { insets: { top: number } }) {
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text fontSize="$7" fontWeight="bold" color="#1A1A2E">
           Account
         </Text>
@@ -308,7 +310,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 56,
     paddingBottom: 12,
     backgroundColor: "#fff",
   },

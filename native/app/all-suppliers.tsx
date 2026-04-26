@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   View,
   FlatList,
@@ -9,6 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   ScrollView,
+  TextInput,
   Text as RNText,
 } from "react-native";
 import { Text } from "tamagui";
@@ -46,6 +47,7 @@ const FILTER_OPTIONS = [
 export default function AllSuppliersScreen() {
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState("best_rated");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const suppliersQuery = useQuery({
     queryKey: ["popular-vendors", activeFilter],
@@ -57,7 +59,18 @@ export default function AllSuppliersScreen() {
     },
   });
 
-  const suppliers: any[] = Array.isArray(suppliersQuery.data) ? suppliersQuery.data : [];
+  const allSuppliers: any[] = Array.isArray(suppliersQuery.data) ? suppliersQuery.data : [];
+
+  // Client-side filter by name or ID
+  const suppliers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return allSuppliers;
+    return allSuppliers.filter((s: any) => {
+      const name = (s.company_name ?? s.shop_name ?? s.name ?? "").toLowerCase();
+      const id = String(s.id ?? "");
+      return name.includes(q) || id.includes(q);
+    });
+  }, [allSuppliers, searchQuery]);
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["popular-vendors", activeFilter] });
@@ -123,6 +136,61 @@ export default function AllSuppliersScreen() {
     );
   };
 
+  const listHeader = (
+    <>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color="#9CA3AF" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by supplier name or ID..."
+            placeholderTextColor="#B0B0B8"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+              <View style={styles.clearBtn}>
+                <Ionicons name="close" size={13} color="#fff" />
+              </View>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {/* Filter Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {FILTER_OPTIONS.map((opt) => {
+          const isActive = opt.value === activeFilter;
+          return (
+            <Pressable
+              key={opt.value}
+              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              onPress={() => setActiveFilter(opt.value)}
+            >
+              <RNText
+                style={[
+                  styles.filterChipText,
+                  isActive && styles.filterChipTextActive,
+                ]}
+              >
+                {opt.label}
+              </RNText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </>
+  );
+
   return (
     <>
       <Stack.Screen
@@ -134,33 +202,6 @@ export default function AllSuppliersScreen() {
         }}
       />
       <View style={styles.container}>
-        {/* Filter Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {FILTER_OPTIONS.map((opt) => {
-            const isActive = opt.value === activeFilter;
-            return (
-              <Pressable
-                key={opt.value}
-                style={[styles.filterChip, isActive && styles.filterChipActive]}
-                onPress={() => setActiveFilter(opt.value)}
-              >
-                <RNText
-                  style={[
-                    styles.filterChipText,
-                    isActive && styles.filterChipTextActive,
-                  ]}
-                >
-                  {opt.label}
-                </RNText>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
         <FlatList
           data={suppliers}
           renderItem={renderSupplier}
@@ -169,8 +210,9 @@ export default function AllSuppliersScreen() {
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={[
             styles.gridContent,
-            suppliers.length === 0 && { flex: 1 },
+            suppliers.length === 0 && { flexGrow: 1 },
           ]}
+          ListHeaderComponent={listHeader}
           refreshControl={
             <RefreshControl
               refreshing={suppliersQuery.isRefetching}
@@ -183,10 +225,15 @@ export default function AllSuppliersScreen() {
               <SupplierGridSkeleton />
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="storefront-outline" size={48} color="#D1D5DB" />
+                <Ionicons name={searchQuery ? "search-outline" : "storefront-outline"} size={48} color="#D1D5DB" />
                 <Text fontSize="$4" fontWeight="600" color="#6B7280" mt="$3">
-                  No suppliers found
+                  {searchQuery ? `No suppliers match "${searchQuery}"` : "No suppliers found"}
                 </Text>
+                {searchQuery ? (
+                  <Pressable onPress={() => setSearchQuery("")} style={{ marginTop: 12 }}>
+                    <Text fontSize="$3" fontWeight="600" color={ACCENT}>Clear search</Text>
+                  </Pressable>
+                ) : null}
               </View>
             )
           }
@@ -199,7 +246,38 @@ export default function AllSuppliersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F8FA" },
 
-  filterRow: { padding: 16, paddingBottom: 8, gap: 8, alignItems: "center" as const },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  searchBar: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 10,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 46,
+    borderWidth: 1.5,
+    borderColor: "#E5E7EB",
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#1A1A2E",
+    padding: 0,
+  },
+  clearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#C7C7CC",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+
+  filterRow: { paddingHorizontal: 16, paddingBottom: 8, paddingTop: 8, gap: 8, alignItems: "center" as const },
   filterChip: {
     minHeight: 38,
     paddingHorizontal: 16,
@@ -224,7 +302,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  gridContent: { padding: 16, paddingBottom: 40 },
+  gridContent: { paddingHorizontal: 16, paddingBottom: 40 },
   gridRow: { justifyContent: "space-between", marginBottom: 12 },
   emptyState: { flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: 60 },
 

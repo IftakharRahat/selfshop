@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Text } from "tamagui";
 import { useQuery } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import apiClient from "@/lib/api-client";
 import { CategoriesSkeleton } from "@/components/skeleton";
@@ -19,6 +20,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SIDEBAR_WIDTH = 86;
 
 export default function CategoriesScreen() {
+  const insets = useSafeAreaInsets();
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
 
   const categories = useQuery({
@@ -41,7 +43,7 @@ export default function CategoriesScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text fontSize="$7" fontWeight="bold" color="#1A1A2E">
           Categories
         </Text>
@@ -190,7 +192,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 56,
     paddingBottom: 14,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
