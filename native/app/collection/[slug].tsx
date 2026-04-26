@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   FlatList,
@@ -7,6 +7,7 @@ import {
   Pressable,
   Animated,
   Dimensions,
+  TextInput,
 } from "react-native";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
@@ -35,6 +36,7 @@ export default function CollectionScreen() {
 
   const [sort, setSort] = useState("rating");
   const [showSort, setShowSort] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
@@ -108,6 +110,15 @@ export default function CollectionScreen() {
   });
 
   const products = Array.isArray(data) ? data : [];
+  const isNewArrivals = slug === "new_arrivel";
+  const trimmedSearch = searchQuery.trim().toLowerCase();
+
+  const filteredProducts = useMemo(() => {
+    if (!isNewArrivals || !trimmedSearch) return products;
+    return products.filter((item: any) =>
+      String(item?.ProductName ?? "").toLowerCase().includes(trimmedSearch),
+    );
+  }, [isNewArrivals, products, trimmedSearch]);
 
   return (
     <View style={styles.container}>
@@ -140,10 +151,37 @@ export default function CollectionScreen() {
 
         {!isLoading && products.length > 0 && (
           <Text fontSize={12} color="#999">
-            {products.length} products
+            {isNewArrivals && trimmedSearch
+              ? `${filteredProducts.length} of ${products.length} products`
+              : `${products.length} products`}
           </Text>
         )}
       </View>
+
+      {isNewArrivals && (
+        <View style={styles.searchBar}>
+          <View style={styles.searchInputWrap}>
+            <Ionicons name="search" size={18} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search in new arrivals..."
+              placeholderTextColor="#B0B0B8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+                <View style={styles.searchClearBtn}>
+                  <Ionicons name="close" size={14} color="#fff" />
+                </View>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Content */}
       {isLoading ? (
@@ -159,9 +197,26 @@ export default function CollectionScreen() {
             No products found
           </Text>
         </View>
+      ) : filteredProducts.length === 0 ? (
+        <View style={styles.center}>
+          <Ionicons name="search-outline" size={48} color="#E5005F" />
+          <Text color="#1A1A2E" fontWeight="700" mt="$2">
+            No matches found
+          </Text>
+          <Text color="#666" mt="$1">
+            No products match "{searchQuery}"
+          </Text>
+          <Pressable
+            style={styles.clearSearchButton}
+            onPress={() => setSearchQuery("")}
+          >
+            <Ionicons name="close-circle-outline" size={16} color="#fff" />
+            <Text style={styles.clearSearchButtonText}>Clear Search</Text>
+          </Pressable>
+        </View>
       ) : (
         <FlatList
-          data={products}
+          data={filteredProducts}
           keyExtractor={(item: any) => String(item.id)}
           numColumns={2}
           contentContainerStyle={styles.listContent}
@@ -295,11 +350,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EAEAF0",
   },
+  searchBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5F5FA",
+    backgroundColor: "#fff",
+  },
+  searchInputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F5F5FA",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 42,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#1A1A2E",
+    padding: 0,
+  },
+  searchClearBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#C7C7CC",
+  },
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
+  },
+  clearSearchButton: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#E5005F",
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  clearSearchButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
   },
   listContent: {
     padding: 16,
