@@ -1394,10 +1394,11 @@ export default function ProductDetailScreen() {
             </View>
 
             <ScrollView
-              style={{ flex: 1 }}
+              style={{ flexGrow: 1, flexShrink: 1, minHeight: 120 }}
               contentContainerStyle={{ paddingBottom: 14 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
             >
               {selectedVariant.sizes.map((sizeItem) => {
                 const size = sizeItem.sizeName;
@@ -1525,9 +1526,9 @@ export default function ProductDetailScreen() {
                   ]}
                 >
                   {addToCartMutation.isPending ? (
-                    <ActivityIndicator size="small" color="#009944" />
+                    <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Text fontSize={15} fontWeight="800" color="#009944">Add to Cart</Text>
+                    <Text fontSize={15} fontWeight="800" color="#fff">Add to Cart</Text>
                   )}
                 </Pressable>
               </View>
@@ -2151,7 +2152,10 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "90%",
+    minHeight: 400,
     overflow: "hidden",
+    flexShrink: 1,
+    flexGrow: 0,
   },
   variantSheetHandleWrap: {
     alignItems: "center",
@@ -2230,8 +2234,8 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
   },
   sheetVariantThumbActive: {
-    borderColor: "#009944",
-    backgroundColor: "#F0FDF4",
+    borderColor: ACCENT,
+    backgroundColor: "#FFF0F5",
   },
   sheetVariantThumbImage: { width: 50, height: 50, borderRadius: 10, backgroundColor: BG },
   sheetVariantSwatch: { width: 50, height: 50, borderRadius: 10, borderWidth: 1, borderColor: "#E5E5EA" },
@@ -2320,7 +2324,7 @@ const s = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 7,
-    backgroundColor: "#009944",
+    backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2328,7 +2332,7 @@ const s = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 7,
-    backgroundColor: "#EAFBF1",
+    backgroundColor: DARK,
     alignItems: "center",
     justifyContent: "center",
   },

@@ -1620,6 +1620,12 @@ class FrontendApiController extends Controller
         $order->setAttribute('carrybee_status', $meta['carrybee_status'] ?? null);
         $order->setAttribute('steadfast_last_synced_at', $meta['steadfast_last_synced_at']);
         $order->setAttribute('warehouse_sent_at', $meta['warehouse_sent_at']);
+        $order->setAttribute(
+            'total',
+            (float) ($order->subTotal ?? 0)
+            + (float) ($order->deliveryCharge ?? 0)
+            - (float) ($order->discountCharge ?? 0)
+        );
 
         return $order;
     }
@@ -1652,6 +1658,18 @@ class FrontendApiController extends Controller
             } else {
                 $query->where('status', $slug);
             }
+        }
+
+        $search = trim((string) request()->query('search', ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoiceID', 'like', '%' . $search . '%')
+                    ->orWhere('id', 'like', '%' . $search . '%')
+                    ->orWhereHas('customers', function ($customerQuery) use ($search) {
+                        $customerQuery->where('customerName', 'like', '%' . $search . '%')
+                            ->orWhere('customerPhone', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
         $totalQuery = clone $query;
@@ -2097,7 +2115,9 @@ class FrontendApiController extends Controller
 
     public function paymenttypes()
     {
-        $paymenttypes = Paymenttype::where('status', 'Active')->get();
+        $paymenttypes = Paymenttype::where('status', 'Active')
+            ->whereRaw('LOWER(paymentTypeName) NOT LIKE ?', ['%wallet%'])
+            ->get();
         return response()->json([
             'status' => true,
             'message' => 'Payment types',
@@ -2222,6 +2242,7 @@ class FrontendApiController extends Controller
 
             $paymenttypes = Paymenttype::where('id', (int) $request->paymenttype_id)
                 ->where('status', 'Active')
+                ->whereRaw('LOWER(paymentTypeName) NOT LIKE ?', ['%wallet%'])
                 ->first();
 
             if (!$paymenttypes) {
