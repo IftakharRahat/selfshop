@@ -12,6 +12,8 @@ import { Toaster } from "sonner-native";
 
 import { queryClient } from "@/lib/query-client";
 import { tamaguiConfig } from "../tamagui.config";
+import { useForceUpdate } from "@/hooks/useForceUpdate";
+import { ForceUpdateModal } from "@/components/force-update-modal";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,6 +23,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 });
+
+/**
+ * Inner gate that checks for forced updates.
+ * Must be rendered INSIDE QueryClientProvider so useQuery works.
+ */
+function ForceUpdateGate() {
+  const { updateRequired, storeUrl } = useForceUpdate();
+  return <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />;
+}
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
@@ -116,6 +127,7 @@ export default function RootLayout() {
               richColors
               closeButton
             />
+            <ForceUpdateGate />
         </GestureHandlerRootView>
       </QueryClientProvider>
     </TamaguiProvider>

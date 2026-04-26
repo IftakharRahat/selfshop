@@ -12,6 +12,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
+import * as Clipboard from "expo-clipboard";
 
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
@@ -218,6 +221,30 @@ export default function ProductDetailScreen() {
     }
   }, [data, isLoading, activeVariantIdx]);
 
+  // ── Image download handler (must be before early returns) ──
+  const [downloading, setDownloading] = useState(false);
+  const handleDownloadImage = useCallback(async (imageUri: string) => {
+    if (downloading) return;
+    try {
+      setDownloading(true);
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Please allow access to save images to your gallery.");
+        return;
+      }
+      const filename = imageUri.split("/").pop()?.split("?")[0] || `product-${Date.now()}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const download = await FileSystem.downloadAsync(imageUri, fileUri);
+      await MediaLibrary.saveToLibraryAsync(download.uri);
+      toast.success("Image saved to gallery!");
+    } catch (e) {
+      console.warn("Download failed:", e);
+      toast.error("Failed to download image");
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading]);
+
   if (isLoading) return <ProductDetailSkeleton />;
   if (isError || !data) return (
     <View style={s.loadC}>
@@ -274,6 +301,13 @@ export default function ProductDetailScreen() {
   // Description
   const rawDesc = product.ProductDetails ?? product.ProductBreaf ?? "";
   const cleanDesc = rawDesc.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+
+  // ── Copy description handler ──
+  const handleCopyDescription = async () => {
+    if (!cleanDesc) return;
+    await Clipboard.setStringAsync(cleanDesc);
+    toast.success("Description copied!");
+  };
 
   // ── Computed sizes for current variant ──
   const currentVariant = variants[activeVariantIdx];
@@ -610,7 +644,17 @@ export default function ProductDetailScreen() {
             onViewableItemsChanged={onImgChange} viewabilityConfig={imgViewCfg}
             keyExtractor={(_, i) => String(i)}
             renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={s.heroImg} resizeMode="contain" />
+              <View style={{ width: SW, position: "relative" }}>
+                <Image source={{ uri: item }} style={s.heroImg} resizeMode="contain" />
+                <Pressable
+                  style={({ pressed }) => [s.downloadBadge, pressed && { opacity: 0.7 }]}
+                  onPress={() => handleDownloadImage(item)}
+                  disabled={downloading}
+                >
+                  <Ionicons name="download-outline" size={16} color="#1A1A2E" />
+                  <Text style={s.downloadBadgeText}>{downloading ? "Saving..." : "Download"}</Text>
+                </Pressable>
+              </View>
             )}
           />
           {/* Gradient overlay for status bar readability */}
@@ -1093,14 +1137,23 @@ export default function ProductDetailScreen() {
               <Text fontSize="$3" color="#444" lineHeight={22} numberOfLines={descExpanded ? undefined : 5}>
                 {cleanDesc}
               </Text>
-              {cleanDesc.length > 200 && (
-                <Pressable onPress={() => setDescExpanded(p => !p)} style={s.readMoreBtn}>
-                  <Text fontSize="$2" fontWeight="600" color={ACCENT}>
-                    {descExpanded ? "Show less" : "Read more"}
-                  </Text>
-                  <Ionicons name={descExpanded ? "chevron-up" : "chevron-down"} size={14} color={ACCENT} />
+              <View style={s.descActions}>
+                {cleanDesc.length > 200 && (
+                  <Pressable onPress={() => setDescExpanded(p => !p)} style={s.readMoreBtn}>
+                    <Text fontSize="$2" fontWeight="600" color={ACCENT}>
+                      {descExpanded ? "Show less" : "Read more"}
+                    </Text>
+                    <Ionicons name={descExpanded ? "chevron-up" : "chevron-down"} size={14} color={ACCENT} />
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={handleCopyDescription}
+                  style={({ pressed }) => [s.copyDescBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <Ionicons name="copy-outline" size={14} color={ACCENT} />
+                  <Text fontSize="$2" fontWeight="600" color={ACCENT}>Copy Description</Text>
                 </Pressable>
-              )}
+              </View>
             </View>
           ) : null}
 
@@ -2335,5 +2388,40 @@ const s = StyleSheet.create({
     backgroundColor: DARK,
     alignItems: "center",
     justifyContent: "center",
+  },
+  downloadBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#CCFF8D",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderTopLeftRadius: 10,
+  },
+  downloadBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1A1A2E",
+  },
+  descActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    gap: 12,
+  },
+  copyDescBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#FFF0F5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FECDD3",
   },
 });

@@ -87,6 +87,7 @@
     .section-icon.analytics { background: #fef3c7; color: #d97706; }
     .section-icon.social { background: #dbeafe; color: #2563eb; }
     .section-icon.shipping { background: #d1fae5; color: #059669; }
+    .section-icon.mobile { background: #fce7f3; color: #db2777; }
 </style>
 
 <div class="container-fluid pt-4 px-4">
@@ -421,6 +422,34 @@
 
                             <div class="mt-3 text-end">
                                 <button type="submit" class="btn btn-save-section">Save Shipping Info</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- App Version Management --}}
+                <div class="admin-content-card">
+                    <div class="admin-card-header">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="section-icon mobile"><i class="bi bi-phone"></i></div>
+                            <h6 class="admin-card-title mb-0">App Version Management</h6>
+                        </div>
+                    </div>
+                    <div class="admin-card-body">
+                        <form action="{{ route('admin.app-version.update', $webinfo->id) }}" method="POST">
+                            @csrf
+                            <div class="form-group">
+                                <label>Android Version Code <span class="text-muted">(integer — must match the versionCode in your Play Store build)</span></label>
+                                <input type="number" class="form-control" name="android_app_version_code"
+                                    value="{{ $webinfo->android_app_version_code ?? 1 }}" min="1" placeholder="e.g. 1">
+                            </div>
+                            <div class="form-group">
+                                <label>Play Store URL <span class="text-muted">(Google Play listing link)</span></label>
+                                <input type="url" class="form-control" name="android_play_store_url"
+                                    value="{{ $webinfo->android_play_store_url }}" placeholder="https://play.google.com/store/apps/details?id=com.selfshop.app">
+                            </div>
+                            <div class="mt-3 text-end">
+                                <button type="submit" class="btn btn-save-section">Save App Version</button>
                             </div>
                         </form>
                     </div>
