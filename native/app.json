@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.selfshop.app"
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FDF2F8",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,7 +45,15 @@
       ],
       "expo-font",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow SelfShop to access your photos to save product images.",
+          "savePhotosPermission": "Allow SelfShop to save product images to your gallery.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

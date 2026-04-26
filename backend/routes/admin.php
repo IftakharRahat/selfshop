@@ -354,6 +354,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     // Vendor reports (Phase 7.2)
     Route::get('vendor-reports/profit-commission', [AdminVendorReportController::class, 'profitCommission'])->name('admin.vendor-reports.profit-commission');
     Route::get('vendor-reports/order-analytics', [AdminVendorReportController::class, 'orderAnalytics'])->name('admin.vendor-reports.order-analytics');
+
+    // App Version Management (Force Update)
+    Route::post('/app-version/update/{id}', [BasicinfoController::class, 'updateAppVersion'])->name('admin.app-version.update');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {

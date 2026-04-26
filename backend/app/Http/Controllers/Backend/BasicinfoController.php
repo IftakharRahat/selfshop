@@ -270,6 +270,24 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     /**
+     * Update app version management fields (force-update mechanism).
+     */
+    public function updateAppVersion(Request $request, $id)
+    {
+        $request->validate([
+            'android_app_version_code' => ['required', 'integer', 'min:1'],
+            'android_play_store_url'   => ['nullable', 'url'],
+        ]);
+
+        $webinfo = Basicinfo::where('id', $id)->first();
+        $webinfo->android_app_version_code = $request->android_app_version_code;
+        $webinfo->android_play_store_url   = $request->android_play_store_url;
+        $webinfo->save();
+
+        return redirect()->back()->with('message', 'App version settings updated successfully');
+    }
+
+    /**
      * Remove the specified resource from storage.
      *
      * @param  \App\Models\Basicinfo  $basicinfo

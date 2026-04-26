@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   View,
   FlatList,
@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
 
 const ACCENT = "#E5005F";
 
@@ -31,7 +32,14 @@ export default function IncomeHistoryScreen() {
     },
   });
 
-  const history: any[] = Array.isArray(incomeQuery.data) ? incomeQuery.data : [];
+  const [dateFilter, setDateFilter] = useState<DateFilterKey>("all");
+
+  const historyRaw: any[] = Array.isArray(incomeQuery.data) ? incomeQuery.data : [];
+
+  const history = useMemo(
+    () => historyRaw.filter((item) => isWithinDateRange(item.date ?? item.created_at, dateFilter)),
+    [historyRaw, dateFilter],
+  );
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["income-history"] });
@@ -82,6 +90,9 @@ export default function IncomeHistoryScreen() {
           styles.listContent,
           history.length === 0 && { flex: 1 },
         ]}
+        ListHeaderComponent={
+          <DateFilter value={dateFilter} onChange={setDateFilter} />
+        }
         refreshControl={
           <RefreshControl
             refreshing={incomeQuery.isRefetching}

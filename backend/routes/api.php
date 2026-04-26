@@ -63,6 +63,20 @@ Route::get('/tracking-config', function () {
     ]);
 })->name('api.tracking-config');
 
+// App version check — public, no auth required (force-update gate)
+Route::get('/app-version-check', function (Request $request) {
+    $info = \App\Models\Basicinfo::first();
+    $clientCode = (int) $request->query('version_code', 0);
+    $requiredCode = (int) ($info->android_app_version_code ?? 1);
+
+    return response()->json([
+        'update_required' => $clientCode < $requiredCode,
+        'required_version_code' => $requiredCode,
+        'store_url' => $info->android_play_store_url
+            ?? 'https://play.google.com/store/apps/details?id=com.selfshop.app',
+    ]);
+})->name('api.app-version-check');
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');
