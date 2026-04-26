@@ -24,6 +24,22 @@ const GREY = "#8E8E93";
 const BG = "#F5F5FA";
 const THUMB_SIZE = 52;
 
+type NormalizedVariantSize = {
+  sizeName: string;
+  sizePrice: any;
+  sizeStock: number;
+  bulkPrices: any[];
+};
+
+type NormalizedVariant = {
+  variantId: number;
+  label: string;
+  image?: string | null;
+  colorCode?: string | null;
+  stock: number;
+  sizes: NormalizedVariantSize[];
+};
+
 export default function ProductDetailScreen() {
   const params = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
@@ -33,7 +49,7 @@ export default function ProductDetailScreen() {
   const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
   const [descExpanded, setDescExpanded] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
-  const [showVariantSheet, setShowVariantSheet] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
   const defaultQtySet = useRef(false);
@@ -153,7 +169,7 @@ export default function ProductDetailScreen() {
   }, []);
   const imgViewCfg = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
-  // Set default quantity to 1 on first load
+  // Set default quantity to 1 only for a simple, single-default-size product.
   // NOTE: Must be called before any early returns to satisfy Rules of Hooks
   useEffect(() => {
     if (!data || isLoading) return;
@@ -183,7 +199,12 @@ export default function ProductDetailScreen() {
       }));
     }
 
-    if (!defaultQtySet.current && sizesForEffect.length > 0) {
+    const isSimpleProduct =
+      variants.length <= 1 &&
+      sizesForEffect.length === 1 &&
+      sizesForEffect[0]?.size_name === "Default";
+
+    if (!defaultQtySet.current && isSimpleProduct && sizesForEffect.length > 0) {
       const firstSize = sizesForEffect[0];
       if (firstSize && firstSize.qty > 0) {
         setVariantQuantities((prev) => {
@@ -282,6 +303,68 @@ export default function ProductDetailScreen() {
     }));
   }
 
+  const getVariantSizes = (variant?: any): NormalizedVariantSize[] => {
+    if (variant?.sizes && variant.sizes.length > 0) {
+      return variant.sizes.map((sz: any) => ({
+        sizeName: sz.size_name,
+        sizePrice: sz.price,
+        sizeStock: Number(sz.qty ?? 0),
+        bulkPrices: sz.bulkPrices || sz.bulk_prices || [],
+      }));
+    }
+
+    const overrideStock = variant ? variant.qty ?? stockQty : stockQty;
+    const productSizes = Array.isArray(product.size)
+      ? product.size
+      : typeof product.size === "string"
+        ? (() => {
+            try {
+              return JSON.parse(product.size);
+            } catch {
+              return [];
+            }
+          })()
+        : [];
+    const legacySizes = productSizes.length > 0 ? productSizes : ["Default"];
+
+    return legacySizes.map((sizeName: string) => ({
+      sizeName,
+      sizePrice: null,
+      sizeStock: Number(overrideStock ?? 0),
+      bulkPrices: [],
+    }));
+  };
+
+  const normalizedVariants: NormalizedVariant[] =
+    variants.length > 0
+      ? variants.map((variant: any, idx: number) => {
+          const sizes = getVariantSizes(variant);
+          return {
+            variantId: Number(variant.id),
+            label: variant.color_name || variant.title || `Variant ${idx + 1}`,
+            image: variant.image,
+            colorCode: typeof variant.color_code === "string" ? variant.color_code : null,
+            stock: Number(
+              variant.qty ??
+                sizes.reduce((sum, size) => sum + Number(size.sizeStock || 0), 0),
+            ),
+            sizes,
+          };
+        })
+      : [
+          {
+            variantId: 0,
+            label: "Default",
+            image: null,
+            colorCode: null,
+            stock: stockQty,
+            sizes: getVariantSizes(undefined),
+          },
+        ];
+
+  const selectedVariant =
+    normalizedVariants.find((variant) => variant.variantId === selectedVariantId) ??
+    normalizedVariants[0];
 
   // Total quantity across all variants and sizes
   const totalQuantity = Object.values(variantQuantities)
@@ -361,12 +444,21 @@ export default function ProductDetailScreen() {
   const getSelectedItems = () => {
     const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number; sellingPrice: number | null }[] = [];
     for (const [vid, sizes] of Object.entries(variantQuantities)) {
-      const v = variants.find((vr: any) => vr.id === Number(vid));
+      const v = normalizedVariants.find((variant) => variant.variantId === Number(vid));
       for (const [sizeName, qty] of Object.entries(sizes)) {
         if (qty > 0) {
-          const variantLabel = v?.color_name || v?.title || "";
-          const sizeItem = v?.sizes?.find((sz: any) => sz.size_name === sizeName) || sizesForTable.find(sz => sz.size_name === sizeName);
-          const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : salePrice;
+          const variantLabel = v?.label || "";
+          const sizeItem = v?.sizes.find((sz) => sz.sizeName === sizeName);
+          const itemPrice = sizeItem
+            ? getSizePrice(
+                {
+                  price: sizeItem.sizePrice,
+                  qty: sizeItem.sizeStock,
+                  bulk_prices: sizeItem.bulkPrices,
+                },
+                qty,
+              )
+            : salePrice;
           const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
           const sp = spStr ? parseFloat(spStr) : null;
           items.push({
@@ -481,6 +573,18 @@ export default function ProductDetailScreen() {
   };
 
   const formatBDT = (num: number, dec = 2) => num.toLocaleString("en-BD", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  const selectedItemsTotal = getSelectedItems().reduce((sum, item) => sum + item.price * item.qty, 0);
+  const selectedVariantSummary = normalizedVariants.flatMap((variant) =>
+    Object.entries(variantQuantities[variant.variantId] ?? {})
+      .filter(([, qty]) => Number(qty || 0) > 0)
+      .map(([sizeName, qty]) => `${variant.label} / ${sizeName} x${qty}`),
+  );
+  const openVariantSheet = (variantId: number) => {
+    const nextIdx = normalizedVariants.findIndex((variant) => variant.variantId === variantId);
+    if (nextIdx >= 0) setActiveVariantIdx(nextIdx);
+    setSelectedVariantId(variantId);
+  };
+  const closeVariantSheet = () => setSelectedVariantId(null);
 
   return (
     <View style={s.container}>
@@ -858,181 +962,108 @@ export default function ProductDetailScreen() {
             );
           }
 
-          // ── MULTI-VARIANT / MULTI-SIZE: Full table ──
+          // MULTI-VARIANT / MULTI-SIZE: variant-first selector
           return (
             <View style={s.orderingSection}>
               <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Select Items</Text>
 
-              {/* Variant (Color) Tabs */}
-              {variants.length > 1 && (
-                <View style={{ marginBottom: 12 }}>
-                  <Text fontSize={12} fontWeight="600" color={GREY} mb="$1">
-                    Color: {currentVariant?.title || currentVariant?.color_name || "Default"}
+              <View style={s.variantPickerCard}>
+                <View style={s.variantPickerHeader}>
+                  <View>
+                    <Text fontSize={14} fontWeight="800" color={DARK}>
+                      Product Variants
+                    </Text>
+                    <Text fontSize={11} color={GREY}>
+                      Tap a variant to choose size and quantity
+                    </Text>
+                  </View>
+                  {totalQuantity > 0 && (
+                    <View style={s.variantTotalBadge}>
+                      <Text fontSize={11} fontWeight="800" color={ACCENT}>
+                        {totalQuantity} pcs
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={s.variantSummaryRow}>
+                  <Text style={s.variantSummaryLabel} fontSize={14} fontWeight="700" color={DARK}>
+                    {variants.length > 1 ? "Color" : "Option"}
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                    {variants.map((v: any, idx: number) => {
-                      const isAct = idx === activeVariantIdx;
-                      const selectedVarQty = Object.values(variantQuantities[Number(v.id)] ?? {}).reduce((sum, qty) => sum + Number(qty || 0), 0);
-                      const colorCode = typeof v.color_code === "string" ? v.color_code : "";
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.variantThumbList}
+                  >
+                    {normalizedVariants.map((variant) => {
+                      const selectedVarQty = Object.values(variantQuantities[variant.variantId] ?? {})
+                        .reduce((sum, qty) => sum + Number(qty || 0), 0);
+                      const isCurrent = selectedVariant?.variantId === variant.variantId;
+
                       return (
                         <Pressable
-                          key={v.id}
-                          onPress={() => setActiveVariantIdx(idx)}
-                          style={[s.variantTab, isAct && { borderColor: ACCENT, backgroundColor: "#FFF0F5" }]}
+                          key={variant.variantId}
+                          onPress={() => openVariantSheet(variant.variantId)}
+                          style={[
+                            s.variantThumbButton,
+                            isCurrent && s.variantThumbButtonActive,
+                          ]}
                         >
                           {selectedVarQty > 0 && (
                             <View style={s.variantQtyBadge}>
-                              <Text fontSize={9} fontWeight="800" color="#fff">{selectedVarQty}</Text>
+                              <Text fontSize={9} fontWeight="800" color="#fff">
+                                {selectedVarQty}
+                              </Text>
                             </View>
                           )}
-                          {v.image ? (
-                            <Image source={{ uri: v.image }} style={s.variantTabImg} resizeMode="cover" />
-                          ) : colorCode ? (
-                            <View style={[s.variantSwatch, { backgroundColor: colorCode }]} />
+                          {variant.image ? (
+                            <Image source={{ uri: variant.image }} style={s.variantThumbImage} resizeMode="cover" />
+                          ) : variant.colorCode ? (
+                            <View style={[s.variantThumbSwatch, { backgroundColor: variant.colorCode }]} />
                           ) : (
-                            <View style={s.variantFallback}>
-                              <Text fontSize={12} fontWeight="600" color={GREY}>{(v.color_name || v.title || "?").slice(0, 2)}</Text>
+                            <View style={s.variantThumbFallback}>
+                              <Text fontSize={11} fontWeight="800" color={GREY}>
+                                {variant.label.slice(0, 2).toUpperCase()}
+                              </Text>
                             </View>
                           )}
-                          <Text fontSize={10} fontWeight="600" color={isAct ? ACCENT : "#555"} numberOfLines={1}>
-                            {v.color_name || v.title || `V${idx + 1}`}
-                          </Text>
                         </Pressable>
                       );
                     })}
                   </ScrollView>
-                </View>
-              )}
-
-              {/* View All Variations button */}
-              {variants.length > 1 && (
-                <Pressable
-                  style={({ pressed }) => [
-                    {
-                      flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-                      backgroundColor: "#FFF0F5", borderRadius: 12, borderWidth: 1.5, borderColor: "#FFD6E7",
-                      paddingVertical: 12, marginBottom: 12,
-                    },
-                    pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
-                  ]}
-                  onPress={() => setShowVariantSheet(true)}
-                >
-                  <Ionicons name="grid-outline" size={16} color={ACCENT} />
-                  <Text fontSize={13} fontWeight="700" color={ACCENT}>View All Variations ({variants.length} colors × {sizesForTable.length} sizes)</Text>
-                  <Ionicons name="chevron-forward" size={14} color={ACCENT} />
-                </Pressable>
-              )}
-
-              {/* Size Rows */}
-              <View style={s.sizeTable}>
-                {/* Header */}
-                <View style={s.sizeTableHeader}>
-                  <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={10} fontWeight="700" color={GREY}>SIZE</Text>
-                  <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={10} fontWeight="700" color={GREY}>PRICE</Text>
-                  <Text style={[s.sizeCol, { flex: 0.8, textAlign: "center" }]} fontSize={10} fontWeight="700" color={GREY}>STOCK</Text>
-                  <Text style={[s.sizeCol, { flex: 1.5, textAlign: "right" }]} fontSize={10} fontWeight="700" color={GREY}>QTY</Text>
+                  <Pressable
+                    onPress={() => openVariantSheet(selectedVariant.variantId)}
+                    style={s.variantOpenButton}
+                  >
+                    <Ionicons name="chevron-forward" size={22} color={DARK} />
+                  </Pressable>
                 </View>
 
-                {sizesForTable.map((sz) => {
-                  const size = sz.size_name;
-                  const qty = variantQuantities[currentVarId]?.[size] || 0;
-                  const displayPrice = getSizePrice(sz, qty);
-                  const rowSPStr = variantSellingPrices[currentVarId]?.[size] || "";
-                  const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
-                  const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
-                  const rowPriceInvalid = rowSPStr !== "" && rowSP < displayPrice;
-
-                  return (
-                    <View key={size}>
-                      <View style={[s.sizeTableRow, qty > 0 && { backgroundColor: "#FFF0F5" }]}>
-                        <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={13} fontWeight="600" color={DARK}>{size}</Text>
-                        <View style={[s.sizeCol, { flex: 1.2, flexDirection: "row", alignItems: "center", gap: 3 }]}>
-                          <Text fontSize={13} fontWeight="600" color={DARK}>৳{formatBDT(displayPrice, 0)}</Text>
-                          {sz.bulk_prices?.length > 0 && (
-                            <View style={{ backgroundColor: "#ECFDF5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                              <Text fontSize={8} fontWeight="800" color="#059669">BULK</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={[s.sizeCol, { flex: 0.8, textAlign: "center" }]} fontSize={12} fontWeight="500" color={sz.qty <= 0 ? "#EF4444" : "#666"}>
-                          {sz.qty <= 0 ? "Out" : sz.qty}
+                <View style={s.variantSelectionSummary}>
+                  {selectedVariantSummary.length > 0 ? (
+                    selectedVariantSummary.slice(0, 3).map((item) => (
+                      <View key={item} style={s.selectedSizeChip}>
+                        <Text fontSize={11} fontWeight="700" color={DARK} numberOfLines={1}>
+                          {item}
                         </Text>
-                        <View style={[s.sizeCol, { flex: 1.5, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 2 }]}>
-                          <Pressable
-                            style={[s.miniStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
-                            onPress={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
-                            disabled={qty <= 0}
-                          >
-                            <Ionicons name="remove" size={14} color={qty <= 0 ? "#ccc" : DARK} />
-                          </Pressable>
-                          <View style={s.miniStepVal}>
-                            <Text fontSize={13} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
-                          </View>
-                          <Pressable
-                            style={[s.miniStepBtn, (qty >= sz.qty || sz.qty <= 0) && s.miniStepBtnDisabled]}
-                            onPress={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
-                            disabled={qty >= sz.qty || sz.qty <= 0}
-                          >
-                            <Ionicons name="add" size={14} color={(qty >= sz.qty || sz.qty <= 0) ? "#ccc" : ACCENT} />
-                          </Pressable>
-                        </View>
                       </View>
-
-                      {/* Dropshipping selling price row */}
-                      {showDropshipping && qty > 0 && (
-                        <View style={s.sellingPriceRow}>
-                          <View style={s.sellingPriceLabel}>
-                            <Ionicons name="pricetag" size={12} color={ACCENT} />
-                            <Text fontSize={12} fontWeight="700" color={DARK}>Your Selling Price</Text>
-                          </View>
-                          <View style={s.sellingPriceInputRow}>
-                            <Text fontSize={14} fontWeight="600" color={GREY}>৳</Text>
-                            <TextInput
-                              style={[
-                                s.sellingPriceInput,
-                                rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                                rowSP >= displayPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
-                              ]}
-                              keyboardType="numeric"
-                              value={rowSPStr}
-                              onChangeText={(v) => handleSellingPriceChange(currentVarId, size, v)}
-                              placeholder={`Min ${Math.ceil(displayPrice)}`}
-                              placeholderTextColor="#bbb"
-                            />
-                            {rowEarnings > 0 ? (
-                              <View style={s.earningsBadge}>
-                                <Ionicons name="trending-up" size={12} color="#059669" />
-                                <Text fontSize={12} fontWeight="800" color="#059669">+৳{formatBDT(rowEarnings, 0)}</Text>
-                              </View>
-                            ) : rowPriceInvalid ? (
-                              <View style={s.earningsBadge}>
-                                <Ionicons name="alert-circle" size={12} color="#EF4444" />
-                                <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
-                              </View>
-                            ) : (
-                              <Text fontSize={11} color={GREY}>Profit per pc</Text>
-                            )}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-
-                {/* Total Row */}
-                {totalQuantity > 0 && (
-                  <View style={s.sizeTableTotal}>
-                    <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Total</Text>
-                    <Text fontSize={13} fontWeight="800" color={ACCENT}>
-                      ৳{formatBDT(getSelectedItems().reduce((sum, i) => sum + i.price * i.qty, 0), 0)}
+                    ))
+                  ) : (
+                    <Text fontSize={12} color={GREY}>
+                      No variants selected yet
                     </Text>
-                    <Text fontSize={12} fontWeight="700" color={GREY} ml="$3">{totalQuantity} pcs</Text>
-                  </View>
-                )}
+                  )}
+                  {selectedVariantSummary.length > 3 && (
+                    <Text fontSize={11} fontWeight="700" color={ACCENT}>
+                      +{selectedVariantSummary.length - 3} more
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
           );
         })()}
+
 
         {/* ═══ YOUTUBE ═══ */}
         {youtubeLink ? (
@@ -1264,103 +1295,242 @@ export default function ProductDetailScreen() {
         </Pressable>
       </Modal>
 
-      {/* ═══ VARIANT SELECTION BOTTOM SHEET ═══ */}
+      {/* VARIANT SELECTION BOTTOM SHEET */}
       <Modal
-        visible={showVariantSheet}
+        visible={selectedVariantId !== null}
         transparent
         statusBarTranslucent
         animationType="slide"
-        onRequestClose={() => setShowVariantSheet(false)}
+        onRequestClose={closeVariantSheet}
       >
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "85%", paddingBottom: Math.max(insets.bottom, 16) }}>
-            {/* Handle + Header */}
-            <View style={{ alignItems: "center", paddingTop: 12, paddingBottom: 8 }}>
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#DDD" }} />
+        <View style={s.variantSheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeVariantSheet} />
+          <View style={[s.variantSheetContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={s.variantSheetHandleWrap}>
+              <View style={s.variantSheetHandle} />
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F0F0F5" }}>
-              <View>
-                <Text fontSize={17} fontWeight="800" color={DARK}>All Variations</Text>
-                <Text fontSize={12} color={GREY}>{variants.length} colors · {sizesForTable.length} sizes</Text>
+
+            <View style={s.variantSheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text fontSize={17} fontWeight="800" color={DARK}>Select Variants</Text>
+                <Text fontSize={12} color={GREY}>
+                  {normalizedVariants.length} variant{normalizedVariants.length !== 1 ? "s" : ""} - {selectedVariant.sizes.length} size{selectedVariant.sizes.length !== 1 ? "s" : ""}
+                </Text>
               </View>
-              <Pressable onPress={() => setShowVariantSheet(false)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: BG, justifyContent: "center", alignItems: "center" }}>
+              <Pressable onPress={closeVariantSheet} style={s.variantSheetCloseBtn}>
                 <Ionicons name="close" size={20} color={DARK} />
               </Pressable>
             </View>
 
-            {/* Scrollable content */}
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-              {variants.map((v: any, vIdx: number) => {
-                const varId = v.id;
-                const varLabel = v.color_name || v.title || `Variant ${vIdx + 1}`;
-                const varSizes = v.sizes && v.sizes.length > 0
-                  ? v.sizes.map((sz: any) => ({ size_name: sz.size_name, price: sz.price, qty: sz.qty ?? 0, bulk_prices: sz.bulkPrices || sz.bulk_prices || [] }))
-                  : sizesForTable;
-                const varTotalQty = Object.values(variantQuantities[varId] ?? {}).reduce((sum: number, q: any) => sum + Number(q || 0), 0);
+            {showWholesale && isResellerActive && priceTiers.length > 0 && (
+              <View style={s.sheetTierPanel}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {priceTiers.map((tier: any) => {
+                    const isActive = activeTier?.id === tier.id;
+                    const qtyLabel = tier.max_qty ? String(tier.min_qty) + "-" + String(tier.max_qty) + " Pcs" : ">" + String(tier.min_qty) + " Pcs";
+                    const tierPrice = parseFloat(tier.unit_price) * commissionFactor;
+                    return (
+                      <View key={tier.id} style={[s.sheetTierBadge, isActive && s.sheetTierBadgeActive]}>
+                        <Text fontSize={15} fontWeight="800" color={isActive ? ACCENT : DARK}>
+                          {"\u09F3"}{formatBDT(tierPrice, 0)}
+                        </Text>
+                        <Text fontSize={10} fontWeight="600" color={isActive ? ACCENT : GREY}>{qtyLabel}</Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                {activeTier && totalQuantity > 0 && (
+                  <View style={s.sheetTierMessage}>
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text fontSize={12} fontWeight="700" color="#065F46">
+                      Current bulk price applied across selected variants
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View style={s.sheetVariantPanel}>
+              <Text fontSize={14} fontWeight="800" color={DARK}>
+                {variants.length > 1 ? "Color" : "Option"}: {selectedVariant.label}
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sheetVariantThumbList}>
+                {normalizedVariants.map((variant) => {
+                  const isActive = variant.variantId === selectedVariant.variantId;
+                  const selectedVarQty = Object.values(variantQuantities[variant.variantId] ?? {})
+                    .reduce((sum, qty) => sum + Number(qty || 0), 0);
+                  return (
+                    <Pressable
+                      key={variant.variantId}
+                      onPress={() => openVariantSheet(variant.variantId)}
+                      style={[s.sheetVariantThumb, isActive && s.sheetVariantThumbActive]}
+                    >
+                      {selectedVarQty > 0 && (
+                        <View style={s.variantQtyBadge}>
+                          <Text fontSize={9} fontWeight="800" color="#fff">{selectedVarQty}</Text>
+                        </View>
+                      )}
+                      {variant.image ? (
+                        <Image source={{ uri: variant.image }} style={s.sheetVariantThumbImage} resizeMode="cover" />
+                      ) : variant.colorCode ? (
+                        <View style={[s.sheetVariantSwatch, { backgroundColor: variant.colorCode }]} />
+                      ) : (
+                        <View style={s.sheetVariantFallback}>
+                          <Text fontSize={11} fontWeight="800" color={GREY}>
+                            {variant.label.slice(0, 2).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <View style={s.sheetSizeHeader}>
+              <Text style={{ flex: 1.2 }} fontSize={13} fontWeight="800" color={DARK}>Size</Text>
+              <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Price</Text>
+              <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={13} fontWeight="800" color={DARK}>Quantity</Text>
+            </View>
+
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 14 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {selectedVariant.sizes.map((sizeItem) => {
+                const size = sizeItem.sizeName;
+                const qty = variantQuantities[selectedVariant.variantId]?.[size] || 0;
+                const unitPrice = getSizePrice(
+                  {
+                    price: sizeItem.sizePrice,
+                    qty: sizeItem.sizeStock,
+                    bulk_prices: sizeItem.bulkPrices,
+                  },
+                  qty,
+                );
+                const rowSPStr = variantSellingPrices[selectedVariant.variantId]?.[size] || "";
+                const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
+                const rowEarnings = qty > 0 && rowSP >= unitPrice ? (rowSP - unitPrice) * qty : 0;
+                const rowPriceInvalid = rowSPStr !== "" && rowSP < unitPrice;
 
                 return (
-                  <View key={varId} style={{ borderBottomWidth: 1, borderBottomColor: "#F0F0F5" }}>
-                    {/* Variant header */}
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: varTotalQty > 0 ? "#FFF8FB" : "#fff" }}>
-                      {v.image ? (
-                        <Image source={{ uri: v.image }} style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: BG }} resizeMode="cover" />
-                      ) : (
-                        <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: v.color_code || BG, borderWidth: 1, borderColor: "#E5E5EA" }} />
-                      )}
+                  <View key={String(selectedVariant.variantId) + "-" + size} style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}>
+                    <View style={s.sheetSizeRow}>
+                      <View style={{ flex: 1.2 }}>
+                        <Text fontSize={14} fontWeight="700" color={DARK} numberOfLines={2}>
+                          {size === "Default" ? "Std" : size}
+                        </Text>
+                        <Text fontSize={10} color={sizeItem.sizeStock <= 0 ? "#EF4444" : GREY}>
+                          {sizeItem.sizeStock <= 0 ? "Out of stock" : String(sizeItem.sizeStock) + " in stock"}
+                        </Text>
+                      </View>
                       <View style={{ flex: 1 }}>
-                        <Text fontSize={14} fontWeight="700" color={DARK}>{varLabel}</Text>
-                        {varTotalQty > 0 && <Text fontSize={11} fontWeight="600" color={ACCENT}>{varTotalQty} selected</Text>}
+                        <Text fontSize={13} fontWeight="700" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
+                        {sizeItem.bulkPrices.length > 0 && (
+                          <Text fontSize={9} fontWeight="800" color="#059669">BULK</Text>
+                        )}
+                      </View>
+                      <View style={s.sheetStepperWrap}>
+                        <Pressable
+                          style={[s.sheetStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
+                          onPress={() => handleQtyChange(selectedVariant.variantId, size, "decrease", sizeItem.sizeStock)}
+                          disabled={qty <= 0}
+                        >
+                          <Ionicons name="remove" size={15} color={qty <= 0 ? "#ccc" : DARK} />
+                        </Pressable>
+                        <View style={s.sheetStepVal}>
+                          <Text fontSize={14} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
+                        </View>
+                        <Pressable
+                          style={[s.sheetStepBtn, (qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) && s.miniStepBtnDisabled]}
+                          onPress={() => handleQtyChange(selectedVariant.variantId, size, "increase", sizeItem.sizeStock)}
+                          disabled={qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0}
+                        >
+                          <Ionicons name="add" size={15} color={(qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) ? "#ccc" : ACCENT} />
+                        </Pressable>
                       </View>
                     </View>
-                    {/* Size rows */}
-                    {varSizes.map((sz: any) => {
-                      const size = sz.size_name;
-                      const qty = variantQuantities[varId]?.[size] || 0;
-                      const unitPrice = getSizePrice(sz, qty);
-                      return (
-                        <View key={`${varId}-${size}`} style={[{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 10, gap: 8 }, qty > 0 && { backgroundColor: "#FFF0F5" }]}>
-                          <Text style={{ flex: 1 }} fontSize={13} fontWeight="600" color={DARK}>{size === "Default" ? "Std" : size}</Text>
-                          <Text fontSize={12} fontWeight="600" color={GREY}>৳{formatBDT(unitPrice, 0)}</Text>
-                          <Text fontSize={11} color={sz.qty <= 0 ? "#EF4444" : "#999"} style={{ width: 40, textAlign: "center" }}>{sz.qty <= 0 ? "Out" : sz.qty}</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                            <Pressable
-                              style={[s.miniStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
-                              onPress={() => handleQtyChange(varId, size, "decrease", sz.qty)}
-                              disabled={qty <= 0}
-                            >
-                              <Ionicons name="remove" size={14} color={qty <= 0 ? "#ccc" : DARK} />
-                            </Pressable>
-                            <View style={s.miniStepVal}>
-                              <Text fontSize={13} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
-                            </View>
-                            <Pressable
-                              style={[s.miniStepBtn, (qty >= sz.qty || sz.qty <= 0) && s.miniStepBtnDisabled]}
-                              onPress={() => handleQtyChange(varId, size, "increase", sz.qty)}
-                              disabled={qty >= sz.qty || sz.qty <= 0}
-                            >
-                              <Ionicons name="add" size={14} color={(qty >= sz.qty || sz.qty <= 0) ? "#ccc" : ACCENT} />
-                            </Pressable>
-                          </View>
+
+                    {showDropshipping && qty > 0 && (
+                      <View style={s.sheetSellingPricePanel}>
+                        <View style={s.sellingPriceLabel}>
+                          <Ionicons name="pricetag" size={12} color={ACCENT} />
+                          <Text fontSize={12} fontWeight="700" color={DARK}>Your Selling Price</Text>
                         </View>
-                      );
-                    })}
+                        <View style={s.sellingPriceInputRow}>
+                          <Text fontSize={14} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
+                          <TextInput
+                            style={[
+                              s.sellingPriceInput,
+                              rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                              rowSP >= unitPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                            ]}
+                            keyboardType="numeric"
+                            value={rowSPStr}
+                            onChangeText={(value) => handleSellingPriceChange(selectedVariant.variantId, size, value)}
+                            placeholder={"Min " + Math.ceil(unitPrice)}
+                            placeholderTextColor="#bbb"
+                          />
+                          {rowEarnings > 0 ? (
+                            <View style={s.earningsBadge}>
+                              <Ionicons name="trending-up" size={12} color="#059669" />
+                              <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(rowEarnings, 0)}</Text>
+                            </View>
+                          ) : rowPriceInvalid ? (
+                            <View style={s.earningsBadge}>
+                              <Ionicons name="alert-circle" size={12} color="#EF4444" />
+                              <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
+                            </View>
+                          ) : (
+                            <Text fontSize={11} color={GREY}>Profit</Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
                   </View>
                 );
               })}
             </ScrollView>
 
-            {/* Bottom summary */}
-            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F0F0F5", gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text fontSize={12} color={GREY}>Total: {totalQuantity} pcs</Text>
-                <Text fontSize={18} fontWeight="800" color={ACCENT}>৳{formatBDT(getSelectedItems().reduce((sum, i) => sum + i.price * i.qty, 0), 0)}</Text>
+            <View style={s.variantSheetFooter}>
+              <View style={s.sheetTotalRows}>
+                <View style={s.sheetTotalRow}>
+                  <Text fontSize={12} color={GREY}>Total items: {totalQuantity} Pieces</Text>
+                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
+                </View>
+                <View style={s.sheetTotalRow}>
+                  <Text fontSize={12} color={GREY}>Total:</Text>
+                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
+                </View>
               </View>
-              <Pressable
-                onPress={() => setShowVariantSheet(false)}
-                style={({ pressed }) => [{ backgroundColor: ACCENT, borderRadius: 14, paddingHorizontal: 28, paddingVertical: 14 }, pressed && { opacity: 0.85 }]}
-              >
-                <Text fontSize={14} fontWeight="700" color="#fff">Done</Text>
-              </Pressable>
+              <View style={s.sheetActionRow}>
+                <Pressable
+                  onPress={handleBuyNow}
+                  disabled={addToCartMutation.isPending || totalQuantity === 0}
+                  style={({ pressed }) => [
+                    s.sheetBuyBtn,
+                    (pressed || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                  ]}
+                >
+                  <Text fontSize={15} fontWeight="800" color="#fff">Buy Now</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleAddToCart}
+                  disabled={addToCartMutation.isPending || totalQuantity === 0}
+                  style={({ pressed }) => [
+                    s.sheetCartBtn,
+                    (pressed || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                  ]}
+                >
+                  {addToCartMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#009944" />
+                  ) : (
+                    <Text fontSize={15} fontWeight="800" color="#009944">Add to Cart</Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
           </View>
         </View>
@@ -1741,6 +1911,84 @@ const s = StyleSheet.create({
     minWidth: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT,
     justifyContent: "center", alignItems: "center", paddingHorizontal: 3,
   },
+  variantPickerCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    overflow: "hidden",
+  },
+  variantPickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  variantTotalBadge: {
+    backgroundColor: "#FFF0F5",
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  variantSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F5",
+  },
+  variantSummaryLabel: { width: 54 },
+  variantThumbList: { gap: 8, paddingRight: 8 },
+  variantThumbButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    backgroundColor: BG,
+  },
+  variantThumbButtonActive: {
+    borderColor: ACCENT,
+    backgroundColor: "#FFF0F5",
+  },
+  variantThumbImage: { width: 50, height: 50, borderRadius: 8, backgroundColor: BG },
+  variantThumbSwatch: { width: 50, height: 50, borderRadius: 8, borderWidth: 1, borderColor: "#E5E5EA" },
+  variantThumbFallback: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#F8F8FA",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  variantOpenButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  variantSelectionSummary: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  selectedSizeChip: {
+    maxWidth: "100%",
+    backgroundColor: "#F5F5FA",
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
 
   // Size table
   sizeTable: { borderWidth: 1, borderColor: "#E5E5EA", borderRadius: 12, overflow: "hidden" },
@@ -1890,5 +2138,198 @@ const s = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     backgroundColor: ACCENT, borderRadius: 30, paddingVertical: 16,
     width: "100%", marginTop: 20, gap: 8,
+  },
+
+  // Variant selection bottom sheet
+  variantSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  variantSheetContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "90%",
+    overflow: "hidden",
+  },
+  variantSheetHandleWrap: {
+    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  variantSheetHandle: {
+    width: 56,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#E5E5EA",
+  },
+  variantSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+  },
+  variantSheetCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetTierPanel: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#FFF8E8",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+  },
+  sheetTierBadge: {
+    minWidth: 104,
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    backgroundColor: "#fff",
+  },
+  sheetTierBadgeActive: {
+    borderColor: ACCENT,
+    backgroundColor: "#FFF0F5",
+  },
+  sheetTierMessage: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  sheetVariantPanel: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  sheetVariantThumbList: {
+    gap: 10,
+    paddingTop: 10,
+    paddingRight: 20,
+  },
+  sheetVariantThumb: {
+    width: 58,
+    height: 58,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    backgroundColor: "#fff",
+  },
+  sheetVariantThumbActive: {
+    borderColor: "#009944",
+    backgroundColor: "#F0FDF4",
+  },
+  sheetVariantThumbImage: { width: 50, height: 50, borderRadius: 10, backgroundColor: BG },
+  sheetVariantSwatch: { width: 50, height: 50, borderRadius: 10, borderWidth: 1, borderColor: "#E5E5EA" },
+  sheetVariantFallback: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+    backgroundColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetSizeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#F0F0F5",
+    backgroundColor: "#fff",
+  },
+  sheetSizeRowWrap: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+    backgroundColor: "#fff",
+  },
+  sheetSizeRowWrapActive: { backgroundColor: "#FFF8FB" },
+  sheetSizeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  sheetStepperWrap: {
+    flex: 1.2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  sheetStepBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#D8E1EF",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  sheetStepVal: {
+    minWidth: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetSellingPricePanel: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  variantSheetFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#E5E5EA",
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  sheetTotalRows: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+    marginBottom: 12,
+    paddingBottom: 8,
+    gap: 6,
+  },
+  sheetTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sheetActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  sheetBuyBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 7,
+    backgroundColor: "#009944",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetCartBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 7,
+    backgroundColor: "#EAFBF1",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
