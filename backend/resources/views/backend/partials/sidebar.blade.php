@@ -235,6 +235,11 @@
                 </div>
             </div>
 
+            {{-- ═══ WARRANTY / EXCHANGE ═══ --}}
+            <a href="{{ route('admin.warranty-claims.index') }}" class="nav-item nav-link {{ request()->is('admin/warranty-claims*') ? 'active-nav' : '' }}">
+                <i class="bi bi-shield-check"></i> Warranty / Exchange
+            </a>
+
             {{-- ═══ OTHERS ═══ --}}
             <small class="nav-section-title">Others</small>
             <div class="nav-item dropdown">
