@@ -67,6 +67,14 @@ export default function OrderConfirmation() {
 	const outsideDhakaCharge: number = Number(basicInfoData?.data?.outside_dhaka_charge) || 130;
 	const deliveryCharge: number = deliveryZone === "inside" ? insideDhakaCharge : deliveryZone === "near" ? nearDhakaCharge : deliveryZone === "outside" ? outsideDhakaCharge : 0;
 	const deliveryZoneLabel = deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : deliveryZone === "outside" ? "Outside Dhaka" : null;
+
+	// Count distinct suppliers in cart — delivery charge is multiplied by supplier count
+	const shopCount = (() => {
+		if (!cartItems?.data || cartItems.data.length === 0) return 1;
+		const uniqueSuppliers = new Set(cartItems.data.map((item: any) => item.vendor_id || item.shop_id));
+		return Math.max(1, uniqueSuppliers.size);
+	})();
+	const totalDeliveryCharge: number = deliveryCharge * shopCount;
 	const [customerData, setCustomerData] = useState({
 		name: "",
 		address: "",
@@ -141,7 +149,7 @@ export default function OrderConfirmation() {
 	const grandTotal =
 		advanceDelivery === "yes" || !deliveryZone
 			? subtotal + totalProfit - discount
-			: subtotal + totalProfit - discount + deliveryCharge;
+			: subtotal + totalProfit - discount + totalDeliveryCharge;
 
 	// ✅ Form Validation Before Submission
 	const validateForm = () => {
@@ -171,7 +179,8 @@ export default function OrderConfirmation() {
 		formData.append("customerPhone", customerData.phone);
 		formData.append("customerAddress", customerData.address);
 		formData.append("subTotal", subtotal.toString());
-		formData.append("deliveryCharge", deliveryCharge.toString());
+		formData.append("deliveryCharge", totalDeliveryCharge.toString());
+		formData.append("shop_count", shopCount.toString());
 		formData.append("delivery_zone", deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : "Outside Dhaka");
 		formData.append("advance_delivery", advanceDelivery);
 		formData.append(
@@ -450,12 +459,12 @@ export default function OrderConfirmation() {
 							) : advanceDelivery === "yes" ? (
 								<p className="flex items-center gap-2 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
 									<FaCheckCircle size={16} />
-									Customer paid <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> advance delivery
+									Customer paid <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> advance delivery{shopCount > 1 && <span className="text-xs ml-1">(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops)</span>}
 								</p>
 							) : (
 								<p className="flex items-center gap-2 text-amber-700 text-sm font-medium p-3 rounded-lg mt-3 bg-amber-50">
 									<IoMdInformationCircleOutline size={18} />
-									<span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> delivery charge will be added to total
+									<span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery charge will be added to total{shopCount > 1 && <span className="text-xs block mt-1">(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops — products ship from different suppliers)</span>}
 								</p>
 							)}
 						</div>
@@ -464,7 +473,7 @@ export default function OrderConfirmation() {
 						{deliveryZone ? (
 							<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
 								<IoMdInformationCircleOutline size={20} />
-								Please pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> delivery fee to confirm the order.
+								Please pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery fee to confirm the order.{shopCount > 1 && <span className="text-xs block mt-1">(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops)</span>}
 							</p>
 						) : (
 							<p className="flex items-center gap-2 bg-gray-100 text-gray-500 text-sm font-medium p-4 rounded-lg mt-4">
@@ -539,7 +548,7 @@ export default function OrderConfirmation() {
 								: "bg-gray-300 text-gray-500 cursor-not-allowed"
 								}`}
 						>
-							{deliveryZone ? <>Pay <span className="digit-font">৳{formatBDT(deliveryCharge, 0)}</span> {"&"} Confirm Order</> : "Confirm Order"}
+							{deliveryZone ? <>Pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> {"&"} Confirm Order</> : "Confirm Order"}
 						</button>
 					</div>
 
@@ -647,16 +656,23 @@ export default function OrderConfirmation() {
 								)}
 								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
 									<span>Delivery Charge</span>
-									<span className="flex items-center">
+									<span className="flex flex-col items-end">
 										{!deliveryZone ? (
 											<span className="text-gray-400 text-sm italic">Select a zone</span>
 										) : advanceDelivery === "yes" ? (
 											<span className="text-green-600 text-sm font-medium">Paid by customer</span>
 										) : (
-											<span className="digit-font flex items-center">
-												<TbCurrencyTaka size={20} />
-												{formatBDT(deliveryCharge, 0)}
-											</span>
+											<>
+												<span className="digit-font flex items-center">
+													<TbCurrencyTaka size={20} />
+													{formatBDT(totalDeliveryCharge, 0)}
+												</span>
+												{shopCount > 1 && (
+													<span className="text-xs text-gray-400 mt-0.5">
+														(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops)
+													</span>
+												)}
+											</>
 										)}
 									</span>
 								</div>
@@ -675,7 +691,7 @@ export default function OrderConfirmation() {
 										{deliveryZone ? (
 											<span className="flex items-center digit-font">
 												<TbCurrencyTaka size={18} />
-												{formatBDT(deliveryCharge, 0)}
+												{formatBDT(totalDeliveryCharge, 0)}
 											</span>
 										) : (
 											<span className="text-gray-400 text-xs italic">Select a zone</span>
