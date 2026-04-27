@@ -857,7 +857,7 @@
                                 '<td><span class="productName">' + e.params.data
                                 .text + '</span></td>' +
                                 '<td><input type="number" class="productQuantity form-control" style="width:80px;" value="1"></td>' +
-                                '<td><input type="number" id="productPrice" class="form-control" style="width:80px;" value="'+ e.params.data
+                                '<td><input type="number" class="productPrice form-control" style="width:80px;" value="'+ e.params.data
                                 .productPrice +'"></td>' +
                                 '<td><button class="btn btn-sm btn-danger delete-btn"><i class="fa fa-trash"></i></button></td>\n' +
                                 "</tr>"
@@ -1155,7 +1155,7 @@
                         $(document).on("input", "#paymentAmount", function() {
                             calculation();
                         });
-                        $(document).on("input", "#productPrice", function() {
+                        $(document).on("input", ".productPrice", function() {
                             calculation();
                         });
                         $(document).on("input", "#deliveryCharge", function() {
@@ -1173,7 +1173,7 @@
                             var profit = +$("#orderProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
-                                subtotal = subtotal + +$(this).find("#productPrice").val() * +$(this).find(".productQuantity").val();
+                                subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
                             subtotal = subtotal + profit;
                             $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
@@ -1278,7 +1278,7 @@
                     obj.productCode = currentRow.find(".productCode").text();
                     obj.productName = currentRow.find(".productName").text();
                     obj.productQuantity = currentRow.find(".productQuantity").val();
-                    obj.productPrice = currentRow.find("#productPrice").val();
+                    obj.productPrice = currentRow.find(".productPrice").val();
                     product.push(obj);
                     productCount++;
                 });
@@ -2092,7 +2092,7 @@
                                 '<td><span class="productName">' + e.params.data
                                 .text + '</span></td>' +
                                 '<td><input type="number" class="productQuantity form-control" style="width:80px;" value="1"></td>' +
-                                '<td><input type="number" id="productPrice" class="form-control" style="width:80px;" value="'+ e.params.data
+                                '<td><input type="number" class="productPrice form-control" style="width:80px;" value="'+ e.params.data
                                 .productPrice +'"></td>' +
                                 '<td><button class="btn btn-sm btn-danger delete-btn"><i class="fa fa-trash"></i></button></td>\n' +
                                 "</tr>"
@@ -2390,7 +2390,7 @@
                         $(document).on("input", "#paymentAmount", function() {
                             calculation();
                         });
-                        $(document).on("input", "#productPrice", function() {
+                        $(document).on("input", ".productPrice", function() {
                             calculation();
                         });
                         $(document).on("input", "#deliveryCharge", function() {
@@ -2408,7 +2408,7 @@
                             var profit = +$("#orderProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
-                                subtotal = subtotal + +$(this).find("#productPrice").val() * +$(this).find(".productQuantity").val();
+                                subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
                             subtotal = subtotal + profit;
                             $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
@@ -2512,7 +2512,7 @@
                     obj.productCode = currentRow.find(".productCode").text();
                     obj.productName = currentRow.find(".productName").text();
                     obj.productQuantity = currentRow.find(".productQuantity").val();
-                    obj.productPrice = currentRow.find("#productPrice").val();
+                    obj.productPrice = currentRow.find(".productPrice").val();
                     product.push(obj);
                     productCount++;
                 });

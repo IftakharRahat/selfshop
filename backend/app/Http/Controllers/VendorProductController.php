@@ -84,6 +84,7 @@ class VendorProductController extends Controller
             'PostImage.*' => 'file|mimes:jpeg,jpg,png,gif,bmp,svg,webp,heic,heif,avif|max:5120',
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
+            'warranty_days' => 'nullable|integer|min:1|max:3650',
         ]);
 
         if ($validator->fails()) {
@@ -157,6 +158,10 @@ class VendorProductController extends Controller
         }
         if (Schema::hasColumn('products', 'selling_type')) {
             $product->selling_type = $request->input('selling_type', 'both');
+        }
+        // Warranty / Exchange (optional)
+        if (Schema::hasColumn('products', 'warranty_days')) {
+            $product->warranty_days = $request->filled('warranty_days') ? (int) $request->input('warranty_days') : null;
         }
 
         if ($request->hasFile('ProductImage')) {
@@ -242,6 +247,7 @@ class VendorProductController extends Controller
             'PostImage.*' => 'file|mimes:jpeg,jpg,png,gif,bmp,svg,webp,heic,heif,avif|max:5120',
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
+            'warranty_days' => 'nullable|integer|min:0|max:3650',
         ]);
 
         if ($validator->fails()) {
@@ -282,6 +288,10 @@ class VendorProductController extends Controller
                 }
                 $product->{$key} = $data[$key];
             }
+        }
+        // Warranty / Exchange (optional) — 0 means remove warranty
+        if (Schema::hasColumn('products', 'warranty_days') && array_key_exists('warranty_days', $data)) {
+            $product->warranty_days = ($data['warranty_days'] && $data['warranty_days'] > 0) ? (int) $data['warranty_days'] : null;
         }
 
         // Always recalculate storefront price (ProductSalePrice) when Reseller Price or category changes

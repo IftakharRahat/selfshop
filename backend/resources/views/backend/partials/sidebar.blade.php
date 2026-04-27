@@ -235,6 +235,7 @@
                 </div>
             </div>
 
+
             {{-- ═══ OTHERS ═══ --}}
             <small class="nav-section-title">Others</small>
             <div class="nav-item dropdown">

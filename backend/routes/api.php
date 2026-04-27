@@ -8,6 +8,8 @@ use App\Http\Controllers\VendorApiController;
 use App\Http\Controllers\VendorAccountController;
 use App\Http\Controllers\VendorAuthController;
 use App\Http\Controllers\VendorProductController;
+use App\Http\Controllers\WarrantyClaimController;
+use App\Http\Controllers\VendorWarrantyController;
 use App\Http\Controllers\R2TestController;
 use App\Http\Controllers\VendorOrderController;
 use App\Http\Controllers\VendorCategoryDiscountController;
@@ -148,6 +150,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // sidebar
     Route::get('developers-api', [FrontendApiController::class, 'developersapi']);
     Route::get('generate-developers-api', [FrontendApiController::class, 'generatedevelopersapi']);
+    Route::get('/api/test', [FrontendApiController::class, 'test']);
     Route::get('faqs', [FrontendApiController::class, 'faqs']);
     Route::get('track-order', [FrontendApiController::class, 'trackorder']);
     Route::post('update-bank-info', [FrontendApiController::class, 'bankinfo']);
@@ -248,6 +251,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/vendor-follow/{vendorId}/follow', [FrontendApiController::class, 'followVendor'])->name('api.vendor-follow.follow');
     Route::post('/vendor-follow/{vendorId}/unfollow', [FrontendApiController::class, 'unfollowVendor'])->name('api.vendor-follow.unfollow');
     Route::get('/vendor-follow/{vendorId}/status', [FrontendApiController::class, 'checkFollowStatus'])->name('api.vendor-follow.status');
+
+    // Warranty Claims (reseller/user)
+    Route::get('/warranty/products', [WarrantyClaimController::class, 'products'])->name('api.warranty.products');
+    Route::post('/warranty/claims', [WarrantyClaimController::class, 'store'])->name('api.warranty.claims.store');
+    Route::get('/warranty/claims', [WarrantyClaimController::class, 'index'])->name('api.warranty.claims.index');
 
     // Vendor (Wholesale / Supplier) – vendor portal APIs
     Route::prefix('vendor')->group(function () {
@@ -357,6 +365,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/campaigns/{id}', [VendorCampaignController::class, 'show'])->name('api.vendor.campaigns.show');
         Route::post('/campaigns/{id}/products', [VendorCampaignController::class, 'submitProduct'])->name('api.vendor.campaigns.submit-product');
         Route::delete('/campaigns/{id}/products/{fspId}', [VendorCampaignController::class, 'removeProduct'])->name('api.vendor.campaigns.remove-product');
+
+        // Warranty Claims (vendor)
+        Route::get('/warranty-claims', [VendorWarrantyController::class, 'index'])->name('api.vendor.warranty-claims.index');
+        Route::post('/warranty-claims/{id}/respond', [VendorWarrantyController::class, 'respond'])->name('api.vendor.warranty-claims.respond');
 
         // Bulk order matrix (existing)
         Route::middleware('verified.wholesaler')->group(function () {

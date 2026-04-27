@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\VendorPayoutRequest;
+use App\Models\WarrantyClaim;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -27,6 +28,7 @@ class AdminActivityController extends Controller
             ->merge($this->buildSupplierProductActivities())
             ->merge($this->buildPayoutActivities())
             ->merge($this->buildOrderActivities())
+            ->merge($this->buildWarrantyClaimActivities())
             ->sortByDesc('created_ts')
             ->values()
             ->take($limit)
@@ -162,6 +164,35 @@ class AdminActivityController extends Controller
                     'url' => url('admin_order/view/' . $order->id),
                     'created_at' => optional($order->created_at)->toIso8601String(),
                     'created_ts' => optional($order->created_at)->timestamp ?? 0,
+                ];
+            });
+    }
+
+    private function buildWarrantyClaimActivities(): Collection
+    {
+        if (!class_exists(WarrantyClaim::class)) {
+            return collect();
+        }
+
+        return WarrantyClaim::query()
+            ->with(['user:id,name,email', 'product:id,ProductName'])
+            ->select('id', 'claim_number', 'user_id', 'product_id', 'status', 'created_at')
+            ->latest('created_at')
+            ->limit(20)
+            ->get()
+            ->map(function (WarrantyClaim $claim) {
+                $userName = trim((string) ($claim->user?->name ?: $claim->user?->email ?: ('User #' . $claim->user_id)));
+                $productName = $claim->product?->ProductName ?: 'Unknown Product';
+                $status = ucfirst(str_replace('_', ' ', (string) ($claim->status ?: 'pending')));
+
+                return [
+                    'id' => 'warranty-claim-' . $claim->id,
+                    'scope' => 'user',
+                    'title' => '🛡️ Warranty Claim ' . $claim->claim_number,
+                    'message' => $userName . ' claimed warranty for "' . $productName . '" (' . $status . ').',
+                    'url' => url('admin/warranty-claims/' . $claim->id),
+                    'created_at' => optional($claim->created_at)?->toIso8601String(),
+                    'created_ts' => optional($claim->created_at)?->timestamp ?? 0,
                 ];
             });
     }
