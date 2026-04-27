@@ -129,6 +129,8 @@ export default function VendorNewProductPage() {
 
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
 	const [descriptionHtml, setDescriptionHtml] = useState<string>("");
+	const [warrantyEnabled, setWarrantyEnabled] = useState(false);
+	const [warrantyDays, setWarrantyDays] = useState<string>("");
 
 
 
@@ -170,6 +172,9 @@ export default function VendorNewProductPage() {
 		if (discount !== undefined && discount !== "") formData.append("Discount", discount);
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
+		if (warrantyEnabled && warrantyDays && Number(warrantyDays) > 0) {
+			formData.append("warranty_days", warrantyDays);
+		}
 		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
 		if (galleryFiles.length > 0) {
 			for (let i = 0; i < galleryFiles.length; i++) {
@@ -843,6 +848,48 @@ export default function VendorNewProductPage() {
 						</div>
 					</div>
 					)}
+
+					{/* Warranty / Exchange (Optional) */}
+					<div className="rounded-xl bg-emerald-50/30 p-4 sm:p-6 shadow-sm border border-emerald-100">
+						<div className="flex items-center justify-between mb-3">
+							<h2 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+								🛡️ Warranty / Exchange
+							</h2>
+							<label className="relative inline-flex items-center cursor-pointer">
+								<input
+									type="checkbox"
+									checked={warrantyEnabled}
+									onChange={(e) => setWarrantyEnabled(e.target.checked)}
+									className="sr-only peer"
+								/>
+								<div className="w-9 h-5 bg-gray-300 peer-focus:ring-2 peer-focus:ring-emerald-300 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+							</label>
+						</div>
+						<p className="text-xs text-emerald-700 mb-3">
+							Enable to offer warranty/exchange for this product. Resellers can claim within the warranty period.
+						</p>
+						{warrantyEnabled && (
+							<div className="bg-white rounded-lg border border-emerald-200 p-4">
+								<div className="flex items-center gap-4">
+									<span className="text-sm font-medium text-gray-700 whitespace-nowrap">Days</span>
+									<input
+										type="number"
+										min={1}
+										max={3650}
+										placeholder="e.g. 30"
+										value={warrantyDays}
+										onChange={(e) => setWarrantyDays(e.target.value)}
+										className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+									/>
+								</div>
+								{warrantyDays && Number(warrantyDays) > 0 && (
+									<p className="text-xs text-emerald-600 mt-2">
+										✅ Resellers can claim warranty/exchange within <span className="font-bold">{warrantyDays} days</span> from delivery.
+									</p>
+								)}
+							</div>
+						)}
+					</div>
 
 					<div className="flex justify-end">
 						<button

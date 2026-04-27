@@ -14,6 +14,7 @@ import {
 	Package,
 	Settings,
 	Shield,
+	ShieldCheck,
 	ShoppingBag,
 	Store,
 	Ticket,
@@ -65,6 +66,7 @@ const menuItems = [
 	{ icon: Users, label: "My team members", href: "/dashboard/team-members" },
 	{ icon: GraduationCap, label: "Free course", href: "/dashboard/free-course" },
 	{ icon: Shield, label: "Fraud checker", href: "/dashboard/fraud-checker" },
+	{ icon: ShieldCheck, label: "Warranty Claim", href: "/dashboard/warranty-claims" },
 	{ icon: TrainTrack, label: "Track orders", href: "/dashboard/track-orders" },
 	{ icon: Ticket, label: "Ticket", href: "/dashboard/ticket" },
 	{

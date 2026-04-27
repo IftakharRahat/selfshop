@@ -242,6 +242,24 @@ const homeApi = baseApi.injectEndpoints({
 			},
 			invalidatesTags: ["example"],
 		}),
+
+		// ── Warranty / Exchange ──
+		getWarrantyProducts: builder.query({
+			query: () => ({ url: "warranty/products" }),
+			providesTags: ["warrantyApi"],
+		}),
+		getWarrantyClaims: builder.query({
+			query: () => ({ url: "warranty/claims" }),
+			providesTags: ["warrantyApi"],
+		}),
+		submitWarrantyClaim: builder.mutation({
+			query: (data: FormData) => ({
+				url: "warranty/claims",
+				method: "POST",
+				body: data,
+			}),
+			invalidatesTags: ["warrantyApi"],
+		}),
 	}),
 });
 
@@ -267,4 +285,8 @@ export const {
 	useFollowVendorMutation,
 	useUnfollowVendorMutation,
 	useGetFollowStatusQuery,
+	// Warranty / Exchange
+	useGetWarrantyProductsQuery,
+	useGetWarrantyClaimsQuery,
+	useSubmitWarrantyClaimMutation,
 } = homeApi;

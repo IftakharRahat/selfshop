@@ -1260,6 +1260,29 @@ export const vendorApi = baseApi.injectEndpoints({
 		>({
 			query: ({ cityId, zoneId }) => ({ url: `/carrybee/cities/${cityId}/zones/${zoneId}/areas` }),
 		}),
+
+		// ── Warranty Claims ──
+		getVendorWarrantyClaims: build.query<
+			{ status: boolean; data: any[] },
+			string | undefined
+		>({
+			query: (status) => ({
+				url: "/vendor/warranty-claims",
+				params: status ? { status } : {},
+			}),
+			providesTags: ["vendorWarrantyClaims"],
+		}),
+		respondToWarrantyClaim: build.mutation<
+			{ status: boolean; message?: string },
+			{ id: number; action: "approve" | "reject"; supplier_note?: string }
+		>({
+			query: ({ id, ...body }) => ({
+				url: `/vendor/warranty-claims/${id}/respond`,
+				method: "POST",
+				body,
+			}),
+			invalidatesTags: ["vendorWarrantyClaims"],
+		}),
 	}),
 });
 
@@ -1337,4 +1360,7 @@ export const {
 	useGetCarryBeeCitiesQuery,
 	useGetCarryBeeZonesQuery,
 	useGetCarryBeeAreasQuery,
+	// Warranty Claims
+	useGetVendorWarrantyClaimsQuery,
+	useRespondToWarrantyClaimMutation,
 } = vendorApi;
