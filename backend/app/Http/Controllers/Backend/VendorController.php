@@ -523,9 +523,9 @@ class VendorController extends Controller
         // Generate a Sanctum token for the target user (same as user autologin)
         $token = $user->createToken('admin-impersonate')->plainTextToken;
 
-        // Redirect to the Next.js frontend with the token
+        // Redirect to the vendor panel (supplier dashboard) with the token
         $frontendUrl = rtrim(env('FRONTEND_URL', 'https://selfshop.com.bd'), '/');
-        return redirect($frontendUrl . '/impersonate?token=' . urlencode($token));
+        return redirect($frontendUrl . '/impersonate?token=' . urlencode($token) . '&redirect=/vendor');
     }
 }
 
