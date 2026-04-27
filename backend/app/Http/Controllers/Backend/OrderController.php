@@ -2495,7 +2495,10 @@ class OrderController extends Controller
     public function update(Request $request, $id)
     {
         $order = Order::find($id);
-        $order->store_id = $request['data']['storeID'];
+        // Only update store_id if explicitly provided (edit modal may not have this field)
+        if (!empty($request['data']['storeID'])) {
+            $order->store_id = $request['data']['storeID'];
+        }
         $order->trackingLink = $request['data']['trackingLink'];
         if (isset($request['data']['parcelID'])) {
             $order->parcel_id = $request['data']['parcelID'];
