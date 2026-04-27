@@ -688,8 +688,8 @@
                                 '<td><span class="productName">' + e.params.data
                                 .text + '</span></td>' +
                                 '<td><input type="number" class="productQuantity form-control" style="width:80px;" value="1"></td>' +
-                                '<td><span class="productPrice">' + e.params.data
-                                .productPrice + '</span></td>' +
+                                '<td><input type="number" class="productPrice form-control" style="width:80px;" value="' + e.params.data
+                                .productPrice + '"></td>' +
                                 '<td><button class="btn btn-sm btn-danger delete-btn"><i class="fa fa-trash"></i></button></td>\n' +
                                 "</tr>"
                             );
@@ -1001,8 +1001,7 @@
                             var profit = +$("#orderProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
-                                subtotal = subtotal + +$(this).find(".productPrice")
-                                    .text() * +$(this).find(".productQuantity").val();
+                                subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
                             subtotal = subtotal + profit;
                             $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
