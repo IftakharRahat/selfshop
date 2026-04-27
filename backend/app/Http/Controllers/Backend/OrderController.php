@@ -2171,6 +2171,8 @@ class OrderController extends Controller
         if (!isset($orders->cancel_comment)) $orders->cancel_comment = null;
         if (!isset($orders->order_bonus)) $orders->order_bonus = 0;
         if (!isset($orders->parcel_id)) $orders->parcel_id = null;
+        if (!isset($orders->shop_count)) $orders->shop_count = 1;
+        if (!isset($orders->order_group_id)) $orders->order_group_id = null;
 
         return view('admin.content.order.edit')->with('order', $orders);
     }
@@ -2498,7 +2500,6 @@ class OrderController extends Controller
         if (isset($request['data']['parcelID'])) {
             $order->parcel_id = $request['data']['parcelID'];
         }
-        $order->subTotal = $request['data']['total'];
         $oldAmount = $order->paymentAmount;
         $newAmount = $request['data']['paymentAmount'];
         $order->memo = $request['data']['memo'];
@@ -2533,10 +2534,18 @@ class OrderController extends Controller
         $buy = 0;
         $bonus = 0;
         foreach ($products as $product) {
-            $buy += Product::where('id', $product['productID'])->first()->ProductResellerPrice * $product['productQuantity'];
-            $bonus += Product::where('id', $product['productID'])->first()->reseller_bonus;
+            $buy += $product['productPrice'] * $product['productQuantity'];
+            $prod = Product::where('id', $product['productID'])->first();
+            if ($prod) {
+                $bonus += $prod->reseller_bonus ?? 0;
+            }
         }
-        $order->profit = ($request['data']['total'] + $request['data']['paymentAmount']) - ($request['data']['deliveryCharge'] + $buy);
+        // subTotal = selling total (product cost + reseller profit), matches order creation
+        // profit = total - buy - delivery + discount (isolate the reseller markup)
+        $deliveryCharge = $request['data']['deliveryCharge'] ?? 0;
+        $discountCharge = $request['data']['discountCharge'] ?? 0;
+        $order->profit = $request['data']['total'] - $buy - $deliveryCharge + $discountCharge;
+        $order->subTotal = $buy + $order->profit;
         $order->order_bonus = $bonus;
 
         $result = $order->update();
