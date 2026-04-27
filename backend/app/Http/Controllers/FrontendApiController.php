@@ -3171,27 +3171,36 @@ class FrontendApiController extends Controller
             $options['selling_price'] = $request->selling_price;
         }
 
-        $cart = Cart::updateOrCreate(
-            [
+        // Check if same product+variant already in cart for this user
+        $existing = Cart::where('user_id', Auth::user()->id)
+            ->where('product_id', $request->product_id)
+            ->where('size', $request->size)
+            ->where('color', $request->color)
+            ->first();
+
+        if ($existing) {
+            // Increment quantity instead of replacing
+            $existing->qty += (int) ($request->qty ?: 1);
+            $existing->price = $cartPrice;
+            $existing->options = $options;
+            $existing->save();
+            $cart = $existing;
+        } else {
+            $cart = Cart::create([
                 'session_id' => $request->session_id,
-                'product_id' => $request->product_id,
-                'size' => $request->size,
-                'color' => $request->color,
-            ],
-            [
                 'product_id' => $request->product_id,
                 'name' => $cartProduct->ProductName,
                 'code' => $cartProduct->ProductSku,
                 'price' => $cartPrice,
-                'qty' => $request->qty,
+                'qty' => $request->qty ?: 1,
                 'size' => $request->size,
                 'color' => $request->color,
                 'shop_id' => $cartProduct->shop_id ?: $cartProduct->vendor_id ?: 1,
                 'image' => $cartProduct->ProductImage,
                 'options' => $options,
                 'user_id' => Auth::user()->id,
-            ]
-        );
+            ]);
+        }
 
         return response()->json([
             'status' => true,
@@ -3370,6 +3379,14 @@ class FrontendApiController extends Controller
             ], 404);
         }
 
+        // Enrich cart items with vendor_id from product table
+        // (shop_id is the admin who uploaded, vendor_id is the actual supplier)
+        $carts->transform(function ($cart) {
+            $product = Product::find($cart->product_id);
+            $cart->vendor_id = $product ? ($product->vendor_id ?? $cart->shop_id) : $cart->shop_id;
+            return $cart;
+        });
+
         return response()->json([
             'status' => true,
             'message' => 'Cart item found Successfully',
@@ -3499,6 +3516,7 @@ class FrontendApiController extends Controller
                 ->where('transaction_id', $post_data['tran_id'])
                 ->updateOrInsert([
                     'store_id' => 1,
+                    'shop_count' => count($shopproducts),
                     'invoiceID' => $this->uniqueIDN(),
                     'subTotal' => $sell,
                     'profit' => $profit,
@@ -3565,49 +3583,72 @@ class FrontendApiController extends Controller
             }
         }
 
-        // Get cart items for this session
+        // Get all cart items and group by vendor_id (actual supplier)
+        $allCartItems = Cart::where('user_id', Auth::user()->id)->get();
+        $vendorGroups = $allCartItems->groupBy(function ($item) {
+            $product = Product::find($item->product_id);
+            return $product ? ($product->vendor_id ?? $item->shop_id) : ($item->shop_id ?: 1);
+        });
+        $vendorCount = max(1, $vendorGroups->count());
+        $perVendorDelivery = round($request->deliveryCharge / $vendorCount);
+        $groupId = $vendorCount > 1 ? 'GRP-' . strtoupper(substr(uniqid(), -8)) : null;
 
+        // Assign an active executive admin
+        $admin = Admin::whereHas('roles', function ($q) {
+            $q->where('name', 'Executive');
+        })
+            ->where('add_by', 1)
+            ->where('status', 'Active')
+            ->inRandomOrder()
+            ->first();
 
+        // Deduct wallet ONCE with the FULL delivery charge (before creating orders)
+        if ($request->balance_from == 'from_account') {
+            $accountuser = User::find(Auth::id());
+            if ($accountuser) {
+                $accountuser->account_balance -= $request->deliveryCharge;
+                $accountuser->save();
+                $chargededucts = new Chargededuct();
+                $chargededucts->user_id = $accountuser->id;
+                $chargededucts->comment = 'You have charged ' . $request->deliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
+                $chargededucts->amount = $request->deliveryCharge;
+                $chargededucts->status = 'Success';
+                $chargededucts->save();
+            }
+        }
+
+        // Create one order per vendor/supplier
         $ordersCreated = [];
 
-        foreach ($shopproducts as $shopproduct) {
-
-            // Assign an active executive admin
-            $admin = Admin::whereHas('roles', function ($q) {
-                $q->where('name', 'Executive');
-            })
-                ->where('add_by', 1)
-                ->where('status', 'Active')
-                ->inRandomOrder()
-                ->first();
-
-            $order = new Order();
+        foreach ($vendorGroups as $vendorId => $vendorItems) {
+            // Calculate totals for this vendor's items only
             $buy = $sell = $bonus = 0;
-
-            foreach ($shopproduct as $product) {
+            foreach ($vendorItems as $product) {
                 $productData = Product::find($product->product_id);
                 $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
-                // cart.price already includes commission markup (set in userAddToCart)
                 $costPrice = (float) $product->price;
                 $sellingPrice = !empty($options['selling_price']) ? (float) $options['selling_price'] : $costPrice;
                 $buy  += $costPrice * $product->qty;
                 $sell += $sellingPrice * $product->qty;
-                $bonus += $productData->reseller_bonus;
+                $bonus += $productData->reseller_bonus ?? 0;
             }
 
+            $order = new Order();
             $order->profit = $sell - $buy;
             $order->order_bonus = $bonus;
-            $order->user_id = Auth::id() ?? null; // if using API auth
-            $order->store_id = $shopproduct[0]->shop_id ?: 1;
+            $order->user_id = Auth::id() ?? null;
+            $order->store_id = $vendorItems->first()->shop_id ?: 1;
+            $order->shop_count = $vendorCount;
+            $order->order_group_id = $groupId;
             $order->invoiceID = $this->uniqueIDN();
             $order->subTotal = $sell;
-            $order->deliveryCharge = $request->deliveryCharge;
+            $order->deliveryCharge = $perVendorDelivery;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
             $order->advance_delivery = $request->advance_delivery === 'yes' ? 1 : 0;
 
             if ($request->balance_from == 'from_account') {
-                $order->paymentAmount = $request->deliveryCharge;
+                $order->paymentAmount = $perVendorDelivery;
                 $order->payment_type_id = 5;
             }
 
@@ -3631,9 +3672,18 @@ class FrontendApiController extends Controller
             $customer->customerAddress = $request->customerAddress;
             $customer->save();
 
-            // Save order products
-            $vendorIds = [];
-            foreach ($shopproduct as $product) {
+            // Aggregate cart items: merge duplicates with same product_id + color + size
+            $aggregatedItems = $vendorItems->groupBy(function ($item) {
+                $opts = is_array($item->options) ? $item->options : (is_string($item->options) ? json_decode($item->options, true) : []);
+                return $item->product_id . '|' . ($opts['color'] ?? '') . '|' . ($opts['size'] ?? '');
+            })->map(function ($group) {
+                $first = clone $group->first();
+                $first->qty = $group->sum('qty');
+                return $first;
+            });
+
+            // Save order products for this vendor only (aggregated)
+            foreach ($aggregatedItems as $product) {
                 $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
 
                 $orderProduct = new Orderproduct();
@@ -3652,37 +3702,16 @@ class FrontendApiController extends Controller
                     $orderProduct->size = $options['size'];
                 }
 
-                // Save the resell/selling price from cart options
                 $sellingPrice = $options['selling_price'] ?? null;
                 if ($sellingPrice && $sellingPrice !== 'undefined') {
                     $orderProduct->selling_price = (float) $sellingPrice;
                 }
 
                 $orderProduct->save();
-
-                $vendorId = Product::where('id', $product->product_id)->value('vendor_id');
-                if ($vendorId) {
-                    $vendorIds[(int) $vendorId] = true;
-                }
             }
 
             // Decrement product stock for this order
             app(\App\Services\StockService::class)->decrementForOrder($order->id);
-
-            // Deduct account balance if needed
-            if ($request->balance_from == 'from_account') {
-                $accountuser = User::find(Auth::id());
-                if ($accountuser) {
-                    $accountuser->account_balance -= $request->deliveryCharge;
-                    $accountuser->save();
-                    $chargededucts = new Chargededuct();
-                    $chargededucts->user_id = $accountuser->id;
-                    $chargededucts->comment = 'You have charged ' . $request->deliveryCharge . ' TK for delivery charge.';
-                    $chargededucts->amount = $request->deliveryCharge;
-                    $chargededucts->status = 'Success';
-                    $chargededucts->save();
-                }
-            }
 
             // Notification
             $notification = new Comment();
@@ -3691,11 +3720,10 @@ class FrontendApiController extends Controller
             $notification->admin_id = $order->admin_id;
             $notification->save();
 
-            if (!empty($vendorIds)) {
-                /** @var VendorAdminNotificationService $vendorNotification */
-                $vendorNotification = app(VendorAdminNotificationService::class);
-
-                foreach (array_keys($vendorIds) as $vendorId) {
+            // Notify this vendor
+            if ($vendorId) {
+                try {
+                    $vendorNotification = app(VendorAdminNotificationService::class);
                     $vendorNotification->notifyVendorById(
                         (int) $vendorId,
                         'New order received',
@@ -3708,12 +3736,14 @@ class FrontendApiController extends Controller
                         ],
                         '/vendor/orders/' . $order->id
                     );
+                } catch (\Throwable $e) {
+                    \Log::warning('Vendor notification failed', ['error' => $e->getMessage()]);
                 }
 
-                // Send SMS + Email to suppliers
+                // Send SMS + Email to this supplier
                 try {
                     $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                    $supplierNotification->notify($order, array_keys($vendorIds), $request->customerName);
+                    $supplierNotification->notify($order, [(int) $vendorId], $request->customerName);
                 } catch (\Throwable $e) {
                     \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
                 }
@@ -3729,7 +3759,7 @@ class FrontendApiController extends Controller
 
             $ordersCreated[] = [
                 'order_id' => $order->id,
-                'invoiceID' => $order->invoiceID
+                'invoiceID' => $order->invoiceID,
             ];
         }
 
