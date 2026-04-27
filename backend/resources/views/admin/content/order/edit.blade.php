@@ -285,38 +285,88 @@
                  </div>
              </div>
 
-             {{-- Supplier Information --}}
+             {{-- Supplier Information — grouped with product codes --}}
              @php
-                 $suppliers = collect();
+                 $supplierGroups = collect();
                  foreach ($order->products as $p) {
                      $prod = App\Models\Product::find($p->product_id);
                      if ($prod && $prod->vendor_id) {
                          $vendor = App\Models\Vendor::find($prod->vendor_id);
-                         if ($vendor && !$suppliers->contains('id', $vendor->id)) {
-                             $suppliers->push($vendor);
+                         if ($vendor) {
+                             if (!$supplierGroups->has($vendor->id)) {
+                                 $supplierGroups[$vendor->id] = [
+                                     'vendor' => $vendor,
+                                     'products' => collect(),
+                                 ];
+                             }
+                             $supplierGroups[$vendor->id]['products']->push($p);
                          }
                      }
                  }
              @endphp
-             @if($suppliers->count() > 0)
+             @if($supplierGroups->count() > 0)
              <div class="info-card" style="background: #faf9ff; border-color: #eeedfa;">
                  <div class="info-card-label" style="color: var(--admin-accent, #6c63ff);">
                      <i class="bi bi-building"></i> Supplier Info
+                     @if($supplierGroups->count() > 1)
+                         <span style="font-size: 10px; background: var(--admin-accent, #6c63ff); color: #fff; padding: 1px 8px; border-radius: 10px; margin-left: 6px;">{{ $supplierGroups->count() }} suppliers</span>
+                     @endif
                  </div>
-                 @foreach($suppliers as $supplier)
+                 @foreach($supplierGroups as $group)
+                 @php $supplier = $group['vendor']; $products = $group['products']; @endphp
                  <div style="{{ !$loop->last ? 'border-bottom: 1px solid #eeedfa; padding-bottom: 8px; margin-bottom: 8px;' : '' }}">
-                     <div class="supplier-badge">
+                     <a href="{{ route('admin.vendors.autologin', $supplier->id) }}" target="_blank" class="supplier-badge" style="text-decoration: none; cursor: pointer;" title="Open {{ $supplier->company_name }}'s panel">
                          <span class="supplier-sid">SID-{{ str_pad($supplier->id, 5, '0', STR_PAD_LEFT) }}</span>
                          <span class="supplier-name">{{ $supplier->company_name }}</span>
-                     </div>
+                         <i class="bi bi-box-arrow-up-right" style="font-size: 10px; margin-left: 4px; opacity: 0.6;"></i>
+                     </a>
                      @if($supplier->contact_phone)
                      <div class="info-row" style="margin-top: 2px;">
                          <i class="bi bi-telephone" style="font-size: 11px;"></i>
                          <span style="font-size: 12px;">{{ $supplier->contact_phone }}</span>
                      </div>
                      @endif
+                     <div class="info-row" style="margin-top: 4px;">
+                         <i class="bi bi-box-seam" style="font-size: 11px; color: var(--admin-accent, #6c63ff);"></i>
+                         <span style="font-size: 12px; color: var(--admin-accent, #6c63ff); font-weight: 500;">
+                             {{ $products->pluck('productCode')->implode(', ') }}
+                         </span>
+                     </div>
                  </div>
                  @endforeach
+             </div>
+             @endif
+
+             {{-- Order Group Info (multi-supplier checkout) --}}
+             @if($order->order_group_id)
+             @php
+                 $relatedOrders = DB::table('orders')
+                     ->select('orders.id', 'orders.invoiceID', 'orders.status', 'orders.subTotal', 'orders.deliveryCharge')
+                     ->where('order_group_id', $order->order_group_id)
+                     ->where('id', '!=', $order->id)
+                     ->get();
+             @endphp
+             <div class="info-card" style="background: #fff8f0; border-color: #ffe0b2;">
+                 <div class="info-card-label" style="color: #e65100;">
+                     <i class="bi bi-link-45deg"></i> Order Group
+                     <span style="font-size: 10px; background: #e65100; color: #fff; padding: 1px 8px; border-radius: 10px; margin-left: 6px;">{{ $order->order_group_id }}</span>
+                 </div>
+                 <div style="font-size: 12px; color: #795548; margin-bottom: 6px;">
+                     This order is part of a multi-supplier checkout ({{ ($order->shop_count ?? 1) }} suppliers). Wallet was charged once for total delivery.
+                 </div>
+                 @if($relatedOrders->count() > 0)
+                 <div style="font-size: 12px;">
+                     <span style="font-weight: 600; color: #795548;">Related orders:</span>
+                     @foreach($relatedOrders as $rel)
+                     <a href="javascript:void(0)" onclick="$('#OrderEditModal .modal-body').load('{{ url('admin_order/orderedit/' . $rel->id) }}')"
+                        style="display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; margin: 2px; background: #fff3e0; border: 1px solid #ffe0b2; border-radius: 6px; color: #e65100; text-decoration: none; font-size: 11px;">
+                         <i class="bi bi-receipt" style="font-size: 10px;"></i>
+                         {{ $rel->invoiceID }}
+                         <span style="font-size: 9px; color: #795548;">({{ $rel->status }})</span>
+                     </a>
+                     @endforeach
+                 </div>
+                 @endif
              </div>
              @endif
 
@@ -481,7 +531,7 @@
                                    $shop = $productModel ? App\Models\Admin::find($productModel->shop_id) : null;
                                @endphp
                                  <td>
-                                     <span class="product-code">{{ $product->productCode }}</span>
+                                     <span class="productCode">{{ $product->productCode }}</span>
                                      @if(optional($shop)->name)
                                          <br><span class="product-shop">({{ $shop->name }})</span>
                                      @endif
@@ -489,7 +539,7 @@
                                  <td><span class="productName">{{ $product->productName }}</span></td>
                                  <td><input type="number" class="productQuantity" style="width:65px;"
                                          value="{{ $product->quantity }}"></td>
-                                 <td><input type="number" id="productPrice" style="width:80px;" value="{{ $product->productPrice }}"></td>
+                                 <td><input type="number" class="productPrice" style="width:80px;" value="{{ $product->productPrice }}"></td>
                                  <td><button class="btn btn-sm btn-outline-danger delete-btn" style="border-radius: 6px; padding: 4px 8px;"><i class="fa fa-trash" style="font-size: 11px;"></i></button></td>
                              </tr>
                          @endforeach
@@ -596,6 +646,14 @@
                                      id="deliveryCharge" style="width: 100px; text-align: right; padding: 4px 8px; font-size: 13px;">
                              </span>
                          </div>
+                         @if(($order->shop_count ?? 1) > 1 && $order->order_group_id)
+                         <div class="summary-row" style="padding: 2px 0;">
+                             <span></span>
+                             <span style="font-size: 11px; color: var(--admin-text-muted, #64748b); text-align: right;">
+                                 (1 of {{ $order->shop_count }} supplier orders)
+                             </span>
+                         </div>
+                         @endif
                          <div class="summary-row">
                              <span class="summary-label">Paid</span>
                              <span class="summary-value paymentAmount">
