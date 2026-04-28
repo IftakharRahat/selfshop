@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Switch, Platform, Alert, Animated, KeyboardAvoidingView,
+  ActivityIndicator, Switch, Platform, Animated, KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -77,18 +77,34 @@ export default function ProductFormScreen() {
     queryKey: ["all-categories"],
     queryFn: async () => {
       const { data } = await apiClient.get("/categories");
-      return data?.data as Category[];
+      return Array.isArray(data?.data) ? (data.data as Category[]) : [];
     },
   });
   const { data: brandsData } = useQuery({
     queryKey: ["all-brands"],
     queryFn: async () => {
       const { data } = await apiClient.get("/brands");
-      return data?.data as { id: number; brand_name: string }[];
+      return Array.isArray(data?.data) ? (data.data as { id: number; brand_name: string }[]) : [];
     },
   });
   const categories = categoriesData ?? [];
   const brands = brandsData ?? [];
+  const selectedCategory = useMemo(
+    () => categories.find((cat: any) => cat && Number(cat.id) === Number(category.categoryId)) ?? null,
+    [categories, category.categoryId],
+  );
+  const selectedSubcategory = useMemo(() => {
+    const subcategories = Array.isArray((selectedCategory as any)?.subcategories)
+      ? (selectedCategory as any).subcategories
+      : [];
+    return subcategories.find((sub: any) => sub && Number(sub.id) === Number(category.subcategoryId)) ?? null;
+  }, [selectedCategory, category.subcategoryId]);
+  const selectedSubcategoryRequiresMini = useMemo(() => {
+    const minicategories = Array.isArray((selectedSubcategory as any)?.minicategories)
+      ? (selectedSubcategory as any).minicategories
+      : [];
+    return minicategories.some((mini: any) => mini && mini.mini_category_name);
+  }, [selectedSubcategory]);
 
   // ── Edit: fetch product ──
   const { isLoading } = useQuery({
@@ -113,7 +129,14 @@ export default function ProductFormScreen() {
         setTags(p.MetaKey ?? "");
         setLowStock(String(p.low_stock ?? ""));
         if (p.category_id) {
-          setCategory(prev => ({ ...prev, categoryId: p.category_id, categoryName: p.category?.category_name ?? "" }));
+          setCategory({
+            categoryId: Number(p.category_id),
+            categoryName: p.categories?.category_name ?? p.category?.category_name ?? "",
+            subcategoryId: p.subcategory_id ? Number(p.subcategory_id) : null,
+            subcategoryName: p.subcategories?.sub_category_name ?? p.subcategory?.sub_category_name ?? "",
+            minicategoryId: p.minicategory_id ? Number(p.minicategory_id) : null,
+            minicategoryName: p.minicategories?.mini_category_name ?? p.minicategory?.mini_category_name ?? "",
+          });
         }
         if (p.brand_id) setBrandId(String(p.brand_id));
         setLoaded(true);
@@ -129,6 +152,8 @@ export default function ProductFormScreen() {
     if (s === 0) {
       if (!name.trim()) e.name = "Product name is required";
       if (!category.categoryId) e.category = "Category is required";
+      else if (!category.subcategoryId) e.category = "Subcategory is required";
+      else if (selectedSubcategoryRequiresMini && !category.minicategoryId) e.category = "Child category is required";
     }
     if (s === 2 && (sellingType === "dropshipping" || sellingType === "both")) {
       if (!resellerPrice.trim()) e.resellerPrice = "Reseller price is required";

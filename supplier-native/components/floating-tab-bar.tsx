@@ -1,247 +1,386 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
   Animated,
+  Text as RNText,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BRAND } from "@/lib/constants";
 
-/* ── Tab configuration — 5 tabs matching the required order ── */
-const TAB_CONFIG: {
-  name: string;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconFocused: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { name: "index", label: "Dashboard", icon: "grid-outline", iconFocused: "grid" },
-  { name: "orders", label: "Order", icon: "clipboard-outline", iconFocused: "clipboard" },
-  { name: "products", label: "Product", icon: "cube-outline", iconFocused: "cube" },
-  { name: "earning", label: "Earning", icon: "wallet-outline", iconFocused: "wallet" },
-  { name: "account", label: "Profile", icon: "person-outline", iconFocused: "person" },
-];
+/* ── Tab configuration — 5 tabs: Dashboard, Order, [Product], Earning, Profile ── */
+const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
+  index: { active: "grid", inactive: "grid-outline" },
+  orders: { active: "clipboard", inactive: "clipboard-outline" },
+  products: { active: "cube", inactive: "cube-outline" },
+  earning: { active: "wallet", inactive: "wallet-outline" },
+  account: { active: "person", inactive: "person-outline" },
+};
 
-/* ── Floating "+" button for quick product upload ── */
-const FAB_SIZE = 54;
+const TAB_LABELS: Record<string, string> = {
+  index: "Dashboard",
+  orders: "Order",
+  products: "Product",
+  earning: "Earning",
+  account: "Profile",
+};
 
-export default function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
-  const insets = useSafeAreaInsets();
-  const fabScale = useRef(new Animated.Value(1)).current;
-  const fabGlow = useRef(new Animated.Value(0)).current;
+const INACTIVE_COLOR = "#ACACAC";
+const CENTER_TAB_NAME = "products";
+const CENTER_BUTTON_SIZE = 50;
+const BAR_HEIGHT = 60;
 
-  // Subtle pulse animation for the FAB
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(fabGlow, {
-          toValue: 1,
-          duration: 1800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fabGlow, {
-          toValue: 0,
-          duration: 1800,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [fabGlow]);
+export const TAB_BAR_HEIGHT = BAR_HEIGHT + 20;
 
-  const handleFabPress = () => {
-    // Bounce animation
+/* ── Regular Tab ── */
+interface AnimatedTabProps {
+  route: BottomTabBarProps["state"]["routes"][0];
+  index: number;
+  isFocused: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}
+
+function AnimatedTab({
+  route,
+  isFocused,
+  onPress,
+  onLongPress,
+}: AnimatedTabProps) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const icons = TAB_ICONS[route.name] ?? {
+    active: "ellipse",
+    inactive: "ellipse-outline",
+  };
+  const label = TAB_LABELS[route.name] ?? route.name;
+  const iconName = isFocused ? icons.active : icons.inactive;
+
+  const handlePress = () => {
     Animated.sequence([
-      Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }),
-      Animated.timing(fabScale, { toValue: 1.05, duration: 100, useNativeDriver: true }),
-      Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }),
+      Animated.spring(scale, {
+        toValue: 0.85,
+        damping: 12,
+        stiffness: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        damping: 15,
+        stiffness: 200,
+        useNativeDriver: true,
+      }),
     ]).start();
-    router.push("/product/form");
+
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    onPress();
   };
 
   return (
-    <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 6) }]}>
-      {/* ── Main tab bar ── */}
-      <View style={styles.bar}>
-        {TAB_CONFIG.map((tab, index) => {
-          const isFocused = state.index === index;
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      onPress={handlePress}
+      onLongPress={onLongPress}
+      style={styles.tabButton}
+      activeOpacity={0.7}
+    >
+      <Animated.View style={[styles.tabContent, { transform: [{ scale }] }]}>
+        <Ionicons
+          name={iconName as any}
+          size={22}
+          color={isFocused ? BRAND.primary : INACTIVE_COLOR}
+        />
+        <RNText
+          style={[
+            styles.label,
+            {
+              color: isFocused ? BRAND.primary : INACTIVE_COLOR,
+              fontWeight: isFocused ? "600" : "400",
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {label}
+        </RNText>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: "tabPress",
-              target: state.routes[index].key,
-              canPreventDefault: true,
-            });
+/* ── Center Product Button ── */
+interface CenterButtonProps {
+  isFocused: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+}
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(state.routes[index].name);
-            }
-          };
+function CenterProductButton({
+  isFocused,
+  onPress,
+  onLongPress,
+}: CenterButtonProps) {
+  const scale = useRef(new Animated.Value(1)).current;
 
-          return (
-            <TouchableOpacity
-              key={tab.name}
-              accessibilityRole="button"
-              accessibilityLabel={tab.label}
-              accessibilityState={isFocused ? { selected: true } : {}}
-              onPress={onPress}
-              style={styles.tab}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconWrap, isFocused && styles.iconWrapFocused]}>
-                <Ionicons
-                  name={isFocused ? tab.iconFocused : tab.icon}
-                  size={22}
-                  color={isFocused ? BRAND.primary : "#9ca3af"}
-                />
-              </View>
-              <Text style={[styles.label, isFocused && styles.labelActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.spring(scale, {
+        toValue: 0.9,
+        damping: 12,
+        stiffness: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        damping: 15,
+        stiffness: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-      {/* ── Floating "+" button — positioned above the bar, between Earning and Profile ── */}
-      <Animated.View
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
+    onPress();
+  };
+
+  return (
+    <View style={styles.centerWrapper}>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Product"
+        accessibilityState={isFocused ? { selected: true } : {}}
+        onPress={handlePress}
+        onLongPress={onLongPress}
+        activeOpacity={0.85}
+      >
+        <Animated.View
+          style={[
+            styles.centerButton,
+            {
+              transform: [{ scale }],
+              backgroundColor: isFocused ? BRAND.primary : "#1C1C1E",
+            },
+          ]}
+        >
+          <Ionicons name="cube" size={24} color="#fff" />
+        </Animated.View>
+      </TouchableOpacity>
+
+      <RNText
         style={[
-          styles.fabContainer,
+          styles.centerLabel,
           {
-            transform: [{ scale: fabScale }],
-            // Position above the boundary between Earning (4th) and Profile (5th) tab
-            // Each tab is 20% wide. The boundary is at 80% from left = 20% from right
-            // Center the button there by offsetting by half the FAB width
-            right: "7%",
+            color: isFocused ? BRAND.primary : INACTIVE_COLOR,
+            fontWeight: isFocused ? "600" : "400",
           },
         ]}
       >
-        {/* Glow ring behind the button */}
-        <Animated.View
-          style={[
-            styles.fabGlow,
-            {
-              opacity: fabGlow.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.15, 0.35],
-              }),
-              transform: [
-                {
-                  scale: fabGlow.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [1, 1.25],
-                  }),
-                },
-              ],
-            },
-          ]}
-        />
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleFabPress}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View>
+        Product
+      </RNText>
     </View>
   );
 }
 
+/* ── Main Tab Bar ── */
+export default function FloatingTabBar({
+  state,
+  descriptors,
+  navigation,
+}: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 4);
+
+  const visibleRoutes = state.routes.filter((route) => {
+    const { options } = descriptors[route.key];
+    if (options.tabBarButton && options.tabBarButton({} as any) === null)
+      return false;
+    return !!TAB_ICONS[route.name];
+  });
+
+  const centerIndex = visibleRoutes.findIndex(
+    (r) => r.name === CENTER_TAB_NAME
+  );
+  const leftTabs = visibleRoutes.slice(0, centerIndex);
+  const rightTabs = visibleRoutes.slice(centerIndex + 1);
+  const centerRoute = visibleRoutes[centerIndex];
+
+  const makeHandlers = (route: (typeof visibleRoutes)[0]) => {
+    const realIndex = state.routes.findIndex((r) => r.key === route.key);
+    const isFocused = state.index === realIndex;
+    const onPress = () => {
+      const event = navigation.emit({
+        type: "tabPress",
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    };
+    const onLongPress = () => {
+      navigation.emit({ type: "tabLongPress", target: route.key });
+    };
+    return { realIndex, isFocused, onPress, onLongPress };
+  };
+
+  return (
+    <View style={[styles.outerWrapper, { paddingBottom: bottomPadding }]}>
+      <View style={styles.bar}>
+        {/* Left tabs: Dashboard, Order */}
+        <View style={styles.sideGroup}>
+          {leftTabs.map((route) => {
+            const h = makeHandlers(route);
+            return (
+              <AnimatedTab
+                key={route.key}
+                route={route}
+                index={h.realIndex}
+                isFocused={h.isFocused}
+                onPress={h.onPress}
+                onLongPress={h.onLongPress}
+              />
+            );
+          })}
+        </View>
+
+        {/* Center spacer */}
+        <View style={styles.centerSpacer} />
+
+        {/* Right tabs: Earning, Profile */}
+        <View style={styles.sideGroup}>
+          {rightTabs.map((route) => {
+            const h = makeHandlers(route);
+            return (
+              <AnimatedTab
+                key={route.key}
+                route={route}
+                index={h.realIndex}
+                isFocused={h.isFocused}
+                onPress={h.onPress}
+                onLongPress={h.onLongPress}
+              />
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Center button — raised Product tab */}
+      {centerRoute &&
+        (() => {
+          const h = makeHandlers(centerRoute);
+          return (
+            <CenterProductButton
+              isFocused={h.isFocused}
+              onPress={h.onPress}
+              onLongPress={h.onLongPress}
+            />
+          );
+        })()}
+    </View>
+  );
+}
+
+/* ── Styles ── */
 const styles = StyleSheet.create({
-  wrapper: {
+  outerWrapper: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     alignItems: "center",
-    paddingHorizontal: 12,
   },
+
   bar: {
     flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    height: BAR_HEIGHT,
     backgroundColor: "#fff",
-    borderRadius: 28,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.10,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
       },
       android: {
         elevation: 12,
       },
     }),
-    width: "100%",
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 4,
-  },
-  iconWrap: {
-    width: 44,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconWrapFocused: {
-    backgroundColor: BRAND.primaryLight,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: "500",
-    color: "#9ca3af",
-    marginTop: 2,
-  },
-  labelActive: {
-    color: BRAND.primary,
-    fontWeight: "600",
   },
 
-  /* ── Floating Action Button ── */
-  fabContainer: {
-    position: "absolute",
-    bottom: 68, // Sits above the bar
+  sideGroup: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-evenly",
+    height: BAR_HEIGHT,
+  },
+
+  centerSpacer: {
+    width: CENTER_BUTTON_SIZE + 16,
+  },
+
+  /* ── Regular tab ── */
+  tabButton: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    // right is set dynamically inline
+    height: BAR_HEIGHT,
   },
-  fabGlow: {
-    position: "absolute",
-    width: FAB_SIZE + 16,
-    height: FAB_SIZE + 16,
-    borderRadius: (FAB_SIZE + 16) / 2,
-    backgroundColor: BRAND.primary,
-  },
-  fab: {
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: BRAND.primary,
+
+  tabContent: {
     alignItems: "center",
     justifyContent: "center",
+    gap: 3,
+  },
+
+  label: {
+    fontSize: 10,
+  },
+
+  /* ── Center button ── */
+  centerWrapper: {
+    position: "absolute",
+    /* Only poke out slightly — about 40% of button above the bar */
+    bottom: BAR_HEIGHT - CENTER_BUTTON_SIZE * 0.6,
+    alignSelf: "center",
+    alignItems: "center",
+  },
+
+  centerButton: {
+    width: CENTER_BUTTON_SIZE,
+    height: CENTER_BUTTON_SIZE,
+    borderRadius: CENTER_BUTTON_SIZE / 2,
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: BRAND.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
       },
       android: {
         elevation: 8,
       },
     }),
-    borderWidth: 3,
-    borderColor: "#fff",
+  },
+
+  centerLabel: {
+    fontSize: 10,
+    marginTop: 3,
   },
 });
