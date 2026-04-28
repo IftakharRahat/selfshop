@@ -1,7 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Switch, Platform, Alert, Animated, KeyboardAvoidingView,
+  ActivityIndicator, Switch, Platform, Animated, KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -15,6 +15,7 @@ import FormField from "@/components/product-form/FormField";
 import StepProgressBar from "@/components/product-form/StepProgressBar";
 import CategoryPicker, { type CategorySelection, type Category } from "@/components/product-form/CategoryPicker";
 import ImageGalleryPicker from "@/components/product-form/ImageGalleryPicker";
+import VariantBuilder, { type VariantRow } from "@/components/product-form/VariantBuilder";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace("/api", "") ?? "";
 function getImageUrl(path?: string | null) {
@@ -28,6 +29,7 @@ const STEPS = [
   { label: "Media", icon: "images-outline" as const },
   { label: "Pricing", icon: "pricetag-outline" as const },
   { label: "Details", icon: "document-text-outline" as const },
+  { label: "Variants", icon: "color-palette-outline" as const },
 ];
 
 const SELLING_TYPES = [
@@ -70,6 +72,7 @@ export default function ProductFormScreen() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [warrantyEnabled, setWarrantyEnabled] = useState(false);
   const [warrantyDays, setWarrantyDays] = useState("");
+  const [variants, setVariants] = useState<VariantRow[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ── Fetch categories & brands ──
@@ -77,18 +80,34 @@ export default function ProductFormScreen() {
     queryKey: ["all-categories"],
     queryFn: async () => {
       const { data } = await apiClient.get("/categories");
-      return data?.data as Category[];
+      return Array.isArray(data?.data) ? (data.data as Category[]) : [];
     },
   });
   const { data: brandsData } = useQuery({
     queryKey: ["all-brands"],
     queryFn: async () => {
       const { data } = await apiClient.get("/brands");
-      return data?.data as { id: number; brand_name: string }[];
+      return Array.isArray(data?.data) ? (data.data as { id: number; brand_name: string }[]) : [];
     },
   });
   const categories = categoriesData ?? [];
   const brands = brandsData ?? [];
+  const selectedCategory = useMemo(
+    () => categories.find((cat: any) => cat && Number(cat.id) === Number(category.categoryId)) ?? null,
+    [categories, category.categoryId],
+  );
+  const selectedSubcategory = useMemo(() => {
+    const subcategories = Array.isArray((selectedCategory as any)?.subcategories)
+      ? (selectedCategory as any).subcategories
+      : [];
+    return subcategories.find((sub: any) => sub && Number(sub.id) === Number(category.subcategoryId)) ?? null;
+  }, [selectedCategory, category.subcategoryId]);
+  const selectedSubcategoryRequiresMini = useMemo(() => {
+    const minicategories = Array.isArray((selectedSubcategory as any)?.minicategories)
+      ? (selectedSubcategory as any).minicategories
+      : [];
+    return minicategories.some((mini: any) => mini && mini.mini_category_name);
+  }, [selectedSubcategory]);
 
   // ── Edit: fetch product ──
   const { isLoading } = useQuery({
@@ -113,7 +132,14 @@ export default function ProductFormScreen() {
         setTags(p.MetaKey ?? "");
         setLowStock(String(p.low_stock ?? ""));
         if (p.category_id) {
-          setCategory(prev => ({ ...prev, categoryId: p.category_id, categoryName: p.category?.category_name ?? "" }));
+          setCategory({
+            categoryId: Number(p.category_id),
+            categoryName: p.categories?.category_name ?? p.category?.category_name ?? "",
+            subcategoryId: p.subcategory_id ? Number(p.subcategory_id) : null,
+            subcategoryName: p.subcategories?.sub_category_name ?? p.subcategory?.sub_category_name ?? "",
+            minicategoryId: p.minicategory_id ? Number(p.minicategory_id) : null,
+            minicategoryName: p.minicategories?.mini_category_name ?? p.minicategory?.mini_category_name ?? "",
+          });
         }
         if (p.brand_id) setBrandId(String(p.brand_id));
         setLoaded(true);
@@ -129,6 +155,8 @@ export default function ProductFormScreen() {
     if (s === 0) {
       if (!name.trim()) e.name = "Product name is required";
       if (!category.categoryId) e.category = "Category is required";
+      else if (!category.subcategoryId) e.category = "Subcategory is required";
+      else if (selectedSubcategoryRequiresMini && !category.minicategoryId) e.category = "Child category is required";
     }
     if (s === 2 && (sellingType === "dropshipping" || sellingType === "both")) {
       if (!resellerPrice.trim()) e.resellerPrice = "Reseller price is required";
@@ -185,37 +213,56 @@ export default function ProductFormScreen() {
         const fn = uri.split("/").pop() ?? `gallery_${i}.jpg`;
         fd.append("PostImage[]", { uri, name: fn, type: "image/jpeg" } as any);
       });
+      let result;
       if (isEdit) {
         fd.append("_method", "POST");
-        return (await apiClient.post(`/vendor/products/${productId}`, fd, { headers: { "Content-Type": "multipart/form-data" } })).data;
+        result = (await apiClient.post(`/vendor/products/${productId}`, fd, { headers: { "Content-Type": "multipart/form-data" } })).data;
+      } else {
+        result = (await apiClient.post("/vendor/products", fd, { headers: { "Content-Type": "multipart/form-data" } })).data;
       }
-      return (await apiClient.post("/vendor/products", fd, { headers: { "Content-Type": "multipart/form-data" } })).data;
+      // Chain variant/size/bulk API calls
+      const newId = isEdit ? productId : result?.data?.product?.id;
+      if (newId && variants.length > 0) {
+        for (const v of variants) {
+          try {
+            const varRes = await apiClient.post(`/vendor/products/${newId}/variants`, {
+              title: v.title || v.color_name || "Variant", color_name: v.color_name || undefined,
+              color_code: v.color_code || undefined, qty: 0, price: 0,
+            });
+            const variantId = varRes.data?.data?.variant?.id;
+            if (!variantId) continue;
+            for (const sz of v.sizes) {
+              if (!sz.size_name) continue;
+              const szRes = await apiClient.post(`/vendor/products/${newId}/variants/${variantId}/sizes`, {
+                size_name: sz.size_name, qty: parseInt(sz.qty, 10) || 0,
+                price: sz.price ? parseFloat(sz.price) : null, status: "Active",
+              });
+              const sizeId = szRes.data?.data?.size?.id;
+              if (!sizeId) continue;
+              for (const bt of sz.bulkTiers) {
+                if (!bt.min_qty || !bt.bulk_price) continue;
+                await apiClient.post(`/vendor/products/${newId}/variants/${variantId}/sizes/${sizeId}/bulk-prices`, {
+                  min_qty: parseInt(bt.min_qty, 10), max_qty: bt.max_qty ? parseInt(bt.max_qty, 10) : null,
+                  bulk_price: parseFloat(bt.bulk_price),
+                });
+              }
+            }
+          } catch (e) { console.error("Variant creation failed:", e); }
+        }
+      }
+      return result;
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       toast.success(isEdit ? "Product updated" : "Product created");
       queryClient.invalidateQueries({ queryKey: ["vendor-products"] });
-      if (isEdit) {
-        queryClient.invalidateQueries({ queryKey: ["vendor-product", productId] });
-        router.back();
-      } else {
-        const newId = result?.data?.product?.id;
-        if (newId && (sellingType === "wholesale" || sellingType === "both")) {
-          router.replace({ pathname: "/product/variants", params: { id: String(newId) } });
-        } else { router.back(); }
-      }
+      if (isEdit) queryClient.invalidateQueries({ queryKey: ["vendor-product", productId] });
+      router.back();
     },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? "Failed to save product");
-    },
+    onError: (err: any) => { toast.error(err?.response?.data?.message ?? "Failed to save product"); },
   });
 
-  const handleSave = () => {
-    if (!validateStep(step)) return;
-    saveMutation.mutate();
-  };
-
+  const handleSave = () => { if (!validateStep(step)) return; saveMutation.mutate(); };
   const showPriceFields = sellingType === "dropshipping" || sellingType === "both";
-  const existingImage = isEdit ? getImageUrl(undefined) : null;
 
   if (isEdit && isLoading) {
     return (
@@ -230,7 +277,6 @@ export default function ProductFormScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <Header title={isEdit ? "Edit Product" : "New Product"} />
       <StepProgressBar steps={STEPS} currentStep={step} />
-
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <Animated.View style={{ flex: 1, transform: [{ translateX: slideAnim }] }}>
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -314,7 +360,7 @@ export default function ProductFormScreen() {
                     <Ionicons name="information-circle" size={22} color="#4f46e5" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.infoTitle}>Wholesale pricing via variants</Text>
-                      <Text style={styles.infoText}>Price & stock are managed through variants (colors & sizes).{"\n"}{isEdit ? "Use 'Manage Variants' to set pricing." : "After creating, you'll add variants."}</Text>
+                      <Text style={styles.infoText}>Price & stock are managed through variants (colors & sizes).{"\n"}Add them in the next step.</Text>
                     </View>
                   </View>
                 )}
@@ -359,12 +405,21 @@ export default function ProductFormScreen() {
                     </View>
                   )}
                 </View>
+              </View>
+            )}
+
+            {/* ═══ STEP 4: Variants ═══ */}
+            {step === 4 && (
+              <View>
+                <Text style={styles.stepTitle}>Product Variants</Text>
+                <Text style={styles.stepSub}>Add color variants with sizes and bulk pricing</Text>
+                <VariantBuilder variants={variants} onChange={setVariants} />
                 {isEdit && (
                   <TouchableOpacity style={styles.variantsBtn} onPress={() => router.push({ pathname: "/product/variants", params: { id: String(productId) } })} activeOpacity={0.7}>
                     <Ionicons name="color-palette-outline" size={20} color={BRAND.primary} />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.variantsBtnTitle}>Manage Variants</Text>
-                      <Text style={styles.variantsBtnSub}>Colors, Sizes & Bulk Pricing</Text>
+                      <Text style={styles.variantsBtnTitle}>Manage Existing Variants</Text>
+                      <Text style={styles.variantsBtnSub}>Edit or delete saved variants on server</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
                   </TouchableOpacity>
@@ -383,7 +438,7 @@ export default function ProductFormScreen() {
           <Ionicons name={step === 0 ? "close" : "arrow-back"} size={20} color="#374151" />
           <Text style={styles.backBtnText}>{step === 0 ? "Cancel" : "Back"}</Text>
         </TouchableOpacity>
-        {step < 3 ? (
+        {step < 4 ? (
           <TouchableOpacity style={styles.nextBtn} onPress={goNext} activeOpacity={0.8}>
             <Text style={styles.nextBtnText}>Next</Text>
             <Ionicons name="arrow-forward" size={18} color="#fff" />
@@ -397,7 +452,6 @@ export default function ProductFormScreen() {
     </View>
   );
 }
-
 function Header({ title }: { title: string }) {
   return (
     <View style={styles.header}>

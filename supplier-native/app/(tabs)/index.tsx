@@ -296,12 +296,37 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* ── Pending Amount ── */}
-        <View style={[styles.sectionCard, styles.pendingCard]}>
-          <Text style={[styles.sectionTitle, { color: "#92400e" }]}>Pending Amount</Text>
-          <Text style={styles.pendingAmount}>৳{(data?.pending_amount ?? 0).toLocaleString()}</Text>
-          <Text style={styles.pendingSubtext}>Awaiting delivery confirmation</Text>
+        {/* ── Sold & Pending Row ── */}
+        <View style={styles.financeRow}>
+          <View style={[styles.financeCard, { backgroundColor: "#fff" }]}>
+            <Text style={styles.financeLabel}>Sold This Month</Text>
+            <Text style={[styles.financeAmount, { color: BRAND.primary }]}>৳{(data?.this_month_sales ?? 0).toLocaleString()}</Text>
+            <Text style={styles.financeCompare}>Last: ৳{(data?.last_month_sales ?? 0).toLocaleString()}</Text>
+          </View>
+          <View style={[styles.financeCard, { backgroundColor: "#FFF7ED" }]}>
+            <Text style={styles.financeLabel}>Pending</Text>
+            <Text style={[styles.financeAmount, { color: "#ea580c" }]}>৳{(data?.pending_amount ?? 0).toLocaleString()}</Text>
+            <Text style={styles.financeCompare}>Awaiting delivery</Text>
+          </View>
         </View>
+
+        {/* ── Category-wise Product Count ── */}
+        {(data?.category_wise_product_count ?? []).filter(c => c && c.category_name).length > 0 && (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Products by Category</Text>
+            {data!.category_wise_product_count.filter(c => c && c.category_name).map((cat) => (
+              <View key={cat.category_name} style={styles.catRow}>
+                <View style={styles.catLeft}>
+                  <View style={styles.catDot} />
+                  <Text style={styles.catName} numberOfLines={1}>{cat.category_name}</Text>
+                </View>
+                <View style={styles.catBadge}>
+                  <Text style={styles.catCount}>{cat.product_count}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Bottom spacer for tab bar */}
         <View style={{ height: 100 }} />
@@ -487,9 +512,22 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   topProductRatingText: { fontSize: 10, fontWeight: "600", color: "#92400e" },
-  pendingCard: { backgroundColor: "#FFF7ED", borderColor: "#FED7AA", borderWidth: 1 },
-  pendingAmount: { fontSize: 28, fontWeight: "700", color: "#ea580c" },
-  pendingSubtext: { fontSize: 12, color: "#b45309", marginTop: 2 },
+
+  /* Finance row */
+  financeRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+  financeCard: { flex: 1, borderRadius: 14, padding: 14, ...CARD_SHADOW },
+  financeLabel: { fontSize: 12, fontWeight: "500", color: "#6b7280", marginBottom: 4 },
+  financeAmount: { fontSize: 22, fontWeight: "700" },
+  financeCompare: { fontSize: 11, color: "#9ca3af", marginTop: 3 },
+
+  /* Category list */
+  catRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: "#f9fafb" },
+  catLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  catDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND.primary },
+  catName: { fontSize: 13, color: "#374151", flex: 1 },
+  catBadge: { backgroundColor: BRAND.primaryBg, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
+  catCount: { fontSize: 12, fontWeight: "700", color: BRAND.primary },
+
   errorContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   errorText: { fontSize: 16, fontWeight: "600", color: "#6b7280" },
   errorSubtext: { fontSize: 13, color: "#9ca3af", textAlign: "center", paddingHorizontal: 40 },

@@ -8,11 +8,11 @@ import {
   TextInput,
   FlatList,
   SafeAreaView,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 const BRAND_PRIMARY = "#4f46e5";
+type PickerLevel = "category" | "subcategory" | "minicategory";
 
 /* ── Types ── */
 export interface MiniCategory {
@@ -50,6 +50,78 @@ interface CategoryPickerProps {
   error?: string;
 }
 
+function toPositiveId(value: unknown): number | null {
+  const n =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : NaN;
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function toName(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeMiniCategory(raw: unknown): MiniCategory | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const item = raw as Record<string, unknown>;
+  const id = toPositiveId(item.id);
+  const miniName = toName(item.mini_category_name);
+  if (!id || !miniName) return null;
+
+  return {
+    ...(item as object),
+    id,
+    mini_category_name: miniName,
+    subcategory_id: toPositiveId(item.subcategory_id) ?? 0,
+  } as MiniCategory;
+}
+
+function normalizeSubcategory(raw: unknown): SubCategory | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const item = raw as Record<string, unknown>;
+  const id = toPositiveId(item.id);
+  const subcategoryName = toName(item.sub_category_name);
+  if (!id || !subcategoryName) return null;
+
+  const minicategories = Array.isArray(item.minicategories)
+    ? item.minicategories
+        .map(normalizeMiniCategory)
+        .filter((mini): mini is MiniCategory => mini !== null)
+    : [];
+
+  return {
+    ...(item as object),
+    id,
+    sub_category_name: subcategoryName,
+    category_id: toPositiveId(item.category_id) ?? 0,
+    minicategories,
+  } as SubCategory;
+}
+
+function normalizeCategory(raw: unknown): Category | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const item = raw as Record<string, unknown>;
+  const id = toPositiveId(item.id);
+  const categoryName = toName(item.category_name);
+  if (!id || !categoryName) return null;
+
+  const subcategories = Array.isArray(item.subcategories)
+    ? item.subcategories
+        .map(normalizeSubcategory)
+        .filter((sub): sub is SubCategory => sub !== null)
+    : [];
+
+  return {
+    ...(item as object),
+    id,
+    category_name: categoryName,
+    subcategories,
+  } as Category;
+}
+
 /* ── Main Picker Button + Modal ── */
 export default function CategoryPicker({
   categories,
@@ -57,11 +129,31 @@ export default function CategoryPicker({
   onChange,
   error,
 }: CategoryPickerProps) {
+  const safeCategories = useMemo<Category[]>(() => {
+    if (!Array.isArray(categories)) return [];
+    return categories
+      .map(normalizeCategory)
+      .filter((cat): cat is Category => cat !== null);
+  }, [categories]);
+
   const [visible, setVisible] = useState(false);
-  const [level, setLevel] = useState<"category" | "subcategory" | "minicategory">("category");
+  const [level, setLevel] = useState<PickerLevel>("category");
   const [search, setSearch] = useState("");
   const [tempCategory, setTempCategory] = useState<Category | null>(null);
   const [tempSubcategory, setTempSubcategory] = useState<SubCategory | null>(null);
+
+  const selectedCategory = useMemo(
+    () => safeCategories.find((cat) => cat.id === selection.categoryId) ?? null,
+    [safeCategories, selection.categoryId],
+  );
+  const selectedSubcategory = useMemo(
+    () => selectedCategory?.subcategories?.find((sub) => sub.id === selection.subcategoryId) ?? null,
+    [selectedCategory, selection.subcategoryId],
+  );
+  const selectedMiniCategory = useMemo(
+    () => selectedSubcategory?.minicategories?.find((mini) => mini.id === selection.minicategoryId) ?? null,
+    [selectedSubcategory, selection.minicategoryId],
+  );
 
   const hasSelection = selection.categoryId !== null;
 
@@ -78,21 +170,20 @@ export default function CategoryPicker({
     if (cat.subcategories && cat.subcategories.length > 0) {
       setLevel("subcategory");
       setSearch("");
-    } else {
-      // No subcategories — select directly
-      onChange({
-        categoryId: cat.id,
-        categoryName: cat.category_name,
-        subcategoryId: null,
-        subcategoryName: "",
-        minicategoryId: null,
-        minicategoryName: "",
-      });
-      setVisible(false);
+      return;
     }
+
+    setLevel("subcategory");
+    setSearch("");
   };
 
   const selectSubcategory = (sub: SubCategory) => {
+    if (!tempCategory) {
+      setLevel("category");
+      setSearch("");
+      return;
+    }
+
     setTempSubcategory(sub);
     if (sub.minicategories && sub.minicategories.length > 0) {
       setLevel("minicategory");
@@ -100,8 +191,8 @@ export default function CategoryPicker({
     } else {
       // No mini-categories — select directly
       onChange({
-        categoryId: tempCategory!.id,
-        categoryName: tempCategory!.category_name,
+        categoryId: tempCategory.id,
+        categoryName: tempCategory.category_name,
         subcategoryId: sub.id,
         subcategoryName: sub.sub_category_name,
         minicategoryId: null,
@@ -112,45 +203,45 @@ export default function CategoryPicker({
   };
 
   const selectMiniCategory = (mini: MiniCategory) => {
+    if (!tempCategory || !tempSubcategory) {
+      setLevel(tempCategory ? "subcategory" : "category");
+      setSearch("");
+      return;
+    }
+
     onChange({
-      categoryId: tempCategory!.id,
-      categoryName: tempCategory!.category_name,
-      subcategoryId: tempSubcategory!.id,
-      subcategoryName: tempSubcategory!.sub_category_name,
+      categoryId: tempCategory.id,
+      categoryName: tempCategory.category_name,
+      subcategoryId: tempSubcategory.id,
+      subcategoryName: tempSubcategory.sub_category_name,
       minicategoryId: mini.id,
       minicategoryName: mini.mini_category_name,
     });
     setVisible(false);
   };
 
-  // Filter data based on search
+  // Filter data based on search — uses safeCategories (already sanitized)
   const filteredData = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (level === "category") {
       return q
-        ? categories.filter((c) =>
-            c.category_name.toLowerCase().includes(q)
-          )
-        : categories;
+        ? safeCategories.filter((c) => c.category_name.toLowerCase().includes(q))
+        : safeCategories;
     }
     if (level === "subcategory") {
       const subs = tempCategory?.subcategories ?? [];
       return q
-        ? subs.filter((s) =>
-            s.sub_category_name.toLowerCase().includes(q)
-          )
+        ? subs.filter((s) => s.sub_category_name.toLowerCase().includes(q))
         : subs;
     }
     if (level === "minicategory") {
       const minis = tempSubcategory?.minicategories ?? [];
       return q
-        ? minis.filter((m) =>
-            m.mini_category_name.toLowerCase().includes(q)
-          )
+        ? minis.filter((m) => m.mini_category_name.toLowerCase().includes(q))
         : minis;
     }
     return [];
-  }, [level, search, categories, tempCategory, tempSubcategory]);
+  }, [level, search, safeCategories, tempCategory, tempSubcategory]);
 
   const getTitle = () => {
     if (level === "category") return "Select Category";
@@ -159,9 +250,9 @@ export default function CategoryPicker({
   };
 
   const getItemLabel = (item: any) => {
-    if (level === "category") return item.category_name;
-    if (level === "subcategory") return item.sub_category_name;
-    return item.mini_category_name;
+    if (level === "category") return item?.category_name ?? "Unknown";
+    if (level === "subcategory") return item?.sub_category_name ?? "Unknown";
+    return item?.mini_category_name ?? "Unknown";
   };
 
   const handleBack = () => {
@@ -177,16 +268,18 @@ export default function CategoryPicker({
   };
 
   const handleItemPress = (item: any) => {
+    if (!item) return;
     if (level === "category") selectCategory(item);
     else if (level === "subcategory") selectSubcategory(item);
     else selectMiniCategory(item);
   };
 
   // Build breadcrumb for display
-  const breadcrumb = [];
-  if (selection.categoryName) breadcrumb.push(selection.categoryName);
-  if (selection.subcategoryName) breadcrumb.push(selection.subcategoryName);
-  if (selection.minicategoryName) breadcrumb.push(selection.minicategoryName);
+  const breadcrumb = [
+    selection.categoryName || selectedCategory?.category_name || (selection.categoryId ? `Category #${selection.categoryId}` : ""),
+    selection.subcategoryName || selectedSubcategory?.sub_category_name || "",
+    selection.minicategoryName || selectedMiniCategory?.mini_category_name || "",
+  ].filter(Boolean);
 
   return (
     <View style={styles.outerContainer}>
@@ -326,48 +419,6 @@ export default function CategoryPicker({
             }}
           />
 
-          {/* Skip subcategory option */}
-          {level === "subcategory" && (
-            <TouchableOpacity
-              style={styles.skipBtn}
-              onPress={() => {
-                onChange({
-                  categoryId: tempCategory!.id,
-                  categoryName: tempCategory!.category_name,
-                  subcategoryId: null,
-                  subcategoryName: "",
-                  minicategoryId: null,
-                  minicategoryName: "",
-                });
-                setVisible(false);
-              }}
-            >
-              <Text style={styles.skipBtnText}>
-                Skip — use "{tempCategory?.category_name}" only
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {level === "minicategory" && (
-            <TouchableOpacity
-              style={styles.skipBtn}
-              onPress={() => {
-                onChange({
-                  categoryId: tempCategory!.id,
-                  categoryName: tempCategory!.category_name,
-                  subcategoryId: tempSubcategory!.id,
-                  subcategoryName: tempSubcategory!.sub_category_name,
-                  minicategoryId: null,
-                  minicategoryName: "",
-                });
-                setVisible(false);
-              }}
-            >
-              <Text style={styles.skipBtnText}>
-                Skip — use "{tempSubcategory?.sub_category_name}" only
-              </Text>
-            </TouchableOpacity>
-          )}
         </SafeAreaView>
       </Modal>
     </View>
@@ -521,18 +572,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: "#9ca3af",
-  },
-  skipBtn: {
-    marginHorizontal: 16,
-    marginBottom: Platform.OS === "ios" ? 16 : 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-  },
-  skipBtnText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#6b7280",
   },
 });

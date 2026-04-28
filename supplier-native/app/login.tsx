@@ -39,8 +39,13 @@ export default function LoginScreen() {
       signIn(session);
       toast.success("Welcome back!");
     } catch (err: any) {
+      const status = err?.response?.status;
       const message = err?.response?.data?.message ?? err?.message ?? "Login failed";
-      toast.error(message);
+      if (status === 401) {
+        toast.error("Invalid credentials. Please check your phone/email and password.");
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
