@@ -2550,6 +2550,8 @@ class OrderController extends Controller
             }
         }
         // Use manual overrides if admin provided them, otherwise auto-calculate
+        $deliveryCharge = $request['data']['deliveryCharge'] ?? 0;
+        $discountCharge = $request['data']['discountCharge'] ?? 0;
         if (isset($request['data']['editSellerProfit']) && $request['data']['editSellerProfit'] !== '' && $request['data']['editSellerProfit'] !== null) {
             $order->profit = $request['data']['editSellerProfit'];
         } else {

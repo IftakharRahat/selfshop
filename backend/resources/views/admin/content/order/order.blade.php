@@ -1164,24 +1164,28 @@
                         $(document).on("input", "#discountCharge", function() {
                             calculation();
                         });
+                        $(document).on("input", "#editSellerProfit", function() {
+                            calculation();
+                        });
                         calculation();
 
                         function calculation() {
                             var subtotal = 0;
                             var deliveryCharge = +$("#deliveryCharge").val();
                             var discountCharge = +$("#discountCharge").val();
-                            var profit = +$("#orderProfit").val() || 0;
+                            var profit = +$("#editSellerProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
                                 subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
                             subtotal = subtotal + profit;
-                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            $("#editSubTotal").val(subtotal);
+                            $("#orderProfit").val(profit);
                             var totalDue = subtotal - discountCharge;
                             if (advanceDelivery == 0) {
                                 totalDue = totalDue + deliveryCharge;
                             }
-                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
+                            $("#total").val(totalDue);
                         }
 
                         $(document).on("click", ".delete-btn", function() {
@@ -1254,7 +1258,7 @@
                 var customerNote = $("#customerNote");
                 var cancel_comment = $("#cancel_comment");
                 var storeID = $("#storeID");
-                var total = +$("#total").attr('data-raw') || +$("#total").text();
+                var total = +$("#total").val();
                 var deliveryCharge = +$("#deliveryCharge").val();
                 var discountCharge = +$("#discountCharge").val();
                 var paymentTypeID = $("#paymentTypeID").val();
@@ -2401,24 +2405,28 @@
                         $(document).on("input", "#discountCharge", function() {
                             calculation();
                         });
+                        $(document).on("input", "#editSellerProfit", function() {
+                            calculation();
+                        });
                         calculation();
 
                         function calculation() {
                             var subtotal = 0;
                             var deliveryCharge = +$("#deliveryCharge").val();
                             var discountCharge = +$("#discountCharge").val();
-                            var profit = +$("#orderProfit").val() || 0;
+                            var profit = +$("#editSellerProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
                                 subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
                             subtotal = subtotal + profit;
-                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            $("#editSubTotal").val(subtotal);
+                            $("#orderProfit").val(profit);
                             var totalDue = subtotal - discountCharge;
                             if (advanceDelivery == 0) {
                                 totalDue = totalDue + deliveryCharge;
                             }
-                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
+                            $("#total").val(totalDue);
                         }
 
                         $(document).on("click", ".delete-btn", function() {
@@ -2490,7 +2498,7 @@
                 var customerNote = $("#customerNote");
                 var cancel_comment = $("#cancel_comment");
                 var storeID = $("#storeID");
-                var total = +$("#total").attr('data-raw') || +$("#total").text();
+                var total = +$("#total").val();
                 var deliveryCharge = +$("#deliveryCharge").val();
                 var discountCharge = +$("#discountCharge").val();
                 var paymentTypeID = $("#paymentTypeID").val();

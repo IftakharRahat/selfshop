@@ -668,9 +668,12 @@
                              </span>
                          </div>
                          <div class="summary-row summary-total">
-                             <span class="summary-label">Total Due</span>
-                             <span class="summary-value" id="total" style="color: var(--admin-primary, #2d2a5d); font-size: 16px;">0</span>
-                         </div>
+                              <span class="summary-label">Total Due</span>
+                              <span class="summary-value">
+                                  <input type="number" step="0.01" class="edit-order-form-control" value="0"
+                                      id="total" style="width: 100px; text-align: right; padding: 4px 8px; font-size: 16px; font-weight: bold; color: var(--admin-primary, #2d2a5d);">
+                              </span>
+                          </div>
                      </div>
                  </div>
              </div>
