@@ -2543,12 +2543,18 @@ class OrderController extends Controller
                 $bonus += $prod->reseller_bonus ?? 0;
             }
         }
-        // subTotal = selling total (product cost + reseller profit), matches order creation
-        // profit = total - buy - delivery + discount (isolate the reseller markup)
-        $deliveryCharge = $request['data']['deliveryCharge'] ?? 0;
-        $discountCharge = $request['data']['discountCharge'] ?? 0;
-        $order->profit = $request['data']['total'] - $buy - $deliveryCharge + $discountCharge;
-        $order->subTotal = $buy + $order->profit;
+        // Use manual overrides if admin provided them, otherwise auto-calculate
+        if (isset($request['data']['editSellerProfit']) && $request['data']['editSellerProfit'] !== '' && $request['data']['editSellerProfit'] !== null) {
+            $order->profit = $request['data']['editSellerProfit'];
+        } else {
+            $order->profit = $request['data']['total'] - $buy - $deliveryCharge + $discountCharge;
+        }
+
+        if (isset($request['data']['editSubTotal']) && $request['data']['editSubTotal'] !== '' && $request['data']['editSubTotal'] !== null) {
+            $order->subTotal = $request['data']['editSubTotal'];
+        } else {
+            $order->subTotal = $buy + $order->profit;
+        }
         $order->order_bonus = $bonus;
 
         $result = $order->update();

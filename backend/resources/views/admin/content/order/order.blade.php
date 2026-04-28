@@ -1364,6 +1364,8 @@
                 data["products"] = product;
                 data["memo"] = memo;
                 data["parcelID"] = parcelID;
+                data["editSellerProfit"] = +$("#editSellerProfit").val();
+                data["editSubTotal"] = +$("#editSubTotal").val();
                 $.ajax({
                     type: "PUT",
                     url: "{{ url('admin_orders') }}/" + id,

@@ -626,19 +626,25 @@
                              <span class="summary-value">{{ number_format($order->subTotal - $order->profit, 2) }}</span>
                          </div>
                          <div class="summary-row">
-                             <span class="summary-label">Seller Profit</span>
-                             <span class="summary-value">{{ number_format($order->profit, 2) }}</span>
-                         </div>
+                              <span class="summary-label">Seller Profit</span>
+                              <span class="summary-value">
+                                  <input type="number" step="0.01" class="edit-order-form-control" value="{{ $order->profit }}"
+                                      id="editSellerProfit" style="width: 100px; text-align: right; padding: 4px 8px; font-size: 13px;">
+                              </span>
+                          </div>
                          <div class="summary-row">
                              <span class="summary-label">Order Bonus</span>
                              <span class="summary-value">{{ number_format($order->order_bonus ?? 0, 2) }}</span>
                          </div>
-                         <div class="summary-row">
-                             <span class="summary-label">Sub Total</span>
-                             <span class="summary-value" id="subtotal">{{ number_format($order->subTotal + $order->profit, 2) }}</span>
-                             <input type="hidden" id="orderProfit" value="{{ $order->profit }}">
-                             <input type="hidden" id="advanceDelivery" value="{{ $order->advance_delivery }}">
-                         </div>
+                          <div class="summary-row">
+                              <span class="summary-label">Sub Total</span>
+                              <span class="summary-value">
+                                  <input type="number" step="0.01" class="edit-order-form-control" value="{{ $order->subTotal }}"
+                                      id="editSubTotal" style="width: 100px; text-align: right; padding: 4px 8px; font-size: 13px;">
+                              </span>
+                              <input type="hidden" id="orderProfit" value="{{ $order->profit }}">
+                              <input type="hidden" id="advanceDelivery" value="{{ $order->advance_delivery }}">
+                          </div>
                          <div class="summary-row">
                              <span class="summary-label">Delivery</span>
                              <span class="summary-value">
