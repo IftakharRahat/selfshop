@@ -21,12 +21,16 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Handle 401 responses globally
+// Handle 401 responses globally — clear token so AuthGate redirects to login
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      // Don't clear token for login/register requests (those are expected 401s)
+      const url = error.config?.url ?? "";
+      if (!url.includes("/login") && !url.includes("/register")) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+      }
     }
     return Promise.reject(error);
   },

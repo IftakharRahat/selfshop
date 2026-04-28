@@ -57,6 +57,41 @@ export default function CategoryPicker({
   onChange,
   error,
 }: CategoryPickerProps) {
+  // Sanitize categories at the root: filter out null entries at every level
+  const safeCategories = useMemo(() => {
+    try {
+      if (!Array.isArray(categories)) {
+        console.warn("[CategoryPicker] categories is not an array:", typeof categories);
+        return [];
+      }
+      const result = categories
+        .filter((c: any) => {
+          if (c == null || typeof c !== "object" || !c.category_name) {
+            console.warn("[CategoryPicker] filtered out invalid category:", c);
+            return false;
+          }
+          return true;
+        })
+        .map((c: any) => ({
+          ...c,
+          subcategories: Array.isArray(c.subcategories)
+            ? c.subcategories
+                .filter((s: any) => s != null && typeof s === "object" && s.sub_category_name)
+                .map((s: any) => ({
+                  ...s,
+                  minicategories: Array.isArray(s.minicategories)
+                    ? s.minicategories.filter((m: any) => m != null && typeof m === "object" && m.mini_category_name)
+                    : [],
+                }))
+            : [],
+        }));
+      return result;
+    } catch (e) {
+      console.error("[CategoryPicker] safeCategories error:", e);
+      return [];
+    }
+  }, [categories]);
+
   const [visible, setVisible] = useState(false);
   const [level, setLevel] = useState<"category" | "subcategory" | "minicategory">("category");
   const [search, setSearch] = useState("");
@@ -123,34 +158,28 @@ export default function CategoryPicker({
     setVisible(false);
   };
 
-  // Filter data based on search
+  // Filter data based on search — uses safeCategories (already sanitized)
   const filteredData = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (level === "category") {
       return q
-        ? categories.filter((c) =>
-            c.category_name.toLowerCase().includes(q)
-          )
-        : categories;
+        ? safeCategories.filter((c) => c.category_name.toLowerCase().includes(q))
+        : safeCategories;
     }
     if (level === "subcategory") {
       const subs = tempCategory?.subcategories ?? [];
       return q
-        ? subs.filter((s) =>
-            s.sub_category_name.toLowerCase().includes(q)
-          )
+        ? subs.filter((s) => s.sub_category_name.toLowerCase().includes(q))
         : subs;
     }
     if (level === "minicategory") {
       const minis = tempSubcategory?.minicategories ?? [];
       return q
-        ? minis.filter((m) =>
-            m.mini_category_name.toLowerCase().includes(q)
-          )
+        ? minis.filter((m) => m.mini_category_name.toLowerCase().includes(q))
         : minis;
     }
     return [];
-  }, [level, search, categories, tempCategory, tempSubcategory]);
+  }, [level, search, safeCategories, tempCategory, tempSubcategory]);
 
   const getTitle = () => {
     if (level === "category") return "Select Category";
@@ -159,9 +188,9 @@ export default function CategoryPicker({
   };
 
   const getItemLabel = (item: any) => {
-    if (level === "category") return item.category_name;
-    if (level === "subcategory") return item.sub_category_name;
-    return item.mini_category_name;
+    if (level === "category") return item?.category_name ?? "Unknown";
+    if (level === "subcategory") return item?.sub_category_name ?? "Unknown";
+    return item?.mini_category_name ?? "Unknown";
   };
 
   const handleBack = () => {

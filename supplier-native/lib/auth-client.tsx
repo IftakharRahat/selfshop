@@ -9,6 +9,12 @@ interface User {
   phone?: string;
 }
 
+interface VendorInfo {
+  status: string;          // "approved" | "pending" | "rejected" etc.
+  is_verified_badge?: boolean;
+  company_name?: string;
+}
+
 interface Session {
   user: User;
   token: string;
@@ -16,7 +22,13 @@ interface Session {
 
 interface AuthContextValue {
   session: Session | null;
+  /** True while the initial auth + vendor check is running (splash stays up) */
   isLoading: boolean;
+  /** True once the vendor profile API call completes and confirms vendor access */
+  isVendor: boolean;
+  /** True while vendor profile is being checked (after login, before result) */
+  isVendorChecking: boolean;
+  vendorInfo: VendorInfo | null;
   signIn: (session: Session) => void;
   signOut: () => Promise<void>;
   refetch: () => Promise<void>;
@@ -25,6 +37,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   session: null,
   isLoading: true,
+  isVendor: false,
+  isVendorChecking: false,
+  vendorInfo: null,
   signIn: () => {},
   signOut: async () => {},
   refetch: async () => {},
@@ -71,25 +86,59 @@ export async function logout(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 
+/**
+ * Check if the logged-in user has a vendor profile.
+ * Returns the vendor info if they do, null if they don't.
+ */
+async function fetchVendorProfile(): Promise<VendorInfo | null> {
+  try {
+    const { data } = await apiClient.get("/vendor/profile");
+    const vendor = data?.data?.vendor;
+    if (vendor) {
+      return {
+        status: vendor.status ?? "pending",
+        is_verified_badge: vendor.is_verified_badge ?? false,
+        company_name: vendor.company_name ?? "",
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Provider ──
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVendorChecking, setIsVendorChecking] = useState(false);
+  const [vendorInfo, setVendorInfo] = useState<VendorInfo | null>(null);
+  const [isVendor, setIsVendor] = useState(false);
 
   const checkSession = useCallback(async () => {
     try {
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
       if (!token) {
         setSession(null);
+        setIsVendor(false);
+        setVendorInfo(null);
         return;
       }
+      // Fetch user info
       const { data } = await apiClient.get("/user");
       const user = data?.data ?? data;
       setSession({ user, token });
+
+      // Verify vendor status — do this BEFORE setting isLoading to false
+      const vendor = await fetchVendorProfile();
+      setVendorInfo(vendor);
+      setIsVendor(vendor !== null);
     } catch {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
       setSession(null);
+      setIsVendor(false);
+      setVendorInfo(null);
     } finally {
       setIsLoading(false);
     }
@@ -101,15 +150,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = useCallback((s: Session) => {
     setSession(s);
+    setIsVendorChecking(true);
+    // After login, check vendor profile
+    fetchVendorProfile().then((vendor) => {
+      setVendorInfo(vendor);
+      setIsVendor(vendor !== null);
+      setIsVendorChecking(false);
+    });
   }, []);
 
   const signOut = useCallback(async () => {
     await logout();
     setSession(null);
+    setIsVendor(false);
+    setVendorInfo(null);
+    setIsVendorChecking(false);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, isLoading, signIn, signOut, refetch: checkSession }}>
+    <AuthContext.Provider value={{
+      session,
+      isLoading,
+      isVendor,
+      isVendorChecking,
+      vendorInfo,
+      signIn,
+      signOut,
+      refetch: checkSession,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -119,5 +187,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useSession() {
   const ctx = useContext(AuthContext);
-  return { data: ctx.session, isLoading: ctx.isLoading, signIn: ctx.signIn, signOut: ctx.signOut, refetch: ctx.refetch };
+  return {
+    data: ctx.session,
+    isLoading: ctx.isLoading,
+    isVendor: ctx.isVendor,
+    isVendorChecking: ctx.isVendorChecking,
+    vendorInfo: ctx.vendorInfo,
+    signIn: ctx.signIn,
+    signOut: ctx.signOut,
+    refetch: ctx.refetch,
+  };
 }
