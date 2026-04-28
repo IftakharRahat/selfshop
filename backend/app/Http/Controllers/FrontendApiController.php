@@ -1647,7 +1647,8 @@ class FrontendApiController extends Controller
     {
         $id = Auth::user()->id;
         $query = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
-            ->where('user_id', $id);
+            ->where('user_id', $id)
+            ->where('status', '!=', 'Pending Payment');
 
         $slugLower = strtolower((string) $slug);
         if (!in_array($slugLower, ['all', ''], true)) {
@@ -3537,7 +3538,7 @@ class FrontendApiController extends Controller
                     'orderDate' => date('Y-m-d'),
                     'transaction_id' => $post_data['tran_id'],
                     'user_id' => Auth::id(),
-                    'status' => 'Pending',
+                    'status' => 'Pending Payment',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

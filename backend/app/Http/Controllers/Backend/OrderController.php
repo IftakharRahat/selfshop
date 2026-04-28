@@ -712,6 +712,9 @@ class OrderController extends Controller
             }
         }
 
+        // Exclude SSLCommerz orders that haven't completed payment yet
+        $orders = $orders->where('orders.status', '!=', 'Pending Payment');
+
         return Datatables::of($orders->orderBy('orders.id', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {
                 return $orders->customerName . '<br>' . $orders->customerPhone . '<br>' . $orders->customerAddress . '<br>' . $orders->entry_complete;
@@ -1249,6 +1252,9 @@ class OrderController extends Controller
                 $orders = $orders->where('orders.user_id', '=', $s10);
             }
         }
+
+        // Exclude SSLCommerz orders that haven't completed payment yet
+        $orders = $orders->where('orders.status', '!=', 'Pending Payment');
 
         return Datatables::of($orders->orderBy('orders.updated_at', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {

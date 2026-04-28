@@ -909,7 +909,7 @@ public function initiatePayment(Request $request)
             'deliveryCharge' => $deliveryCharge,
             'paymentAmount' => $totalAmount, // Store delivery charge total
             'orderDate' => date('Y-m-d'),
-            'status' => 'Pending',
+            'status' => 'Pending Payment',
             'admin_id' => 1, // Default admin/store ID
             'store_id' => 1, // Default store
             'payment_type_id' => 6, // SSLCommerz
