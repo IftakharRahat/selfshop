@@ -20,6 +20,7 @@ export default function TabLayout() {
           title: "Cart",
         }}
       />
+      <Tabs.Screen name="orders" options={{ title: "Orders" }} />
       <Tabs.Screen name="dashboard" options={{ title: "Dashboard" }} />
       <Tabs.Screen
         name="account"
