@@ -1178,14 +1178,14 @@
                             $("#productTable tbody tr").each(function(index) {
                                 subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
-                            subtotal = subtotal + profit;
+                            subtotal = Math.round((subtotal + profit) * 100) / 100;
                             $("#editSubTotal").val(subtotal);
                             $("#orderProfit").val(profit);
                             var totalDue = subtotal - discountCharge;
                             if (advanceDelivery == 0) {
                                 totalDue = totalDue + deliveryCharge;
                             }
-                            $("#total").val(totalDue);
+                            $("#total").val(Math.round(totalDue * 100) / 100);
                         }
 
                         $(document).on("click", ".delete-btn", function() {
@@ -2419,14 +2419,14 @@
                             $("#productTable tbody tr").each(function(index) {
                                 subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
-                            subtotal = subtotal + profit;
+                            subtotal = Math.round((subtotal + profit) * 100) / 100;
                             $("#editSubTotal").val(subtotal);
                             $("#orderProfit").val(profit);
                             var totalDue = subtotal - discountCharge;
                             if (advanceDelivery == 0) {
                                 totalDue = totalDue + deliveryCharge;
                             }
-                            $("#total").val(totalDue);
+                            $("#total").val(Math.round(totalDue * 100) / 100);
                         }
 
                         $(document).on("click", ".delete-btn", function() {
