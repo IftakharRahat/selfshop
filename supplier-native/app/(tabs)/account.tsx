@@ -66,6 +66,7 @@ export default function AccountScreen() {
         { icon: "storefront-outline", label: "Shop Profile", subtitle: "Edit your store info & branding", onPress: () => router.push("/account/profile") },
         { icon: "shield-checkmark-outline", label: "KYC Documents", subtitle: "Upload verification documents", onPress: () => router.push("/account/kyc") },
         { icon: "notifications-outline", label: "Notifications", subtitle: "View all notifications", onPress: () => router.push("/account/notifications") },
+        { icon: "key-outline", label: "Change Password", subtitle: "Update your account password", onPress: () => router.push("/account/change-password") },
       ],
     },
     {
