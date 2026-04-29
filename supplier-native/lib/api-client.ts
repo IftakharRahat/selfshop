@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
-import * as SecureStore from "expo-secure-store";
+import { getItem, deleteItem } from "./storage";
 
 const TOKEN_KEY = "supplier_auth_token";
 
@@ -14,7 +14,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // Attach auth token to every request
 apiClient.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
+  const token = await getItem(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
       // Don't clear token for login/register requests (those are expected 401s)
       const url = error.config?.url ?? "";
       if (!url.includes("/login") && !url.includes("/register")) {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await deleteItem(TOKEN_KEY);
       }
     }
     return Promise.reject(error);
