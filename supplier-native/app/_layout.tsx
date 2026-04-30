@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
@@ -64,17 +65,31 @@ function AuthGate() {
   const { data: session, isLoading, isVendor, isVendorChecking } = useSession();
   const segments = useSegments();
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isOnboardingChecked, setIsOnboardingChecked] = useState(false);
 
   useEffect(() => {
-    if (isLoading) return; // wait for initial auth check
+    async function checkOnboarding() {
+      const completed = await SecureStore.getItemAsync("supplier_onboarding_completed");
+      setShowOnboarding(completed !== "true");
+      setIsOnboardingChecked(true);
+    }
+    checkOnboarding();
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || !isOnboardingChecked) return; // wait for initial auth check and onboarding check
     if (isVendorChecking) return; // wait for vendor profile check to finish
 
-    // Hide splash once auth + vendor state is fully known
+    // Hide splash once auth + vendor state + onboarding state is fully known
     SplashScreen.hideAsync();
 
     const inAuthGroup = segments[0] === "login" || segments[0] === "register";
 
-    if (!session && !inAuthGroup) {
+    if (showOnboarding && segments[0] !== "onboarding") {
+      router.replace("/onboarding");
+      setHasNavigated(true);
+    } else if (!session && !inAuthGroup && !showOnboarding) {
       // Not logged in → go to login
       router.replace("/login");
       setHasNavigated(true);
@@ -87,10 +102,10 @@ function AuthGate() {
       router.replace("/(tabs)");
       setHasNavigated(true);
     }
-  }, [session, isLoading, isVendorChecking, isVendor, segments]);
+  }, [session, isLoading, isVendorChecking, isVendor, segments, showOnboarding, isOnboardingChecked]);
 
-  // While vendor check is in progress, don't render anything blocking
-  if (isLoading || isVendorChecking) {
+  // While vendor check or onboarding check is in progress, don't render anything blocking
+  if (isLoading || isVendorChecking || !isOnboardingChecked) {
     return (
       <Stack
         screenOptions={{
@@ -103,7 +118,7 @@ function AuthGate() {
 
   // If logged in but NOT a vendor → show access denied screen
   const inAuthGroup = segments[0] === "login" || segments[0] === "register";
-  if (session && !isVendor && !inAuthGroup) {
+  if (session && !isVendor && !inAuthGroup && segments[0] !== "onboarding") {
     return <AccessDeniedScreen />;
   }
 
@@ -120,7 +135,8 @@ function AuthGate() {
       {/* Tab root — fade (instant feel) */}
       <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
 
-      {/* Auth — slide up (modal feel) */}
+      {/* Auth / Onboarding — slide up (modal feel) */}
+      <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
       <Stack.Screen name="login" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
       <Stack.Screen name="register" options={{ animation: "slide_from_bottom", presentation: "modal", gestureDirection: "vertical" }} />
 
