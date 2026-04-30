@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import { getItem, setItem, deleteItem } from "./storage";
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import apiClient, { TOKEN_KEY } from "./api-client";
 
@@ -53,7 +53,7 @@ export async function login(phone: string, password: string): Promise<Session> {
   const user = data?.data?.user ?? data?.user;
 
   if (!token) throw new Error("No token received");
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
+  await setItem(TOKEN_KEY, token);
   return { user, token };
 }
 
@@ -73,7 +73,7 @@ export async function register(payload: {
   const user = data?.data?.user ?? data?.user;
 
   if (!token) throw new Error("No token received");
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
+  await setItem(TOKEN_KEY, token);
   return { user, token };
 }
 
@@ -83,7 +83,7 @@ export async function logout(): Promise<void> {
   } catch {
     // ignore — token may already be invalid
   }
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+  await deleteItem(TOKEN_KEY);
 }
 
 /**
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkSession = useCallback(async () => {
     try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const token = await getItem(TOKEN_KEY);
       if (!token) {
         setSession(null);
         setIsVendor(false);
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setVendorInfo(vendor);
       setIsVendor(vendor !== null);
     } catch {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      await deleteItem(TOKEN_KEY);
       setSession(null);
       setIsVendor(false);
       setVendorInfo(null);

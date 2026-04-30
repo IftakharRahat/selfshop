@@ -12,7 +12,7 @@ import {
 import type { VendorPayoutAccount } from "@/redux/api/vendorApi";
 import { toast } from "sonner";
 
-type ChannelType = "bank" | "mobile_wallet" | "other";
+type ChannelType = "bank" | "bkash" | "nagad" | "rocket";
 
 interface FormState {
 	channel_type: ChannelType;
@@ -32,10 +32,45 @@ const EMPTY_FORM: FormState = {
 	is_default: false,
 };
 
+const CHANNEL_OPTIONS: { value: ChannelType; label: string; color: string; bg: string; border: string }[] = [
+	{ value: "bank", label: "Bank", color: "#2d2a5d", bg: "#2d2a5d10", border: "#2d2a5d40" },
+	{ value: "bkash", label: "bKash", color: "#E2136E", bg: "#E2136E12", border: "#E2136E40" },
+	{ value: "nagad", label: "Nagad", color: "#F6921E", bg: "#F6921E12", border: "#F6921E40" },
+	{ value: "rocket", label: "Rocket", color: "#8C3494", bg: "#8C349412", border: "#8C349440" },
+];
+
 function channelLabel(t: string): string {
-	if (t === "bank") return "Bank";
-	if (t === "mobile_wallet") return "bKash";
-	return "Other";
+	return CHANNEL_OPTIONS.find((c) => c.value === t)?.label ?? t;
+}
+
+function channelStyle(t: string) {
+	return CHANNEL_OPTIONS.find((c) => c.value === t) ?? CHANNEL_OPTIONS[0];
+}
+
+const isMobileWallet = (t: ChannelType) => t === "bkash" || t === "nagad" || t === "rocket";
+
+/** Map UI channel type to backend-accepted values */
+function toApiPayload(form: FormState) {
+	const isWallet = isMobileWallet(form.channel_type);
+	return {
+		channel_type: isWallet ? "mobile_wallet" : form.channel_type,
+		provider_name: isWallet ? channelLabel(form.channel_type) : (form.provider_name || undefined),
+		account_name: form.account_name,
+		account_number: form.account_number,
+		routing_number: form.routing_number || undefined,
+		is_default: form.is_default,
+	};
+}
+
+/** Detect UI channel type from backend data */
+function detectChannelType(a: VendorPayoutAccount): ChannelType {
+	if (a.channel_type === "mobile_wallet") {
+		const p = (a.provider_name ?? "").toLowerCase();
+		if (p.includes("nagad")) return "nagad";
+		if (p.includes("rocket")) return "rocket";
+		return "bkash";
+	}
+	return (a.channel_type as ChannelType) || "bank";
 }
 
 export default function VendorPayoutAccountsPage() {
@@ -56,7 +91,7 @@ export default function VendorPayoutAccountsPage() {
 
 	const openEdit = (a: VendorPayoutAccount) => {
 		setForm({
-			channel_type: (a.channel_type as ChannelType) || "bank",
+			channel_type: detectChannelType(a),
 			provider_name: a.provider_name ?? "",
 			account_name: a.account_name ?? "",
 			account_number: a.account_number ?? "",
@@ -71,31 +106,17 @@ export default function VendorPayoutAccountsPage() {
 			toast.error("Please enter an account name and account number.");
 			return;
 		}
-		if (form.channel_type === "mobile_wallet" && !form.provider_name) {
-			toast.error("Please select a provider.");
+		if (form.channel_type === "bank" && !form.provider_name) {
+			toast.error("Please enter a bank name.");
 			return;
 		}
 		try {
+			const payload = toApiPayload(form);
 			if (modal.editId) {
-				await updateAccount({
-					id: modal.editId,
-					channel_type: form.channel_type,
-					provider_name: form.provider_name || undefined,
-					account_name: form.account_name,
-					account_number: form.account_number,
-					routing_number: form.routing_number || undefined,
-					is_default: form.is_default,
-				}).unwrap();
+				await updateAccount({ id: modal.editId, ...payload }).unwrap();
 				toast.success("Payout account updated successfully.");
 			} else {
-				await createAccount({
-					channel_type: form.channel_type,
-					provider_name: form.provider_name || undefined,
-					account_name: form.account_name,
-					account_number: form.account_number,
-					routing_number: form.routing_number || undefined,
-					is_default: form.is_default,
-				}).unwrap();
+				await createAccount(payload).unwrap();
 				toast.success("Payout account added successfully.");
 			}
 			setModal({ open: false, editId: null });
@@ -149,13 +170,16 @@ export default function VendorPayoutAccountsPage() {
 						</div>
 					) : (
 						<div className="grid gap-4 md:grid-cols-2">
-							{accounts.map((a: VendorPayoutAccount) => (
-								<div key={a.id} className={"border rounded-xl p-4 " + (a.is_default ? "border-indigo-300 bg-indigo-50/30" : "border-gray-200")}>
+							{accounts.map((a: VendorPayoutAccount) => {
+								const uiType = detectChannelType(a);
+								const cs = channelStyle(uiType);
+								return (
+								<div key={a.id} className="border rounded-xl p-4 transition-all" style={{ borderColor: a.is_default ? cs.border : "#e5e7eb", backgroundColor: a.is_default ? cs.bg : "transparent", borderLeftWidth: 4, borderLeftColor: cs.color }}>
 									<div className="flex items-start justify-between">
 										<div>
 											<h3 className="font-semibold text-gray-900 flex items-center gap-2">
-												{channelLabel(a.channel_type)}
-												{a.is_default && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">DEFAULT</span>}
+												<span style={{ color: cs.color }}>{channelLabel(uiType)}</span>
+												{a.is_default && <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: cs.bg, color: cs.color }}>DEFAULT</span>}
 												{!a.is_active && <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-medium">INACTIVE</span>}
 											</h3>
 											{a.provider_name && <p className="text-xs text-gray-500 mt-0.5">{a.provider_name}</p>}
@@ -168,7 +192,8 @@ export default function VendorPayoutAccountsPage() {
 										</div>
 									</div>
 								</div>
-							))}
+								);
+							})}
 						</div>
 					)}
 				</div>
@@ -180,50 +205,56 @@ export default function VendorPayoutAccountsPage() {
 						<h2 className="text-lg font-semibold text-gray-900 mb-4">{modal.editId ? "Edit payout account" : "New payout account"}</h2>
 						<div className="space-y-3">
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-								<select value={form.channel_type} onChange={(e) => { const v = e.target.value as ChannelType; setField("channel_type", v); if (v === "mobile_wallet") setField("provider_name", "bKash"); else setField("provider_name", ""); }} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-									<option value="bank">Bank</option>
-									<option value="mobile_wallet">bKash</option>
-									<option value="other">Other</option>
-								</select>
+								<label className="block text-sm font-medium text-gray-700 mb-2">Account Type *</label>
+								<div className="grid grid-cols-4 gap-2">
+									{CHANNEL_OPTIONS.map((opt) => (
+										<button
+											key={opt.value}
+											type="button"
+											onClick={() => { setForm({ ...EMPTY_FORM, channel_type: opt.value, is_default: form.is_default }); }}
+											className={"flex flex-col items-center gap-1 rounded-lg px-3 py-3 text-xs font-semibold border-2 transition-all cursor-pointer " + (form.channel_type === opt.value ? "ring-1 ring-offset-1" : "opacity-60 hover:opacity-100")}
+											style={{
+												backgroundColor: form.channel_type === opt.value ? opt.bg : "#f9fafb",
+												borderColor: form.channel_type === opt.value ? opt.color : "#e5e7eb",
+												color: form.channel_type === opt.value ? opt.color : "#6b7280",
+												ringColor: opt.color,
+											}}
+										>
+											{opt.label}
+										</button>
+									))}
+								</div>
 							</div>
 
-							{form.channel_type === "mobile_wallet" ? (
-								<>
-									<div className="rounded-lg px-4 py-3 mb-1" style={{ backgroundColor: "#E2136E15", border: "1px solid #E2136E40" }}>
-										<p className="text-sm font-bold" style={{ color: "#E2136E" }}>bKash</p>
-										<p className="text-xs text-gray-500">Enter your bKash account details below</p>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">bKash account name *</label>
-										<input type="text" value={form.account_name} onChange={(e) => setField("account_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Name registered on bKash" />
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">bKash number *</label>
-										<input type="tel" value={form.account_number} onChange={(e) => setField("account_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="01XXXXXXXXX" />
-									</div>
-								</>
-							) : (
-								<>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">{form.channel_type === "bank" ? "Bank name" : "Provider name"}</label>
-										<input type="text" value={form.provider_name} onChange={(e) => setField("provider_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder={form.channel_type === "bank" ? "e.g. Dutch-Bangla Bank, BRAC Bank" : "Provider name"} />
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">Account name *</label>
-										<input type="text" value={form.account_name} onChange={(e) => setField("account_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Name on account" />
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-1">Account number *</label>
-										<input type="text" value={form.account_number} onChange={(e) => setField("account_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Account number" />
-									</div>
-									{form.channel_type === "bank" && (
-										<div>
-											<label className="block text-sm font-medium text-gray-700 mb-1">Routing number (optional)</label>
-											<input type="text" value={form.routing_number} onChange={(e) => setField("routing_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Bank routing number" />
-										</div>
-									)}
-								</>
+							{/* Branded header for mobile wallets */}
+							{isMobileWallet(form.channel_type) && (
+								<div className="rounded-lg px-4 py-3" style={{ backgroundColor: channelStyle(form.channel_type).bg, border: `1px solid ${channelStyle(form.channel_type).border}` }}>
+									<p className="text-sm font-bold" style={{ color: channelStyle(form.channel_type).color }}>{channelLabel(form.channel_type)}</p>
+									<p className="text-xs text-gray-500">Enter your {channelLabel(form.channel_type)} account details below</p>
+								</div>
+							)}
+
+							{/* Bank name — only for bank type */}
+							{form.channel_type === "bank" && (
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-1">Bank name *</label>
+									<input type="text" value={form.provider_name} onChange={(e) => setField("provider_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Dutch-Bangla Bank, BRAC Bank" />
+								</div>
+							)}
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">{isMobileWallet(form.channel_type) ? `${channelLabel(form.channel_type)} account name` : "Account name"} *</label>
+								<input type="text" value={form.account_name} onChange={(e) => setField("account_name", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder={isMobileWallet(form.channel_type) ? `Name registered on ${channelLabel(form.channel_type)}` : "Name on account"} />
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">{isMobileWallet(form.channel_type) ? `${channelLabel(form.channel_type)} number` : "Account number"} *</label>
+								<input type={isMobileWallet(form.channel_type) ? "tel" : "text"} value={form.account_number} onChange={(e) => setField("account_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder={isMobileWallet(form.channel_type) ? "01XXXXXXXXX" : "Account number"} />
+							</div>
+							{form.channel_type === "bank" && (
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-1">Routing number (optional)</label>
+									<input type="text" value={form.routing_number} onChange={(e) => setField("routing_number", e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Bank routing number" />
+								</div>
 							)}
 
 							<div>
