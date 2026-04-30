@@ -28,6 +28,8 @@ const SLIDES = [
     subtitle:
       "নিজের ই-কমার্স শুরু করতে এখন আর পুঁজি বা স্টকের চিন্তা নেই।\nসেলফ-শপ প্ল্যাটফর্মে কয়েক ক্লিকই যথেষ্ট।",
     image: require("@/assets/images/onboarding/business.png"),
+    // warm cream to match the image's off-white bg
+    bgColors: ["#FFF8EE", "#FFF1DD", "#FFECCE"] as const,
   },
   {
     id: "2",
@@ -35,6 +37,7 @@ const SLIDES = [
     subtitle:
       "আপনি শুধু অর্ডার নিয়ে আসবেন, আর সারাদেশে আপনার কাস্টমারের কাছে\nপণ্য পৌঁছে দেওয়ার সব দায়িত্ব আমাদের।",
     image: require("@/assets/images/onboarding/logistics.png"),
+    bgColors: ["#FFF6EA", "#FFEED6", "#FFE6C2"] as const,
   },
   {
     id: "3",
@@ -42,6 +45,7 @@ const SLIDES = [
     subtitle:
       "পণ্যের দাম নির্ধারণ করুন আপনার ইচ্ছেমতো এবং প্রতি বিক্রয়\nশেষে প্রফিট বুঝে নিন সরাসরি আপনার ওয়ালেটে।",
     image: require("@/assets/images/onboarding/profit.png"),
+    bgColors: ["#FFF9F0", "#FFF0DC", "#FFE8C8"] as const,
   },
 ];
 
@@ -75,24 +79,19 @@ export default function Onboarding() {
   const isLastSlide = currentIndex === SLIDES.length - 1;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       {/* Skip button at top-right */}
       {!isLastSlide && (
         <Animated.View
           entering={FadeIn.duration(400)}
-          style={[styles.skipWrapper, { top: insets.top + 12 }]}
+          style={[styles.skipWrapper, { top: insets.top + 10 }]}
         >
           <Pressable
             onPress={handleGetStarted}
             style={styles.skipButton}
             hitSlop={12}
           >
-            <Text
-              fontSize={14}
-              fontWeight="600"
-              color="#999"
-              letterSpacing={0.3}
-            >
+            <Text fontSize={13} fontWeight="600" color="#B0855A">
               এড়িয়ে যান
             </Text>
           </Pressable>
@@ -107,26 +106,40 @@ export default function Onboarding() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         bounces={false}
+        decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         keyExtractor={(item) => item.id}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            {/* Image area — takes the upper portion */}
-            <View style={styles.imageSection}>
+            {/* Image area — warm gradient background to blend with image bg */}
+            <LinearGradient
+              colors={[...item.bgColors]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={[styles.imageSection, { paddingTop: insets.top + 20 }]}
+            >
               <Image
                 source={item.image}
                 style={styles.image}
                 resizeMode="contain"
               />
-            </View>
+            </LinearGradient>
 
-            {/* Text area — lower portion */}
+            {/* Curved transition from gradient to white */}
+            <View style={styles.curveOverlay} />
+
+            {/* Text area */}
             <View style={styles.textSection}>
-              <Animated.View entering={FadeInUp.duration(500).delay(100)}>
+              <Animated.View entering={FadeInUp.duration(450).delay(80)}>
                 <Text style={styles.title}>{item.title}</Text>
               </Animated.View>
-              <Animated.View entering={FadeInUp.duration(500).delay(250)}>
+              <Animated.View entering={FadeInUp.duration(450).delay(200)}>
                 <Text style={styles.subtitle}>{item.subtitle}</Text>
               </Animated.View>
             </View>
@@ -137,12 +150,12 @@ export default function Onboarding() {
       {/* Bottom controls */}
       <Animated.View
         entering={FadeInDown.duration(500).delay(300)}
-        style={[styles.bottomSection, { paddingBottom: insets.bottom + 24 }]}
+        style={[styles.bottomSection, { paddingBottom: insets.bottom + 20 }]}
       >
         {/* Dot indicators */}
         <View style={styles.dotsContainer}>
           {SLIDES.map((_, index) => (
-            <Animated.View
+            <View
               key={index}
               style={[
                 styles.dot,
@@ -161,7 +174,7 @@ export default function Onboarding() {
           ]}
         >
           <LinearGradient
-            colors={["#F7A826", "#F08C1F"]}
+            colors={["#FABA4A", "#F09819"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.ctaGradient}
@@ -176,7 +189,7 @@ export default function Onboarding() {
   );
 }
 
-const IMAGE_HEIGHT = height * 0.42;
+const IMAGE_SECTION_HEIGHT = height * 0.50;
 
 const styles = StyleSheet.create({
   container: {
@@ -184,69 +197,77 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
-  /* Skip button */
+  /* Skip */
   skipWrapper: {
     position: "absolute",
-    right: 24,
+    right: 20,
     zIndex: 10,
   },
   skipButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.04)",
+    backgroundColor: "rgba(255,255,255,0.65)",
   },
 
-  /* Slide layout */
+  /* Slide */
   slide: {
     width,
     flex: 1,
-    justifyContent: "flex-start",
-    alignItems: "center",
   },
+
+  /* Image section — full-width warm gradient */
   imageSection: {
     width: width,
-    height: IMAGE_HEIGHT,
+    height: IMAGE_SECTION_HEIGHT,
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 40,
+    overflow: "hidden",
   },
   image: {
-    width: width * 0.72,
-    height: IMAGE_HEIGHT * 0.92,
+    width: width * 0.82,
+    height: IMAGE_SECTION_HEIGHT * 0.88,
+  },
+
+  /* Smooth curved transition between gradient and white text area */
+  curveOverlay: {
+    width: width,
+    height: 40,
+    marginTop: -40,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
   },
 
   /* Text */
   textSection: {
     flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 28,
+    paddingTop: 6,
     alignItems: "center",
     justifyContent: "flex-start",
   },
   title: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#1A1A2E",
+    color: "#1F1F1F",
     textAlign: "center",
     lineHeight: 34,
-    letterSpacing: 0.2,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: "400",
-    color: "#777777",
+    color: "#888888",
     textAlign: "center",
     lineHeight: 23,
-    marginTop: 14,
-    letterSpacing: 0.1,
+    marginTop: 12,
   },
 
   /* Bottom */
   bottomSection: {
     paddingHorizontal: 28,
     alignItems: "center",
-    gap: 24,
+    gap: 22,
   },
 
   /* Dots */
@@ -274,16 +295,15 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 28,
     overflow: "hidden",
-    // shadow
-    shadowColor: "#F5A623",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowColor: "#F09819",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
   },
   ctaButtonPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   ctaGradient: {
     paddingVertical: 17,
@@ -295,6 +315,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
 });
