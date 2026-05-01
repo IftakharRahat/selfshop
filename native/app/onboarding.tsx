@@ -21,31 +21,34 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 
+const CARD_HORIZONTAL_PADDING = 20;
+const CARD_WIDTH = width - CARD_HORIZONTAL_PADDING * 2;
+const CARD_HEIGHT = height * 0.52;
+
 const SLIDES = [
   {
     id: "1",
     title: "কোনো ইনভেস্টমেন্ট ছাড়াই\nশুরু করুন নিজের বিজনেস!",
     subtitle:
-      "নিজের ই-কমার্স শুরু করতে এখন আর পুঁজি বা স্টকের চিন্তা নেই।\nসেলফ-শপ প্ল্যাটফর্মে কয়েক ক্লিকই যথেষ্ট।",
+      "নিজের ই-কমার্স শুরু করতে এখন আর পুঁজি বা স্টকের চিন্তা নেই। সেলফ-শপ প্ল্যাটফর্মে কয়েক ক্লিকই যথেষ্ট।",
     image: require("@/assets/images/onboarding/business.png"),
-    // warm cream to match the image's off-white bg
-    bgColors: ["#FFF8EE", "#FFF1DD", "#FFECCE"] as const,
+    cardBg: ["#FDF2F8", "#FCEEF5", "#FBE8F0"] as const,
   },
   {
     id: "2",
     title: "আপনার হয়ে প্যাকিং এবং\nডেলিভারি করবে সেলফ-শপ টিম।",
     subtitle:
-      "আপনি শুধু অর্ডার নিয়ে আসবেন, আর সারাদেশে আপনার কাস্টমারের কাছে\nপণ্য পৌঁছে দেওয়ার সব দায়িত্ব আমাদের।",
+      "আপনি শুধু অর্ডার নিয়ে আসবেন, আর সারাদেশে আপনার কাস্টমারের কাছে পণ্য পৌঁছে দেওয়ার সব দায়িত্ব আমাদের।",
     image: require("@/assets/images/onboarding/logistics.png"),
-    bgColors: ["#FFF6EA", "#FFEED6", "#FFE6C2"] as const,
+    cardBg: ["#FFF0F6", "#FEE8F0", "#FDDFE8"] as const,
   },
   {
     id: "3",
     title: "ঘরে বসেই বুঝে নিন\nআপনার কাঙ্ক্ষিত প্রফিট।",
     subtitle:
-      "পণ্যের দাম নির্ধারণ করুন আপনার ইচ্ছেমতো এবং প্রতি বিক্রয়\nশেষে প্রফিট বুঝে নিন সরাসরি আপনার ওয়ালেটে।",
+      "পণ্যের দাম নির্ধারণ করুন আপনার ইচ্ছেমতো এবং প্রতি বিক্রয় শেষে প্রফিট বুঝে নিন সরাসরি আপনার ওয়ালেটে।",
     image: require("@/assets/images/onboarding/profit.png"),
-    bgColors: ["#FFF9F0", "#FFF0DC", "#FFE8C8"] as const,
+    cardBg: ["#FFF5F9", "#FEECF3", "#FDE3EC"] as const,
   },
 ];
 
@@ -80,25 +83,23 @@ export default function Onboarding() {
 
   return (
     <View style={styles.container}>
-      {/* Skip button at top-right */}
       {!isLastSlide && (
         <Animated.View
           entering={FadeIn.duration(400)}
-          style={[styles.skipWrapper, { top: insets.top + 10 }]}
+          style={[styles.skipWrapper, { top: insets.top + 12 }]}
         >
           <Pressable
             onPress={handleGetStarted}
             style={styles.skipButton}
             hitSlop={12}
           >
-            <Text fontSize={13} fontWeight="600" color="#B0855A">
+            <Text fontSize={14} fontWeight="600" color="#999">
               এড়িয়ে যান
             </Text>
           </Pressable>
         </Animated.View>
       )}
 
-      {/* Slides */}
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -117,29 +118,32 @@ export default function Onboarding() {
         })}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            {/* Image area — warm gradient background to blend with image bg */}
-            <LinearGradient
-              colors={[...item.bgColors]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={[styles.imageSection, { paddingTop: insets.top + 20 }]}
-            >
-              <Image
-                source={item.image}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            </LinearGradient>
+            <View style={[styles.cardOuter, { marginTop: insets.top + 44 }]}>
+              <LinearGradient
+                colors={[...item.cardBg]}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.imageCard}
+              >
+                <Image
+                  source={item.image}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              </LinearGradient>
+            </View>
 
-            {/* Curved transition from gradient to white */}
-            <View style={styles.curveOverlay} />
-
-            {/* Text area */}
             <View style={styles.textSection}>
-              <Animated.View entering={FadeInUp.duration(450).delay(80)}>
+              <Animated.View
+                entering={FadeInUp.duration(450).delay(80)}
+                style={styles.textBlock}
+              >
                 <Text style={styles.title}>{item.title}</Text>
               </Animated.View>
-              <Animated.View entering={FadeInUp.duration(450).delay(200)}>
+              <Animated.View
+                entering={FadeInUp.duration(450).delay(200)}
+                style={styles.textBlock}
+              >
                 <Text style={styles.subtitle}>{item.subtitle}</Text>
               </Animated.View>
             </View>
@@ -147,12 +151,10 @@ export default function Onboarding() {
         )}
       />
 
-      {/* Bottom controls */}
       <Animated.View
         entering={FadeInDown.duration(500).delay(300)}
         style={[styles.bottomSection, { paddingBottom: insets.bottom + 20 }]}
       >
-        {/* Dot indicators */}
         <View style={styles.dotsContainer}>
           {SLIDES.map((_, index) => (
             <View
@@ -165,7 +167,6 @@ export default function Onboarding() {
           ))}
         </View>
 
-        {/* CTA Button */}
         <Pressable
           onPress={handleNext}
           style={({ pressed }) => [
@@ -174,7 +175,7 @@ export default function Onboarding() {
           ]}
         >
           <LinearGradient
-            colors={["#FABA4A", "#F09819"]}
+            colors={["#E5005F", "#C80050"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.ctaGradient}
@@ -189,88 +190,74 @@ export default function Onboarding() {
   );
 }
 
-const IMAGE_SECTION_HEIGHT = height * 0.50;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
 
-  /* Skip */
   skipWrapper: {
     position: "absolute",
-    right: 20,
+    right: 24,
     zIndex: 10,
   },
   skipButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.65)",
+    paddingVertical: 6,
+    paddingHorizontal: 4,
   },
 
-  /* Slide */
   slide: {
     width,
     flex: 1,
   },
 
-  /* Image section — full-width warm gradient */
-  imageSection: {
-    width: width,
-    height: IMAGE_SECTION_HEIGHT,
+  cardOuter: {
+    paddingHorizontal: CARD_HORIZONTAL_PADDING,
+  },
+  imageCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
   },
   image: {
-    width: width * 0.82,
-    height: IMAGE_SECTION_HEIGHT * 0.88,
+    width: CARD_WIDTH * 0.78,
+    height: CARD_HEIGHT * 0.78,
   },
 
-  /* Smooth curved transition between gradient and white text area */
-  curveOverlay: {
-    width: width,
-    height: 40,
-    marginTop: -40,
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-  },
-
-  /* Text */
   textSection: {
     flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 6,
-    alignItems: "center",
+    paddingTop: 28,
     justifyContent: "flex-start",
+  },
+  textBlock: {
+    alignSelf: "stretch",
   },
   title: {
     fontSize: 22,
     fontWeight: "800",
     color: "#1F1F1F",
-    textAlign: "center",
+    textAlign: "left",
     lineHeight: 34,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: "400",
     color: "#888888",
-    textAlign: "center",
-    lineHeight: 23,
+    textAlign: "left",
+    lineHeight: 22,
     marginTop: 12,
   },
 
-  /* Bottom */
   bottomSection: {
     paddingHorizontal: 28,
     alignItems: "center",
     gap: 22,
   },
 
-  /* Dots */
   dotsContainer: {
     flexDirection: "row",
     justifyContent: "center",
@@ -283,19 +270,18 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 32,
-    backgroundColor: "#F5A623",
+    backgroundColor: "#E5005F",
   },
   dotInactive: {
     width: 8,
     backgroundColor: "#E0E0E0",
   },
 
-  /* CTA */
   ctaButton: {
     width: "100%",
     borderRadius: 28,
     overflow: "hidden",
-    shadowColor: "#F09819",
+    shadowColor: "#E5005F",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
