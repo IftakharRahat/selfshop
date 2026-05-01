@@ -4,7 +4,7 @@
     "slug": "selfshop-supplier",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/supplier_app_logo.png",
     "scheme": "selfshop-supplier",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -14,8 +14,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#EEEDFA",
-        "foregroundImage": "./assets/images/icon.png"
+        "backgroundColor": "#2d2a5d",
+        "foregroundImage": "./assets/images/supplier_app_logo.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -23,17 +23,17 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/supplier_app_logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/supplier_app_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#2d2a5d",
           "dark": {
             "backgroundColor": "#000000"
           }

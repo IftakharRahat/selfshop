@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -66,7 +67,11 @@ export default function LoginScreen() {
         {/* Logo / Branding */}
         <View style={styles.brandingSection}>
           <View style={styles.logoWrap}>
-            <Ionicons name="storefront" size={36} color="#fff" />
+            <Image
+              source={require("@/assets/images/supplier_app_logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.title}>SelfShop Supplier</Text>
           <Text style={styles.subtitle}>Sign in to manage your store</Text>
@@ -158,13 +163,15 @@ const styles = StyleSheet.create({
   },
   brandingSection: { alignItems: "center", marginTop: 20, marginBottom: 36 },
   logoWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: BRAND.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 80,
+    height: 80,
+    borderRadius: 22,
+    overflow: "hidden",
     marginBottom: 16,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   title: { fontSize: 24, fontWeight: "700", color: "#1a1a2e" },
   subtitle: { fontSize: 14, color: "#6b7280", marginTop: 4 },
