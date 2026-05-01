@@ -60,6 +60,7 @@ use App\Http\Controllers\Backend\CrmDashboardController;
 use App\Http\Controllers\Backend\AdminNotificationController;
 use App\Http\Controllers\Backend\AdminActivityController;
 use App\Http\Controllers\Backend\PromotionalSectionController;
+use App\Http\Controllers\Backend\MarketingCampaignController;
 
 /*
 |--------------------------------------------------------------------------
@@ -357,6 +358,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
 
     // App Version Management (Force Update)
     Route::post('/app-version/update/{id}', [BasicinfoController::class, 'updateAppVersion'])->name('admin.app-version.update');
+
+    // Marketing Campaigns
+    Route::get('marketing-campaigns', [MarketingCampaignController::class, 'index'])->name('admin.marketing-campaigns.index');
+    Route::post('marketing-campaigns', [MarketingCampaignController::class, 'store'])->name('admin.marketing-campaigns.store');
+    Route::delete('marketing-campaigns/{id}', [MarketingCampaignController::class, 'destroy'])->name('admin.marketing-campaigns.destroy');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {
