@@ -439,6 +439,9 @@ public function packagePaymentSuccess(Request $request)
         // Subscription validity is 1 year, extending from current expiry if still active.
         $today = date('Y-m-d');
         $expireDate = $this->resolveNextExpiryDate($user->expire_date);
+
+        // Load package for tracking data in redirect
+        $package = $invoice->package_id ? \App\Models\Package::find($invoice->package_id) : null;
         
         // ========== UPDATE INVOICE ==========
         $invoice->paymentDate = $today;
@@ -521,6 +524,9 @@ public function packagePaymentSuccess(Request $request)
             'payment' => 'success',
             'invoiceID' => $invoice->invoiceID ?? null,
             'expire_date' => $expireDate,
+            'value' => $invoice->payable_amount ?: $invoice->amount,
+            'package_name' => $package->package_name ?? null,
+            'package_id' => $invoice->package_id ?? null,
         ]));
         
     } catch (\Exception $e) {
