@@ -57,6 +57,8 @@ export default function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+	const [authInitialMode, setAuthInitialMode] = useState<"login" | "register">("login");
+	const [campaignCode, setCampaignCode] = useState<string | undefined>(undefined);
 	const [searchValue, setSearchValue] = useState("");
 	const [suggestions, setSuggestions] = useState<any[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
@@ -183,13 +185,25 @@ export default function Navbar() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	// Auto-open auth modal when redirected from pricing page with ?showAuth=true
+	// Auto-open auth modal when redirected with ?showAuth=true or ?showAuth=register
 	useEffect(() => {
-		if (searchParams.get("showAuth") === "true" && !token) {
+		const showAuth = searchParams.get("showAuth");
+		if (showAuth && !token) {
+			if (showAuth === "register") {
+				setAuthInitialMode("register");
+			} else {
+				setAuthInitialMode("login");
+			}
+			// Capture campaign code if present
+			const campaign = searchParams.get("campaign");
+			if (campaign) {
+				setCampaignCode(campaign);
+			}
 			setIsLoginModalOpen(true);
-			// Clean up the URL by removing the showAuth param
+			// Clean up the URL by removing params
 			const url = new URL(window.location.href);
 			url.searchParams.delete("showAuth");
+			url.searchParams.delete("campaign");
 			window.history.replaceState({}, "", url.pathname + url.search);
 		}
 	}, [searchParams, token]);
@@ -562,8 +576,14 @@ export default function Navbar() {
 			>
 				<AuthModal
 					open={isLoginModalOpen}
-					onClose={() => setIsLoginModalOpen(false)}
+					onClose={() => {
+						setIsLoginModalOpen(false);
+						setAuthInitialMode("login");
+						setCampaignCode(undefined);
+					}}
 					setIsPricingModalOpen={setIsPricingModalOpen}
+					initialMode={authInitialMode}
+					campaignCode={campaignCode}
 				/>
 
 				<Modal
