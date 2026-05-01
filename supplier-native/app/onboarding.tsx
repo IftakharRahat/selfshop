@@ -28,27 +28,27 @@ const CARD_HEIGHT = height * 0.52;
 const SLIDES = [
   {
     id: "1",
-    title: "কোনো ইনভেস্টমেন্ট ছাড়াই\nশুরু করুন নিজের বিজনেস!",
+    title: "আপনার পণ্য আপলোড করুন",
     subtitle:
-      "নিজের ই-কমার্স শুরু করতে এখন আর পুঁজি বা স্টকের চিন্তা নেই। সেলফ-শপ প্ল্যাটফর্মে কয়েক ক্লিকই যথেষ্ট।",
-    image: require("@/assets/images/onboarding/my_shop_image.png"),
-    cardBg: ["#FDF2F8", "#FCEEF5", "#FBE8F0"] as const,
+      "আপনার কাছে থাকা সেরা পণ্যগুলো সেলফ-শপ প্ল্যাটফর্মে লিস্টিং করে কোটি মানুষের কাছে পৌঁছে দিন এবং আপনার ব্যবসা শুরু করুন আজই।",
+    image: require("@/assets/images/onboarding/mobile-shop.png"),
+    cardBg: ["#EEEDFA", "#E8E6F6", "#E2DFF2"] as const,
   },
   {
     id: "2",
-    title: "আপনার হয়ে প্যাকিং এবং\nডেলিভারি করবে সেলফ-শপ টিম।",
+    title: "প্যাকেজিং করে রাইডারকে\nবুঝিয়ে দিন",
     subtitle:
-      "আপনি শুধু অর্ডার নিয়ে আসবেন, আর সারাদেশে আপনার কাস্টমারের কাছে পণ্য পৌঁছে দেওয়ার সব দায়িত্ব আমাদের।",
-    image: require("@/assets/images/onboarding/delivery_image.png"),
-    cardBg: ["#FFF0F6", "#FEE8F0", "#FDDFE8"] as const,
+      "অর্ডার আসার পর পণ্যটি নিরাপদে প্যাকেজিং করে আমাদের ডেলিভারি রাইডারের কাছে হস্তান্তর করুন। বাকি সব দায়িত্ব আমাদের।",
+    image: require("@/assets/images/onboarding/delivery-image.png"),
+    cardBg: ["#EEF2FF", "#E6EAFB", "#DDE2F8"] as const,
   },
   {
     id: "3",
-    title: "ঘরে বসেই বুঝে নিন\nআপনার কাঙ্ক্ষিত প্রফিট।",
+    title: "দ্রুত ও অটোমেটিক\nপেমেন্ট বুঝে নিন",
     subtitle:
-      "পণ্যের দাম নির্ধারণ করুন আপনার ইচ্ছেমতো এবং প্রতি বিক্রয় শেষে প্রফিট বুঝে নিন সরাসরি আপনার ওয়ালেটে।",
-    image: require("@/assets/images/onboarding/wallet_image.png"),
-    cardBg: ["#FFF5F9", "#FEECF3", "#FDE3EC"] as const,
+      "পণ্যটি সাকসেসফুলি ডেলিভারি হওয়ার সাথে সাথেই আপনার বিক্রিত পণ্যের টাকা স্বয়ংক্রিয়ভাবে আপনার ওয়ালেটে যোগ হয়ে যাবে।",
+    image: require("@/assets/images/onboarding/cash-image.png"),
+    cardBg: ["#F0EEFA", "#EAE7F7", "#E3DFF3"] as const,
   },
 ];
 
@@ -69,8 +69,8 @@ export default function Onboarding() {
   }).current;
 
   async function handleGetStarted() {
-    await SecureStore.setItemAsync("onboarding_completed", "true");
-    router.replace("/");
+    await SecureStore.setItemAsync("supplier_onboarding_completed", "true");
+    router.replace("/login");
   }
 
   function handleNext() {
@@ -135,13 +135,13 @@ export default function Onboarding() {
 
             <View style={styles.textSection}>
               <Animated.View
-                entering={FadeInUp.duration(450).delay(80)}
+                entering={FadeInUp.duration(500).delay(100)}
                 style={styles.textBlock}
               >
                 <Text style={styles.title}>{item.title}</Text>
               </Animated.View>
               <Animated.View
-                entering={FadeInUp.duration(450).delay(200)}
+                entering={FadeInUp.duration(500).delay(250)}
                 style={styles.textBlock}
               >
                 <Text style={styles.subtitle}>{item.subtitle}</Text>
@@ -175,7 +175,7 @@ export default function Onboarding() {
           ]}
         >
           <LinearGradient
-            colors={["#E5005F", "#C80050"]}
+            colors={["#4f46e5", "#3b3780"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.ctaGradient}
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 32,
-    backgroundColor: "#E5005F",
+    backgroundColor: "#4f46e5",
   },
   dotInactive: {
     width: 8,
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 28,
     overflow: "hidden",
-    shadowColor: "#E5005F",
+    shadowColor: "#4f46e5",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
