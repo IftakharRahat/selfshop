@@ -236,6 +236,14 @@
             </div>
 
 
+            {{-- ═══ MARKETING ═══ --}}
+            @if($isFullAdmin)
+            <small class="nav-section-title">Marketing</small>
+            <a href="{{ url('admin/marketing-campaigns') }}" class="nav-item nav-link {{ request()->is('admin/marketing-campaigns') ? 'active-nav' : '' }}">
+                <i class="bi bi-megaphone"></i> Campaigns
+            </a>
+            @endif
+
             {{-- ═══ OTHERS ═══ --}}
             <small class="nav-section-title">Others</small>
             <div class="nav-item dropdown">
