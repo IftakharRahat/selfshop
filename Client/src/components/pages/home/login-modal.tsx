@@ -11,7 +11,7 @@ import {
 	Tabs,
 	message,
 } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import logo from "@/assets/images/loginLogo.png";
@@ -25,7 +25,7 @@ import {
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
-import { trackLead } from "@/lib/trackingEvents";
+import { trackLead, trackViewRegistration } from "@/lib/trackingEvents";
 
 interface LoginModalProps {
 	open: boolean;
@@ -40,6 +40,13 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 	const [viewMode, setViewMode] = useState<ViewMode>("login");
 	const [showCoupon, setShowCoupon] = useState(false);
 	const [forgotPhone, setForgotPhone] = useState("");
+
+	// Fire view_registration event when registration form is shown
+	useEffect(() => {
+		if (viewMode === "register") {
+			trackViewRegistration();
+		}
+	}, [viewMode]);
 
 	const [login] = useLoginMutation();
 	const [register] = useRegisterMutation();
@@ -75,7 +82,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 				}),
 			);
 			// Fire Lead tracking event on successful registration
-			trackLead({ method: "phone" });
+			trackLead({ method: "phone", phone: values.email, name: values.name });
 			form.resetFields();
 			onCancel();
 		}
@@ -192,7 +199,7 @@ export default function LoginModal({ open, onCancel }: LoginModalProps) {
 	const tabItems = [
 		{
 			key: "reseller",
-			label: "Login as Reseller",
+			label: viewMode === "register" ? "Registration as a Reseller" : "Login as Reseller",
 		},
 	];
 
