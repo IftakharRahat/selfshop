@@ -75,7 +75,7 @@ function AuthGate() {
       setIsOnboardingChecked(true);
     }
     checkOnboarding();
-  }, []);
+  }, [segments]);
 
   useEffect(() => {
     if (isLoading || !isOnboardingChecked) return; // wait for initial auth check and onboarding check

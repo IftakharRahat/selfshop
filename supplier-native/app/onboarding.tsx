@@ -31,7 +31,7 @@ const SLIDES = [
     title: "আপনার পণ্য আপলোড করুন",
     subtitle:
       "আপনার কাছে থাকা সেরা পণ্যগুলো সেলফ-শপ প্ল্যাটফর্মে লিস্টিং করে কোটি মানুষের কাছে পৌঁছে দিন এবং আপনার ব্যবসা শুরু করুন আজই।",
-    image: require("@/assets/images/onboarding/mobile-shop.PNG"),
+    image: require("@/assets/images/onboarding/mobile-shop.png"),
     cardBg: ["#EEEDFA", "#E8E6F6", "#E2DFF2"] as const,
   },
   {
@@ -39,7 +39,7 @@ const SLIDES = [
     title: "প্যাকেজিং করে রাইডারকে\nবুঝিয়ে দিন",
     subtitle:
       "অর্ডার আসার পর পণ্যটি নিরাপদে প্যাকেজিং করে আমাদের ডেলিভারি রাইডারের কাছে হস্তান্তর করুন। বাকি সব দায়িত্ব আমাদের।",
-    image: require("@/assets/images/onboarding/delivery-image.PNG"),
+    image: require("@/assets/images/onboarding/delivery-image.png"),
     cardBg: ["#EEF2FF", "#E6EAFB", "#DDE2F8"] as const,
   },
   {
@@ -47,7 +47,7 @@ const SLIDES = [
     title: "দ্রুত ও অটোমেটিক\nপেমেন্ট বুঝে নিন",
     subtitle:
       "পণ্যটি সাকসেসফুলি ডেলিভারি হওয়ার সাথে সাথেই আপনার বিক্রিত পণ্যের টাকা স্বয়ংক্রিয়ভাবে আপনার ওয়ালেটে যোগ হয়ে যাবে।",
-    image: require("@/assets/images/onboarding/cash-image.PNG"),
+    image: require("@/assets/images/onboarding/cash-image.png"),
     cardBg: ["#F0EEFA", "#EAE7F7", "#E3DFF3"] as const,
   },
 ];
