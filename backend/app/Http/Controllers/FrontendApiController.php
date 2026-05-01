@@ -1120,6 +1120,7 @@ class FrontendApiController extends Controller
                 $user->name = $request->name;
                 $user->email = $request->email;
                 $user->phone = $request->email;
+                $user->campaign_code = $request->campaign_code ?? null;
                 $string = str_replace(' ', '', $request->name);
                 $code = substr($string, 0, 3);
 

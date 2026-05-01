@@ -164,6 +164,17 @@
             </li>
         @endif
 
+        {{-- ═══ MARKETING ═══ --}}
+        @if (!$admin->hasRole('manager') && !$admin->hasrole('Executive'))
+            <li class="nav-heading">Marketing</li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->is('admin/marketing-campaigns') ? 'active-nav' : 'collapsed' }}" href="{{ url('admin/marketing-campaigns') }}">
+                    <i class="bi bi-megaphone"></i>
+                    <span>Campaigns</span>
+                </a>
+            </li>
+        @endif
+
     </ul>
 
 </aside>

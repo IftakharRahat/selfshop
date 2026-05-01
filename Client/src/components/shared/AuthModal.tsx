@@ -11,7 +11,7 @@ import {
 	Tabs,
 	message,
 } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import logo from "@/assets/icons/NavLogo.png";
@@ -25,12 +25,14 @@ import {
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
-import { trackLead } from "@/lib/trackingEvents";
+import { trackLead, trackViewRegistration } from "@/lib/trackingEvents";
 
 interface AuthModalProps {
 	open: boolean;
 	onClose: () => void;
 	setIsPricingModalOpen: (isOpen: boolean) => void;
+	initialMode?: "login" | "register";
+	campaignCode?: string;
 }
 
 type ViewMode = "login" | "register" | "forgot-phone" | "forgot-otp" | "forgot-reset";
@@ -39,15 +41,31 @@ export default function AuthModal({
 	open,
 	onClose,
 	setIsPricingModalOpen,
+	initialMode,
+	campaignCode,
 }: AuthModalProps) {
 	const dispatch = useAppDispatch();
-	const [viewMode, setViewMode] = useState<ViewMode>("login");
+	const [viewMode, setViewMode] = useState<ViewMode>(initialMode || "login");
 	const [activeTab, setActiveTab] = useState("reseller");
 	const [showCoupon, setShowCoupon] = useState(false);
 	const [forgotPhone, setForgotPhone] = useState("");
 
 	const [form] = Form.useForm();
-	const tabItems = [{ key: "reseller", label: "Log in as Reseller" }];
+	const tabItems = [{ key: "reseller", label: viewMode === "register" ? "Registration as a Reseller" : "Log in as Reseller" }];
+
+	// Sync viewMode with initialMode prop when modal opens
+	useEffect(() => {
+		if (open && initialMode) {
+			setViewMode(initialMode);
+		}
+	}, [open, initialMode]);
+
+	// Fire view_registration event when registration form is shown
+	useEffect(() => {
+		if (viewMode === "register") {
+			trackViewRegistration();
+		}
+	}, [viewMode]);
 
 	const [login] = useLoginMutation();
 	const [register] = useRegisterMutation();
@@ -106,7 +124,7 @@ export default function AuthModal({
 
 	const handleRegistration = async (values: any) => {
 		const response = await handleAsyncWithToast(async () => {
-			return register(values);
+			return register({ ...values, campaign_code: campaignCode || undefined });
 		});
 		if (response?.data?.status) {
 			await dispatch(
@@ -115,7 +133,7 @@ export default function AuthModal({
 				}),
 			);
 			// Fire Lead tracking event on successful registration
-			trackLead({ method: "phone" });
+			trackLead({ method: "phone", phone: values.email, name: values.name, campaignCode });
 			form.resetFields();
 			onClose();
 			setIsPricingModalOpen(true);

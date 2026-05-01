@@ -320,8 +320,9 @@
     <link rel="manifest" href="{{ asset('public/manifest.json') }}">
 
 
-    {!! App\Models\Basicinfo::first()->facebook_pixel !!}
-    {!! App\Models\Basicinfo::first()->google_analytics !!}
+    {{-- Tracking is now handled by Next.js components (FacebookPixel.tsx, GoogleTagManager.tsx, GoogleAnalytics.tsx) --}}
+    {{-- {!! App\Models\Basicinfo::first()->facebook_pixel !!} --}}
+    {{-- {!! App\Models\Basicinfo::first()->google_analytics !!} --}}
     <style>
         .pagination {
             display: flex;

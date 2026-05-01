@@ -23,15 +23,24 @@ export default function Dashboard() {
 		if (searchParams.get("payment") === "success" && !purchaseTracked.current) {
 			purchaseTracked.current = true;
 			const invoiceID = searchParams.get("invoiceID") || undefined;
+			const value = searchParams.get("value") ? Number(searchParams.get("value")) : undefined;
+			const packageName = searchParams.get("package_name") || undefined;
+			const packageId = searchParams.get("package_id") ? Number(searchParams.get("package_id")) : undefined;
 			trackPurchase({
 				transactionId: invoiceID,
 				currency: "BDT",
+				value,
+				packageName,
+				packageId,
 			});
 			// Clean up URL params without triggering re-render
 			const url = new URL(window.location.href);
 			url.searchParams.delete("payment");
 			url.searchParams.delete("invoiceID");
 			url.searchParams.delete("expire_date");
+			url.searchParams.delete("value");
+			url.searchParams.delete("package_name");
+			url.searchParams.delete("package_id");
 			window.history.replaceState({}, "", url.pathname);
 		}
 	}, [searchParams]);

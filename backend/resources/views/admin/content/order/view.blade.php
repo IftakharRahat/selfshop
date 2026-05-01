@@ -249,6 +249,52 @@
                         $grandAdminCommission = 0;
                         $grandSupplierShare = 0;
                         $grandResellerProfit = 0;
+
+                        // ── Pre-compute using ORDER-TIME prices (frozen at checkout).
+                        //    $op->productPrice = storefront price at checkout (variant-aware, with commission).
+                        //    We reverse-calculate the supplier base price from the frozen storefront price
+                        //    by dividing out the commission rate. This ensures that if a supplier later
+                        //    changes their price, historical orders still show correct breakdowns.
+                        $precomputedLines = [];
+                        $totalStorefrontCost = 0;
+                        foreach ($orders->orderproducts as $op) {
+                            $product = $op->product;
+                            $qty = (int) $op->quantity;
+
+                            // Storefront price = frozen at checkout in $op->productPrice
+                            $storefrontPrice = (float) ($op->productPrice ?? 0);
+                            $commissionRate = 0;
+
+                            // Reverse-calculate the supplier's base price from the frozen storefront price
+                            if ($product && $product->vendor_id) {
+                                $commissionRate = $commissionService->getRateForProduct($product->vendor_id, $product->category_id);
+                                // storefrontPrice = basePrice × (1 + rate/100)
+                                // ∴ basePrice = storefrontPrice / (1 + rate/100)
+                                $basePrice = $commissionRate > 0
+                                    ? round($storefrontPrice / (1 + $commissionRate / 100), 2)
+                                    : $storefrontPrice;
+                            } else {
+                                // Non-vendor / admin product: no commission split
+                                $basePrice = $storefrontPrice;
+                            }
+
+                            $lineStorefront = round($storefrontPrice * $qty, 2);
+                            $totalStorefrontCost += $lineStorefront;
+
+                            $precomputedLines[] = [
+                                'op' => $op,
+                                'product' => $product,
+                                'qty' => $qty,
+                                'basePrice' => $basePrice,
+                                'storefrontPrice' => $storefrontPrice,
+                                'commissionRate' => $commissionRate,
+                                'lineStorefront' => $lineStorefront,
+                            ];
+                        }
+
+                        // The order's subTotal = what the customer actually paid (storefront + reseller markup)
+                        // Distribute it proportionally across line items based on each line's storefront share
+                        $orderSubTotal = (float) ($orders->subTotal ?? 0);
                     @endphp
                     <div class="table-responsive">
                         <table class="table table-sm mb-0" style="font-size: 13px;">
@@ -265,35 +311,31 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($orders->orderproducts as $op)
+                                @forelse ($precomputedLines as $lineData)
                                     @php
-                                        $product = $op->product;
-                                        $qty = (int) $op->quantity;
+                                        $op = $lineData['op'];
+                                        $product = $lineData['product'];
+                                        $qty = $lineData['qty'];
+                                        $basePrice = $lineData['basePrice'];
+                                        $storefrontPrice = $lineData['storefrontPrice'];
+                                        $commissionRate = $lineData['commissionRate'];
+                                        $lineStorefront = $lineData['lineStorefront'];
 
-                                        // Base price = what the supplier/vendor set as their price
-                                        $basePrice = $product ? (float) $product->ProductResellerPrice : 0;
-
-                                        // Storefront price = base + admin commission (what's listed on site)
-                                        $storefrontPrice = 0;
-                                        $commissionRate = 0;
-                                        if ($product && $product->vendor_id) {
-                                            $commissionRate = $commissionService->getRateForProduct($product->vendor_id, $product->category_id);
-                                            $storefrontPrice = round($basePrice * (1 + $commissionRate / 100), 2);
+                                        // Reseller Sold At = what the customer actually paid for this line.
+                                        // orders.subTotal includes the reseller's markup (orders.profit).
+                                        // Distribute proportionally based on each line's storefront share.
+                                        if ($totalStorefrontCost > 0 && $orderSubTotal > 0) {
+                                            $lineSellingPrice = round(($lineStorefront / $totalStorefrontCost) * $orderSubTotal, 2);
                                         } else {
-                                            // Non-vendor product: storefront = sale price or product price
-                                            $storefrontPrice = $product ? (float) ($product->ProductSalePrice ?: $product->ProductRegularPrice) : 0;
+                                            $lineSellingPrice = $lineStorefront;
                                         }
-
-                                        // Reseller selling price = what the reseller actually charged the customer
-                                        $resellerSoldAt = (float) ($op->selling_price ?: $op->productPrice ?: $storefrontPrice);
+                                        $resellerSoldAt = $qty > 0 ? round($lineSellingPrice / $qty, 2) : 0;
 
                                         // Admin commission per unit = storefront - base
                                         $adminCommissionPerUnit = round($storefrontPrice - $basePrice, 2);
 
                                         // Line totals
                                         $lineBaseCost = round($basePrice * $qty, 2);
-                                        $lineStorefront = round($storefrontPrice * $qty, 2);
-                                        $lineSellingPrice = round($resellerSoldAt * $qty, 2);
                                         $lineAdminCommission = round($adminCommissionPerUnit * $qty, 2);
                                         $lineSupplierShare = $lineBaseCost;
                                         $lineResellerProfit = round($lineSellingPrice - $lineStorefront, 2);

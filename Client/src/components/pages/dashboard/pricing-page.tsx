@@ -14,7 +14,7 @@ import {
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
-import { trackInitiateCheckout } from "@/lib/trackingEvents";
+import { trackInitiateCheckout, trackViewPricing } from "@/lib/trackingEvents";
 
 type PricingFeature = {
 	label: string;
@@ -104,6 +104,14 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 
 	const packagePlans = pricingData?.data?.packages ?? [];
 
+	// Fire view_pricing event when pricing page loads
+	useEffect(() => {
+		if (token && packagePlans.length > 0) {
+			trackViewPricing();
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [token, packagePlans.length]);
+
 	const selectedPlan = useMemo(() => {
 		if (!packagePlans.length) return null;
 		if (!selectedPlanId) return packagePlans[0];
@@ -132,6 +140,7 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 			value: amount,
 			currency: "BDT",
 			packageName: selectedPlan.package_name,
+			packageId: selectedPlan.id,
 		});
 
 		const result = await handleAsyncWithToast(
@@ -239,7 +248,7 @@ export function PricingPage({ onInvoiceCreated }: PricingPageProps) {
 					{/* Gradient Price Header */}
 					<div className="bg-gradient-to-br from-[#1e1b4b] to-[#312e81] px-5 py-4 text-center">
 						<p className="text-indigo-300 text-xs font-medium uppercase tracking-wider mb-1">
-							{selectedPlan.package_name} Plan
+							<span className="font-bold text-white text-sm">{selectedPlan.package_name}</span> Plan
 						</p>
 						<div className="flex items-baseline justify-center gap-1.5">
 							{discountPrice > 0 ? (
