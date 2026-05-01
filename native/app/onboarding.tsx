@@ -31,7 +31,7 @@ const SLIDES = [
     title: "কোনো ইনভেস্টমেন্ট ছাড়াই\nশুরু করুন নিজের বিজনেস!",
     subtitle:
       "নিজের ই-কমার্স শুরু করতে এখন আর পুঁজি বা স্টকের চিন্তা নেই। সেলফ-শপ প্ল্যাটফর্মে কয়েক ক্লিকই যথেষ্ট।",
-    image: require("@/assets/images/onboarding/business.png"),
+    image: require("@/assets/images/onboarding/my_shop_image.png"),
     cardBg: ["#FDF2F8", "#FCEEF5", "#FBE8F0"] as const,
   },
   {
@@ -39,7 +39,7 @@ const SLIDES = [
     title: "আপনার হয়ে প্যাকিং এবং\nডেলিভারি করবে সেলফ-শপ টিম।",
     subtitle:
       "আপনি শুধু অর্ডার নিয়ে আসবেন, আর সারাদেশে আপনার কাস্টমারের কাছে পণ্য পৌঁছে দেওয়ার সব দায়িত্ব আমাদের।",
-    image: require("@/assets/images/onboarding/logistics.png"),
+    image: require("@/assets/images/onboarding/delivery_image.png"),
     cardBg: ["#FFF0F6", "#FEE8F0", "#FDDFE8"] as const,
   },
   {
@@ -47,7 +47,7 @@ const SLIDES = [
     title: "ঘরে বসেই বুঝে নিন\nআপনার কাঙ্ক্ষিত প্রফিট।",
     subtitle:
       "পণ্যের দাম নির্ধারণ করুন আপনার ইচ্ছেমতো এবং প্রতি বিক্রয় শেষে প্রফিট বুঝে নিন সরাসরি আপনার ওয়ালেটে।",
-    image: require("@/assets/images/onboarding/profit.png"),
+    image: require("@/assets/images/onboarding/wallet_image.png"),
     cardBg: ["#FFF5F9", "#FEECF3", "#FDE3EC"] as const,
   },
 ];
