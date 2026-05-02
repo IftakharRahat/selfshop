@@ -1,8 +1,15 @@
 import { useEffect, useRef, useCallback } from "react";
+import { Text } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner-native";
-import Pusher from "pusher-js";
-import Echo from "laravel-echo";
+import PusherRN from "pusher-js/react-native";
+import EchoModule from "laravel-echo";
+
+// Handle ESM/CJS interop
+// pusher-js/react-native exports { Pusher, logToConsole } — need the .Pusher property
+const PusherModule: any = (PusherRN as any).default ?? PusherRN;
+const Pusher: any = PusherModule.Pusher ?? PusherModule;
+const Echo: any = (EchoModule as any).default ?? EchoModule;
 
 import { useSession } from "@/lib/auth-client";
 
@@ -10,12 +17,17 @@ const PUSHER_KEY = process.env.EXPO_PUBLIC_PUSHER_APP_KEY || "";
 const PUSHER_CLUSTER = process.env.EXPO_PUBLIC_PUSHER_APP_CLUSTER || "ap1";
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "");
 
+// Enable Pusher logging in dev
+if (__DEV__) {
+  Pusher.logToConsole = true;
+}
+
 export default function NotificationProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { data: session } = useSession();
+  const { data: session, isLoading } = useSession();
   const queryClient = useQueryClient();
   const echoRef = useRef<Echo<"pusher"> | null>(null);
 
@@ -32,22 +44,29 @@ export default function NotificationProvider({
         info: "🔔",
       };
 
+      const emoji = iconMap[data.type || "info"] || "🔔";
+
       toast(data.title, {
         description: data.message,
         duration: 6000,
-        icon: iconMap[data.type || "info"] || "🔔",
+        icon: <Text>{emoji}</Text>,
       });
     },
     [queryClient],
   );
 
   useEffect(() => {
+    if (isLoading) return;
+
     const token = session?.token;
     const userId = session?.user?.id;
+
+    console.log("[Pusher] Effect running. token:", !!token, "userId:", userId);
 
     if (!token || !userId) {
       // Cleanup on logout
       if (echoRef.current) {
+        console.log("[Pusher] Disconnecting (no token/user)");
         echoRef.current.disconnect();
         echoRef.current = null;
       }
@@ -59,20 +78,48 @@ export default function NotificationProvider({
       return;
     }
 
-    // Initialize Echo with Pusher broadcaster
+    // Avoid duplicate connections
+    if (echoRef.current) {
+      console.log("[Pusher] Already connected, skipping");
+      return;
+    }
+
+    console.log("[Pusher] Config:", { key: PUSHER_KEY, cluster: PUSHER_CLUSTER, baseUrl: BASE_URL });
+    console.log("[Pusher] Pusher type:", typeof Pusher, "Echo type:", typeof Echo);
+    console.log("[Pusher] Pusher keys:", Object.keys(Pusher || {}));
+    console.log("[Pusher] Initializing Echo...");
+
+    // Create Pusher client with auth
+    const pusherClient = new Pusher(PUSHER_KEY, {
+      cluster: PUSHER_CLUSTER,
+      forceTLS: true,
+      authEndpoint: `${BASE_URL}/broadcasting/auth`,
+      auth: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      },
+    });
+
+    // Monitor connection state
+    pusherClient.connection.bind("connected", () => {
+      console.log("[Pusher] ✅ Connected! Socket ID:", pusherClient.connection.socket_id);
+    });
+    pusherClient.connection.bind("error", (err: any) => {
+      console.error("[Pusher] ❌ Connection error:", JSON.stringify(err));
+    });
+    pusherClient.connection.bind("disconnected", () => {
+      console.log("[Pusher] Disconnected");
+    });
+    pusherClient.connection.bind("state_change", (states: any) => {
+      console.log("[Pusher] State:", states.previous, "→", states.current);
+    });
+
+    // Initialize Echo with pre-configured Pusher client
     const echo = new Echo({
       broadcaster: "pusher",
-      client: new Pusher(PUSHER_KEY, {
-        cluster: PUSHER_CLUSTER,
-        forceTLS: true,
-        authEndpoint: `${BASE_URL}/broadcasting/auth`,
-        auth: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        },
-      }),
+      client: pusherClient,
     });
 
     echoRef.current = echo;
@@ -80,22 +127,28 @@ export default function NotificationProvider({
     console.log(`[Pusher] Subscribing to private-user.${userId}`);
 
     // Listen on the private channel for this user
-    echo
-      .private(`user.${userId}`)
-      .listen(
-        ".order.notification",
-        (data: { title: string; message: string; type?: string }) => {
-          console.log(`[Pusher] 🔔 Notification received`, data);
-          showNotification(data);
-        },
-      );
+    const channel = echo.private(`user.${userId}`);
+
+    channel.listen(
+      ".order.notification",
+      (data: { title: string; message: string; type?: string }) => {
+        console.log(`[Pusher] 🔔 Notification received`, data);
+        showNotification(data);
+      },
+    );
+
+    // Also log subscription success/failure
+    channel.error((err: any) => {
+      console.error("[Pusher] Channel subscription error:", JSON.stringify(err));
+    });
 
     return () => {
+      console.log(`[Pusher] Cleanup: leaving user.${userId}`);
       echo.leave(`user.${userId}`);
       echo.disconnect();
       echoRef.current = null;
     };
-  }, [session?.token, session?.user?.id, showNotification]);
+  }, [session?.token, session?.user?.id, isLoading, showNotification]);
 
   return <>{children}</>;
 }
