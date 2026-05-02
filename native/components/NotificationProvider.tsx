@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
-import { Text } from "react-native";
+import { Text, Platform, Vibration } from "react-native";
+import * as Haptics from "expo-haptics";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner-native";
 import PusherRN from "pusher-js/react-native";
@@ -45,6 +46,17 @@ export default function NotificationProvider({
       };
 
       const emoji = iconMap[data.type || "info"] || "🔔";
+
+      // Haptic feedback + vibration for notification
+      try {
+        if (Platform.OS === "ios") {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          Vibration.vibrate([0, 250, 100, 250]); // pattern: pause, vibrate, pause, vibrate
+        }
+      } catch (e) {
+        // Ignore haptics errors on simulators
+      }
 
       toast(data.title, {
         description: data.message,
