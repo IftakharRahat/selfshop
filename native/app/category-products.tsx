@@ -1,17 +1,16 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   View,
   FlatList,
   ActivityIndicator,
   StyleSheet,
   Pressable,
-  ScrollView,
   Animated,
   Dimensions,
 } from "react-native";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -19,7 +18,6 @@ import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
 import { ProductGridSkeleton } from "@/components/skeleton";
 
-const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SHEET_HEIGHT = 340;
 
 const ENDPOINTS: Record<string, string> = {
@@ -93,19 +91,74 @@ export default function CategoryProductsScreen() {
   const activeSortLabel =
     SORT_OPTIONS.find((o) => o.key === sort)?.label ?? "Top Rated";
 
-  const { data, isLoading, isError } = useQuery({
+  // ── Infinite scroll pagination ──
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ["category-products", type, slug, sort],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const response = await apiClient.get(endpoint, {
-        params: { sort, limit: 40 },
+        params: { sort, page: pageParam },
       });
       const resData = response.data;
-      return resData?.data?.data ?? resData?.data ?? [];
+
+      // Laravel paginated response: { data: { current_page, data: [...], last_page, total } }
+      const paginated = resData?.data;
+
+      if (paginated && Array.isArray(paginated?.data)) {
+        return {
+          products: paginated.data,
+          currentPage: paginated.current_page ?? pageParam,
+          lastPage: paginated.last_page ?? 1,
+          total: paginated.total ?? 0,
+        };
+      }
+
+      // Fallback for non-paginated responses
+      const items = Array.isArray(paginated) ? paginated : [];
+      return {
+        products: items,
+        currentPage: 1,
+        lastPage: 1,
+        total: items.length,
+      };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.currentPage < lastPage.lastPage) {
+        return lastPage.currentPage + 1;
+      }
+      return undefined; // No more pages
     },
     enabled: !!slug,
   });
 
-  const products = Array.isArray(data) ? data : [];
+  // Flatten all pages into a single products array
+  const products = data?.pages.flatMap((page) => page.products) ?? [];
+  const totalCount = data?.pages[0]?.total ?? 0;
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={styles.loadingFooter}>
+        <ActivityIndicator size="small" color="#E5005F" />
+        <Text fontSize={12} color="#999" style={{ marginTop: 6 }}>
+          Loading more...
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -136,9 +189,9 @@ export default function CategoryProductsScreen() {
           <Ionicons name="chevron-down" size={14} color="#999" />
         </Pressable>
 
-        {!isLoading && products.length > 0 && (
+        {!isLoading && totalCount > 0 && (
           <Text fontSize={12} color="#999">
-            {products.length} products
+            {totalCount} products
           </Text>
         )}
       </View>
@@ -165,6 +218,9 @@ export default function CategoryProductsScreen() {
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.columnWrapper}
           showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={renderFooter}
           renderItem={({ item }: any) => (
             <ProductCard
               name={item.ProductName}
@@ -306,6 +362,10 @@ const styles = StyleSheet.create({
   columnWrapper: {
     justifyContent: "space-between",
     marginBottom: 16,
+  },
+  loadingFooter: {
+    alignItems: "center",
+    paddingVertical: 20,
   },
   // Bottom sheet
   backdrop: {
