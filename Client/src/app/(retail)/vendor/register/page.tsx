@@ -53,6 +53,14 @@ const VendorRegisterPage = () => {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!selectedCityId || !selectedZoneId || !selectedAreaId) {
+			toast.error("Please select your pickup City, Zone, and Area.");
+			return;
+		}
+		if (!pickupAddress || pickupAddress.trim().length < 10) {
+			toast.error("Please enter a pickup address (at least 10 characters).");
+			return;
+		}
 		try {
 			const res = await registerVendor({
 				name,
@@ -196,16 +204,16 @@ const VendorRegisterPage = () => {
 					{/* ── Pickup Point (Carry Bee) ── */}
 					<div className="border border-gray-200 rounded-lg p-4 space-y-3 bg-gray-50">
 						<p className="text-sm font-semibold text-gray-800">
-							📍 Pickup Point
+							📍 Pickup Point <span className="text-red-500">*</span>
 						</p>
 						<p className="text-xs text-gray-500">
-							Select the nearest pickup location for courier pickups.
+							Select the nearest pickup location for courier pickups. All fields are required.
 						</p>
 
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 							{/* City */}
 							<label className="flex flex-col text-sm font-medium text-gray-700">
-								City
+								City <span className="text-red-500">*</span>
 								<select
 									value={selectedCityId ?? ""}
 									onChange={(e) =>
@@ -214,6 +222,7 @@ const VendorRegisterPage = () => {
 										)
 									}
 									className={selectClass}
+									required
 									disabled={citiesLoading}
 								>
 									<option value="">
@@ -229,7 +238,7 @@ const VendorRegisterPage = () => {
 
 							{/* Zone */}
 							<label className="flex flex-col text-sm font-medium text-gray-700">
-								Zone
+								Zone <span className="text-red-500">*</span>
 								<select
 									value={selectedZoneId ?? ""}
 									onChange={(e) =>
@@ -238,6 +247,7 @@ const VendorRegisterPage = () => {
 										)
 									}
 									className={selectClass}
+									required
 									disabled={!selectedCityId || zonesLoading}
 								>
 									<option value="">
@@ -257,7 +267,7 @@ const VendorRegisterPage = () => {
 
 							{/* Area */}
 							<label className="flex flex-col text-sm font-medium text-gray-700">
-								Area
+								Area <span className="text-red-500">*</span>
 								<select
 									value={selectedAreaId ?? ""}
 									onChange={(e) =>
@@ -266,6 +276,7 @@ const VendorRegisterPage = () => {
 										)
 									}
 									className={selectClass}
+									required
 									disabled={!selectedZoneId || areasLoading}
 								>
 									<option value="">
@@ -285,11 +296,13 @@ const VendorRegisterPage = () => {
 						</div>
 
 						<label className="flex flex-col text-sm font-medium text-gray-700">
-							Pickup address
+							Pickup address <span className="text-red-500">*</span>
 							<input
+								required
+								minLength={10}
 								value={pickupAddress}
 								onChange={(e) => setPickupAddress(e.target.value)}
-								placeholder="Full address for courier pickup"
+								placeholder="Full address for courier pickup (min 10 chars)"
 								className={inputClass}
 							/>
 						</label>

@@ -29,11 +29,11 @@ class VendorAuthController extends Controller
             'password' => ['required', 'string', 'min:6'],
             'company_name' => ['required', 'string', 'max:255'],
             'business_type' => ['nullable', 'string', 'max:255'],
-            // Carry Bee pickup point fields
-            'pickup_city_id' => ['nullable', 'integer'],
-            'pickup_zone_id' => ['nullable', 'integer'],
-            'pickup_area_id' => ['nullable', 'integer'],
-            'pickup_address' => ['nullable', 'string', 'max:500'],
+            // Carry Bee pickup point fields (required for store creation)
+            'pickup_city_id' => ['required', 'integer'],
+            'pickup_zone_id' => ['required', 'integer'],
+            'pickup_area_id' => ['required', 'integer'],
+            'pickup_address' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         if ($validator->fails()) {
