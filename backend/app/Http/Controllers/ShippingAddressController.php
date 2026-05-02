@@ -35,6 +35,9 @@ class ShippingAddressController extends Controller
             'address' => 'required|string|max:500',
             'phone' => 'required|string|max:20',
             'is_default' => 'nullable|boolean',
+            'city_id' => 'nullable|integer',
+            'zone_id' => 'nullable|integer',
+            'area_id' => 'nullable|integer',
         ]);
 
         $userId = Auth::id();
@@ -52,6 +55,9 @@ class ShippingAddressController extends Controller
             'address' => $request->address,
             'phone' => $request->phone,
             'is_default' => $request->is_default ?? false,
+            'city_id' => $request->city_id,
+            'zone_id' => $request->zone_id,
+            'area_id' => $request->area_id,
         ]);
 
         return response()->json([
@@ -92,7 +98,7 @@ class ShippingAddressController extends Controller
                 ->update(['is_default' => false]);
         }
 
-        $address->update($request->only(['label', 'name', 'address', 'phone', 'is_default']));
+        $address->update($request->only(['label', 'name', 'address', 'phone', 'is_default', 'city_id', 'zone_id', 'area_id']));
 
         return response()->json([
             'status' => true,

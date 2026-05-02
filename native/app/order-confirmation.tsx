@@ -112,6 +112,39 @@ export default function OrderConfirmationScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showZonePicker, setShowZonePicker] = useState(false);
 
+  // ── CarryBee city/zone/area for courier routing ──
+  const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+  const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [showCbZonePicker, setShowCbZonePicker] = useState(false);
+  const [showAreaPicker, setShowAreaPicker] = useState(false);
+
+  const { data: citiesData } = useQuery({
+    queryKey: ["carrybee-cities"],
+    queryFn: async () => { const { data } = await apiClient.get("/carrybee/cities"); return data?.data?.cities ?? []; },
+    staleTime: 30 * 60 * 1000,
+  });
+  const cities: { id: number; name: string }[] = citiesData ?? [];
+
+  const { data: zonesData } = useQuery({
+    queryKey: ["carrybee-zones", selectedCityId],
+    queryFn: async () => { const { data } = await apiClient.get(`/carrybee/cities/${selectedCityId}/zones`); return data?.data?.zones ?? []; },
+    enabled: !!selectedCityId,
+  });
+  const cbZones: { id: number; name: string }[] = zonesData ?? [];
+
+  const { data: areasData } = useQuery({
+    queryKey: ["carrybee-areas", selectedCityId, selectedZoneId],
+    queryFn: async () => { const { data } = await apiClient.get(`/carrybee/cities/${selectedCityId}/zones/${selectedZoneId}/areas`); return data?.data?.areas ?? []; },
+    enabled: !!selectedCityId && !!selectedZoneId,
+  });
+  const cbAreas: { id: number; name: string }[] = areasData ?? [];
+
+  const selectedCityName = cities.find(c => c.id === selectedCityId)?.name ?? "";
+  const selectedZoneName = cbZones.find(z => z.id === selectedZoneId)?.name ?? "";
+  const selectedAreaName = cbAreas.find(a => a.id === selectedAreaId)?.name ?? "";
+
   // WebView for SSLCommerz
   const [gatewayUrl, setGatewayUrl] = useState<string | null>(null);
   const [webViewLoading, setWebViewLoading] = useState(true);
@@ -152,6 +185,12 @@ export default function OrderConfirmationScreen() {
       address: addr.address || "",
       phone: addr.phone || "",
     }));
+    // Auto-fill CarryBee dropdowns from saved address
+    if (addr.city_id) {
+      setSelectedCityId(addr.city_id);
+      setSelectedZoneId(addr.zone_id ?? null);
+      setSelectedAreaId(addr.area_id ?? null);
+    }
     setErrors({});
     toast.success("Address loaded");
   };
@@ -227,6 +266,8 @@ export default function OrderConfirmationScreen() {
     formData.append("delivery_zone", deliveryZoneLabel!);
     formData.append("advance_delivery", advanceDelivery);
     formData.append("balance_from", paymentMethod === "account" ? "from_account" : "online_pay");
+    if (selectedCityId) formData.append("city_id", selectedCityId.toString());
+    if (selectedZoneId) formData.append("zone_id", selectedZoneId.toString());
     if (customerData.note) formData.append("customerNote", customerData.note);
 
     createOrderMutation.mutate(formData);
@@ -387,7 +428,13 @@ export default function OrderConfirmationScreen() {
                 style={st.saveAddrBtn}
                 onPress={() => {
                   const label = `${customerData.name} - ${customerData.phone}`;
-                  saveAddressMutation.mutate({ label, ...customerData });
+                  saveAddressMutation.mutate({
+                    label,
+                    ...customerData,
+                    city_id: selectedCityId,
+                    zone_id: selectedZoneId,
+                    area_id: selectedAreaId,
+                  } as any);
                 }}
                 disabled={saveAddressMutation.isPending}
               >
@@ -395,6 +442,93 @@ export default function OrderConfirmationScreen() {
                 <Text fontSize={12} fontWeight="600" color={ACCENT}>Save this address</Text>
               </Pressable>
             )}
+
+            {/* ═══ DELIVERY CITY & ZONE (CarryBee) ═══ */}
+            <View style={[st.section, { marginTop: 6 }]}>
+              <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Delivery City & Zone</Text>
+
+              {/* City Picker */}
+              <Text fontSize={12} fontWeight="600" color={DARK} mb="$1">City / District</Text>
+              <Pressable style={st.zonePicker} onPress={() => setShowCityPicker(!showCityPicker)}>
+                <Text fontSize={14} fontWeight="500" color={selectedCityId ? DARK : GREY}>
+                  {selectedCityName || "Select City"}
+                </Text>
+                <Ionicons name={showCityPicker ? "chevron-up" : "chevron-down"} size={20} color={GREY} />
+              </Pressable>
+              {showCityPicker && (
+                <View style={st.zoneOptions}>
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                    {cities.map((c) => (
+                      <Pressable
+                        key={c.id}
+                        style={[st.zoneOption, selectedCityId === c.id && { backgroundColor: "#FFF0F5" }]}
+                        onPress={() => { setSelectedCityId(c.id); setSelectedZoneId(null); setSelectedAreaId(null); setShowCityPicker(false); }}
+                      >
+                        <Text fontSize={14} fontWeight="500" color={selectedCityId === c.id ? ACCENT : DARK}>{c.name}</Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Zone Picker */}
+              {selectedCityId && (
+                <View style={{ marginTop: 10 }}>
+                  <Text fontSize={12} fontWeight="600" color={DARK} mb="$1">Zone</Text>
+                  <Pressable style={st.zonePicker} onPress={() => setShowCbZonePicker(!showCbZonePicker)}>
+                    <Text fontSize={14} fontWeight="500" color={selectedZoneId ? DARK : GREY}>
+                      {selectedZoneName || "Select Zone"}
+                    </Text>
+                    <Ionicons name={showCbZonePicker ? "chevron-up" : "chevron-down"} size={20} color={GREY} />
+                  </Pressable>
+                  {showCbZonePicker && (
+                    <View style={st.zoneOptions}>
+                      <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                        {cbZones.map((z) => (
+                          <Pressable
+                            key={z.id}
+                            style={[st.zoneOption, selectedZoneId === z.id && { backgroundColor: "#FFF0F5" }]}
+                            onPress={() => { setSelectedZoneId(z.id); setSelectedAreaId(null); setShowCbZonePicker(false); }}
+                          >
+                            <Text fontSize={14} fontWeight="500" color={selectedZoneId === z.id ? ACCENT : DARK}>{z.name}</Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Area Picker */}
+              {selectedZoneId && (
+                <View style={{ marginTop: 10 }}>
+                  <Text fontSize={12} fontWeight="600" color={DARK} mb="$1">Area (Optional)</Text>
+                  <Pressable style={st.zonePicker} onPress={() => setShowAreaPicker(!showAreaPicker)}>
+                    <Text fontSize={14} fontWeight="500" color={selectedAreaId ? DARK : GREY}>
+                      {selectedAreaName || "Select Area"}
+                    </Text>
+                    <Ionicons name={showAreaPicker ? "chevron-up" : "chevron-down"} size={20} color={GREY} />
+                  </Pressable>
+                  {showAreaPicker && (
+                    <View style={st.zoneOptions}>
+                      <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                        {cbAreas.map((a) => (
+                          <Pressable
+                            key={a.id}
+                            style={[st.zoneOption, selectedAreaId === a.id && { backgroundColor: "#FFF0F5" }]}
+                            onPress={() => { setSelectedAreaId(a.id); setShowAreaPicker(false); }}
+                          >
+                            <Text fontSize={14} fontWeight="500" color={selectedAreaId === a.id ? ACCENT : DARK}>{a.name}</Text>
+                          </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <Text fontSize={11} color={GREY} mt="$2">Selecting city & zone helps ensure accurate courier delivery</Text>
+            </View>
           </View>
 
           {/* ═══ DELIVERY ZONE ═══ */}

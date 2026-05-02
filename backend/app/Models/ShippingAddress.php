@@ -16,6 +16,9 @@ class ShippingAddress extends Model
         'address',
         'phone',
         'is_default',
+        'city_id',
+        'zone_id',
+        'area_id',
     ];
 
     protected $casts = [

@@ -26,6 +26,11 @@ import {
 	useCreateShippingAddressMutation,
 	useDeleteShippingAddressMutation,
 } from "@/redux/features/shippingAddressApi";
+import {
+	useGetCarryBeeCitiesQuery,
+	useGetCarryBeeZonesQuery,
+	useGetCarryBeeAreasQuery,
+} from "@/redux/api/vendorApi";
 import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -93,6 +98,22 @@ export default function OrderConfirmation() {
 	const [showSaveInput, setShowSaveInput] = useState(false);
 	const [saveLabel, setSaveLabel] = useState("");
 
+	// CarryBee city/zone/area for courier routing
+	const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
+	const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+	const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
+
+	const { data: citiesData, isLoading: citiesLoading } = useGetCarryBeeCitiesQuery();
+	const { data: zonesData, isLoading: zonesLoading } = useGetCarryBeeZonesQuery(selectedCityId!, { skip: !selectedCityId });
+	const { data: areasData, isLoading: areasLoading } = useGetCarryBeeAreasQuery(
+		{ cityId: selectedCityId!, zoneId: selectedZoneId! },
+		{ skip: !selectedCityId || !selectedZoneId }
+	);
+
+	const cities = citiesData?.data?.cities ?? [];
+	const zones = zonesData?.data?.zones ?? [];
+	const areas = areasData?.data?.areas ?? [];
+
 	const handleSaveAddress = async () => {
 		if (!customerData.name || !customerData.address || !customerData.phone) return;
 		const label = saveLabel.trim() || `${customerData.name} - ${customerData.phone}`;
@@ -102,6 +123,9 @@ export default function OrderConfirmation() {
 				name: customerData.name,
 				address: customerData.address,
 				phone: customerData.phone,
+				city_id: selectedCityId,
+				zone_id: selectedZoneId,
+				area_id: selectedAreaId,
 			}),
 			true,
 			"Saving address...",
@@ -120,13 +144,19 @@ export default function OrderConfirmation() {
 		);
 	};
 
-	const handleSelectSavedAddress = (addr: { name: string; address: string; phone: string }) => {
+	const handleSelectSavedAddress = (addr: { name: string; address: string; phone: string; city_id?: number | null; zone_id?: number | null; area_id?: number | null }) => {
 		setCustomerData((prev) => ({
 			...prev,
 			name: addr.name,
 			address: addr.address,
 			phone: addr.phone,
 		}));
+		// Auto-fill CarryBee dropdowns from saved address
+		if (addr.city_id) {
+			setSelectedCityId(addr.city_id);
+			setSelectedZoneId(addr.zone_id ?? null);
+			setSelectedAreaId(addr.area_id ?? null);
+		}
 		setErrors({});
 	};
 
@@ -183,6 +213,8 @@ export default function OrderConfirmation() {
 		formData.append("shop_count", shopCount.toString());
 		formData.append("delivery_zone", deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : "Outside Dhaka");
 		formData.append("advance_delivery", advanceDelivery);
+		if (selectedCityId) formData.append("city_id", selectedCityId.toString());
+		if (selectedZoneId) formData.append("zone_id", selectedZoneId.toString());
 		formData.append(
 			"balance_from",
 			selected === "account" ? "from_account" : "online_pay",
@@ -322,8 +354,37 @@ export default function OrderConfirmation() {
 								/>
 							</div>
 
+				{/* Delivery City / Zone / Area (CarryBee) */}
+						<div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+							<p className="text-sm font-semibold text-gray-800 mb-3">Delivery City &amp; Zone</p>
+							<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+								<div>
+									<label className="block text-xs font-medium text-gray-600 mb-1">City / District</label>
+									<select id="delivery-city" value={selectedCityId ?? ""} onChange={(e) => { const v = e.target.value ? Number(e.target.value) : null; setSelectedCityId(v); setSelectedZoneId(null); setSelectedAreaId(null); }} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white">
+										<option value="">{citiesLoading ? "Loading..." : "Select City"}</option>
+										{cities.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+									</select>
+								</div>
+								<div>
+									<label className="block text-xs font-medium text-gray-600 mb-1">Zone</label>
+									<select id="delivery-zone-cb" value={selectedZoneId ?? ""} onChange={(e) => { const v = e.target.value ? Number(e.target.value) : null; setSelectedZoneId(v); setSelectedAreaId(null); }} disabled={!selectedCityId || zonesLoading} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
+										<option value="">{zonesLoading ? "Loading..." : !selectedCityId ? "Select city first" : "Select Zone"}</option>
+										{zones.map((z) => (<option key={z.id} value={z.id}>{z.name}</option>))}
+									</select>
+								</div>
+								<div>
+									<label className="block text-xs font-medium text-gray-600 mb-1">Area</label>
+									<select id="delivery-area" value={selectedAreaId ?? ""} onChange={(e) => setSelectedAreaId(e.target.value ? Number(e.target.value) : null)} disabled={!selectedZoneId || areasLoading} className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white disabled:bg-gray-100 disabled:cursor-not-allowed">
+										<option value="">{areasLoading ? "Loading..." : !selectedZoneId ? "Select zone first" : "Select Area (optional)"}</option>
+										{areas.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+									</select>
+								</div>
+							</div>
+							<p className="text-xs text-gray-500 mt-2">Selecting city &amp; zone helps ensure accurate courier delivery</p>
+						</div>
+
 							{/* Save Address Button */}
-							{customerData.name && customerData.address && customerData.phone && (() => {
+						{customerData.name && customerData.address && customerData.phone && (() => {
 								const isAlreadySaved = savedAddresses.some(
 									(a) => a.name === customerData.name && a.address === customerData.address && a.phone === customerData.phone
 								);

@@ -7,6 +7,9 @@ interface ShippingAddress {
     address: string;
     phone: string;
     is_default: boolean;
+    city_id: number | null;
+    zone_id: number | null;
+    area_id: number | null;
 }
 
 const shippingAddressApi = baseApi.injectEndpoints({
@@ -19,7 +22,7 @@ const shippingAddressApi = baseApi.injectEndpoints({
             providesTags: ["shippingAddresses"],
         }),
         createShippingAddress: builder.mutation({
-            query: (data: { label?: string; name: string; address: string; phone: string; is_default?: boolean }) => ({
+            query: (data: { label?: string; name: string; address: string; phone: string; is_default?: boolean; city_id?: number | null; zone_id?: number | null; area_id?: number | null }) => ({
                 url: "/shipping-addresses",
                 method: "POST",
                 body: data,

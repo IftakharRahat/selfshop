@@ -3656,6 +3656,8 @@ class FrontendApiController extends Controller
 
             $order->orderDate = Carbon::today()->format('Y-m-d');
             $order->admin_id = $admin->id ?? 1;
+            $order->city_id = $request->city_id ?? 0;
+            $order->zone_id = $request->zone_id ?? 0;
 
             $result = $order->save();
 

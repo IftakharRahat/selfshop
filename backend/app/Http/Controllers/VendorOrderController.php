@@ -521,11 +521,6 @@ class VendorOrderController extends Controller
             ]);
         }
 
-        $order->warehouse_sent_at = now();
-        $order->shipped_at = $order->shipped_at ?? now();
-        $order->status = 'Ontheway';
-        $order->save();
-
         // ── Carry Bee order creation (non-blocking) ──
         // Auto-create a Carry Bee store if vendor doesn't have one yet
         $carrybeeResult = null;
@@ -578,6 +573,69 @@ class VendorOrderController extends Controller
                     $recipientAddress = str_pad($recipientAddress, 10, ', Dhaka');
                 }
 
+                // ── Auto-detect delivery city/zone from customer address ──
+                // Orders from the mobile app don't capture city_id, so we resolve
+                // it using CarryBee's area-suggestion API based on customer address.
+                $cbCityId = ((int) $order->city_id) ?: null;
+                $cbZoneId = ((int) $order->zone_id) ?: null;
+                $cbAreaId = null;
+
+                if (!$cbCityId) {
+                    try {
+                        // Smart address parsing: split by comma and try each part
+                        // right-to-left since addresses go "Street, Area, District"
+                        // e.g. "Puraton Tewariganj Bazar, Lakshmipur, Sadar Lakshmipur"
+                        //   Try 1: "Sadar Lakshmipur" → match zone ✅
+                        //   Try 2: "Lakshmipur"       → match city ✅
+                        //   Try 3: "Puraton Tewariganj Bazar" → unlikely ❌
+                        $addressParts = array_map('trim', explode(',', $customer->customerAddress));
+                        $addressParts = array_reverse($addressParts); // right-to-left
+                        $firstMatch = null;
+                        $matchedSearchTerm = null;
+
+                        foreach ($addressParts as $part) {
+                            if (strlen($part) < 3) continue; // skip very short parts
+
+                            $suggestion = $carryBee->searchAreas($part);
+                            if (!empty($suggestion['data'][0]['city_id'])) {
+                                $firstMatch = $suggestion['data'][0];
+                                $matchedSearchTerm = $part;
+                                break;
+                            }
+                        }
+
+                        if ($firstMatch) {
+                            $cbCityId = (int) $firstMatch['city_id'];
+                            $cbZoneId = (int) ($firstMatch['zone_id'] ?? 1);
+                            $cbAreaId = !empty($firstMatch['id']) ? (int) $firstMatch['id'] : null;
+
+                            \Log::info('CarryBee area auto-detected from customer address', [
+                                'order_id'     => $order->id,
+                                'full_address' => $customer->customerAddress,
+                                'matched_term' => $matchedSearchTerm,
+                                'city_id'      => $cbCityId,
+                                'zone_id'      => $cbZoneId,
+                                'area_id'      => $cbAreaId,
+                            ]);
+                        } else {
+                            $cbCityId = 14;  // fallback: Dhaka
+                            $cbZoneId = 1;
+                            \Log::warning('CarryBee area-suggestion returned no match for any address part, defaulting to Dhaka', [
+                                'order_id'      => $order->id,
+                                'address'       => $customer->customerAddress,
+                                'parts_tried'   => $addressParts,
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        $cbCityId = 14;  // fallback: Dhaka
+                        $cbZoneId = 1;
+                        \Log::warning('CarryBee area-suggestion API failed, defaulting to Dhaka', [
+                            'order_id' => $order->id,
+                            'error'    => $e->getMessage(),
+                        ]);
+                    }
+                }
+
                 // Calculate vendor-specific totals using RESELL price (what customer pays)
                 $vendorResellTotal = $vendorItems->sum(function ($op) {
                     $resellPrice = (float) ($op->selling_price ?? $op->productPrice);
@@ -595,8 +653,8 @@ class VendorOrderController extends Controller
                     'recipient_name'      => (string) $customer->customerName,
                     'recipient_phone'     => (string) $customer->customerPhone,
                     'recipient_address'   => substr($recipientAddress, 0, 200),
-                    'city_id'             => (int) ($order->city_id ?? 14),  // default Dhaka
-                    'zone_id'             => (int) ($order->zone_id ?? 1),
+                    'city_id'             => $cbCityId,
+                    'zone_id'             => $cbZoneId,
                     'special_instruction' => (string) ($order->customerNote ?? ''),
                     'product_description'  => substr($productDescription, 0, 200),
                     'item_weight'         => 500,  // grams (default 500g)
@@ -606,8 +664,10 @@ class VendorOrderController extends Controller
                         : (int) round($vendorResellTotal + $deliveryCharge),            // COD delivery → collect resell price + delivery charge
                 ];
 
-                // Only include area_id if available
-                if (!empty($order->area_id)) {
+                // Include area_id if resolved or available on order
+                if ($cbAreaId) {
+                    $orderData['area_id'] = $cbAreaId;
+                } elseif (!empty($order->area_id)) {
                     $orderData['area_id'] = (int) $order->area_id;
                 }
 
@@ -665,49 +725,71 @@ class VendorOrderController extends Controller
             $carrybeeError = 'Vendor has no carrybee_store_id and store creation was not attempted or failed.';
         }
 
-        Orderproduct::whereIn('id', $vendorItems->pluck('id')->all())
-            ->update([
-                'fulfillment_status' => 'shipped',
-                'shipped_at' => now(),
+        // ── Fix #2: Only mark Ontheway if courier accepted the parcel ──
+        $courierBooked = !empty($order->carrybee_parcel_id);
+
+        if ($courierBooked) {
+            // Courier accepted → mark as shipped
+            $order->warehouse_sent_at = now();
+            $order->shipped_at = $order->shipped_at ?? now();
+            $order->status = 'Ontheway';
+            $order->save();
+
+            Orderproduct::whereIn('id', $vendorItems->pluck('id')->all())
+                ->update([
+                    'fulfillment_status' => 'shipped',
+                    'shipped_at' => now(),
+                ]);
+
+            $this->createCustomerComment(
+                $order,
+                'Your order ' . $order->invoiceID . ' has been shipped to warehouse.'
+            );
+
+            // Real-time push notification
+            try {
+                $pushService = app(\App\Services\PushNotificationService::class);
+                $pushService->onWarehouseSent($order);
+            } catch (\Throwable $e) {
+                \Log::warning('Push notification failed for warehouse sent', ['error' => $e->getMessage()]);
+            }
+
+            $meta = $this->statusMeta($order);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Order sent to warehouse',
+                'data' => [
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'customer_status' => $meta['customer_status'],
+                    'steadfast_status' => $meta['steadfast_status'],
+                    'tracking_number' => $order->tracking_number,
+                    'tracking_link' => $order->trackingLink,
+                    'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
+                    'carrybee_parcel_id' => $order->carrybee_parcel_id,
+                    'carrybee_tracking_code' => $order->carrybee_tracking_code,
+                    'carrybee_status' => $order->carrybee_status,
+                ],
             ]);
-
-        $this->createCustomerComment(
-            $order,
-            'Your order ' . $order->invoiceID . ' has been shipped to warehouse.'
-        );
-
-        $meta = $this->statusMeta($order);
-
-        // Real-time push notification
-        try {
-            $pushService = app(\App\Services\PushNotificationService::class);
-            $pushService->onWarehouseSent($order);
-        } catch (\Throwable $e) {
-            \Log::warning('Push notification failed for warehouse sent', ['error' => $e->getMessage()]);
         }
 
-        $responseData = [
+        // Courier failed → keep order in current state, return error
+        \Log::error('CarryBee courier booking failed for order', [
             'order_id' => $order->id,
-            'status' => $order->status,
-            'customer_status' => $meta['customer_status'],
-            'steadfast_status' => $meta['steadfast_status'],
-            'tracking_number' => $order->tracking_number,
-            'tracking_link' => $order->trackingLink,
-            'warehouse_sent_at' => $order->warehouse_sent_at?->toIso8601String(),
-            'carrybee_parcel_id' => $order->carrybee_parcel_id,
-            'carrybee_tracking_code' => $order->carrybee_tracking_code,
-            'carrybee_status' => $order->carrybee_status,
-        ];
-
-        if ($carrybeeError) {
-            $responseData['carrybee_warning'] = $carrybeeError;
-        }
+            'invoice'  => $order->invoiceID,
+            'error'    => $carrybeeError,
+        ]);
 
         return response()->json([
-            'status' => true,
-            'message' => 'Order sent to warehouse',
-            'data' => $responseData,
-        ]);
+            'status' => false,
+            'message' => 'Courier booking failed: ' . ($carrybeeError ?? 'Unknown error') . '. The order was NOT shipped. Please check the delivery address and try again.',
+            'data' => [
+                'order_id' => $order->id,
+                'status' => $order->status,
+                'carrybee_error' => $carrybeeError,
+            ],
+        ], 422);
     }
 
     /**
