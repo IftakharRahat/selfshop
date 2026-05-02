@@ -52,6 +52,26 @@ export default function OrderConfirmationScreen() {
   });
   const cartItems: any[] = cartData ?? [];
 
+  // ── Remove item from cart ──
+  const deleteMutation = useMutation({
+    mutationFn: async (cartId: number) => {
+      const { data } = await apiClient.post("/user-destroy-cart", { cart_id: cartId });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
+      toast.success("Item removed");
+    },
+    onError: () => toast.error("Failed to remove item"),
+  });
+
+  const handleRemoveItem = (cartId: number, itemName: string) => {
+    Alert.alert("Remove Item", `Remove "${itemName}" from your order?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: () => deleteMutation.mutate(cartId) },
+    ]);
+  };
+
   // Redirect if cart empty
   useEffect(() => {
     if (!cartLoading && cartItems.length === 0) {
@@ -288,6 +308,13 @@ export default function OrderConfirmationScreen() {
                     </Text>
                   </View>
                 </View>
+                <Pressable
+                  style={st.removeItemBtn}
+                  onPress={() => handleRemoveItem(item.id, item.name)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Ionicons name="close-circle" size={22} color="#EF4444" />
+                </Pressable>
               </View>
             ))}
           </View>
@@ -634,6 +661,11 @@ const st = StyleSheet.create({
   orderItem: {
     flexDirection: "row", gap: 10, paddingVertical: 8,
     borderBottomWidth: 1, borderBottomColor: "#F5F5F5",
+    alignItems: "center",
+  },
+  removeItemBtn: {
+    padding: 4,
+    marginLeft: 4,
   },
   orderItemImg: {
     width: 50, height: 50, borderRadius: 10, backgroundColor: BG,
