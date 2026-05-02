@@ -62,17 +62,17 @@ class VendorDashboardController extends Controller
             // Total sales & last month / this month from vendor_earnings (ONLY available/delivered)
             $total_sales = (float) VendorEarning::where('vendor_id', $vendorId)
                 ->where('status', 'available')
-                ->sum('line_total');
+                ->sum('net_amount');
 
             $this_month_sales = (float) VendorEarning::where('vendor_id', $vendorId)
                 ->where('status', 'available')
                 ->whereBetween(DB::raw('DATE(created_at)'), [$thisMonthStart, $thisMonthEnd])
-                ->sum('line_total');
+                ->sum('net_amount');
 
             $last_month_sales = (float) VendorEarning::where('vendor_id', $vendorId)
                 ->where('status', 'available')
                 ->whereBetween(DB::raw('DATE(created_at)'), [$lastMonthStart, $lastMonthEnd])
-                ->sum('line_total');
+                ->sum('net_amount');
 
             // Orders this month by status
             $orderIdsThisMonth = Order::whereHas('orderproducts.product', fn ($q) => $q->where('vendor_id', $vendorId))
@@ -100,7 +100,7 @@ class VendorDashboardController extends Controller
                 ->where(DB::raw('created_at'), '>=', now()->subMonths(5)->startOfMonth())
                 ->select(
                     DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
-                    DB::raw('SUM(line_total) as total')
+                    DB::raw('SUM(net_amount) as total')
                 )
                 ->groupBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'))
                 ->orderBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'))
@@ -120,7 +120,7 @@ class VendorDashboardController extends Controller
                     'products.ViewProductImage',
                     'products.ProductRegularPrice',
                     'products.ProductSalePrice',
-                    DB::raw('SUM(vendor_earnings.line_total) as total_sales'),
+                    DB::raw('SUM(vendor_earnings.net_amount) as total_sales'),
                     DB::raw('SUM(orderproducts.quantity) as total_quantity')
                 )
                 ->groupBy(

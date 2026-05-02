@@ -13,10 +13,11 @@ import {
 	Modal,
 	Tabs,
 } from "antd";
-import { ChevronDown, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
+import { ChevronDown, Loader2, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import Swal from "sweetalert2";
@@ -39,6 +40,7 @@ import {
 } from "@/redux/features/home/homeApi";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { getImageUrl } from "@/lib/utils";
 import AuthModal from "../AuthModal";
 import CartDrawer from "../CartDrawer/CartDrawer";
 import DropDownBtn from "./DropDownBtn";
@@ -55,18 +57,153 @@ export default function Navbar() {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+	const [authInitialMode, setAuthInitialMode] = useState<"login" | "register">("login");
+	const [campaignCode, setCampaignCode] = useState<string | undefined>(undefined);
 	const [searchValue, setSearchValue] = useState("");
+	const [suggestions, setSuggestions] = useState<any[]>([]);
+	const [showSuggestions, setShowSuggestions] = useState(false);
+	const [isSearching, setIsSearching] = useState(false);
+	const searchRef = useRef<HTMLDivElement>(null);
+	const mobileSearchRef = useRef<HTMLDivElement>(null);
+	const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+	// Debounced live search
+	const fetchSuggestions = useCallback(async (query: string) => {
+		if (query.trim().length < 2) {
+			setSuggestions([]);
+			setShowSuggestions(false);
+			return;
+		}
+		setIsSearching(true);
+		try {
+			const res = await fetch(
+				`${process.env.NEXT_PUBLIC_BASE_URL}/search?keywords=${encodeURIComponent(query)}&limit=8`
+			);
+			const data = await res.json();
+			const items = data?.data?.data || data?.data || [];
+			setSuggestions(Array.isArray(items) ? items : []);
+			setShowSuggestions(true);
+		} catch {
+			setSuggestions([]);
+		}
+		setIsSearching(false);
+	}, []);
+
+	const handleSearchInput = (value: string) => {
+		setSearchValue(value);
+		if (debounceTimer.current) clearTimeout(debounceTimer.current);
+		debounceTimer.current = setTimeout(() => fetchSuggestions(value), 300);
+	};
+
+	const handleSearchFocus = () => {
+		if (searchValue.trim().length >= 2) {
+			if (suggestions.length > 0) {
+				setShowSuggestions(true);
+			} else {
+				fetchSuggestions(searchValue);
+			}
+		}
+	};
+
+	// Close suggestions on click outside
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (
+				searchRef.current && !searchRef.current.contains(e.target as Node) &&
+				mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)
+			) {
+				setShowSuggestions(false);
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, []);
+
+	const handleSuggestionClick = (slug: string) => {
+		setShowSuggestions(false);
+		router.push(`/product/${slug}`);
+	};
+
+	const handleSearchSubmit = () => {
+		if (searchValue.trim()) {
+			setShowSuggestions(false);
+			router.push(`/search?keywords=${searchValue}`);
+		}
+	};
+
+
+
+	// Suggestion dropdown component
+	const SuggestionDropdown = () => {
+		if ((!showSuggestions && !isSearching) || searchValue.trim().length < 2) return null;
+		return (
+			<div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-[9999] max-h-[400px] overflow-y-auto">
+				{isSearching ? (
+					<div className="flex items-center justify-center py-6">
+						<Loader2 className="w-5 h-5 text-pink-500 animate-spin" />
+						<span className="ml-2 text-sm text-gray-500">Searching...</span>
+					</div>
+				) : suggestions.length === 0 ? (
+					<div className="py-6 text-center text-sm text-gray-400">No products found</div>
+				) : (
+					<>
+						{suggestions.map((product: any) => (
+							<div
+								key={product.id}
+								onClick={() => handleSuggestionClick(product.ProductSlug)}
+								className="flex items-center gap-3 px-4 py-2.5 hover:bg-pink-50 cursor-pointer transition-colors border-b border-gray-50 last:border-b-0"
+							>
+								<div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+									{product.ViewProductImage && (
+										<img
+											src={getImageUrl(product.ViewProductImage)}
+											alt={product.ProductName}
+											className="w-full h-full object-cover"
+										/>
+									)}
+								</div>
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium text-gray-800 truncate">{product.ProductName}</p>
+									<p className="text-xs text-pink-600 font-semibold">৳ {product.ProductSalePrice || product.ProductRegularPrice}</p>
+								</div>
+							</div>
+						))}
+						{searchValue.trim() && (
+							<div
+								onClick={handleSearchSubmit}
+								className="px-4 py-3 text-center text-sm font-medium text-pink-600 hover:bg-pink-50 cursor-pointer border-t border-gray-100"
+							>
+								See all results for "{searchValue}"
+							</div>
+						)}
+					</>
+				)}
+			</div>
+		);
+	};
 
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	// Auto-open auth modal when redirected from pricing page with ?showAuth=true
+	// Auto-open auth modal when redirected with ?showAuth=true or ?showAuth=register
 	useEffect(() => {
-		if (searchParams.get("showAuth") === "true" && !token) {
+		const showAuth = searchParams.get("showAuth");
+		if (showAuth && !token) {
+			if (showAuth === "register") {
+				setAuthInitialMode("register");
+			} else {
+				setAuthInitialMode("login");
+			}
+			// Capture campaign code if present
+			const campaign = searchParams.get("campaign");
+			if (campaign) {
+				setCampaignCode(campaign);
+			}
 			setIsLoginModalOpen(true);
-			// Clean up the URL by removing the showAuth param
+			// Clean up the URL by removing params
 			const url = new URL(window.location.href);
 			url.searchParams.delete("showAuth");
+			url.searchParams.delete("campaign");
 			window.history.replaceState({}, "", url.pathname + url.search);
 		}
 	}, [searchParams, token]);
@@ -196,21 +333,24 @@ export default function Navbar() {
 
 						{/* Search bar - hidden on mobile */}
 						<div className="hidden lg:flex flex-1 max-w-2xl mx-8">
-							<div className="relative w-full">
+							<div className="relative w-full" ref={searchRef}>
 								<input
 									type="text"
 									placeholder="Search product or Store"
 									value={searchValue}
-									onChange={(e) => setSearchValue(e.target.value)}
-									onKeyDown={(e) => e.key === "Enter" && searchValue.trim() && router.push(`/search?keywords=${searchValue}`)}
+									onChange={(e) => handleSearchInput(e.target.value)}
+									onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
+									onFocus={handleSearchFocus}
 									className="w-full pl-4 pr-12 py-2 border bg-white border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#E7005E] "
+									autoComplete="off"
 								/>
 								<button
-									onClick={() => router.push(`/search?keywords=${searchValue}`)}
+									onClick={handleSearchSubmit}
 									className="absolute right-0 top-0 h-full px-4 bg-[#E7005E] hover:bg-pink-600 text-white rounded-r-full rounded-l-none"
 								>
 									<Search className="h-4 w-4" />
 								</button>
+								<SuggestionDropdown />
 							</div>
 						</div>
 
@@ -292,21 +432,24 @@ export default function Navbar() {
 
 					{/* Mobile search bar */}
 					<div className="lg:hidden pb-4">
-						<div className="relative">
+						<div className="relative" ref={mobileSearchRef}>
 							<input
 								type="text"
 								value={searchValue}
-								onChange={(e) => setSearchValue(e.target.value)}
-								onKeyDown={(e) => e.key === "Enter" && searchValue.trim() && router.push(`/search?keywords=${searchValue}`)}
+								onChange={(e) => handleSearchInput(e.target.value)}
+								onKeyDown={(e) => e.key === "Enter" && handleSearchSubmit()}
+								onFocus={handleSearchFocus}
 								placeholder="Search product or Store"
 								className="w-full pl-4 pr-12 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#E7005E] focus:border-transparent"
+								autoComplete="off"
 							/>
 							<button
-								onClick={() => router.push(`/search?keywords=${searchValue}`)}
+								onClick={handleSearchSubmit}
 								className="absolute right-0 top-0 h-full px-4 bg-[#E7005E] hover:bg-pink-600 text-white rounded-r-full rounded-l-none"
 							>
 								<Search className="h-4 w-4" />
 							</button>
+							<SuggestionDropdown />
 						</div>
 					</div>
 				</div>
@@ -433,8 +576,14 @@ export default function Navbar() {
 			>
 				<AuthModal
 					open={isLoginModalOpen}
-					onClose={() => setIsLoginModalOpen(false)}
+					onClose={() => {
+						setIsLoginModalOpen(false);
+						setAuthInitialMode("login");
+						setCampaignCode(undefined);
+					}}
 					setIsPricingModalOpen={setIsPricingModalOpen}
+					initialMode={authInitialMode}
+					campaignCode={campaignCode}
 				/>
 
 				<Modal

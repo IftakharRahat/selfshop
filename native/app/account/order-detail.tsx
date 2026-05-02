@@ -52,6 +52,27 @@ function formatBDT(v: number | string | undefined | null): string {
   return `৳${n.toLocaleString("en-BD")}`;
 }
 
+function parseMoney(value: unknown): number {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function hasMoneyValue(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== "";
+}
+
+function getOrderTotal(order: any): number {
+  if (hasMoneyValue(order?.subTotal) || hasMoneyValue(order?.deliveryCharge)) {
+    return (
+      parseMoney(order?.subTotal) +
+      parseMoney(order?.deliveryCharge) -
+      parseMoney(order?.discountCharge)
+    );
+  }
+
+  return parseMoney(order?.total ?? order?.paymentAmount ?? order?.payable_amount);
+}
+
 export default function OrderDetailScreen() {
   const params = useLocalSearchParams<{ invoiceID?: string; id?: string }>();
   const invoiceID = (params.invoiceID ?? "").trim().replace(/^[^A-Za-z0-9]+/, "");
@@ -116,10 +137,11 @@ export default function OrderDetailScreen() {
   const customer = order.customers ?? {};
   const courier = order.couriers ?? {};
   const orderProducts: any[] = order.orderproducts ?? order.order_products ?? order.products ?? order.items ?? order.order_items ?? [];
-  const subTotal = parseFloat(order.subTotal) || 0;
-  const profit = parseFloat(order.profit) || 0;
-  const deliveryCharge = parseFloat(order.deliveryCharge) || 0;
-  const total = subTotal + deliveryCharge;
+  const subTotal = parseMoney(order.subTotal ?? order.subtotal ?? order.sub_total);
+  const profit = parseMoney(order.profit);
+  const deliveryCharge = parseMoney(order.deliveryCharge ?? order.delivery_charge);
+  const discountCharge = parseMoney(order.discountCharge ?? order.discount_charge);
+  const total = getOrderTotal(order);
   const canCancel = displayStatus.toLowerCase() === "pending";
 
   function handleCancel() {
@@ -277,6 +299,14 @@ export default function OrderDetailScreen() {
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Delivery Charge</Text>
               <Text style={styles.priceValue}>{formatBDT(deliveryCharge)}</Text>
+            </View>
+          )}
+          {discountCharge > 0 && (
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Discount</Text>
+              <Text style={[styles.priceValue, { color: "#DC2626" }]}>
+                -{formatBDT(discountCharge)}
+              </Text>
             </View>
           )}
           <View style={[styles.priceRow, styles.totalRow]}>

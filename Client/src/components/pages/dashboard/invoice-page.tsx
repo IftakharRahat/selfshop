@@ -12,6 +12,7 @@ import {
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
+import { trackInitiatePayment } from "@/lib/trackingEvents";
 
 const normalizeNumber = (value: unknown): number => {
 	if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -77,6 +78,15 @@ export function InvoicePage() {
 
 	const handlePayment = async () => {
 		if (!currentInvoice?.id) return;
+
+		// Fire initiate_payment tracking event
+		trackInitiatePayment({
+			value: payableAmount,
+			currency: "BDT",
+			packageName: packageName,
+			packageId: currentInvoice.package_id ? Number(currentInvoice.package_id) : undefined,
+			invoiceId: currentInvoice.invoiceID,
+		});
 
 		const result = await handleAsyncWithToast(
 			async () => initiatePayment({ invoice_id: currentInvoice.id }),

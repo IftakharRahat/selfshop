@@ -233,7 +233,7 @@ export default function CartScreen() {
       {/* Cart Items */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 220, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
       >
         {cartItems.map((item: any) => {
@@ -349,62 +349,62 @@ export default function CartScreen() {
             </View>
           );
         })}
-      </ScrollView>
 
-      {/* ── Sticky Footer ── */}
-      <View style={[s.footer, { paddingBottom: Math.max(insets.bottom, 16) + 60 }]}>
-        {/* Summary */}
-        <View style={s.summarySection}>
-          <View style={s.summaryRow}>
-            <Text fontSize="$3" color={GREY}>
-              Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
-            </Text>
-            {isResellerActive ? (
-              <Text fontSize="$4" fontWeight="700" color={DARK}>৳{formatBDT(subtotal)}</Text>
-            ) : (
-              <Text fontSize="$4" fontWeight="700" color="#999">***</Text>
+        {/* ── Order Summary & Checkout (scrolls with content) ── */}
+        <View style={s.summaryCard}>
+          {/* Summary */}
+          <View style={s.summarySection}>
+            <View style={s.summaryRow}>
+              <Text fontSize="$3" color={GREY}>
+                Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
+              </Text>
+              {isResellerActive ? (
+                <Text fontSize="$4" fontWeight="700" color={DARK}>৳{formatBDT(subtotal)}</Text>
+              ) : (
+                <Text fontSize="$4" fontWeight="700" color="#999">***</Text>
+              )}
+            </View>
+
+            {isResellerActive && totalProfit > 0 && (
+              <View style={s.summaryRow}>
+                <View style={s.profitLabel}>
+                  <Ionicons name="trending-up" size={14} color="#059669" />
+                  <Text fontSize="$2" fontWeight="600" color="#059669">Profit amount</Text>
+                </View>
+                <Text fontSize="$3" fontWeight="700" color="#059669">+৳{formatBDT(totalProfit)}</Text>
+              </View>
+            )}
+
+            {isResellerActive && (
+              <View style={[s.summaryRow, s.totalRow]}>
+                <Text fontSize="$4" fontWeight="800" color={DARK}>Total</Text>
+                <Text fontSize={22} fontWeight="800" color={ACCENT}>
+                  ৳{formatBDT(subtotal + totalProfit)}
+                </Text>
+              </View>
             )}
           </View>
 
-          {isResellerActive && totalProfit > 0 && (
-            <View style={s.summaryRow}>
-              <View style={s.profitLabel}>
-                <Ionicons name="trending-up" size={14} color="#059669" />
-                <Text fontSize="$2" fontWeight="600" color="#059669">Profit amount</Text>
-              </View>
-              <Text fontSize="$3" fontWeight="700" color="#059669">+৳{formatBDT(totalProfit)}</Text>
-            </View>
-          )}
-
-          {isResellerActive && (
-            <View style={[s.summaryRow, s.totalRow]}>
-              <Text fontSize="$4" fontWeight="800" color={DARK}>Total</Text>
-              <Text fontSize={22} fontWeight="800" color={ACCENT}>
-                ৳{formatBDT(subtotal + totalProfit)}
-              </Text>
-            </View>
+          {/* CTA Button */}
+          {isResellerActive ? (
+            <Pressable
+              style={({ pressed }) => [s.checkoutBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+              onPress={() => router.push("/order-confirmation" as any)}
+            >
+              <Ionicons name="bag-check-outline" size={20} color="#fff" />
+              <Text fontSize="$4" fontWeight="bold" color="#fff">Proceed to Checkout</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [s.activateBtn, pressed && { opacity: 0.85 }]}
+              onPress={() => router.push("/pricing")}
+            >
+              <Ionicons name="lock-closed" size={16} color="#fff" />
+              <Text fontSize="$3" fontWeight="700" color="#fff">Activate Account to Checkout</Text>
+            </Pressable>
           )}
         </View>
-
-        {/* CTA Button */}
-        {isResellerActive ? (
-          <Pressable
-            style={({ pressed }) => [s.checkoutBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-            onPress={() => router.push("/order-confirmation" as any)}
-          >
-            <Ionicons name="bag-check-outline" size={20} color="#fff" />
-            <Text fontSize="$4" fontWeight="bold" color="#fff">Proceed to Checkout</Text>
-          </Pressable>
-        ) : (
-          <Pressable
-            style={({ pressed }) => [s.activateBtn, pressed && { opacity: 0.85 }]}
-            onPress={() => router.push("/pricing")}
-          >
-            <Ionicons name="lock-closed" size={16} color="#fff" />
-            <Text fontSize="$3" fontWeight="700" color="#fff">Activate Account to Checkout</Text>
-          </Pressable>
-        )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -513,22 +513,19 @@ const s = StyleSheet.create({
     position: "absolute", top: 10, right: 10,
   },
 
-  // Footer
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  // Summary Card (inline in ScrollView)
+  summaryCard: {
     backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F5",
-    paddingTop: 16,
-    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F0F0F5",
+    padding: 20,
+    marginTop: 8,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 10,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   summarySection: { marginBottom: 14 },
   summaryRow: {

@@ -354,7 +354,7 @@ class ProductController extends Controller
     public function edit($id)
     {
         $shop = 'No';
-        $product = Product::with(['subcategories', 'minicategories', 'priceTiers'])->where('id', $id)->first();
+        $product = Product::with(['subcategories', 'minicategories', 'priceTiers', 'varients.sizes.bulkPrices'])->where('id', $id)->first();
 
         $sizes = Attrvalue::where('attribute_id', 2)->where('status', 'Active')->get();
         $colors = Attrvalue::where('attribute_id', 3)->where('status', 'Active')->get();
@@ -367,7 +367,7 @@ class ProductController extends Controller
     public function editproduct($id)
     {
         $shop = 'Yes';
-        $product = Product::with(['subcategories', 'minicategories', 'priceTiers'])->where('id', $id)->first();
+        $product = Product::with(['subcategories', 'minicategories', 'priceTiers', 'varients.sizes.bulkPrices'])->where('id', $id)->first();
 
         $sizes = Attrvalue::where('attribute_id', 2)->where('status', 'Active')->get();
         $colors = Attrvalue::where('attribute_id', 3)->where('status', 'Active')->get();
@@ -419,6 +419,9 @@ class ProductController extends Controller
             $fullUrl = StorageHelper::store($productImg, 'admin/products');
             $product->ProductImage = $fullUrl;
             $product->ViewProductImage = $fullUrl;
+        } elseif ($request->input('remove_thumbnail') == '1') {
+            $product->ProductImage = null;
+            $product->ViewProductImage = null;
         }
         $product->youtube_link = $request->youtube_link;
 
@@ -594,12 +597,12 @@ class ProductController extends Controller
 
         if ($product) {
             if (isset($request->shop_id)) {
-                return redirect('admin/shop/products')->with('success', 'Product updated successfully.');
+                return redirect('admin/shop/products')->with('message', 'Product updated successfully.');
             } else {
-                return redirect('admin/products')->with('success', 'Product updated successfully.');
+                return redirect('admin/products')->with('message', 'Product updated successfully.');
             }
         } else {
-            return redirect()->back()->with('success', 'Something went wrong. Please try again.');
+            return redirect()->back()->with('error', 'Something went wrong. Please try again.');
         }
     }
 

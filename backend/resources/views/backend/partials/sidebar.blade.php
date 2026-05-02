@@ -156,7 +156,7 @@
                     <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
                     <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Supplier Category Discounts</a>
                     <a href="{{ route('admin.vendor-category-commissions.index') }}" class="dropdown-item">Supplier Category Commissions</a>
-                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier Payout Requests</a>
+                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item" data-also-match="/vendors/,/sales-summary">Supplier Payout Requests</a>
                 </div>
             </div>
             @endif
@@ -235,6 +235,15 @@
                 </div>
             </div>
 
+
+            {{-- ═══ MARKETING ═══ --}}
+            @if($isFullAdmin)
+            <small class="nav-section-title">Marketing</small>
+            <a href="{{ url('admin/marketing-campaigns') }}" class="nav-item nav-link {{ request()->is('admin/marketing-campaigns') ? 'active-nav' : '' }}">
+                <i class="bi bi-megaphone"></i> Campaigns
+            </a>
+            @endif
+
             {{-- ═══ OTHERS ═══ --}}
             <small class="nav-section-title">Others</small>
             <div class="nav-item dropdown">
@@ -259,7 +268,7 @@
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Withdrew</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
-                    <a href="{{ url('admin/view-withdraws/Pending') }}" class="dropdown-item">Supplier</a>
+                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier</a>
                 </div>
             </div>
             <div class="nav-item dropdown">
@@ -287,20 +296,37 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var currentUrl = window.location.href;
-    // Find the dropdown-item that matches the current URL
-    document.querySelectorAll('.sidebar .dropdown-item').forEach(function(item) {
-        if (item.href === currentUrl || currentUrl.indexOf(item.getAttribute('href')) !== -1) {
+    var matched = false;
+
+    // First: check items with data-also-match (for sales-summary page → payout requests)
+    document.querySelectorAll('.sidebar .dropdown-item[data-also-match]').forEach(function(item) {
+        if (matched) return;
+        var patterns = item.getAttribute('data-also-match').split(',');
+        var allMatch = patterns.every(function(p) { return currentUrl.indexOf(p.trim()) !== -1; });
+        if (allMatch) {
             item.classList.add('active');
-            // Open the parent dropdown
             var dropdownMenu = item.closest('.dropdown-menu');
             if (dropdownMenu) {
                 dropdownMenu.classList.add('show');
                 var toggle = dropdownMenu.previousElementSibling;
-                if (toggle) {
-                    toggle.classList.add('active-nav');
-                    toggle.setAttribute('aria-expanded', 'true');
-                }
+                if (toggle) { toggle.classList.add('active-nav'); toggle.setAttribute('aria-expanded', 'true'); }
             }
+            matched = true;
+        }
+    });
+
+    // Then: normal exact/partial matching
+    document.querySelectorAll('.sidebar .dropdown-item').forEach(function(item) {
+        if (matched) return;
+        if (item.href === currentUrl || currentUrl.indexOf(item.getAttribute('href')) !== -1) {
+            item.classList.add('active');
+            var dropdownMenu = item.closest('.dropdown-menu');
+            if (dropdownMenu) {
+                dropdownMenu.classList.add('show');
+                var toggle = dropdownMenu.previousElementSibling;
+                if (toggle) { toggle.classList.add('active-nav'); toggle.setAttribute('aria-expanded', 'true'); }
+            }
+            matched = true;
         }
     });
 });

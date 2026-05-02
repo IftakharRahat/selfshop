@@ -80,16 +80,37 @@ class VendorCommissionService
                 continue;
             }
 
-            // Vendor receives exactly their base price (ProductResellerPrice)
-            $basePrice = (float) ($product->ProductResellerPrice ?? $op->productPrice);
+            // Vendor receives exactly their base price (ProductResellerPrice), unless varied by color/size
+            $variantPrice = null;
+            if ($op->color) {
+                $varient = \App\Models\Varient::where('product_id', $product->id)
+                    ->where('color_name', $op->color)
+                    ->first();
+                if ($varient) {
+                    if ($op->size) {
+                        $size = \App\Models\VariantSize::where('varient_id', $varient->id)
+                            ->where('size_name', $op->size)
+                            ->first();
+                        if ($size && $size->price > 0) {
+                            $variantPrice = $size->price;
+                        }
+                    }
+                    if ($variantPrice === null && $varient->price > 0) {
+                        $variantPrice = $varient->price;
+                    }
+                }
+            }
+            
+            $basePrice = (float) ($variantPrice ?? $product->ProductResellerPrice ?? $op->productPrice);
             $netAmount = round($basePrice * (int) $op->quantity, 2);
 
-            // Storefront price (commission inclusive)
+            // Storefront price (what customer paid)
             $lineTotal = round((float) $op->productPrice * (int) $op->quantity, 2);
 
-            // Admin commission is the difference
-            $commissionAmount = round($lineTotal - $netAmount, 2);
+            // Admin commission = vendor base price × admin-configured category rate
+            // NOT the price difference (which includes reseller profit too)
             $rate = $this->getRateForProduct($product->vendor_id, $product->category_id);
+            $commissionAmount = round($netAmount * $rate / 100, 2);
 
             $status = in_array($order->status, ['Delivered', 'Shipped'], true) ? 'available' : 'pending';
 

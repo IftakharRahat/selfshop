@@ -92,8 +92,18 @@ export default function ProductsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Products</Text>
-        <Text style={styles.countBadge}>{products.length}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>Products</Text>
+          <Text style={styles.countBadge}>{products.length}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => router.push("/product/form")}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add-circle" size={18} color="#fff" />
+          <Text style={styles.addBtnText}>Add New</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search */}
@@ -216,7 +226,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   headerTitle: { fontSize: 22, fontWeight: "700", color: "#1a1a2e" },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: BRAND.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  addBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
   countBadge: {
     fontSize: 12,
     fontWeight: "600",

@@ -712,12 +712,26 @@ class OrderController extends Controller
             }
         }
 
+        // Exclude SSLCommerz orders that haven't completed payment yet
+        $orders = $orders->where('orders.status', '!=', 'Pending Payment');
+
         return Datatables::of($orders->orderBy('orders.id', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {
                 return $orders->customerName . '<br>' . $orders->customerPhone . '<br>' . $orders->customerAddress . '<br>' . $orders->entry_complete;
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->created_at ? $orders->created_at->diffForHumans() : '';
+                $ago = '';
+                try {
+                    $raw = $orders->created_at;
+                    if (empty($raw) && !empty($orders->orderDate)) {
+                        $raw = $orders->orderDate;
+                    }
+                    if (!empty($raw)) {
+                        $ago = \Carbon\Carbon::parse($raw)->diffForHumans();
+                    }
+                } catch (\Throwable $e) {
+                    $ago = '';
+                }
                 return '<a href="https://localhost/resellbd/admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . $orders->web_ID . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
@@ -1185,6 +1199,15 @@ class OrderController extends Controller
             $orders = $orders->where('orders.status', 'like', $abc);
         }
 
+        $fromDate = $request->input('from_date');
+        $toDate = $request->input('to_date');
+        if (!empty($fromDate)) {
+            $orders = $orders->whereDate('orders.orderDate', '>=', $fromDate);
+        }
+        if (!empty($toDate)) {
+            $orders = $orders->whereDate('orders.orderDate', '<=', $toDate);
+        }
+
         // Global Search
         $globalSearch = $request->input('search.value');
         if (!empty($globalSearch)) {
@@ -1230,6 +1253,9 @@ class OrderController extends Controller
             }
         }
 
+        // Exclude SSLCommerz orders that haven't completed payment yet
+        $orders = $orders->where('orders.status', '!=', 'Pending Payment');
+
         return Datatables::of($orders->orderBy('orders.updated_at', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {
                 $name = $orders->customerName ?? '—';
@@ -1239,7 +1265,18 @@ class OrderController extends Controller
                 return $name . '<br>' . $phone . '<br>' . $address . '<br> <span style="color:red;font-weight:bold;">' . $entry . '</span><br><button class="btn btn-success btn-sm" style="margin: 4px;padding: 0px 4px;" data-num="' . ($orders->customerPhone ?? '') . '" data-inv="' . $orders->invoiceID . '" id="checkfraud">Check</button>';
             })
             ->addColumn('invoice', function ($orders) {
-                $ago = $orders->updated_at ? $orders->updated_at->diffForHumans() : '';
+                $ago = '';
+                try {
+                    $raw = $orders->created_at;
+                    if (empty($raw) && !empty($orders->orderDate)) {
+                        $raw = $orders->orderDate;
+                    }
+                    if (!empty($raw)) {
+                        $ago = \Carbon\Carbon::parse($raw)->diffForHumans();
+                    }
+                } catch (\Throwable $e) {
+                    $ago = '';
+                }
                 return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . ($orders->web_ID ?? '') . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
@@ -1400,9 +1437,9 @@ class OrderController extends Controller
             // Restore product stock on cancellation
             app(\App\Services\StockService::class)->restoreForOrder($order->id);
 
-            $user = User::where('id', $order->user_id)->first();
-            $user->account_balance = $user->account_balance + $order->paymentAmount;
-            $user->update();
+            // Refund delivery charge to reseller wallet (with audit record + notification)
+            app(\App\Services\OrderDeliveryService::class)->refundDeliveryCharge($order);
+
             $comment = new Comment();
             $comment->order_id = $id;
             $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Canceled.Please contact support';
@@ -1776,7 +1813,7 @@ class OrderController extends Controller
         $start = $request->startDate;
         $end = $request->endDate;
 
-        $orders = DB::table('orders')->where('status', 'Delivered')->whereBetween('deliveryDate', [$start, $end])->get();
+        $orders = DB::table('orders')->where('status', 'Delivered')->whereBetween('orderDate', [$start, $end])->get();
         $sales = 0;
         $purchese = 0;
         foreach ($orders as $order) {
@@ -1812,20 +1849,20 @@ class OrderController extends Controller
 
         $pendingprofit = $pendingsales - $pendingpurchese;
 
-        $response['profit'] = $profit;
-        $response['pendingprofit'] = $pendingprofit;
+        $response['profit'] = round($profit, 2);
+        $response['pendingprofit'] = round($pendingprofit, 2);
         $response['order'] = $orders->count();
         $response['pendingorder'] = $pendingorders->count();
 
-        $response['resellerprofit'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('deliveryDate', [$start, $end])->get()->sum('profit');
-        $response['resellerorder'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('deliveryDate', [$start, $end])->get()->count();
+        $response['resellerprofit'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('orderDate', [$start, $end])->get()->sum('profit');
+        $response['resellerorder'] = DB::table('orders')->where('status', 'Delivered')->whereBetween('orderDate', [$start, $end])->get()->count();
         $response['resellerpendingprofit'] = DB::table('orders')->whereIn('status', ['Processing', 'Ontheway', 'Confirmed', 'Packageing'])->whereBetween('orderDate', [$start, $end])->get()->sum('profit');
         $response['resellerpendingorder'] = DB::table('orders')->whereIn('status', ['Processing', 'Ontheway', 'Confirmed', 'Packageing'])->whereBetween('orderDate', [$start, $end])->get()->count();
 
-        $response['totalprofit'] = $profit + $response['resellerprofit'];
-        $response['totalpendingprofit'] = $pendingprofit + $response['resellerpendingprofit'];
-        $response['totalpendingorder'] = $pendingorders->count() + $response['resellerpendingorder'];
-        $response['totalorder'] = $orders->count() + $response['resellerorder'];
+        $response['totalprofit'] = round($profit + $response['resellerprofit'], 2);
+        $response['totalpendingprofit'] = round($pendingprofit + $response['resellerpendingprofit'], 2);
+        $response['totalpendingorder'] = $pendingorders->count();
+        $response['totalorder'] = $orders->count();
 
         $response['status'] = 'success';
         return json_encode($response);
@@ -2140,6 +2177,8 @@ class OrderController extends Controller
         if (!isset($orders->cancel_comment)) $orders->cancel_comment = null;
         if (!isset($orders->order_bonus)) $orders->order_bonus = 0;
         if (!isset($orders->parcel_id)) $orders->parcel_id = null;
+        if (!isset($orders->shop_count)) $orders->shop_count = 1;
+        if (!isset($orders->order_group_id)) $orders->order_group_id = null;
 
         return view('admin.content.order.edit')->with('order', $orders);
     }
@@ -2253,9 +2292,9 @@ class OrderController extends Controller
                 $order = Order::find($id);
                 $customer = Customer::where('order_id', $order->id)->first();
                 if ($order->status != 'Canceled' && $status == 'Canceled') {
-                    $user = User::where('id', $order->user_id)->first();
-                    $user->account_balance = $user->account_balance + $order->paymentAmount;
-                    $user->update();
+                    // Refund delivery charge to reseller wallet (with audit record + notification)
+                    app(\App\Services\OrderDeliveryService::class)->refundDeliveryCharge($order);
+
                     $comment = new Comment();
                     $comment->order_id = $id;
                     $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Canceled.Please contact support';
@@ -2462,12 +2501,14 @@ class OrderController extends Controller
     public function update(Request $request, $id)
     {
         $order = Order::find($id);
-        $order->store_id = $request['data']['storeID'];
+        // Only update store_id if explicitly provided (edit modal may not have this field)
+        if (!empty($request['data']['storeID'])) {
+            $order->store_id = $request['data']['storeID'];
+        }
         $order->trackingLink = $request['data']['trackingLink'];
         if (isset($request['data']['parcelID'])) {
             $order->parcel_id = $request['data']['parcelID'];
         }
-        $order->subTotal = $request['data']['total'];
         $oldAmount = $order->paymentAmount;
         $newAmount = $request['data']['paymentAmount'];
         $order->memo = $request['data']['memo'];
@@ -2502,10 +2543,26 @@ class OrderController extends Controller
         $buy = 0;
         $bonus = 0;
         foreach ($products as $product) {
-            $buy += Product::where('id', $product['productID'])->first()->ProductResellerPrice * $product['productQuantity'];
-            $bonus += Product::where('id', $product['productID'])->first()->reseller_bonus;
+            $buy += $product['productPrice'] * $product['productQuantity'];
+            $prod = Product::where('id', $product['productID'])->first();
+            if ($prod) {
+                $bonus += $prod->reseller_bonus ?? 0;
+            }
         }
-        $order->profit = ($request['data']['total'] + $request['data']['paymentAmount']) - ($request['data']['deliveryCharge'] + $buy);
+        // Use manual overrides if admin provided them, otherwise auto-calculate
+        $deliveryCharge = $request['data']['deliveryCharge'] ?? 0;
+        $discountCharge = $request['data']['discountCharge'] ?? 0;
+        if (isset($request['data']['editSellerProfit']) && $request['data']['editSellerProfit'] !== '' && $request['data']['editSellerProfit'] !== null) {
+            $order->profit = $request['data']['editSellerProfit'];
+        } else {
+            $order->profit = $request['data']['total'] - $buy - $deliveryCharge + $discountCharge;
+        }
+
+        if (isset($request['data']['editSubTotal']) && $request['data']['editSubTotal'] !== '' && $request['data']['editSubTotal'] !== null) {
+            $order->subTotal = $request['data']['editSubTotal'];
+        } else {
+            $order->subTotal = $buy + $order->profit;
+        }
         $order->order_bonus = $bonus;
 
         $result = $order->update();

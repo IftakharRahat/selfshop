@@ -333,6 +333,16 @@ export const vendorApi = baseApi.injectEndpoints({
 			}),
 			invalidatesTags: ["user"],
 		}),
+		changeVendorPassword: build.mutation<
+			{ status: boolean; message?: string },
+			{ old_password: string; password: string; password_confirmation: string }
+		>({
+			query: (body) => ({
+				url: "/vendor/change-password",
+				method: "POST",
+				body,
+			}),
+		}),
 		getVendorKycDocuments: build.query<
 			{ status: boolean; data?: { documents: VendorKycDocument[] } },
 			void
@@ -1250,6 +1260,29 @@ export const vendorApi = baseApi.injectEndpoints({
 		>({
 			query: ({ cityId, zoneId }) => ({ url: `/carrybee/cities/${cityId}/zones/${zoneId}/areas` }),
 		}),
+
+		// ── Warranty Claims ──
+		getVendorWarrantyClaims: build.query<
+			{ status: boolean; data: any[] },
+			string | undefined
+		>({
+			query: (status) => ({
+				url: "/vendor/warranty-claims",
+				params: status ? { status } : {},
+			}),
+			providesTags: ["vendorWarrantyClaims"],
+		}),
+		respondToWarrantyClaim: build.mutation<
+			{ status: boolean; message?: string },
+			{ id: number; action: "approve" | "reject"; supplier_note?: string }
+		>({
+			query: ({ id, ...body }) => ({
+				url: `/vendor/warranty-claims/${id}/respond`,
+				method: "POST",
+				body,
+			}),
+			invalidatesTags: ["vendorWarrantyClaims"],
+		}),
 	}),
 });
 
@@ -1257,6 +1290,7 @@ export const {
 	useRegisterVendorMutation,
 	useGetVendorProfileQuery,
 	useUpsertVendorProfileMutation,
+	useChangeVendorPasswordMutation,
 	useGetVendorKycDocumentsQuery,
 	useCreateVendorKycDocumentMutation,
 	useGetVendorProductsQuery,
@@ -1326,4 +1360,7 @@ export const {
 	useGetCarryBeeCitiesQuery,
 	useGetCarryBeeZonesQuery,
 	useGetCarryBeeAreasQuery,
+	// Warranty Claims
+	useGetVendorWarrantyClaimsQuery,
+	useRespondToWarrantyClaimMutation,
 } = vendorApi;

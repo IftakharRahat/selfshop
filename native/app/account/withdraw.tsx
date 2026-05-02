@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   ScrollView,
@@ -50,6 +50,13 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
   return `৳${num.toLocaleString("en-BD")}`;
+}
+
+function isWalletMethod(method: any): boolean {
+  return String(method?.paymentTypeName ?? method?.name ?? "")
+    .trim()
+    .toLowerCase()
+    .includes("wallet");
 }
 
 export default function WithdrawScreen() {
@@ -109,16 +116,22 @@ export default function WithdrawScreen() {
   });
 
   /* ── Derived ── */
-  const methods: any[] = methodsQuery.data ?? [];
+  const rawMethods: any[] = methodsQuery.data ?? [];
+  const methods = useMemo(
+    () => rawMethods.filter((method) => !isWalletMethod(method)),
+    [rawMethods]
+  );
   const history: any[] = historyQuery.data ?? [];
   const walletBalance = Number(dashboardQuery.data?.balance ?? dashboardQuery.data?.blance ?? 0);
   const lastWithdraw = history.length > 0
     ? Number(history[0]?.withdrew_amount ?? 0)
     : Number(dashboardQuery.data?.withdraw ?? 0);
 
-  // Auto-select first method
+  // Auto-select first valid withdraw method
   useEffect(() => {
-    if (selectedMethodId === null && methods.length > 0) {
+    const selectedMethodIsValid = methods.some((method: any) => method.id === selectedMethodId);
+
+    if (!selectedMethodIsValid && methods.length > 0) {
       setSelectedMethodId(methods[0].id);
     }
   }, [methods, selectedMethodId]);

@@ -23,6 +23,14 @@ use Carbon\Carbon;
 
 class BkashPaymentController extends Controller
 {
+    private function frontendUrl(string $path = '/', array $query = []): string
+    {
+        $base = env('FRONTEND_URL') ?: config('app.frontend_url') ?: env('CLIENT_URL') ?: 'http://localhost:3000';
+        $url = rtrim($base, '/') . '/' . ltrim($path, '/');
+        $query = array_filter($query, fn($v) => $v !== null && $v !== '');
+        return !empty($query) ? $url . '?' . http_build_query($query) : $url;
+    }
+
     public function index()
     {
         return view('bkash::bkash-payment');
@@ -248,10 +256,21 @@ class BkashPaymentController extends Controller
             } else {
                 $user = User::where('id', $invoice->user_id)->first();
                 $referuser = User::where('my_referral_code', $user->refer_by)->first();
-                $refbonus = 200;
-                $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
-                $referuser->account_balance = $referuser->account_balance + $refbonus;
-                $referuser->update();
+                if ($referuser && $referuser->bonus_percent > 0) {
+                    $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
+                    $refbonus = $amount * ($referuser->bonus_percent / 100);
+                    $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
+                    $referuser->account_balance = $referuser->account_balance + $refbonus;
+                    $referuser->update();
+
+                    $message = new Message();
+                    $message->user_id = $referuser->id;
+                    $message->message_for = 'Referral Bonus';
+                    $message->message = 'You Get ' . $refbonus . ' TK As Your Referral Bonus';
+                    $message->amount = $refbonus;
+                    $message->date = date('Y-m-d');
+                    $message->save();
+                }
 
                 $user->status = 'Active';
                 $user->membership_status = 'Paid';
@@ -262,14 +281,6 @@ class BkashPaymentController extends Controller
                 $invoice->paymentDate = date('Y-m-d');
                 $invoice->paid_amount = $request->payment_info['amount'];
                 $invoice->expire_date = $expireDate;
-
-                $message = new Message();
-                $message->user_id = $referuser->id;
-                $message->message_for = 'Referral Bonus';
-                $message->message = 'You Get ' . $refbonus . ' TK As Your Referral Bonus';
-                $message->amount = $refbonus;
-                $message->date = date('Y-m-d');
-                $message->save();
             }
         }
 
@@ -278,7 +289,10 @@ class BkashPaymentController extends Controller
         $invoice->status = 'Paid';
         $invoice->update();
 
-        return redirect('user/dashboard');
+        return redirect()->away($this->frontendUrl('/dashboard', [
+            'payment' => 'success',
+            'invoiceID' => $invoice->invoiceID ?? '',
+        ]));
     }
 
     public function invrefundPage()

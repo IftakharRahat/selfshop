@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View, Animated, StyleSheet, type ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SHIMMER_DURATION = 1200;
 
@@ -289,10 +290,11 @@ export function DashboardSkeleton() {
 
 /** Categories skeleton — sidebar + content panel */
 export function CategoriesSkeleton() {
+  const insets = useSafeAreaInsets();
   return (
     <View style={p.container}>
       {/* Header */}
-      <View style={[p.hPadding, { paddingTop: 56, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#F0F0F5" }]}>
+      <View style={[p.hPadding, { paddingTop: insets.top + 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#F0F0F5" }]}>
         <SkeletonBlock width={120} height={28} borderRadius={6} />
       </View>
       <View style={{ flex: 1, flexDirection: "row" }}>

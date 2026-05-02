@@ -918,18 +918,92 @@ class FrontendApiController extends Controller
 
     public function search(Request $request)
     {
-        $products = Product::visibleOnStorefront()->where('ProductName', 'LIKE', '%' . $request->keywords . '%')->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'selling_type')->get();
+        $rawSearch = trim($request->keywords ?? '');
+        $limit = $request->input('limit', 20);
 
-        if ($products->count() == 0) {
+        if ($rawSearch === '') {
             return response()->json([
                 'status' => false,
-                'message' => 'No products fuound with this keywords',
+                'message' => 'Please enter a search term',
+            ], 400);
+        }
+
+        // Split into individual keywords and filter out very short ones (1 char)
+        $keywords = array_values(array_filter(
+            explode(' ', $rawSearch),
+            fn($w) => mb_strlen(trim($w)) >= 2
+        ));
+        $keywords = array_map('trim', $keywords);
+
+        // If all keywords were too short, fall back to original search string
+        if (empty($keywords)) {
+            $keywords = [trim($rawSearch)];
+        }
+
+        $selects = [
+            'products.id', 'products.category_id', 'products.subcategory_id',
+            'products.brand_id', 'products.ProductName', 'products.ProductSlug',
+            'products.ProductRegularPrice', 'products.ProductSalePrice',
+            'products.ProductResellerPrice', 'products.min_sell_price',
+            'products.Discount', 'products.ViewProductImage',
+            'products.vendor_id', 'products.selling_type',
+        ];
+
+        $query = Product::visibleOnStorefront()
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('subcategories', 'products.subcategory_id', '=', 'subcategories.id')
+            ->leftJoin('brands', 'products.brand_id', '=', 'brands.id');
+
+        // WHERE: at least one keyword matches in any searchable field
+        $query->where(function ($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $escaped = addcslashes($word, '%_');
+                $q->orWhere('products.ProductName', 'LIKE', "%{$escaped}%")
+                  ->orWhere('categories.category_name', 'LIKE', "%{$escaped}%")
+                  ->orWhere('subcategories.sub_category_name', 'LIKE', "%{$escaped}%")
+                  ->orWhere('brands.brand_name', 'LIKE', "%{$escaped}%")
+                  ->orWhere('products.MetaKey', 'LIKE', "%{$escaped}%")
+                  ->orWhere('products.ProductDetails', 'LIKE', "%{$escaped}%");
+            }
+        });
+
+        // Build relevance score expression
+        // ProductName match = 3pts, Category/Sub/Brand/Meta = 2pts, Description = 1pt
+        $scoreParts = [];
+        foreach ($keywords as $word) {
+            $escaped = addcslashes($word, '%_');
+            $safe = str_replace("'", "''", $escaped);
+            $scoreParts[] = "(CASE WHEN products.ProductName LIKE '%{$safe}%' THEN 3 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN categories.category_name LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN subcategories.sub_category_name LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN brands.brand_name LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN products.MetaKey LIKE '%{$safe}%' THEN 2 ELSE 0 END)";
+            $scoreParts[] = "(CASE WHEN products.ProductDetails LIKE '%{$safe}%' THEN 1 ELSE 0 END)";
+        }
+
+        // Bonus: exact phrase match in product name gets extra 5 points
+        $safeRaw = str_replace("'", "''", addcslashes($rawSearch, '%_'));
+        $scoreParts[] = "(CASE WHEN products.ProductName LIKE '%{$safeRaw}%' THEN 5 ELSE 0 END)";
+
+        $scoreExpr = implode('+', $scoreParts);
+
+        $products = $query
+            ->selectRaw(implode(', ', $selects) . ", ({$scoreExpr}) as relevance_score")
+            ->orderByDesc('relevance_score')
+            ->paginate($limit);
+
+        if ($products->total() == 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No products found with this keywords',
+                'total' => 0,
             ], 404);
         }
 
         return response()->json([
             'status' => true,
             'message' => 'Products found with this keywords successfully',
+            'total' => $products->total(),
             'data' => $products
         ], 200);
     }
@@ -1046,6 +1120,7 @@ class FrontendApiController extends Controller
                 $user->name = $request->name;
                 $user->email = $request->email;
                 $user->phone = $request->email;
+                $user->campaign_code = $request->campaign_code ?? null;
                 $string = str_replace(' ', '', $request->name);
                 $code = substr($string, 0, 3);
 
@@ -1546,6 +1621,12 @@ class FrontendApiController extends Controller
         $order->setAttribute('carrybee_status', $meta['carrybee_status'] ?? null);
         $order->setAttribute('steadfast_last_synced_at', $meta['steadfast_last_synced_at']);
         $order->setAttribute('warehouse_sent_at', $meta['warehouse_sent_at']);
+        $order->setAttribute(
+            'total',
+            (float) ($order->subTotal ?? 0)
+            + (float) ($order->deliveryCharge ?? 0)
+            - (float) ($order->discountCharge ?? 0)
+        );
 
         return $order;
     }
@@ -1567,7 +1648,8 @@ class FrontendApiController extends Controller
     {
         $id = Auth::user()->id;
         $query = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
-            ->where('user_id', $id);
+            ->where('user_id', $id)
+            ->where('status', '!=', 'Pending Payment');
 
         $slugLower = strtolower((string) $slug);
         if (!in_array($slugLower, ['all', ''], true)) {
@@ -1578,6 +1660,18 @@ class FrontendApiController extends Controller
             } else {
                 $query->where('status', $slug);
             }
+        }
+
+        $search = trim((string) request()->query('search', ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoiceID', 'like', '%' . $search . '%')
+                    ->orWhere('id', 'like', '%' . $search . '%')
+                    ->orWhereHas('customers', function ($customerQuery) use ($search) {
+                        $customerQuery->where('customerName', 'like', '%' . $search . '%')
+                            ->orWhere('customerPhone', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
         $totalQuery = clone $query;
@@ -2023,7 +2117,9 @@ class FrontendApiController extends Controller
 
     public function paymenttypes()
     {
-        $paymenttypes = Paymenttype::where('status', 'Active')->get();
+        $paymenttypes = Paymenttype::where('status', 'Active')
+            ->whereRaw('LOWER(paymentTypeName) NOT LIKE ?', ['%wallet%'])
+            ->get();
         return response()->json([
             'status' => true,
             'message' => 'Payment types',
@@ -2148,6 +2244,7 @@ class FrontendApiController extends Controller
 
             $paymenttypes = Paymenttype::where('id', (int) $request->paymenttype_id)
                 ->where('status', 'Active')
+                ->whereRaw('LOWER(paymentTypeName) NOT LIKE ?', ['%wallet%'])
                 ->first();
 
             if (!$paymenttypes) {
@@ -2384,7 +2481,8 @@ class FrontendApiController extends Controller
     public function incomehistory()
     {
         $user = User::where('id', Auth::user()->id)->first();
-        $messages = Income::where('user_id', $user->id)
+        
+        $incomes = Income::where('user_id', $user->id)
             ->latest()
             ->get()
             ->map(function ($income) {
@@ -2421,6 +2519,26 @@ class FrontendApiController extends Controller
 
                 return $income;
             });
+
+        $refunds = Chargededuct::where('user_id', $user->id)
+            ->where('status', 'Refund')
+            ->latest()
+            ->get()
+            ->map(function ($cd) {
+                $cd->product_price = 0;
+                
+                // Extract invoice from comment: "Delivery charge refund of ৳100 for cancelled order #SS00234"
+                $invoice = null;
+                if (preg_match('/#([a-zA-Z0-9_-]+)/', $cd->comment, $matches)) {
+                    $invoice = $matches[1];
+                }
+                $cd->order_invoice = $invoice ? 'Refund: ' . $invoice : 'Delivery Refund';
+                
+                return $cd;
+            });
+
+        $messages = $incomes->concat($refunds)->sortByDesc('created_at')->values();
+
         return response()->json([
             'status' => true,
             'message' => 'Income History',
@@ -3055,27 +3173,36 @@ class FrontendApiController extends Controller
             $options['selling_price'] = $request->selling_price;
         }
 
-        $cart = Cart::updateOrCreate(
-            [
+        // Check if same product+variant already in cart for this user
+        $existing = Cart::where('user_id', Auth::user()->id)
+            ->where('product_id', $request->product_id)
+            ->where('size', $request->size)
+            ->where('color', $request->color)
+            ->first();
+
+        if ($existing) {
+            // Increment quantity instead of replacing
+            $existing->qty += (int) ($request->qty ?: 1);
+            $existing->price = $cartPrice;
+            $existing->options = $options;
+            $existing->save();
+            $cart = $existing;
+        } else {
+            $cart = Cart::create([
                 'session_id' => $request->session_id,
-                'product_id' => $request->product_id,
-                'size' => $request->size,
-                'color' => $request->color,
-            ],
-            [
                 'product_id' => $request->product_id,
                 'name' => $cartProduct->ProductName,
                 'code' => $cartProduct->ProductSku,
                 'price' => $cartPrice,
-                'qty' => $request->qty,
+                'qty' => $request->qty ?: 1,
                 'size' => $request->size,
                 'color' => $request->color,
                 'shop_id' => $cartProduct->shop_id ?: $cartProduct->vendor_id ?: 1,
                 'image' => $cartProduct->ProductImage,
                 'options' => $options,
                 'user_id' => Auth::user()->id,
-            ]
-        );
+            ]);
+        }
 
         return response()->json([
             'status' => true,
@@ -3254,6 +3381,14 @@ class FrontendApiController extends Controller
             ], 404);
         }
 
+        // Enrich cart items with vendor_id from product table
+        // (shop_id is the admin who uploaded, vendor_id is the actual supplier)
+        $carts->transform(function ($cart) {
+            $product = Product::find($cart->product_id);
+            $cart->vendor_id = $product ? ($product->vendor_id ?? $cart->shop_id) : $cart->shop_id;
+            return $cart;
+        });
+
         return response()->json([
             'status' => true,
             'message' => 'Cart item found Successfully',
@@ -3383,6 +3518,7 @@ class FrontendApiController extends Controller
                 ->where('transaction_id', $post_data['tran_id'])
                 ->updateOrInsert([
                     'store_id' => 1,
+                    'shop_count' => count($shopproducts),
                     'invoiceID' => $this->uniqueIDN(),
                     'subTotal' => $sell,
                     'profit' => $profit,
@@ -3403,8 +3539,9 @@ class FrontendApiController extends Controller
                     'orderDate' => date('Y-m-d'),
                     'transaction_id' => $post_data['tran_id'],
                     'user_id' => Auth::id(),
-                    'status' => 'Pending',
-
+                    'status' => 'Pending Payment',
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
 
             try {
@@ -3448,49 +3585,72 @@ class FrontendApiController extends Controller
             }
         }
 
-        // Get cart items for this session
+        // Get all cart items and group by vendor_id (actual supplier)
+        $allCartItems = Cart::where('user_id', Auth::user()->id)->get();
+        $vendorGroups = $allCartItems->groupBy(function ($item) {
+            $product = Product::find($item->product_id);
+            return $product ? ($product->vendor_id ?? $item->shop_id) : ($item->shop_id ?: 1);
+        });
+        $vendorCount = max(1, $vendorGroups->count());
+        $perVendorDelivery = round($request->deliveryCharge / $vendorCount);
+        $groupId = $vendorCount > 1 ? 'GRP-' . strtoupper(substr(uniqid(), -8)) : null;
 
+        // Assign an active executive admin
+        $admin = Admin::whereHas('roles', function ($q) {
+            $q->where('name', 'Executive');
+        })
+            ->where('add_by', 1)
+            ->where('status', 'Active')
+            ->inRandomOrder()
+            ->first();
 
+        // Deduct wallet ONCE with the FULL delivery charge (before creating orders)
+        if ($request->balance_from == 'from_account') {
+            $accountuser = User::find(Auth::id());
+            if ($accountuser) {
+                $accountuser->account_balance -= $request->deliveryCharge;
+                $accountuser->save();
+                $chargededucts = new Chargededuct();
+                $chargededucts->user_id = $accountuser->id;
+                $chargededucts->comment = 'You have charged ' . $request->deliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
+                $chargededucts->amount = $request->deliveryCharge;
+                $chargededucts->status = 'Success';
+                $chargededucts->save();
+            }
+        }
+
+        // Create one order per vendor/supplier
         $ordersCreated = [];
 
-        foreach ($shopproducts as $shopproduct) {
-
-            // Assign an active executive admin
-            $admin = Admin::whereHas('roles', function ($q) {
-                $q->where('name', 'Executive');
-            })
-                ->where('add_by', 1)
-                ->where('status', 'Active')
-                ->inRandomOrder()
-                ->first();
-
-            $order = new Order();
+        foreach ($vendorGroups as $vendorId => $vendorItems) {
+            // Calculate totals for this vendor's items only
             $buy = $sell = $bonus = 0;
-
-            foreach ($shopproduct as $product) {
+            foreach ($vendorItems as $product) {
                 $productData = Product::find($product->product_id);
                 $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
-                // cart.price already includes commission markup (set in userAddToCart)
                 $costPrice = (float) $product->price;
                 $sellingPrice = !empty($options['selling_price']) ? (float) $options['selling_price'] : $costPrice;
                 $buy  += $costPrice * $product->qty;
                 $sell += $sellingPrice * $product->qty;
-                $bonus += $productData->reseller_bonus;
+                $bonus += $productData->reseller_bonus ?? 0;
             }
 
+            $order = new Order();
             $order->profit = $sell - $buy;
             $order->order_bonus = $bonus;
-            $order->user_id = Auth::id() ?? null; // if using API auth
-            $order->store_id = $shopproduct[0]->shop_id ?: 1;
+            $order->user_id = Auth::id() ?? null;
+            $order->store_id = $vendorItems->first()->shop_id ?: 1;
+            $order->shop_count = $vendorCount;
+            $order->order_group_id = $groupId;
             $order->invoiceID = $this->uniqueIDN();
             $order->subTotal = $sell;
-            $order->deliveryCharge = $request->deliveryCharge;
+            $order->deliveryCharge = $perVendorDelivery;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
             $order->advance_delivery = $request->advance_delivery === 'yes' ? 1 : 0;
 
             if ($request->balance_from == 'from_account') {
-                $order->paymentAmount = $request->deliveryCharge;
+                $order->paymentAmount = $perVendorDelivery;
                 $order->payment_type_id = 5;
             }
 
@@ -3514,9 +3674,18 @@ class FrontendApiController extends Controller
             $customer->customerAddress = $request->customerAddress;
             $customer->save();
 
-            // Save order products
-            $vendorIds = [];
-            foreach ($shopproduct as $product) {
+            // Aggregate cart items: merge duplicates with same product_id + color + size
+            $aggregatedItems = $vendorItems->groupBy(function ($item) {
+                $opts = is_array($item->options) ? $item->options : (is_string($item->options) ? json_decode($item->options, true) : []);
+                return $item->product_id . '|' . ($opts['color'] ?? '') . '|' . ($opts['size'] ?? '');
+            })->map(function ($group) {
+                $first = clone $group->first();
+                $first->qty = $group->sum('qty');
+                return $first;
+            });
+
+            // Save order products for this vendor only (aggregated)
+            foreach ($aggregatedItems as $product) {
                 $options = is_array($product->options) ? $product->options : (is_string($product->options) ? json_decode($product->options, true) : []);
 
                 $orderProduct = new Orderproduct();
@@ -3535,37 +3704,16 @@ class FrontendApiController extends Controller
                     $orderProduct->size = $options['size'];
                 }
 
-                // Save the resell/selling price from cart options
                 $sellingPrice = $options['selling_price'] ?? null;
                 if ($sellingPrice && $sellingPrice !== 'undefined') {
                     $orderProduct->selling_price = (float) $sellingPrice;
                 }
 
                 $orderProduct->save();
-
-                $vendorId = Product::where('id', $product->product_id)->value('vendor_id');
-                if ($vendorId) {
-                    $vendorIds[(int) $vendorId] = true;
-                }
             }
 
             // Decrement product stock for this order
             app(\App\Services\StockService::class)->decrementForOrder($order->id);
-
-            // Deduct account balance if needed
-            if ($request->balance_from == 'from_account') {
-                $accountuser = User::find(Auth::id());
-                if ($accountuser) {
-                    $accountuser->account_balance -= $request->deliveryCharge;
-                    $accountuser->save();
-                    $chargededucts = new Chargededuct();
-                    $chargededucts->user_id = $accountuser->id;
-                    $chargededucts->comment = 'You have charged ' . $request->deliveryCharge . ' TK for delivery charge.';
-                    $chargededucts->amount = $request->deliveryCharge;
-                    $chargededucts->status = 'Success';
-                    $chargededucts->save();
-                }
-            }
 
             // Notification
             $notification = new Comment();
@@ -3574,11 +3722,10 @@ class FrontendApiController extends Controller
             $notification->admin_id = $order->admin_id;
             $notification->save();
 
-            if (!empty($vendorIds)) {
-                /** @var VendorAdminNotificationService $vendorNotification */
-                $vendorNotification = app(VendorAdminNotificationService::class);
-
-                foreach (array_keys($vendorIds) as $vendorId) {
+            // Notify this vendor
+            if ($vendorId) {
+                try {
+                    $vendorNotification = app(VendorAdminNotificationService::class);
                     $vendorNotification->notifyVendorById(
                         (int) $vendorId,
                         'New order received',
@@ -3591,12 +3738,14 @@ class FrontendApiController extends Controller
                         ],
                         '/vendor/orders/' . $order->id
                     );
+                } catch (\Throwable $e) {
+                    \Log::warning('Vendor notification failed', ['error' => $e->getMessage()]);
                 }
 
-                // Send SMS + Email to suppliers
+                // Send SMS + Email to this supplier
                 try {
                     $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                    $supplierNotification->notify($order, array_keys($vendorIds), $request->customerName);
+                    $supplierNotification->notify($order, [(int) $vendorId], $request->customerName);
                 } catch (\Throwable $e) {
                     \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
                 }
@@ -3612,7 +3761,7 @@ class FrontendApiController extends Controller
 
             $ordersCreated[] = [
                 'order_id' => $order->id,
-                'invoiceID' => $order->invoiceID
+                'invoiceID' => $order->invoiceID,
             ];
         }
 

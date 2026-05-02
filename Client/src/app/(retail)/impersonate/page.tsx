@@ -12,11 +12,12 @@ export default function ImpersonatePage() {
 
 	useEffect(() => {
 		const token = searchParams.get("token");
+		const redirectTo = searchParams.get("redirect") || "/dashboard";
 		if (token) {
 			// Set the token in Redux (same as normal login)
 			dispatch(setUser({ access_token: token }));
-			// Redirect to dashboard
-			router.replace("/dashboard");
+			// Redirect to the specified page (or dashboard by default)
+			router.replace(redirectTo);
 		} else {
 			router.replace("/");
 		}

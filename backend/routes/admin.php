@@ -48,6 +48,7 @@ use App\Http\Controllers\VarientController;
 use App\Http\Controllers\VencommentController;
 use App\Http\Controllers\Backend\VendorController;
 use App\Http\Controllers\Backend\AdminReviewController;
+use App\Http\Controllers\Backend\AdminVariantController;
 use App\Http\Controllers\Backend\AdminVendorCategoryDiscountController;
 use App\Http\Controllers\Backend\AdminVendorProductController;
 use App\Http\Controllers\Backend\AdminVendorPayoutController;
@@ -59,6 +60,7 @@ use App\Http\Controllers\Backend\CrmDashboardController;
 use App\Http\Controllers\Backend\AdminNotificationController;
 use App\Http\Controllers\Backend\AdminActivityController;
 use App\Http\Controllers\Backend\PromotionalSectionController;
+use App\Http\Controllers\Backend\MarketingCampaignController;
 
 /*
 |--------------------------------------------------------------------------
@@ -279,6 +281,16 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::put('product/best-selling', [ProductController::class, 'bestsellstatusupdate']);
     Route::get('product/add-varient/{id}', [ProductController::class, 'varients']);
 
+    // Admin Variant Builder AJAX endpoints (mirrors vendor API)
+    Route::post('products/ajax-store', [AdminVariantController::class, 'ajaxStore'])->name('admin.products.ajax-store');
+    Route::get('products/{id}/variants-json', [AdminVariantController::class, 'index'])->name('admin.products.variants.index');
+    Route::post('products/{id}/variants-json', [AdminVariantController::class, 'store'])->name('admin.products.variants.store');
+    Route::delete('products/{id}/variants-json/{variantId}', [AdminVariantController::class, 'destroy'])->name('admin.products.variants.destroy');
+    Route::post('products/{id}/variants-json/{variantId}/sizes', [AdminVariantController::class, 'storeSize'])->name('admin.products.variants.sizes.store');
+    Route::delete('products/{id}/variants-json/{variantId}/sizes/{sizeId}', [AdminVariantController::class, 'destroySize'])->name('admin.products.variants.sizes.destroy');
+    Route::post('products/{id}/variants-json/{variantId}/sizes/{sizeId}/bulk-prices', [AdminVariantController::class, 'storeBulkPrice'])->name('admin.products.variants.sizes.bulk.store');
+    Route::delete('products/{id}/variants-json/{variantId}/sizes/{sizeId}/bulk-prices/{bulkId}', [AdminVariantController::class, 'destroyBulkPrice'])->name('admin.products.variants.sizes.bulk.destroy');
+
     Route::get('shop/products', [ProductController::class, 'shopindex']);
     Route::get('product/get/shop-data', [ProductController::class, 'productshopdata'])->name('admin.shopproduct.data');
     Route::get('shop/product-create', [ProductController::class, 'createproduct']);
@@ -305,6 +317,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('admin.vendors.edit');
     Route::put('vendors/{vendor}', [VendorController::class, 'update'])->name('admin.vendors.update');
     Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show');
+    Route::get('vendors/{vendor}/sales-summary', [VendorController::class, 'salesSummary'])->name('admin.vendors.sales-summary');
     Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
     Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge');
@@ -314,6 +327,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::post('vendors/kyc/{document}/approve', [VendorController::class, 'approveKyc'])->name('admin.vendors.approve-kyc');
     Route::post('vendors/kyc/{document}/reject', [VendorController::class, 'rejectKyc'])->name('admin.vendors.reject-kyc');
     Route::delete('vendors/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendors.destroy');
+    Route::get('vendor-autologin/{vendor}', [VendorController::class, 'autologin'])->name('admin.vendors.autologin');
 
     // Product reviews (admin view & moderate)
     Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
@@ -341,6 +355,14 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     // Vendor reports (Phase 7.2)
     Route::get('vendor-reports/profit-commission', [AdminVendorReportController::class, 'profitCommission'])->name('admin.vendor-reports.profit-commission');
     Route::get('vendor-reports/order-analytics', [AdminVendorReportController::class, 'orderAnalytics'])->name('admin.vendor-reports.order-analytics');
+
+    // App Version Management (Force Update)
+    Route::post('/app-version/update/{id}', [BasicinfoController::class, 'updateAppVersion'])->name('admin.app-version.update');
+
+    // Marketing Campaigns
+    Route::get('marketing-campaigns', [MarketingCampaignController::class, 'index'])->name('admin.marketing-campaigns.index');
+    Route::post('marketing-campaigns', [MarketingCampaignController::class, 'store'])->name('admin.marketing-campaigns.store');
+    Route::delete('marketing-campaigns/{id}', [MarketingCampaignController::class, 'destroy'])->name('admin.marketing-campaigns.destroy');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {

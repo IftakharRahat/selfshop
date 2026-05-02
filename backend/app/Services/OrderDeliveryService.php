@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Comment;
+use App\Models\Chargededuct;
 use App\Models\Income;
 use App\Models\Order;
 use App\Models\Orderproduct;
@@ -91,6 +92,9 @@ class OrderDeliveryService
         // 7. Credit legacy shop account (for non-vendor store orders)
         $this->creditLegacyShopAccount($order);
 
+        // 8. Notify vendor(s)/supplier(s) about successful delivery
+        $this->notifyVendorsAboutDelivery($order);
+
         Log::info('OrderDeliveryService: order marked delivered', [
             'order_id' => $order->id,
             'invoice' => $order->invoiceID,
@@ -119,6 +123,88 @@ class OrderDeliveryService
             'order_id' => $order->id,
             'profit_reversed' => $order->profit,
         ]);
+    }
+
+    /**
+     * Refund delivery charge to reseller wallet on order cancellation/rejection.
+     * Idempotent — safe to call multiple times for the same order.
+     *
+     * Called from:
+     * - VendorOrderController (vendor rejects/cancels)
+     * - OrderController (admin cancels — single or bulk)
+     */
+    public function refundDeliveryCharge(Order $order): bool
+    {
+        $deliveryCharge = (float) $order->deliveryCharge;
+
+        // Guard: skip if no delivery charge to refund
+        if ($deliveryCharge <= 0) {
+            Log::info('OrderDeliveryService: skip refund — no delivery charge', [
+                'order_id' => $order->id,
+            ]);
+            return false;
+        }
+
+        // Guard: don't double-refund — check for existing refund record
+        $alreadyRefunded = Chargededuct::where('user_id', $order->user_id)
+            ->where('comment', 'LIKE', '%refund%' . $order->invoiceID . '%')
+            ->exists();
+
+        if ($alreadyRefunded) {
+            Log::info('OrderDeliveryService: skip refund — already refunded', [
+                'order_id' => $order->id,
+                'invoice' => $order->invoiceID,
+            ]);
+            return false;
+        }
+
+        $user = User::find($order->user_id);
+        if (!$user) {
+            Log::warning('OrderDeliveryService: skip refund — user not found', [
+                'order_id' => $order->id,
+                'user_id' => $order->user_id,
+            ]);
+            return false;
+        }
+
+        // Credit delivery charge back to wallet
+        $user->account_balance = (float) $user->account_balance + $deliveryCharge;
+        $user->save();
+
+        // Create audit record
+        $chargededuct = new Chargededuct();
+        $chargededuct->user_id = $user->id;
+        $chargededuct->comment = 'Delivery charge refund of ৳' . $deliveryCharge . ' for cancelled order #' . $order->invoiceID;
+        $chargededuct->amount = $deliveryCharge;
+        $chargededuct->status = 'Refund';
+        $chargededuct->save();
+
+        // Send notification to reseller
+        try {
+            $user->notify(new AdminBroadcastNotification(
+                '💰 Delivery Charge Refunded',
+                '৳' . $deliveryCharge . ' delivery charge has been refunded to your wallet for cancelled order #' . $order->invoiceID,
+                null,
+                '/order/' . $order->invoiceID,
+                'all_user',
+                ['type' => 'delivery_refund', 'order_id' => $order->id, 'amount' => $deliveryCharge]
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('OrderDeliveryService: refund notification failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::info('OrderDeliveryService: delivery charge refunded', [
+            'order_id' => $order->id,
+            'invoice' => $order->invoiceID,
+            'amount' => $deliveryCharge,
+            'user_id' => $user->id,
+            'new_balance' => $user->account_balance,
+        ]);
+
+        return true;
     }
 
     /**
@@ -317,6 +403,45 @@ class OrderDeliveryService
             $shop->save();
         } catch (\Throwable $e) {
             Log::warning('OrderDeliveryService: legacy shop credit failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notify vendor(s)/supplier(s) that their products in this order have been delivered.
+     */
+    private function notifyVendorsAboutDelivery(Order $order): void
+    {
+        try {
+            $vendorIds = Orderproduct::where('order_id', $order->id)
+                ->join('products', 'orderproducts.product_id', '=', 'products.id')
+                ->whereNotNull('products.vendor_id')
+                ->distinct()
+                ->pluck('products.vendor_id');
+
+            if ($vendorIds->isEmpty()) {
+                return;
+            }
+
+            $notificationService = app(VendorAdminNotificationService::class);
+            foreach ($vendorIds as $vendorId) {
+                $notificationService->notifyVendorById(
+                    (int) $vendorId,
+                    'Order Delivered',
+                    'Order #' . $order->invoiceID . ' has been delivered successfully.',
+                    'success',
+                    [
+                        'order_id' => $order->id,
+                        'invoice_id' => $order->invoiceID,
+                        'event' => 'order_delivered',
+                    ],
+                    '/vendor/orders'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('OrderDeliveryService: vendor delivery notification failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

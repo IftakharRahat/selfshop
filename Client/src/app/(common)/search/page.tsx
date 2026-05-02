@@ -22,12 +22,22 @@ export default function SearchPage() {
 		skip: !search, // avoids call when empty
 	});
 
-	const products: Product[] = data?.data || [];
+	// Handle both paginated ({data: {data: [...]}}) and flat ({data: [...]}) responses
+	const responseData = data?.data;
+	const products: Product[] = Array.isArray(responseData)
+		? responseData
+		: responseData?.data || [];
+	const total = data?.total ?? products.length;
 
 	return (
 		<section className="container px-4 md:px-8 lg:px-16 py-10">
 			<h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-				{search ? `Search results for “${search}”` : "Search Products"}
+				{search ? `Search results for "${search}"` : "Search Products"}
+				{total > 0 && (
+					<span className="text-base font-normal text-gray-500 ml-2">
+						({total} {total === 1 ? "product" : "products"} found)
+					</span>
+				)}
 			</h1>
 
 			{isLoading ? (
@@ -35,9 +45,7 @@ export default function SearchPage() {
 					<Loader2 className="w-8 h-8 text-pink-600 animate-spin" />
 				</div>
 			) : isError ? (
-				<p className="text-red-500 text-center">
-					Failed to load search results.
-				</p>
+				<p className="text-gray-500 text-center">No products found.</p>
 			) : products.length === 0 ? (
 				<p className="text-gray-500 text-center">No products found.</p>
 			) : (

@@ -80,6 +80,8 @@ export default function VendorEditProductPage() {
 		brand_id: "",
 	});
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
+	const [warrantyEnabled, setWarrantyEnabled] = useState(false);
+	const [warrantyDays, setWarrantyDays] = useState<string>("");
 	const selectedCategoryCommission = f.category_id
 		? commissionRows.find((row) => row.category_id === Number(f.category_id))
 			?.commission_percent
@@ -148,6 +150,13 @@ export default function VendorEditProductPage() {
 			if (st === 'both') setSellingType('both');
 			else if (st === 'dropshipping') setSellingType('dropshipping');
 			else setSellingType('wholesale');
+
+			// Read warranty_days from product data
+			const wd = p.warranty_days as number | null;
+			if (wd && wd > 0) {
+				setWarrantyEnabled(true);
+				setWarrantyDays(String(wd));
+			}
 
 			setInitialized(true);
 		}
@@ -256,6 +265,11 @@ export default function VendorEditProductPage() {
 		formData.append("Discount", f.discount || "0");
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
+		if (warrantyEnabled && warrantyDays && Number(warrantyDays) > 0) {
+			formData.append("warranty_days", warrantyDays);
+		} else {
+			formData.append("warranty_days", "0");
+		}
 		formData.append("_method", "PUT");
 
 		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
@@ -633,7 +647,7 @@ export default function VendorEditProductPage() {
 						</p>
 
 						{/* New Variant (Color) Form */}
-						<div className="bg-white p-4 rounded-lg border border-gray-200 mb-6 flex flex-wrap gap-4 items-end">
+						<div className="bg-white p-4 rounded-lg border border-gray-200 mb-6 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:items-end">
 							<div className="flex-1 min-w-[150px]">
 								<label className="block text-xs font-semibold text-gray-700 mb-1">Color Name *</label>
 								<input
@@ -700,7 +714,7 @@ export default function VendorEditProductPage() {
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
 									</button>
 
-									<div className="flex gap-5 items-start pr-12">
+									<div className="flex flex-col sm:flex-row gap-4 sm:gap-5 items-start pr-12">
 										<div className="w-20 h-20 rounded-lg border border-gray-200 overflow-hidden bg-gray-50 flex-shrink-0 flex items-center justify-center">
 											{v.image ? (
 												<img src={getImageUrl(v.image)} alt="Preview" className="w-full h-full object-cover" />
@@ -718,15 +732,15 @@ export default function VendorEditProductPage() {
 											<div className="space-y-4">
 												{v.sizes && v.sizes.map((sz: any) => (
 													<div key={sz.id} className="bg-gray-50 border border-gray-100 rounded-lg p-3">
-														<div className="flex items-center gap-4 mb-3">
-															<div className="flex-1 grid grid-cols-3 gap-3">
+														<div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-3">
+															<div className="flex-1 grid grid-cols-3 gap-2 sm:gap-3 text-sm sm:text-base">
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Size Name</label>
 																	<div className="font-semibold text-gray-800">{sz.size_name}</div>
 																</div>
 																<div>
 																	<label className="text-[10px] font-bold text-gray-500 uppercase">Price</label>
-																	<div className="font-semibold text-indigo-600">৳{sz.price ? formatBDT(Number(sz.price)) : 'Inherited'}</div>
+																	<div className="font-semibold text-indigo-600 text-xs sm:text-base">৳{sz.price ? formatBDT(Number(sz.price)) : 'Inherited'}</div>
 																	{sz.price && selectedCategoryCommission !== null && (
 																		<div className="text-[9px] text-green-600 font-medium digit-font">
 																			Store: ৳{formatBDT(Number(sz.price) * (1 + Number(selectedCategoryCommission) / 100))}
@@ -749,7 +763,7 @@ export default function VendorEditProductPage() {
 														</div>
 
 														{/* Bulk Tiers for this size */}
-														<div className="pl-4 border-l-2 border-indigo-100 space-y-2">
+														<div className="pl-2 sm:pl-4 border-l-2 border-indigo-100 space-y-2">
 															<h4 className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider mb-1">Bulk Pricing Tiers</h4>
 															{sz.bulk_prices && sz.bulk_prices.map((bt: any) => (
 																<div key={bt.id} className="flex items-center gap-3 text-xs bg-white p-1.5 rounded border border-indigo-50">
@@ -778,7 +792,7 @@ export default function VendorEditProductPage() {
 																</div>
 															))}
 															{/* Add Bulk Tier Inline */}
-															<div className="flex gap-2 items-end pt-1">
+															<div className="flex flex-wrap gap-2 items-end pt-1">
 																<div className="w-16">
 																	<input id={`bt_min_${sz.id}`} type="number" placeholder="Min" className="w-full text-[10px] p-1 border rounded" />
 																</div>
@@ -816,8 +830,8 @@ export default function VendorEditProductPage() {
 												))}
 
 												{/* Add Size Form (Inline) */}
-												<div className="flex gap-3 items-end bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 mt-4">
-													<div className="flex-1">
+												<div className="space-y-2 bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 mt-4">
+													<div>
 														<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Size Name</label>
 														<input
 															type="text" placeholder="e.g. S, 40, Free"
@@ -826,31 +840,33 @@ export default function VendorEditProductPage() {
 															className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
 														/>
 													</div>
-													<div className="w-24">
-														<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Price</label>
-														<input
-															type="number" step="0.01" placeholder="Price"
-															value={newSizeState[v.id]?.price || ""}
-															onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { size_name: "", qty: "0" }), price: e.target.value } }))}
-															className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
-														/>
+													<div className="flex gap-2 items-end">
+														<div className="flex-1">
+															<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Price</label>
+															<input
+																type="number" step="0.01" placeholder="Price"
+																value={newSizeState[v.id]?.price || ""}
+																onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { size_name: "", qty: "0" }), price: e.target.value } }))}
+																className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
+															/>
+														</div>
+														<div className="flex-1">
+															<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Qty</label>
+															<input
+																type="number" placeholder="Qty"
+																value={newSizeState[v.id]?.qty || "0"}
+																onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { size_name: "", price: "" }), qty: e.target.value } }))}
+																className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
+															/>
+														</div>
+														<button
+															type="button"
+															onClick={() => handleAddSize(v.id)}
+															className="bg-indigo-600 text-white h-[32px] px-4 rounded font-bold text-xs uppercase hover:bg-indigo-700 transition-all shadow-sm whitespace-nowrap"
+														>
+															Add Size
+														</button>
 													</div>
-													<div className="w-20">
-														<label className="block text-[10px] font-bold text-indigo-900 mb-1 uppercase">Qty</label>
-														<input
-															type="number" placeholder="Qty"
-															value={newSizeState[v.id]?.qty || "0"}
-															onChange={(e) => setNewSizeState(p => ({ ...p, [v.id]: { ...(p[v.id] || { size_name: "", price: "" }), qty: e.target.value } }))}
-															className="w-full text-xs p-1.5 border rounded focus:ring-1 focus:ring-indigo-500"
-														/>
-													</div>
-													<button
-														type="button"
-														onClick={() => handleAddSize(v.id)}
-														className="bg-indigo-600 text-white h-[32px] px-4 rounded font-bold text-xs uppercase hover:bg-indigo-700 transition-all shadow-sm"
-													>
-														Add Size
-													</button>
 												</div>
 											</div>
 										</div>
@@ -863,6 +879,48 @@ export default function VendorEditProductPage() {
 						</div>
 					</div>
 					)}
+
+					{/* Warranty / Exchange (Optional) */}
+					<div className="rounded-xl bg-emerald-50/30 p-4 sm:p-6 shadow-sm border border-emerald-100">
+						<div className="flex items-center justify-between mb-3">
+							<h2 className="text-sm font-bold text-emerald-900 flex items-center gap-2">
+								🛡️ Warranty / Exchange
+							</h2>
+							<label className="relative inline-flex items-center cursor-pointer">
+								<input
+									type="checkbox"
+									checked={warrantyEnabled}
+									onChange={(e) => setWarrantyEnabled(e.target.checked)}
+									className="sr-only peer"
+								/>
+								<div className="w-9 h-5 bg-gray-300 peer-focus:ring-2 peer-focus:ring-emerald-300 rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
+							</label>
+						</div>
+						<p className="text-xs text-emerald-700 mb-3">
+							Enable to offer warranty/exchange for this product. Resellers can claim within the warranty period.
+						</p>
+						{warrantyEnabled && (
+							<div className="bg-white rounded-lg border border-emerald-200 p-4">
+								<div className="flex items-center gap-4">
+									<span className="text-sm font-medium text-gray-700 whitespace-nowrap">Days</span>
+									<input
+										type="number"
+										min={1}
+										max={3650}
+										placeholder="e.g. 30"
+										value={warrantyDays}
+										onChange={(e) => setWarrantyDays(e.target.value)}
+										className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+									/>
+								</div>
+								{warrantyDays && Number(warrantyDays) > 0 && (
+									<p className="text-xs text-emerald-600 mt-2">
+										✅ Resellers can claim warranty/exchange within <span className="font-bold">{warrantyDays} days</span> from delivery.
+									</p>
+								)}
+							</div>
+						)}
+					</div>
 
 					<div className="flex justify-end">
 						<button

@@ -11,6 +11,7 @@ import {
 	Menu,
 	Package,
 	Plus,
+	ShieldCheck,
 	ShoppingBag,
 	Star,
 	TrendingUp,
@@ -89,6 +90,12 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
 		],
 	},
 	{
+		title: "Warranty / Exchange",
+		items: [
+			{ label: "Warranty / Exchange", href: "/vendor/warranty-claims", icon: ShieldCheck },
+		],
+	},
+	{
 		title: "Account",
 		items: [{ label: "Profile & KYC", href: "/vendor/profile", icon: User }],
 	},
@@ -107,7 +114,7 @@ export default function VendorLayout({ children }: { children: ReactNode }) {
 	const [showLogoutModal, setShowLogoutModal] = useState(false);
 	const token = useAppSelector((state) => state.auth.access_token);
 	const isAuthPage =
-		pathname === "/vendor/login" || pathname === "/vendor/register";
+		pathname === "/vendor/login" || pathname === "/vendor/register" || pathname === "/vendor/forgot-password";
 	const isVendorProfilePage = pathname === "/vendor/profile";
 	const shouldLoadVendorProfile = !isAuthPage && Boolean(token);
 	const {

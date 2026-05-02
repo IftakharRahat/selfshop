@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
-import * as SecureStore from "expo-secure-store";
+import { getItem, deleteItem } from "./storage";
 
 const TOKEN_KEY = "supplier_auth_token";
 
@@ -14,19 +14,23 @@ const apiClient: AxiosInstance = axios.create({
 
 // Attach auth token to every request
 apiClient.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
+  const token = await getItem(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Handle 401 responses globally
+// Handle 401 responses globally — clear token so AuthGate redirects to login
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      // Don't clear token for login/register requests (those are expected 401s)
+      const url = error.config?.url ?? "";
+      if (!url.includes("/login") && !url.includes("/register")) {
+        await deleteItem(TOKEN_KEY);
+      }
     }
     return Promise.reject(error);
   },

@@ -8,6 +8,8 @@ use App\Http\Controllers\VendorApiController;
 use App\Http\Controllers\VendorAccountController;
 use App\Http\Controllers\VendorAuthController;
 use App\Http\Controllers\VendorProductController;
+use App\Http\Controllers\WarrantyClaimController;
+use App\Http\Controllers\VendorWarrantyController;
 use App\Http\Controllers\R2TestController;
 use App\Http\Controllers\VendorOrderController;
 use App\Http\Controllers\VendorCategoryDiscountController;
@@ -51,46 +53,31 @@ Route::get('/carrybee/cities', [\App\Http\Controllers\CarryBeeController::class,
 Route::get('/carrybee/cities/{cityId}/zones', [\App\Http\Controllers\CarryBeeController::class, 'zones'])->name('api.carrybee.zones');
 Route::get('/carrybee/cities/{cityId}/zones/{zoneId}/areas', [\App\Http\Controllers\CarryBeeController::class, 'areas'])->name('api.carrybee.areas');
 
-// TEMP: Diagnostic endpoint — remove after debugging
-Route::get('/carrybee/debug', function () {
-    $config = [
-        'base_url' => config('services.carrybee.base_url') ?: 'EMPTY',
-        'client_id' => config('services.carrybee.client_id') ?: 'EMPTY',
-        'client_secret' => config('services.carrybee.client_secret') ? substr(config('services.carrybee.client_secret'), 0, 8) . '...' : 'EMPTY',
-        'client_context' => config('services.carrybee.client_context') ? substr(config('services.carrybee.client_context'), 0, 8) . '...' : 'EMPTY',
-    ];
 
-    $storeResult = null;
-    $storeId = null;
-    try {
-        $cb = app(\App\Services\CarryBeeService::class);
-        $storeResult = $cb->createStore([
-            'name' => 'Debug Test ' . time(),
-            'contact_person_name' => 'Debug',
-            'contact_person_number' => '01700000099',
-            'address' => 'Debug Test Dhaka',
-            'city_id' => 14,
-            'zone_id' => 1,
-            'area_id' => 1,
-        ]);
-        $storeId = $storeResult['data']['id'] ?? null;
-    } catch (\Throwable $e) {
-        $storeResult = ['error' => $e->getMessage()];
-    }
 
-    // Check fillable
-    $vendor = new \App\Models\Vendor();
-    $fillable = $vendor->getFillable();
-    $hasCarrybeeField = in_array('carrybee_store_id', $fillable);
+// Tracking config — public, no auth required (must be outside guest middleware)
+Route::get('/tracking-config', function () {
+    $info = \App\Models\Basicinfo::first();
+    return response()->json([
+        'facebook_pixel_id' => $info->facebook_pixel_id ?? null,
+        'gtm_id' => $info->gtm_id ?? null,
+        'google_analytics_id' => $info->google_analytics_id ?? null,
+    ]);
+})->name('api.tracking-config');
+
+// App version check — public, no auth required (force-update gate)
+Route::get('/app-version-check', function (Request $request) {
+    $info = \App\Models\Basicinfo::first();
+    $clientCode = (int) $request->query('version_code', 0);
+    $requiredCode = (int) ($info->android_app_version_code ?? 1);
 
     return response()->json([
-        'config' => $config,
-        'store_create_result' => $storeResult,
-        'extracted_store_id' => $storeId,
-        'vendor_fillable_has_carrybee_store_id' => $hasCarrybeeField,
-        'vendor_fillable' => $fillable,
+        'update_required' => $clientCode < $requiredCode,
+        'required_version_code' => $requiredCode,
+        'store_url' => $info->android_play_store_url
+            ?? 'https://play.google.com/store/apps/details?id=com.selfshop.app',
     ]);
-});
+})->name('api.app-version-check');
 
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
@@ -163,6 +150,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // sidebar
     Route::get('developers-api', [FrontendApiController::class, 'developersapi']);
     Route::get('generate-developers-api', [FrontendApiController::class, 'generatedevelopersapi']);
+    Route::get('/api/test', [FrontendApiController::class, 'test']);
     Route::get('faqs', [FrontendApiController::class, 'faqs']);
     Route::get('track-order', [FrontendApiController::class, 'trackorder']);
     Route::post('update-bank-info', [FrontendApiController::class, 'bankinfo']);
@@ -264,6 +252,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/vendor-follow/{vendorId}/unfollow', [FrontendApiController::class, 'unfollowVendor'])->name('api.vendor-follow.unfollow');
     Route::get('/vendor-follow/{vendorId}/status', [FrontendApiController::class, 'checkFollowStatus'])->name('api.vendor-follow.status');
 
+    // Warranty Claims (reseller/user)
+    Route::get('/warranty/products', [WarrantyClaimController::class, 'products'])->name('api.warranty.products');
+    Route::post('/warranty/claims', [WarrantyClaimController::class, 'store'])->name('api.warranty.claims.store');
+    Route::get('/warranty/claims', [WarrantyClaimController::class, 'index'])->name('api.warranty.claims.index');
+
     // Vendor (Wholesale / Supplier) – vendor portal APIs
     Route::prefix('vendor')->group(function () {
         // Dashboard
@@ -272,6 +265,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Account & profile
         Route::get('/profile', [VendorAccountController::class, 'profile'])->name('api.vendor.profile');
         Route::post('/profile', [VendorAccountController::class, 'upsertProfile'])->name('api.vendor.profile.upsert');
+        Route::post('/change-password', [VendorAccountController::class, 'changePassword'])->name('api.vendor.change-password');
 
         // KYC documents
         Route::get('/kyc-documents', [VendorAccountController::class, 'kycDocuments'])->name('api.vendor.kyc.index');
@@ -371,6 +365,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/campaigns/{id}', [VendorCampaignController::class, 'show'])->name('api.vendor.campaigns.show');
         Route::post('/campaigns/{id}/products', [VendorCampaignController::class, 'submitProduct'])->name('api.vendor.campaigns.submit-product');
         Route::delete('/campaigns/{id}/products/{fspId}', [VendorCampaignController::class, 'removeProduct'])->name('api.vendor.campaigns.remove-product');
+
+        // Warranty Claims (vendor)
+        Route::get('/warranty-claims', [VendorWarrantyController::class, 'index'])->name('api.vendor.warranty-claims.index');
+        Route::post('/warranty-claims/{id}/respond', [VendorWarrantyController::class, 'respond'])->name('api.vendor.warranty-claims.respond');
 
         // Bulk order matrix (existing)
         Route::middleware('verified.wholesaler')->group(function () {

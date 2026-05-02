@@ -439,6 +439,9 @@ public function packagePaymentSuccess(Request $request)
         // Subscription validity is 1 year, extending from current expiry if still active.
         $today = date('Y-m-d');
         $expireDate = $this->resolveNextExpiryDate($user->expire_date);
+
+        // Load package for tracking data in redirect
+        $package = $invoice->package_id ? \App\Models\Package::find($invoice->package_id) : null;
         
         // ========== UPDATE INVOICE ==========
         $invoice->paymentDate = $today;
@@ -486,9 +489,10 @@ public function packagePaymentSuccess(Request $request)
         // Give referral bonus (only if user was not already active)
         if ($user->status != 'Active' && !empty($user->refer_by)) {
             $referuser = \App\Models\User::where('my_referral_code', $user->refer_by)->first();
-            $refbonus = 200;
             
-            if ($referuser) {
+            if ($referuser && $referuser->bonus_percent > 0) {
+                $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
+                $refbonus = $amount * ($referuser->bonus_percent / 100);
                 $referuser->referal_bonus += $refbonus;
                 $referuser->account_balance += $refbonus;
                 $referuser->save();
@@ -520,6 +524,9 @@ public function packagePaymentSuccess(Request $request)
             'payment' => 'success',
             'invoiceID' => $invoice->invoiceID ?? null,
             'expire_date' => $expireDate,
+            'value' => $invoice->payable_amount ?: $invoice->amount,
+            'package_name' => $package->package_name ?? null,
+            'package_id' => $invoice->package_id ?? null,
         ]));
         
     } catch (\Exception $e) {
@@ -681,8 +688,9 @@ public function packagePaymentIPN(Request $request)
                     
                     // Give referral bonus
                     $referuser = \App\Models\User::where('my_referral_code', $user->refer_by)->first();
-                    if ($referuser) {
-                        $refbonus = 200;
+                    if ($referuser && $referuser->bonus_percent > 0) {
+                        $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
+                        $refbonus = $amount * ($referuser->bonus_percent / 100);
                         $referuser->referal_bonus += $refbonus;
                         $referuser->account_balance += $refbonus;
                         $referuser->save();
@@ -754,7 +762,8 @@ public function packagePaymentIPN(Request $request)
                 'courier_id' => 26,
                 'transaction_id' => $post_data['tran_id'],
                 'user_id' => Auth::id(),
-
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
         $sslc = new SslCommerzNotification();
@@ -906,7 +915,7 @@ public function initiatePayment(Request $request)
             'deliveryCharge' => $deliveryCharge,
             'paymentAmount' => $totalAmount, // Store delivery charge total
             'orderDate' => date('Y-m-d'),
-            'status' => 'Pending',
+            'status' => 'Pending Payment',
             'admin_id' => 1, // Default admin/store ID
             'store_id' => 1, // Default store
             'payment_type_id' => 6, // SSLCommerz

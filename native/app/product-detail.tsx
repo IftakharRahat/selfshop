@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
-  TextInput, Alert, StatusBar,
+  TextInput, Alert, StatusBar, Platform, Keyboard,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProductDetailSkeleton } from "@/components/skeleton";
@@ -12,6 +12,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as MediaLibrary from "expo-media-library";
+import * as Clipboard from "expo-clipboard";
 
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
@@ -24,18 +27,35 @@ const GREY = "#8E8E93";
 const BG = "#F5F5FA";
 const THUMB_SIZE = 52;
 
+type NormalizedVariantSize = {
+  sizeName: string;
+  sizePrice: any;
+  sizeStock: number;
+  bulkPrices: any[];
+};
+
+type NormalizedVariant = {
+  variantId: number;
+  label: string;
+  image?: string | null;
+  colorCode?: string | null;
+  stock: number;
+  sizes: NormalizedVariantSize[];
+};
+
 export default function ProductDetailScreen() {
   const params = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const queryClient = useQueryClient();
   const [imgIdx, setImgIdx] = useState(0);
-  const [wishlisted, setWishlisted] = useState(false);
   const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
   const [descExpanded, setDescExpanded] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
+  const defaultQtySet = useRef(false);
 
   // ── Variant / Size ordering state ──
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
@@ -45,6 +65,16 @@ export default function ProductDetailScreen() {
   // Scroll tracking for animated header
   const scrollY = useRef(new Animated.Value(0)).current;
   const HEADER_THRESHOLD = SW - 100; // Start fading in the solid header near end of hero image
+
+  // ── Keyboard-aware bottom padding ──
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) => setKbHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKbHeight(0));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   // Bottom sheet spring animation
   const sheetAnim = useRef(new Animated.Value(400)).current;
@@ -142,6 +172,79 @@ export default function ProductDetailScreen() {
   }, []);
   const imgViewCfg = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
 
+  // Set default quantity to 1 only for a simple, single-default-size product.
+  // NOTE: Must be called before any early returns to satisfy Rules of Hooks
+  useEffect(() => {
+    if (!data || isLoading) return;
+    const product = data.product_details ?? data.product ?? data;
+    const variants: any[] = product.varients ?? [];
+    const currentVariant = variants[activeVariantIdx];
+    const currentVarId = currentVariant?.id ?? 0;
+    const stockQty = Number(product.qty ?? 0);
+
+    let sizesForEffect: Array<{ size_name: string; qty: number }> = [];
+    if (currentVariant?.sizes && currentVariant.sizes.length > 0) {
+      sizesForEffect = currentVariant.sizes.map((sz: any) => ({
+        size_name: sz.size_name,
+        qty: sz.qty ?? 0,
+      }));
+    } else {
+      const overrideStock = currentVariant ? currentVariant.qty ?? stockQty : stockQty;
+      const productSizes = Array.isArray(product.size)
+        ? product.size
+        : typeof product.size === "string"
+          ? (() => { try { return JSON.parse(product.size); } catch { return []; } })()
+          : [];
+      const legacySizes = productSizes.length > 0 ? productSizes : ["Default"];
+      sizesForEffect = legacySizes.map((sName: string) => ({
+        size_name: sName,
+        qty: overrideStock,
+      }));
+    }
+
+    const isSimpleProduct =
+      variants.length <= 1 &&
+      sizesForEffect.length === 1 &&
+      sizesForEffect[0]?.size_name === "Default";
+
+    if (!defaultQtySet.current && isSimpleProduct && sizesForEffect.length > 0) {
+      const firstSize = sizesForEffect[0];
+      if (firstSize && firstSize.qty > 0) {
+        setVariantQuantities((prev) => {
+          if (Object.keys(prev).length === 0) {
+            defaultQtySet.current = true;
+            return { [currentVarId]: { [firstSize.size_name]: 1 } };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [data, isLoading, activeVariantIdx]);
+
+  // ── Image download handler (must be before early returns) ──
+  const [downloading, setDownloading] = useState(false);
+  const handleDownloadImage = useCallback(async (imageUri: string) => {
+    if (downloading) return;
+    try {
+      setDownloading(true);
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Please allow access to save images to your gallery.");
+        return;
+      }
+      const filename = imageUri.split("/").pop()?.split("?")[0] || `product-${Date.now()}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const download = await FileSystem.downloadAsync(imageUri, fileUri);
+      await MediaLibrary.saveToLibraryAsync(download.uri);
+      toast.success("Image saved to gallery!");
+    } catch (e) {
+      console.warn("Download failed:", e);
+      toast.error("Failed to download image");
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading]);
+
   if (isLoading) return <ProductDetailSkeleton />;
   if (isError || !data) return (
     <View style={s.loadC}>
@@ -199,6 +302,13 @@ export default function ProductDetailScreen() {
   const rawDesc = product.ProductDetails ?? product.ProductBreaf ?? "";
   const cleanDesc = rawDesc.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 
+  // ── Copy description handler ──
+  const handleCopyDescription = async () => {
+    if (!cleanDesc) return;
+    await Clipboard.setStringAsync(cleanDesc);
+    toast.success("Description copied!");
+  };
+
   // ── Computed sizes for current variant ──
   const currentVariant = variants[activeVariantIdx];
   const currentVarId = currentVariant?.id ?? 0;
@@ -226,6 +336,69 @@ export default function ProductDetailScreen() {
       bulk_prices: [],
     }));
   }
+
+  const getVariantSizes = (variant?: any): NormalizedVariantSize[] => {
+    if (variant?.sizes && variant.sizes.length > 0) {
+      return variant.sizes.map((sz: any) => ({
+        sizeName: sz.size_name,
+        sizePrice: sz.price,
+        sizeStock: Number(sz.qty ?? 0),
+        bulkPrices: sz.bulkPrices || sz.bulk_prices || [],
+      }));
+    }
+
+    const overrideStock = variant ? variant.qty ?? stockQty : stockQty;
+    const productSizes = Array.isArray(product.size)
+      ? product.size
+      : typeof product.size === "string"
+        ? (() => {
+            try {
+              return JSON.parse(product.size);
+            } catch {
+              return [];
+            }
+          })()
+        : [];
+    const legacySizes = productSizes.length > 0 ? productSizes : ["Default"];
+
+    return legacySizes.map((sizeName: string) => ({
+      sizeName,
+      sizePrice: null,
+      sizeStock: Number(overrideStock ?? 0),
+      bulkPrices: [],
+    }));
+  };
+
+  const normalizedVariants: NormalizedVariant[] =
+    variants.length > 0
+      ? variants.map((variant: any, idx: number) => {
+          const sizes = getVariantSizes(variant);
+          return {
+            variantId: Number(variant.id),
+            label: variant.color_name || variant.title || `Variant ${idx + 1}`,
+            image: variant.image,
+            colorCode: typeof variant.color_code === "string" ? variant.color_code : null,
+            stock: Number(
+              variant.qty ??
+                sizes.reduce((sum, size) => sum + Number(size.sizeStock || 0), 0),
+            ),
+            sizes,
+          };
+        })
+      : [
+          {
+            variantId: 0,
+            label: "Default",
+            image: null,
+            colorCode: null,
+            stock: stockQty,
+            sizes: getVariantSizes(undefined),
+          },
+        ];
+
+  const selectedVariant =
+    normalizedVariants.find((variant) => variant.variantId === selectedVariantId) ??
+    normalizedVariants[0];
 
   // Total quantity across all variants and sizes
   const totalQuantity = Object.values(variantQuantities)
@@ -305,12 +478,21 @@ export default function ProductDetailScreen() {
   const getSelectedItems = () => {
     const items: { variantId: number; variantTitle: string; size: string; qty: number; price: number; sellingPrice: number | null }[] = [];
     for (const [vid, sizes] of Object.entries(variantQuantities)) {
-      const v = variants.find((vr: any) => vr.id === Number(vid));
+      const v = normalizedVariants.find((variant) => variant.variantId === Number(vid));
       for (const [sizeName, qty] of Object.entries(sizes)) {
         if (qty > 0) {
-          const variantLabel = v?.color_name || v?.title || "";
-          const sizeItem = v?.sizes?.find((sz: any) => sz.size_name === sizeName) || sizesForTable.find(sz => sz.size_name === sizeName);
-          const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : salePrice;
+          const variantLabel = v?.label || "";
+          const sizeItem = v?.sizes.find((sz) => sz.sizeName === sizeName);
+          const itemPrice = sizeItem
+            ? getSizePrice(
+                {
+                  price: sizeItem.sizePrice,
+                  qty: sizeItem.sizeStock,
+                  bulk_prices: sizeItem.bulkPrices,
+                },
+                qty,
+              )
+            : salePrice;
           const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
           const sp = spStr ? parseFloat(spStr) : null;
           items.push({
@@ -425,6 +607,18 @@ export default function ProductDetailScreen() {
   };
 
   const formatBDT = (num: number, dec = 2) => num.toLocaleString("en-BD", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  const selectedItemsTotal = getSelectedItems().reduce((sum, item) => sum + item.price * item.qty, 0);
+  const selectedVariantSummary = normalizedVariants.flatMap((variant) =>
+    Object.entries(variantQuantities[variant.variantId] ?? {})
+      .filter(([, qty]) => Number(qty || 0) > 0)
+      .map(([sizeName, qty]) => `${variant.label} / ${sizeName} x${qty}`),
+  );
+  const openVariantSheet = (variantId: number) => {
+    const nextIdx = normalizedVariants.findIndex((variant) => variant.variantId === variantId);
+    if (nextIdx >= 0) setActiveVariantIdx(nextIdx);
+    setSelectedVariantId(variantId);
+  };
+  const closeVariantSheet = () => setSelectedVariantId(null);
 
   return (
     <View style={s.container}>
@@ -432,8 +626,10 @@ export default function ProductDetailScreen() {
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}
+        contentContainerStyle={{ paddingBottom: 130 + kbHeight }}
         scrollEventThrottle={16}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
@@ -448,7 +644,17 @@ export default function ProductDetailScreen() {
             onViewableItemsChanged={onImgChange} viewabilityConfig={imgViewCfg}
             keyExtractor={(_, i) => String(i)}
             renderItem={({ item }) => (
-              <Image source={{ uri: item }} style={s.heroImg} resizeMode="contain" />
+              <View style={{ width: SW, position: "relative" }}>
+                <Image source={{ uri: item }} style={s.heroImg} resizeMode="contain" />
+                <Pressable
+                  style={({ pressed }) => [s.downloadBadge, pressed && { opacity: 0.7 }]}
+                  onPress={() => handleDownloadImage(item)}
+                  disabled={downloading}
+                >
+                  <Ionicons name="download-outline" size={16} color="#1A1A2E" />
+                  <Text style={s.downloadBadgeText}>{downloading ? "Saving..." : "Download"}</Text>
+                </Pressable>
+              </View>
             )}
           />
           {/* Gradient overlay for status bar readability */}
@@ -461,14 +667,6 @@ export default function ProductDetailScreen() {
           <Animated.View style={[s.overlayBtn, { top: insets.top + 8, left: 16, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
             <Pressable onPress={() => router.back()} hitSlop={8}>
               <Ionicons name="arrow-back" size={22} color={DARK} />
-            </Pressable>
-          </Animated.View>
-          <Animated.View style={[s.overlayBtn, { top: insets.top + 8, right: 108, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
-            <Pressable
-              onPress={() => setWishlisted(p => { toast.success(!p ? "Added to wishlist" : "Removed from wishlist"); return !p; })}
-              hitSlop={8}
-            >
-              <Ionicons name={wishlisted ? "heart" : "heart-outline"} size={20} color={wishlisted ? "#EF4444" : DARK} />
             </Pressable>
           </Animated.View>
           {isLoggedIn && (
@@ -595,36 +793,82 @@ export default function ProductDetailScreen() {
         {/* ═══ WHOLESALE BULK TIER BADGES ═══ */}
         {showWholesale && isResellerActive && (
           <View style={s.card}>
-            <Text fontSize="$3" fontWeight="700" color={DARK} mb="$2">Wholesale Pricing</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="layers-outline" size={16} color={ACCENT} />
+                <Text fontSize={14} fontWeight="700" color={DARK}>Wholesale Pricing</Text>
+              </View>
+              {totalQuantity > 0 && (
+                <View style={{ backgroundColor: "#FFF0F5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text fontSize={11} fontWeight="700" color={ACCENT}>{totalQuantity} pcs selected</Text>
+                </View>
+              )}
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {priceTiers.map((tier: any) => {
+              {priceTiers.map((tier: any, tierIdx: number) => {
                 const isActive = activeTier?.id === tier.id;
                 const qtyLabel = tier.max_qty ? `${tier.min_qty}-${tier.max_qty} Pcs` : `${tier.min_qty}+ Pcs`;
+                const tierPrice = parseFloat(tier.unit_price) * commissionFactor;
                 return (
                   <View
                     key={tier.id}
                     style={[
                       s.tierBadge,
-                      isActive && { borderColor: ACCENT, backgroundColor: "#FFF0F5" },
+                      isActive && { borderColor: ACCENT, backgroundColor: "#FFF0F5", transform: [{ scale: 1.04 }] },
                     ]}
                   >
+                    {isActive && (
+                      <View style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center" }}>
+                        <Ionicons name="checkmark" size={12} color="#fff" />
+                      </View>
+                    )}
                     <Text fontSize={14} fontWeight="800" color={isActive ? ACCENT : DARK}>
-                      ৳{formatBDT(parseFloat(tier.unit_price) * commissionFactor, 0)}
+                      ৳{formatBDT(tierPrice, 0)}
                     </Text>
                     <Text fontSize={10} fontWeight="600" color={isActive ? ACCENT : GREY}>{qtyLabel}</Text>
                   </View>
                 );
               })}
             </ScrollView>
-            {totalQuantity > 0 && (
-              <Text fontSize={11} color={GREY} mt="$1">Total selected: {totalQuantity} pcs</Text>
-            )}
+            {/* Contextual tier message */}
+            {(() => {
+              if (!activeTier) return null;
+              const nextTier = priceTiers.find((t: any) => t.min_qty > totalQuantity);
+              if (nextTier && totalQuantity > 0) {
+                const moreNeeded = nextTier.min_qty - totalQuantity;
+                return (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FFFBEB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                    <Ionicons name="flash" size={14} color="#D97706" />
+                    <Text fontSize={12} fontWeight="600" color="#92400E">
+                      Add {moreNeeded} more for ৳{formatBDT(parseFloat(nextTier.unit_price) * commissionFactor, 0)}/pc pricing!
+                    </Text>
+                  </View>
+                );
+              }
+              if (totalQuantity > 0) {
+                return (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text fontSize={12} fontWeight="600" color="#065F46">You're getting the best bulk price!</Text>
+                  </View>
+                );
+              }
+              return null;
+            })()}
           </View>
         )}
 
         {/* ═══ VENDOR CARD ═══ */}
         {vendorName ? (
-          <View style={s.card}>
+          <Pressable
+            style={({ pressed }) => [s.card, pressed && { opacity: 0.7 }]}
+            onPress={() => {
+              const vendorSlug = product.vendor?.slug || product.vendor?.id;
+              if (vendorSlug) {
+                router.push({ pathname: "/supplier/[slug]", params: { slug: String(vendorSlug) } } as any);
+              }
+            }}
+          >
             <View style={s.vendorRow}>
               <View style={s.vendorLogo}>
                 <Text fontSize={13} fontWeight="800" color="#fff">
@@ -639,7 +883,7 @@ export default function ProductDetailScreen() {
                 <Ionicons name="chevron-forward" size={14} color={GREY} />
               </View>
             </View>
-          </View>
+          </Pressable>
         ) : null}
 
         {/* ═══ ORDERING SECTION ═══ */}
@@ -762,162 +1006,108 @@ export default function ProductDetailScreen() {
             );
           }
 
-          // ── MULTI-VARIANT / MULTI-SIZE: Full table ──
+          // MULTI-VARIANT / MULTI-SIZE: variant-first selector
           return (
             <View style={s.orderingSection}>
               <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Select Items</Text>
 
-              {/* Variant (Color) Tabs */}
-              {variants.length > 1 && (
-                <View style={{ marginBottom: 12 }}>
-                  <Text fontSize={12} fontWeight="600" color={GREY} mb="$1">
-                    Color: {currentVariant?.title || currentVariant?.color_name || "Default"}
+              <View style={s.variantPickerCard}>
+                <View style={s.variantPickerHeader}>
+                  <View>
+                    <Text fontSize={14} fontWeight="800" color={DARK}>
+                      Product Variants
+                    </Text>
+                    <Text fontSize={11} color={GREY}>
+                      Tap a variant to choose size and quantity
+                    </Text>
+                  </View>
+                  {totalQuantity > 0 && (
+                    <View style={s.variantTotalBadge}>
+                      <Text fontSize={11} fontWeight="800" color={ACCENT}>
+                        {totalQuantity} pcs
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={s.variantSummaryRow}>
+                  <Text style={s.variantSummaryLabel} fontSize={14} fontWeight="700" color={DARK}>
+                    {variants.length > 1 ? "Color" : "Option"}
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                    {variants.map((v: any, idx: number) => {
-                      const isAct = idx === activeVariantIdx;
-                      const selectedVarQty = Object.values(variantQuantities[Number(v.id)] ?? {}).reduce((sum, qty) => sum + Number(qty || 0), 0);
-                      const colorCode = typeof v.color_code === "string" ? v.color_code : "";
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={s.variantThumbList}
+                  >
+                    {normalizedVariants.map((variant) => {
+                      const selectedVarQty = Object.values(variantQuantities[variant.variantId] ?? {})
+                        .reduce((sum, qty) => sum + Number(qty || 0), 0);
+                      const isCurrent = selectedVariant?.variantId === variant.variantId;
+
                       return (
                         <Pressable
-                          key={v.id}
-                          onPress={() => setActiveVariantIdx(idx)}
-                          style={[s.variantTab, isAct && { borderColor: ACCENT, backgroundColor: "#FFF0F5" }]}
+                          key={variant.variantId}
+                          onPress={() => openVariantSheet(variant.variantId)}
+                          style={[
+                            s.variantThumbButton,
+                            isCurrent && s.variantThumbButtonActive,
+                          ]}
                         >
                           {selectedVarQty > 0 && (
                             <View style={s.variantQtyBadge}>
-                              <Text fontSize={9} fontWeight="800" color="#fff">{selectedVarQty}</Text>
+                              <Text fontSize={9} fontWeight="800" color="#fff">
+                                {selectedVarQty}
+                              </Text>
                             </View>
                           )}
-                          {v.image ? (
-                            <Image source={{ uri: v.image }} style={s.variantTabImg} resizeMode="cover" />
-                          ) : colorCode ? (
-                            <View style={[s.variantSwatch, { backgroundColor: colorCode }]} />
+                          {variant.image ? (
+                            <Image source={{ uri: variant.image }} style={s.variantThumbImage} resizeMode="cover" />
+                          ) : variant.colorCode ? (
+                            <View style={[s.variantThumbSwatch, { backgroundColor: variant.colorCode }]} />
                           ) : (
-                            <View style={s.variantFallback}>
-                              <Text fontSize={12} fontWeight="600" color={GREY}>{(v.color_name || v.title || "?").slice(0, 2)}</Text>
+                            <View style={s.variantThumbFallback}>
+                              <Text fontSize={11} fontWeight="800" color={GREY}>
+                                {variant.label.slice(0, 2).toUpperCase()}
+                              </Text>
                             </View>
                           )}
-                          <Text fontSize={10} fontWeight="600" color={isAct ? ACCENT : "#555"} numberOfLines={1}>
-                            {v.color_name || v.title || `V${idx + 1}`}
-                          </Text>
                         </Pressable>
                       );
                     })}
                   </ScrollView>
-                </View>
-              )}
-
-              {/* Size Rows */}
-              <View style={s.sizeTable}>
-                {/* Header */}
-                <View style={s.sizeTableHeader}>
-                  <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={10} fontWeight="700" color={GREY}>SIZE</Text>
-                  <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={10} fontWeight="700" color={GREY}>PRICE</Text>
-                  <Text style={[s.sizeCol, { flex: 0.8, textAlign: "center" }]} fontSize={10} fontWeight="700" color={GREY}>STOCK</Text>
-                  <Text style={[s.sizeCol, { flex: 1.5, textAlign: "right" }]} fontSize={10} fontWeight="700" color={GREY}>QTY</Text>
+                  <Pressable
+                    onPress={() => openVariantSheet(selectedVariant.variantId)}
+                    style={s.variantOpenButton}
+                  >
+                    <Ionicons name="chevron-forward" size={22} color={DARK} />
+                  </Pressable>
                 </View>
 
-                {sizesForTable.map((sz) => {
-                  const size = sz.size_name;
-                  const qty = variantQuantities[currentVarId]?.[size] || 0;
-                  const displayPrice = getSizePrice(sz, qty);
-                  const rowSPStr = variantSellingPrices[currentVarId]?.[size] || "";
-                  const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
-                  const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
-                  const rowPriceInvalid = rowSPStr !== "" && rowSP < displayPrice;
-
-                  return (
-                    <View key={size}>
-                      <View style={[s.sizeTableRow, qty > 0 && { backgroundColor: "#FFF0F5" }]}>
-                        <Text style={[s.sizeCol, { flex: 1.2 }]} fontSize={13} fontWeight="600" color={DARK}>{size}</Text>
-                        <View style={[s.sizeCol, { flex: 1.2, flexDirection: "row", alignItems: "center", gap: 3 }]}>
-                          <Text fontSize={13} fontWeight="600" color={DARK}>৳{formatBDT(displayPrice, 0)}</Text>
-                          {sz.bulk_prices?.length > 0 && (
-                            <View style={{ backgroundColor: "#ECFDF5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                              <Text fontSize={8} fontWeight="800" color="#059669">BULK</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={[s.sizeCol, { flex: 0.8, textAlign: "center" }]} fontSize={12} fontWeight="500" color={sz.qty <= 0 ? "#EF4444" : "#666"}>
-                          {sz.qty <= 0 ? "Out" : sz.qty}
+                <View style={s.variantSelectionSummary}>
+                  {selectedVariantSummary.length > 0 ? (
+                    selectedVariantSummary.slice(0, 3).map((item) => (
+                      <View key={item} style={s.selectedSizeChip}>
+                        <Text fontSize={11} fontWeight="700" color={DARK} numberOfLines={1}>
+                          {item}
                         </Text>
-                        <View style={[s.sizeCol, { flex: 1.5, flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 2 }]}>
-                          <Pressable
-                            style={[s.miniStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
-                            onPress={() => handleQtyChange(currentVarId, size, "decrease", sz.qty)}
-                            disabled={qty <= 0}
-                          >
-                            <Ionicons name="remove" size={14} color={qty <= 0 ? "#ccc" : DARK} />
-                          </Pressable>
-                          <View style={s.miniStepVal}>
-                            <Text fontSize={13} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
-                          </View>
-                          <Pressable
-                            style={[s.miniStepBtn, (qty >= sz.qty || sz.qty <= 0) && s.miniStepBtnDisabled]}
-                            onPress={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
-                            disabled={qty >= sz.qty || sz.qty <= 0}
-                          >
-                            <Ionicons name="add" size={14} color={(qty >= sz.qty || sz.qty <= 0) ? "#ccc" : ACCENT} />
-                          </Pressable>
-                        </View>
                       </View>
-
-                      {/* Dropshipping selling price row */}
-                      {showDropshipping && qty > 0 && (
-                        <View style={s.sellingPriceRow}>
-                          <View style={s.sellingPriceLabel}>
-                            <Ionicons name="pricetag" size={12} color={ACCENT} />
-                            <Text fontSize={12} fontWeight="700" color={DARK}>Your Selling Price</Text>
-                          </View>
-                          <View style={s.sellingPriceInputRow}>
-                            <Text fontSize={14} fontWeight="600" color={GREY}>৳</Text>
-                            <TextInput
-                              style={[
-                                s.sellingPriceInput,
-                                rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                                rowSP >= displayPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
-                              ]}
-                              keyboardType="numeric"
-                              value={rowSPStr}
-                              onChangeText={(v) => handleSellingPriceChange(currentVarId, size, v)}
-                              placeholder={`Min ${Math.ceil(displayPrice)}`}
-                              placeholderTextColor="#bbb"
-                            />
-                            {rowEarnings > 0 ? (
-                              <View style={s.earningsBadge}>
-                                <Ionicons name="trending-up" size={12} color="#059669" />
-                                <Text fontSize={12} fontWeight="800" color="#059669">+৳{formatBDT(rowEarnings, 0)}</Text>
-                              </View>
-                            ) : rowPriceInvalid ? (
-                              <View style={s.earningsBadge}>
-                                <Ionicons name="alert-circle" size={12} color="#EF4444" />
-                                <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
-                              </View>
-                            ) : (
-                              <Text fontSize={11} color={GREY}>Profit per pc</Text>
-                            )}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-
-                {/* Total Row */}
-                {totalQuantity > 0 && (
-                  <View style={s.sizeTableTotal}>
-                    <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Total</Text>
-                    <Text fontSize={13} fontWeight="800" color={ACCENT}>
-                      ৳{formatBDT(getSelectedItems().reduce((sum, i) => sum + i.price * i.qty, 0), 0)}
+                    ))
+                  ) : (
+                    <Text fontSize={12} color={GREY}>
+                      No variants selected yet
                     </Text>
-                    <Text fontSize={12} fontWeight="700" color={GREY} ml="$3">{totalQuantity} pcs</Text>
-                  </View>
-                )}
+                  )}
+                  {selectedVariantSummary.length > 3 && (
+                    <Text fontSize={11} fontWeight="700" color={ACCENT}>
+                      +{selectedVariantSummary.length - 3} more
+                    </Text>
+                  )}
+                </View>
               </View>
             </View>
           );
         })()}
+
 
         {/* ═══ YOUTUBE ═══ */}
         {youtubeLink ? (
@@ -947,14 +1137,23 @@ export default function ProductDetailScreen() {
               <Text fontSize="$3" color="#444" lineHeight={22} numberOfLines={descExpanded ? undefined : 5}>
                 {cleanDesc}
               </Text>
-              {cleanDesc.length > 200 && (
-                <Pressable onPress={() => setDescExpanded(p => !p)} style={s.readMoreBtn}>
-                  <Text fontSize="$2" fontWeight="600" color={ACCENT}>
-                    {descExpanded ? "Show less" : "Read more"}
-                  </Text>
-                  <Ionicons name={descExpanded ? "chevron-up" : "chevron-down"} size={14} color={ACCENT} />
+              <View style={s.descActions}>
+                {cleanDesc.length > 200 && (
+                  <Pressable onPress={() => setDescExpanded(p => !p)} style={s.readMoreBtn}>
+                    <Text fontSize="$2" fontWeight="600" color={ACCENT}>
+                      {descExpanded ? "Show less" : "Read more"}
+                    </Text>
+                    <Ionicons name={descExpanded ? "chevron-up" : "chevron-down"} size={14} color={ACCENT} />
+                  </Pressable>
+                )}
+                <Pressable
+                  onPress={handleCopyDescription}
+                  style={({ pressed }) => [s.copyDescBtn, pressed && { opacity: 0.7 }]}
+                >
+                  <Ionicons name="copy-outline" size={14} color={ACCENT} />
+                  <Text fontSize="$2" fontWeight="600" color={ACCENT}>Copy Description</Text>
                 </Pressable>
-              )}
+              </View>
             </View>
           ) : null}
 
@@ -1004,6 +1203,9 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
+        {/* ═══ REVIEWS & RATINGS ═══ */}
+        {productId && <ReviewsSection productId={productId} isLoggedIn={isLoggedIn} />}
+
         {/* ═══ RELATED PRODUCTS ═══ */}
         {relatedProducts.length > 0 && (
           <View style={{ paddingTop: 16 }}>
@@ -1042,13 +1244,6 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Pressable
-              style={s.fixedHeaderBtn}
-              onPress={() => setWishlisted(p => { toast.success(!p ? "Added to wishlist" : "Removed from wishlist"); return !p; })}
-              hitSlop={8}
-            >
-              <Ionicons name={wishlisted ? "heart" : "heart-outline"} size={20} color={wishlisted ? "#EF4444" : DARK} />
-            </Pressable>
             <Pressable style={s.fixedHeaderBtn} hitSlop={8}>
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
@@ -1152,6 +1347,501 @@ export default function ProductDetailScreen() {
           </Animated.View>
         </Pressable>
       </Modal>
+
+      {/* VARIANT SELECTION BOTTOM SHEET */}
+      <Modal
+        visible={selectedVariantId !== null}
+        transparent
+        statusBarTranslucent
+        animationType="slide"
+        onRequestClose={closeVariantSheet}
+      >
+        <View style={s.variantSheetOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeVariantSheet} />
+          <View style={[s.variantSheetContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={s.variantSheetHandleWrap}>
+              <View style={s.variantSheetHandle} />
+            </View>
+
+            <View style={s.variantSheetHeader}>
+              <View style={{ flex: 1 }}>
+                <Text fontSize={17} fontWeight="800" color={DARK}>Select Variants</Text>
+                <Text fontSize={12} color={GREY}>
+                  {normalizedVariants.length} variant{normalizedVariants.length !== 1 ? "s" : ""} - {selectedVariant.sizes.length} size{selectedVariant.sizes.length !== 1 ? "s" : ""}
+                </Text>
+              </View>
+              <Pressable onPress={closeVariantSheet} style={s.variantSheetCloseBtn}>
+                <Ionicons name="close" size={20} color={DARK} />
+              </Pressable>
+            </View>
+
+            {showWholesale && isResellerActive && priceTiers.length > 0 && (
+              <View style={s.sheetTierPanel}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {priceTiers.map((tier: any) => {
+                    const isActive = activeTier?.id === tier.id;
+                    const qtyLabel = tier.max_qty ? String(tier.min_qty) + "-" + String(tier.max_qty) + " Pcs" : ">" + String(tier.min_qty) + " Pcs";
+                    const tierPrice = parseFloat(tier.unit_price) * commissionFactor;
+                    return (
+                      <View key={tier.id} style={[s.sheetTierBadge, isActive && s.sheetTierBadgeActive]}>
+                        <Text fontSize={15} fontWeight="800" color={isActive ? ACCENT : DARK}>
+                          {"\u09F3"}{formatBDT(tierPrice, 0)}
+                        </Text>
+                        <Text fontSize={10} fontWeight="600" color={isActive ? ACCENT : GREY}>{qtyLabel}</Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                {activeTier && totalQuantity > 0 && (
+                  <View style={s.sheetTierMessage}>
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text fontSize={12} fontWeight="700" color="#065F46">
+                      Current bulk price applied across selected variants
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            <View style={s.sheetVariantPanel}>
+              <Text fontSize={14} fontWeight="800" color={DARK}>
+                {variants.length > 1 ? "Color" : "Option"}: {selectedVariant.label}
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sheetVariantThumbList}>
+                {normalizedVariants.map((variant) => {
+                  const isActive = variant.variantId === selectedVariant.variantId;
+                  const selectedVarQty = Object.values(variantQuantities[variant.variantId] ?? {})
+                    .reduce((sum, qty) => sum + Number(qty || 0), 0);
+                  return (
+                    <Pressable
+                      key={variant.variantId}
+                      onPress={() => openVariantSheet(variant.variantId)}
+                      style={[s.sheetVariantThumb, isActive && s.sheetVariantThumbActive]}
+                    >
+                      {selectedVarQty > 0 && (
+                        <View style={s.variantQtyBadge}>
+                          <Text fontSize={9} fontWeight="800" color="#fff">{selectedVarQty}</Text>
+                        </View>
+                      )}
+                      {variant.image ? (
+                        <Image source={{ uri: variant.image }} style={s.sheetVariantThumbImage} resizeMode="cover" />
+                      ) : variant.colorCode ? (
+                        <View style={[s.sheetVariantSwatch, { backgroundColor: variant.colorCode }]} />
+                      ) : (
+                        <View style={s.sheetVariantFallback}>
+                          <Text fontSize={11} fontWeight="800" color={GREY}>
+                            {variant.label.slice(0, 2).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <View style={s.sheetSizeHeader}>
+              <Text style={{ flex: 1.2 }} fontSize={13} fontWeight="800" color={DARK}>Size</Text>
+              <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Price</Text>
+              <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={13} fontWeight="800" color={DARK}>Quantity</Text>
+            </View>
+
+            <ScrollView
+              style={{ flexGrow: 1, flexShrink: 1, minHeight: 120 }}
+              contentContainerStyle={{ paddingBottom: 14 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled
+            >
+              {selectedVariant.sizes.map((sizeItem) => {
+                const size = sizeItem.sizeName;
+                const qty = variantQuantities[selectedVariant.variantId]?.[size] || 0;
+                const unitPrice = getSizePrice(
+                  {
+                    price: sizeItem.sizePrice,
+                    qty: sizeItem.sizeStock,
+                    bulk_prices: sizeItem.bulkPrices,
+                  },
+                  qty,
+                );
+                const rowSPStr = variantSellingPrices[selectedVariant.variantId]?.[size] || "";
+                const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
+                const rowEarnings = qty > 0 && rowSP >= unitPrice ? (rowSP - unitPrice) * qty : 0;
+                const rowPriceInvalid = rowSPStr !== "" && rowSP < unitPrice;
+
+                return (
+                  <View key={String(selectedVariant.variantId) + "-" + size} style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}>
+                    <View style={s.sheetSizeRow}>
+                      <View style={{ flex: 1.2 }}>
+                        <Text fontSize={14} fontWeight="700" color={DARK} numberOfLines={2}>
+                          {size === "Default" ? "Std" : size}
+                        </Text>
+                        <Text fontSize={10} color={sizeItem.sizeStock <= 0 ? "#EF4444" : GREY}>
+                          {sizeItem.sizeStock <= 0 ? "Out of stock" : String(sizeItem.sizeStock) + " in stock"}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text fontSize={13} fontWeight="700" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
+                        {sizeItem.bulkPrices.length > 0 && (
+                          <Text fontSize={9} fontWeight="800" color="#059669">BULK</Text>
+                        )}
+                      </View>
+                      <View style={s.sheetStepperWrap}>
+                        <Pressable
+                          style={[s.sheetStepBtn, qty <= 0 && s.miniStepBtnDisabled]}
+                          onPress={() => handleQtyChange(selectedVariant.variantId, size, "decrease", sizeItem.sizeStock)}
+                          disabled={qty <= 0}
+                        >
+                          <Ionicons name="remove" size={15} color={qty <= 0 ? "#ccc" : DARK} />
+                        </Pressable>
+                        <View style={s.sheetStepVal}>
+                          <Text fontSize={14} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
+                        </View>
+                        <Pressable
+                          style={[s.sheetStepBtn, (qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) && s.miniStepBtnDisabled]}
+                          onPress={() => handleQtyChange(selectedVariant.variantId, size, "increase", sizeItem.sizeStock)}
+                          disabled={qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0}
+                        >
+                          <Ionicons name="add" size={15} color={(qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) ? "#ccc" : ACCENT} />
+                        </Pressable>
+                      </View>
+                    </View>
+
+                    {showDropshipping && qty > 0 && (
+                      <View style={s.sheetSellingPricePanel}>
+                        <View style={s.sellingPriceLabel}>
+                          <Ionicons name="pricetag" size={12} color={ACCENT} />
+                          <Text fontSize={12} fontWeight="700" color={DARK}>Your Selling Price</Text>
+                        </View>
+                        <View style={s.sellingPriceInputRow}>
+                          <Text fontSize={14} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
+                          <TextInput
+                            style={[
+                              s.sellingPriceInput,
+                              rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                              rowSP >= unitPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                            ]}
+                            keyboardType="numeric"
+                            value={rowSPStr}
+                            onChangeText={(value) => handleSellingPriceChange(selectedVariant.variantId, size, value)}
+                            placeholder={"Min " + Math.ceil(unitPrice)}
+                            placeholderTextColor="#bbb"
+                          />
+                          {rowEarnings > 0 ? (
+                            <View style={s.earningsBadge}>
+                              <Ionicons name="trending-up" size={12} color="#059669" />
+                              <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(rowEarnings, 0)}</Text>
+                            </View>
+                          ) : rowPriceInvalid ? (
+                            <View style={s.earningsBadge}>
+                              <Ionicons name="alert-circle" size={12} color="#EF4444" />
+                              <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
+                            </View>
+                          ) : (
+                            <Text fontSize={11} color={GREY}>Profit</Text>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            <View style={s.variantSheetFooter}>
+              <View style={s.sheetTotalRows}>
+                <View style={s.sheetTotalRow}>
+                  <Text fontSize={12} color={GREY}>Total items: {totalQuantity} Pieces</Text>
+                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
+                </View>
+                <View style={s.sheetTotalRow}>
+                  <Text fontSize={12} color={GREY}>Total:</Text>
+                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
+                </View>
+              </View>
+              <View style={s.sheetActionRow}>
+                <Pressable
+                  onPress={handleBuyNow}
+                  disabled={addToCartMutation.isPending || totalQuantity === 0}
+                  style={({ pressed }) => [
+                    s.sheetBuyBtn,
+                    (pressed || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                  ]}
+                >
+                  <Text fontSize={15} fontWeight="800" color="#fff">Buy Now</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleAddToCart}
+                  disabled={addToCartMutation.isPending || totalQuantity === 0}
+                  style={({ pressed }) => [
+                    s.sheetCartBtn,
+                    (pressed || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                  ]}
+                >
+                  {addToCartMutation.isPending ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text fontSize={15} fontWeight="800" color="#fff">Add to Cart</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REVIEWS & RATINGS SECTION
+   ═══════════════════════════════════════════════════════════════ */
+function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <View style={{ flexDirection: "row", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((v) => (
+        <Ionicons key={v} name={v <= rating ? "star" : "star-outline"} size={size} color={v <= rating ? "#F59E0B" : "#D1D5DB"} />
+      ))}
+    </View>
+  );
+}
+
+function ReviewsSection({ productId, isLoggedIn }: { productId: number; isLoggedIn: boolean }) {
+  const [showWriteReview, setShowWriteReview] = useState(false);
+  const [editingReview, setEditingReview] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const queryClient = useQueryClient();
+
+  const reviewsQuery = useQuery({
+    queryKey: ["product-reviews", productId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/review/product/${productId}`);
+      return data?.data ?? data;
+    },
+    enabled: !!productId,
+  });
+
+  const checkReviewQuery = useQuery({
+    queryKey: ["check-review", productId],
+    queryFn: async () => {
+      const { data } = await apiClient.get(`/review/check/${productId}`);
+      return data?.data ?? data;
+    },
+    enabled: !!productId && isLoggedIn,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data } = await apiClient.post("/review/store", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
+      queryClient.invalidateQueries({ queryKey: ["check-review", productId] });
+      toast.success("Review submitted!");
+      setShowWriteReview(false);
+      setRating(0);
+      setComment("");
+    },
+    onError: () => toast.error("Failed to submit review"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ reviewId, formData }: { reviewId: number; formData: FormData }) => {
+      const { data } = await apiClient.post(`/review/update/${reviewId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product-reviews", productId] });
+      queryClient.invalidateQueries({ queryKey: ["check-review", productId] });
+      toast.success("Review updated!");
+      setEditingReview(false);
+    },
+    onError: () => toast.error("Failed to update review"),
+  });
+
+  const reviews = reviewsQuery.data?.reviews ?? [];
+  const reviewCount = reviewsQuery.data?.review_count ?? 0;
+  const averageRating = Number(reviewsQuery.data?.average_rating ?? 0);
+  const canReview = checkReviewQuery.data?.can_review ?? false;
+  const hasReviewed = checkReviewQuery.data?.has_reviewed ?? false;
+  const existingReview = checkReviewQuery.data?.review ?? null;
+
+  const handleSubmit = () => {
+    if (rating === 0) { toast.error("Please select a rating"); return; }
+    const formData = new FormData();
+    formData.append("product_id", String(productId));
+    formData.append("rating", String(rating));
+    if (comment.trim()) formData.append("messages", comment.trim());
+    submitMutation.mutate(formData);
+  };
+
+  const handleUpdate = () => {
+    if (!existingReview || rating === 0) return;
+    const formData = new FormData();
+    formData.append("rating", String(rating));
+    if (comment.trim()) formData.append("messages", comment.trim());
+    updateMutation.mutate({ reviewId: existingReview.id, formData });
+  };
+
+  return (
+    <View style={[s.card, { marginTop: 10 }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Ionicons name="star" size={16} color="#F59E0B" />
+          <Text fontSize={14} fontWeight="700" color={DARK}>Reviews & Ratings</Text>
+        </View>
+        {reviewCount > 0 && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text fontSize={20} fontWeight="800" color={DARK}>{averageRating.toFixed(1)}</Text>
+            <Text fontSize={12} color={GREY}>({reviewCount})</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Rating distribution */}
+      {reviewCount > 0 && (
+        <View style={{ marginBottom: 16, backgroundColor: "#FAFAFA", borderRadius: 12, padding: 12 }}>
+          {[5, 4, 3, 2, 1].map((star) => {
+            const count = reviews.filter((r: any) => Math.round(r.rating) === star).length;
+            const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0;
+            return (
+              <View key={star} style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Text fontSize={11} color={GREY} style={{ width: 12 }}>{star}</Text>
+                <Ionicons name="star" size={10} color="#F59E0B" />
+                <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: "#E5E7EB" }}>
+                  <View style={{ width: `${pct}%`, height: 6, borderRadius: 3, backgroundColor: "#F59E0B" } as any} />
+                </View>
+                <Text fontSize={10} color={GREY} style={{ width: 20, textAlign: "right" }}>{count}</Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* User's existing review */}
+      {hasReviewed && existingReview && !editingReview && (
+        <View style={{ backgroundColor: "#ECFDF5", borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Ionicons name="checkmark-circle" size={18} color="#059669" />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text fontSize={12} fontWeight="600" color="#065F46">Your review</Text>
+              <StarRating rating={existingReview.rating} size={12} />
+            </View>
+            {existingReview.messages && <Text fontSize={11} color="#065F46" numberOfLines={1} mt="$1">{existingReview.messages}</Text>}
+          </View>
+          <Pressable onPress={() => { setEditingReview(true); setRating(existingReview.rating); setComment(existingReview.messages ?? ""); }}>
+            <Text fontSize={12} fontWeight="700" color="#059669">Edit</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {/* Edit review form */}
+      {editingReview && existingReview && (
+        <View style={{ backgroundColor: "#F0F9FF", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+          <Text fontSize={13} fontWeight="700" color={DARK} mb="$2">Edit Your Review</Text>
+          <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+            {[1, 2, 3, 4, 5].map((v) => (
+              <Pressable key={v} onPress={() => setRating(v)}>
+                <Ionicons name={v <= rating ? "star" : "star-outline"} size={28} color={v <= rating ? "#F59E0B" : "#D1D5DB"} />
+              </Pressable>
+            ))}
+          </View>
+          <TextInput
+            style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 10, fontSize: 13, color: DARK, backgroundColor: "#fff", minHeight: 60, textAlignVertical: "top" }}
+            value={comment}
+            onChangeText={setComment}
+            placeholder="Update your review..."
+            placeholderTextColor="#999"
+            multiline
+            maxLength={1000}
+          />
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+            <Pressable onPress={() => setEditingReview(false)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: "#E5E7EB" }}>
+              <Text fontSize={12} fontWeight="600" color={DARK}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleUpdate} disabled={updateMutation.isPending} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: ACCENT }}>
+              <Text fontSize={12} fontWeight="700" color="#fff">{updateMutation.isPending ? "Saving..." : "Update"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {/* Write new review */}
+      {canReview && !hasReviewed && (
+        showWriteReview ? (
+          <View style={{ backgroundColor: "#FFF0F5", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+            <Text fontSize={13} fontWeight="700" color={DARK} mb="$2">Write a Review</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginBottom: 10 }}>
+              {[1, 2, 3, 4, 5].map((v) => (
+                <Pressable key={v} onPress={() => setRating(v)}>
+                  <Ionicons name={v <= rating ? "star" : "star-outline"} size={28} color={v <= rating ? "#F59E0B" : "#D1D5DB"} />
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 10, padding: 10, fontSize: 13, color: DARK, backgroundColor: "#fff", minHeight: 60, textAlignVertical: "top" }}
+              value={comment}
+              onChangeText={setComment}
+              placeholder="Share your experience... (optional)"
+              placeholderTextColor="#999"
+              multiline
+              maxLength={1000}
+            />
+            <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 10 }}>
+              <Pressable onPress={() => { setShowWriteReview(false); setRating(0); setComment(""); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: "#E5E7EB" }}>
+                <Text fontSize={12} fontWeight="600" color={DARK}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handleSubmit} disabled={submitMutation.isPending || rating === 0} style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: ACCENT }, (rating === 0) && { opacity: 0.5 }]}>
+                <Text fontSize={12} fontWeight="700" color="#fff">{submitMutation.isPending ? "Submitting..." : "Submit"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => setShowWriteReview(true)}
+            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#FFF0F5", borderRadius: 10, paddingVertical: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FFD6E7" }}
+          >
+            <Ionicons name="create-outline" size={16} color={ACCENT} />
+            <Text fontSize={13} fontWeight="700" color={ACCENT}>Write a Review</Text>
+          </Pressable>
+        )
+      )}
+
+      {/* Review list */}
+      {reviews.length > 0 ? (
+        reviews.slice(0, 5).map((review: any) => (
+          <View key={review.id} style={{ paddingVertical: 12, borderTopWidth: 1, borderTopColor: "#F0F0F5" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center" }}>
+                <Text fontSize={12} fontWeight="800" color="#fff">{(review.user?.name ?? "A")[0].toUpperCase()}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text fontSize={12} fontWeight="700" color={DARK}>{review.user?.name ?? "Anonymous"}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <StarRating rating={review.rating} size={11} />
+                  <Text fontSize={10} color={GREY}>{new Date(review.created_at).toLocaleDateString()}</Text>
+                </View>
+              </View>
+            </View>
+            {review.messages && (
+              <Text fontSize={12} color="#555" mt="$1" lineHeight={18}>{review.messages}</Text>
+            )}
+          </View>
+        ))
+      ) : (
+        !canReview && (
+          <View style={{ alignItems: "center", paddingVertical: 20 }}>
+            <Ionicons name="chatbubble-outline" size={32} color="#D1D5DB" />
+            <Text fontSize={12} color={GREY} mt="$2">No reviews yet</Text>
+          </View>
+        )
+      )}
     </View>
   );
 }
@@ -1274,6 +1964,84 @@ const s = StyleSheet.create({
     position: "absolute", top: -6, right: -6, zIndex: 1,
     minWidth: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT,
     justifyContent: "center", alignItems: "center", paddingHorizontal: 3,
+  },
+  variantPickerCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    overflow: "hidden",
+  },
+  variantPickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  variantTotalBadge: {
+    backgroundColor: "#FFF0F5",
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  variantSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F5",
+  },
+  variantSummaryLabel: { width: 54 },
+  variantThumbList: { gap: 8, paddingRight: 8 },
+  variantThumbButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    backgroundColor: BG,
+  },
+  variantThumbButtonActive: {
+    borderColor: ACCENT,
+    backgroundColor: "#FFF0F5",
+  },
+  variantThumbImage: { width: 50, height: 50, borderRadius: 8, backgroundColor: BG },
+  variantThumbSwatch: { width: 50, height: 50, borderRadius: 8, borderWidth: 1, borderColor: "#E5E5EA" },
+  variantThumbFallback: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#F8F8FA",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  variantOpenButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  variantSelectionSummary: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  selectedSizeChip: {
+    maxWidth: "100%",
+    backgroundColor: "#F5F5FA",
+    borderRadius: 9,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
 
   // Size table
@@ -1424,5 +2192,236 @@ const s = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     backgroundColor: ACCENT, borderRadius: 30, paddingVertical: 16,
     width: "100%", marginTop: 20, gap: 8,
+  },
+
+  // Variant selection bottom sheet
+  variantSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  variantSheetContainer: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "90%",
+    minHeight: 400,
+    overflow: "hidden",
+    flexShrink: 1,
+    flexGrow: 0,
+  },
+  variantSheetHandleWrap: {
+    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  variantSheetHandle: {
+    width: 56,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#E5E5EA",
+  },
+  variantSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+  },
+  variantSheetCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetTierPanel: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: "#FFF8E8",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+  },
+  sheetTierBadge: {
+    minWidth: 104,
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+    backgroundColor: "#fff",
+  },
+  sheetTierBadgeActive: {
+    borderColor: ACCENT,
+    backgroundColor: "#FFF0F5",
+  },
+  sheetTierMessage: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  sheetVariantPanel: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  sheetVariantThumbList: {
+    gap: 10,
+    paddingTop: 10,
+    paddingRight: 20,
+  },
+  sheetVariantThumb: {
+    width: 58,
+    height: 58,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    backgroundColor: "#fff",
+  },
+  sheetVariantThumbActive: {
+    borderColor: ACCENT,
+    backgroundColor: "#FFF0F5",
+  },
+  sheetVariantThumbImage: { width: 50, height: 50, borderRadius: 10, backgroundColor: BG },
+  sheetVariantSwatch: { width: 50, height: 50, borderRadius: 10, borderWidth: 1, borderColor: "#E5E5EA" },
+  sheetVariantFallback: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+    backgroundColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetSizeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#F0F0F5",
+    backgroundColor: "#fff",
+  },
+  sheetSizeRowWrap: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F5",
+    backgroundColor: "#fff",
+  },
+  sheetSizeRowWrapActive: { backgroundColor: "#FFF8FB" },
+  sheetSizeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  sheetStepperWrap: {
+    flex: 1.2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  sheetStepBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#D8E1EF",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+  sheetStepVal: {
+    minWidth: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetSellingPricePanel: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  variantSheetFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#E5E5EA",
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  sheetTotalRows: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+    marginBottom: 12,
+    paddingBottom: 8,
+    gap: 6,
+  },
+  sheetTotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  sheetActionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  sheetBuyBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 7,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetCartBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 7,
+    backgroundColor: DARK,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  downloadBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#CCFF8D",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderTopLeftRadius: 10,
+  },
+  downloadBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1A1A2E",
+  },
+  descActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    gap: 12,
+  },
+  copyDescBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#FFF0F5",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FECDD3",
   },
 });

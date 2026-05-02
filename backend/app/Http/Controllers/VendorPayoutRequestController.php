@@ -67,6 +67,7 @@ class VendorPayoutRequestController extends Controller
             return response()->json(['status' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
 
+        // Resolve payout account: explicit > default > first
         $payoutAccountId = $request->input('payout_account_id');
         if ($payoutAccountId) {
             $account = $vendor->payoutAccounts()->find($payoutAccountId);
@@ -74,14 +75,30 @@ class VendorPayoutRequestController extends Controller
                 return response()->json(['status' => false, 'message' => 'Payout account not found'], 404);
             }
         } else {
-            $default = $vendor->payoutAccounts()->where('is_default', true)->first();
-            $payoutAccountId = $default?->id;
+            $account = $vendor->payoutAccounts()->where('is_default', true)->first()
+                ?? $vendor->payoutAccounts()->first();
+            $payoutAccountId = $account?->id;
+        }
+
+        // Must have a payout account
+        if (!$payoutAccountId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Please add a payout account before requesting a payout.',
+            ], 422);
         }
 
         $availableBalance = (float) ($vendor->earnings()
             ->where('status', 'available')
             ->selectRaw('SUM(net_amount - COALESCE(paid_amount, 0)) as total')
             ->value('total') ?? 0);
+
+        // Subtract any existing pending payout requests (hold pattern)
+        $pendingPayouts = (float) $vendor->payoutRequests()
+            ->where('status', 'pending')
+            ->sum('amount');
+        $availableBalance = max(0, $availableBalance - $pendingPayouts);
+
         $amount = round((float) $request->amount, 2);
 
         if ($amount > $availableBalance) {

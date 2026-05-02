@@ -24,6 +24,7 @@ protected $casts = [
     'shipped_at'   => 'datetime',
     'warehouse_sent_at' => 'datetime',
     'steadfast_last_synced_at' => 'datetime',
+    'shop_count'   => 'integer',
 ];
     // Your existing relationships...
     public function orderproducts()

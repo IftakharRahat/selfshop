@@ -21,8 +21,9 @@
             top: 30% !important;
         }
     </style>
-    {!!App\Models\Basicinfo::first()->facebook_pixel!!}  
-    {!!App\Models\Basicinfo::first()->google_analytics!!}  
+    {{-- Tracking is now handled by Next.js components (FacebookPixel.tsx, GoogleTagManager.tsx, GoogleAnalytics.tsx) --}}
+    {{-- {!!App\Models\Basicinfo::first()->facebook_pixel!!} --}}
+    {{-- {!!App\Models\Basicinfo::first()->google_analytics!!} --}}
 	
 	<!---//pwa tag--->
 	@laravelPWA.

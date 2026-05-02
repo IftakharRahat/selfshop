@@ -180,6 +180,13 @@ $comments = Comment::latest()
                         <div class="dash-card-icon"><i class="bi bi-arrow-return-left"></i></div>
                     </a>
                 </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="#" class="dash-card">
+                        <span class="dash-card-label">Others</span>
+                        <div class="dash-card-value"><span id="others">0</span></div>
+                        <div class="dash-card-icon"><i class="bi bi-three-dots"></i></div>
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -263,37 +270,39 @@ $comments = Comment::latest()
                     <div class="dash-card">
                         <span class="dash-card-label">Total Sales</span>
                         <div class="dash-card-value">{{ number_format(\App\Models\Order::where('status','Delivered')->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->sum('subTotal')) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->sum('subTotal'), 2) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="dash-card">
                         <span class="dash-card-label">This Year</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereYear('deliveryDate',Carbon\Carbon::now()->year)->where('status','Delivered')->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereYear('orderDate',Carbon\Carbon::now()->year)->where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereYear('orderDate',Carbon\Carbon::now()->year)->where('status','Delivered')->sum('subTotal'), 2) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <?php
                         $monthSubTotal = \App\Models\Order::where('status','Delivered')
-                            ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
+                            ->whereMonth('orderDate', Carbon\Carbon::now()->month)
+                            ->whereYear('orderDate', Carbon\Carbon::now()->year)
                             ->sum('subTotal');
                         $monthPaymentAmount = \App\Models\Order::where('status','Delivered')
-                            ->whereMonth('deliveryDate', Carbon\Carbon::now()->month)
+                            ->whereMonth('orderDate', Carbon\Carbon::now()->month)
+                            ->whereYear('orderDate', Carbon\Carbon::now()->year)
                             ->sum('paymentAmount');
                         $monthTotal = $monthSubTotal + $monthPaymentAmount;
                     ?>
                     <div class="dash-card">
                         <span class="dash-card-label">This Month</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereMonth('deliveryDate', Carbon\Carbon::now()->month)->where('status','Delivered')->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format($monthTotal) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereMonth('orderDate', Carbon\Carbon::now()->month)->whereYear('orderDate', Carbon\Carbon::now()->year)->where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format($monthTotal, 2) }}</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="dash-card">
                         <span class="dash-card-label">Today's Sales</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('deliveryDate', date('Y-m-d'))->where('status','Delivered')->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->where('deliveryDate', date('Y-m-d'))->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::where('orderDate', date('Y-m-d'))->where('status','Delivered')->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::where('status','Delivered')->where('orderDate', date('Y-m-d'))->sum('subTotal'), 2) }}</div>
                     </div>
                 </div>
             </div>
@@ -342,8 +351,8 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Others</span>
-                        <div class="dash-card-value"><span id="totd">0</span></div>
-                        <div class="dash-card-sub">৳ <span id="totda">0</span></div>
+                        <div class="dash-card-value"><span id="totd">{{ \App\Models\Order::whereNotIn('status',['Confirmed','Ontheway','Delivered','Return'])->where('orderDate',date('Y-m-d'))->count() }}</span></div>
+                        <div class="dash-card-sub">৳ <span id="totda">{{ \App\Models\Order::whereNotIn('status',['Confirmed','Ontheway','Delivered','Return'])->where('orderDate',date('Y-m-d'))->sum('subTotal') }}</span></div>
                     </div>
                 </div>
             </div>
@@ -392,8 +401,8 @@ $comments = Comment::latest()
                 <div class="col-6 col-md-4 col-xl-2">
                     <div class="dash-card">
                         <span class="dash-card-label">Other Statuses</span>
-                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->count()) }}</div>
-                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereIn('status',['Pending','Processing','Packageing','Canceled'])->sum('subTotal')) }}</div>
+                        <div class="dash-card-value">{{ number_format(\App\Models\Order::whereNotIn('status',['Confirmed','Ontheway','Delivered','Return'])->count()) }}</div>
+                        <div class="dash-card-sub">৳ {{ number_format(\App\Models\Order::whereNotIn('status',['Confirmed','Ontheway','Delivered','Return'])->sum('subTotal'), 2) }}</div>
                     </div>
                 </div>
             </div>
@@ -485,13 +494,19 @@ $comments = Comment::latest()
 <script>
     function formatNumberWithCommas(num) {
         if (num === null || num === undefined) return '0';
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        var n = parseFloat(num);
+        var isInteger = (n % 1 === 0);
+        var str = isInteger ? n.toString() : n.toFixed(2);
+        var parts = str.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join('.');
     }
 
     function datePreset(section, range, btn) {
         var today = new Date();
         var start, end;
-        end = today.toISOString().slice(0, 10);
+        // Use local date (not UTC) to match server timezone (Asia/Dhaka)
+        end = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
 
         switch (range) {
             case 'today':
@@ -500,7 +515,7 @@ $comments = Comment::latest()
             case 'week':
                 var d = new Date(today);
                 d.setDate(d.getDate() - d.getDay());
-                start = d.toISOString().slice(0, 10);
+                start = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
                 break;
             case 'month':
                 start = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-01';
@@ -631,19 +646,14 @@ $comments = Comment::latest()
                     $('#all').text(formatNumberWithCommas(data["all"]));
                     $('#allorder').text(formatNumberWithCommas(data["allorder"]));
 
-                    $('#to').text(formatNumberWithCommas(data["all"]));
-                    $('#tc').text(formatNumberWithCommas(data["confirmed"]));
-                    $('#tod').text(formatNumberWithCommas(data["ontheway"]));
-                    $('#td').text(formatNumberWithCommas(data["delivered"]));
-                    $('#tr').text(formatNumberWithCommas(data["return"]));
+                    // Calculate "Others" as difference between All and tracked statuses
+                    var tracked = (data["pending"]||0) + (data["confirmed"]||0) + (data["canceled"]||0) +
+                                  (data["processing"]||0) + (data["packageing"]||0) + (data["ontheway"]||0) +
+                                  (data["delivered"]||0) + (data["return"]||0);
+                    $('#others').text(formatNumberWithCommas(data["all"] - tracked));
 
-                    $('#toa').text(formatNumberWithCommas(data["toa"]));
-                    $('#tca').text(formatNumberWithCommas(data["tca"]));
-                    $('#toda').text(formatNumberWithCommas(data["toda"]));
-                    $('#tda').text(formatNumberWithCommas(data["tda"]));
-                    $('#tra').text(formatNumberWithCommas(data["tra"]));
-                    $('#totd').text(formatNumberWithCommas(data["too"]));
-                    $('#totda').text(formatNumberWithCommas(data["tooa"]));
+                    // Today's Report values are server-rendered and should NOT
+                    // be overwritten by the Order Overview date filter.
                 } else {
                     if (data["status"] == "failed") { swal(data["message"]); }
                     else { swal("Something wrong ! Please try again."); }

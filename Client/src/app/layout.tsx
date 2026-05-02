@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import MicrosoftClarity from "@/components/providers/MicrosoftClarity";
+import FacebookPixel from "@/components/providers/FacebookPixel";
+import GoogleTagManager from "@/components/providers/GoogleTagManager";
 import GoogleAnalytics from "@/components/providers/GoogleAnalytics";
 import { Toaster } from "sonner";
 import MyContextProvider from "@/lib/MyContextProvider";
@@ -66,12 +68,14 @@ export default function RootLayout({
 		<html lang="en">
 			<head>
 				<MicrosoftClarity />
-				<GoogleAnalytics />
 			</head>
 			<body
 				suppressHydrationWarning={true}
 				className={`${poppins.variable} antialiased font-poppins`}
 			>
+				<FacebookPixel />
+				<GoogleTagManager />
+				<GoogleAnalytics />
 				<MyContextProvider>
 					<SessionProviderForNextAuth>
 						<ReduxStoreProvider>

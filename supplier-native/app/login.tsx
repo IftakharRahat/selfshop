@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -39,8 +40,13 @@ export default function LoginScreen() {
       signIn(session);
       toast.success("Welcome back!");
     } catch (err: any) {
+      const status = err?.response?.status;
       const message = err?.response?.data?.message ?? err?.message ?? "Login failed";
-      toast.error(message);
+      if (status === 401) {
+        toast.error("Invalid credentials. Please check your phone/email and password.");
+      } else {
+        toast.error(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -61,7 +67,11 @@ export default function LoginScreen() {
         {/* Logo / Branding */}
         <View style={styles.brandingSection}>
           <View style={styles.logoWrap}>
-            <Ionicons name="storefront" size={36} color="#fff" />
+            <Image
+              source={require("@/assets/images/supplier_app_logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.title}>SelfShop Supplier</Text>
           <Text style={styles.subtitle}>Sign in to manage your store</Text>
@@ -108,6 +118,11 @@ export default function LoginScreen() {
             </View>
           </View>
 
+          {/* Forgot Password */}
+          <TouchableOpacity onPress={() => router.push("/forgot-password")} style={styles.forgotPwBtn}>
+            <Text style={styles.forgotPwText}>Forgot Password?</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.loginBtn, isSubmitting && styles.loginBtnDisabled]}
             onPress={handleLogin}
@@ -148,13 +163,15 @@ const styles = StyleSheet.create({
   },
   brandingSection: { alignItems: "center", marginTop: 20, marginBottom: 36 },
   logoWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: BRAND.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 80,
+    height: 80,
+    borderRadius: 22,
+    overflow: "hidden",
     marginBottom: 16,
+  },
+  logoImage: {
+    width: 80,
+    height: 80,
   },
   title: { fontSize: 24, fontWeight: "700", color: "#1a1a2e" },
   subtitle: { fontSize: 14, color: "#6b7280", marginTop: 4 },
@@ -192,4 +209,6 @@ const styles = StyleSheet.create({
   },
   registerText: { fontSize: 14, color: "#6b7280" },
   registerLink: { fontSize: 14, fontWeight: "600", color: BRAND.primary },
+  forgotPwBtn: { alignSelf: "flex-end", marginTop: -4, marginBottom: -4 },
+  forgotPwText: { fontSize: 13, color: BRAND.primary, fontWeight: "500" },
 });

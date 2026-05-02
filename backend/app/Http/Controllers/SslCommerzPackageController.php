@@ -15,6 +15,14 @@ use App\Models\Package;
 
 class SslCommerzPackageController extends Controller
 {
+    private function frontendUrl(string $path = '/', array $query = []): string
+    {
+        $base = env('FRONTEND_URL') ?: config('app.frontend_url') ?: env('CLIENT_URL') ?: 'http://localhost:3000';
+        $url = rtrim($base, '/') . '/' . ltrim($path, '/');
+        $query = array_filter($query, fn($v) => $v !== null && $v !== '');
+        return !empty($query) ? $url . '?' . http_build_query($query) : $url;
+    }
+
 private function resolveNextExpiryDate($currentExpireDate = null)
 {
     $today = date('Y-m-d');
@@ -200,9 +208,10 @@ public function packagePaymentSuccess(Request $request)
                 if ($invoice->status != 'Paid') {
                     // Give referral bonus
                     $referuser = \App\Models\User::where('my_referral_code', $user->refer_by)->first();
-                    $refbonus = 200; // Adjust amount as needed
                     
-                    if ($referuser) {
+                    if ($referuser && $referuser->bonus_percent > 0) {
+                        $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
+                        $refbonus = $amount * ($referuser->bonus_percent / 100);
                         $referuser->referal_bonus += $refbonus;
                         $referuser->account_balance += $refbonus;
                         $referuser->save();
@@ -249,10 +258,10 @@ public function packagePaymentSuccess(Request $request)
         Session::forget('sslcommerz_package_payment');
         
         // Redirect to success page
-        return redirect('/user/dashboard')->with([
-            'success' => 'Package payment completed successfully! Your account is now active.',
-            'invoice_id' => $invoice->invoiceID ?? ''
-        ]);
+        return redirect()->away($this->frontendUrl('/dashboard', [
+            'payment' => 'success',
+            'invoiceID' => $invoice->invoiceID ?? '',
+        ]));
         
     } catch (\Exception $e) {
         Log::error('Package payment success error: ' . $e->getMessage());
@@ -350,8 +359,9 @@ public function packagePaymentIPN(Request $request)
                     
                     // Give referral bonus
                     $referuser = \App\Models\User::where('my_referral_code', $user->refer_by)->first();
-                    if ($referuser) {
-                        $refbonus = 200;
+                    if ($referuser && $referuser->bonus_percent > 0) {
+                        $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
+                        $refbonus = $amount * ($referuser->bonus_percent / 100);
                         $referuser->referal_bonus += $refbonus;
                         $referuser->account_balance += $refbonus;
                         $referuser->save();

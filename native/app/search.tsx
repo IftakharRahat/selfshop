@@ -83,7 +83,9 @@ export default function SearchScreen() {
     queryKey: ["search", debouncedQuery],
     queryFn: async () => {
       const { data: d } = await apiClient.get(`/search?keywords=${encodeURIComponent(debouncedQuery)}`);
-      return d?.data ?? [];
+      // API returns paginated: { data: { data: [...products] } } or flat: { data: [...products] }
+      const items = d?.data?.data ?? d?.data ?? [];
+      return Array.isArray(items) ? items : [];
     },
     enabled: debouncedQuery.length >= 2,
     staleTime: 60_000,

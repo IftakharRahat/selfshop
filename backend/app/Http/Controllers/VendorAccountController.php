@@ -8,6 +8,7 @@ use App\Models\VendorKycDocument;
 use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -270,6 +271,49 @@ class VendorAccountController extends Controller
                 'document' => $document,
             ],
         ], 201);
+    }
+
+    /**
+     * Change the authenticated vendor's password.
+     * POST /api/vendor/change-password
+     */
+    public function changePassword(Request $request)
+    {
+        /** @var User $user */
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'old_password'          => ['required', 'string'],
+            'password'              => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'old_password.required'  => 'Current password is required.',
+            'password.required'      => 'New password is required.',
+            'password.min'           => 'New password must be at least 8 characters.',
+            'password.confirmed'     => 'Passwords do not match.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation failed',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        if (!Hash::check($request->old_password, $user->password)) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Current password is incorrect.',
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Password changed successfully.',
+        ]);
     }
 }
 

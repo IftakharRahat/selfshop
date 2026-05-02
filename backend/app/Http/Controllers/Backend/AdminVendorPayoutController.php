@@ -28,7 +28,7 @@ class AdminVendorPayoutController extends Controller
             'approved' => VendorPayoutRequest::where('status', 'approved')->count(),
             'rejected' => VendorPayoutRequest::where('status', 'rejected')->count(),
         ];
-        $query = VendorPayoutRequest::with(['vendor:id,company_name,contact_email', 'payoutAccount'])
+        $query = VendorPayoutRequest::with(['vendor:id,company_name,contact_email', 'vendor.payoutAccounts', 'payoutAccount'])
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at');
         if ($statusSlug) {

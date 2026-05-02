@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -20,8 +23,10 @@ interface NotificationItem {
   id: string;
   title: string;
   message: string;
+  description?: string | null;
   type: string;
   action_url?: string | null;
+  meta?: Record<string, unknown>;
   is_read: boolean;
   read_at?: string | null;
   created_at?: string | null;
@@ -38,6 +43,7 @@ const TYPE_ICONS: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["vendor-notifications"],
@@ -67,6 +73,13 @@ export default function NotificationsScreen() {
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unread_count ?? 0;
 
+  const handleNotificationPress = (item: NotificationItem) => {
+    if (!item.is_read) {
+      markReadMutation.mutate(item.id);
+    }
+    setSelectedNotification({ ...item, is_read: true });
+  };
+
   const getTimeAgo = (dateStr?: string | null) => {
     if (!dateStr) return "";
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -78,10 +91,22 @@ export default function NotificationsScreen() {
     return `${days}d ago`;
   };
 
+  const formatDateTime = (dateStr?: string | null) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleString();
+  };
+
+  const selectedTypeConfig = selectedNotification
+    ? TYPE_ICONS[selectedNotification.type] ?? TYPE_ICONS.info
+    : TYPE_ICONS.info;
+  const selectedMessage = selectedNotification?.message || selectedNotification?.description || "";
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/account")} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#1a1a2e" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
@@ -128,9 +153,7 @@ export default function NotificationsScreen() {
             return (
               <TouchableOpacity
                 style={[styles.notifCard, !item.is_read && styles.notifCardUnread]}
-                onPress={() => {
-                  if (!item.is_read) markReadMutation.mutate(item.id);
-                }}
+                onPress={() => handleNotificationPress(item)}
                 activeOpacity={0.7}
               >
                 <View style={[styles.notifIcon, { backgroundColor: typeConfig.color + "15" }]}>
@@ -141,8 +164,14 @@ export default function NotificationsScreen() {
                     <Text style={styles.notifTitle} numberOfLines={1}>{item.title}</Text>
                     {!item.is_read && <View style={styles.unreadDot} />}
                   </View>
-                  <Text style={styles.notifMessage} numberOfLines={2}>{item.message}</Text>
-                  <Text style={styles.notifTime}>{getTimeAgo(item.created_at)}</Text>
+                  <Text style={styles.notifMessage} numberOfLines={2}>{item.message || item.description}</Text>
+                  <View style={styles.notifFooter}>
+                    <Text style={styles.notifTime}>{getTimeAgo(item.created_at)}</Text>
+                    <View style={styles.detailsHint}>
+                      <Text style={styles.detailsHintText}>Details</Text>
+                      <Ionicons name="chevron-forward" size={12} color={BRAND.primary} />
+                    </View>
+                  </View>
                 </View>
               </TouchableOpacity>
             );
@@ -150,6 +179,53 @@ export default function NotificationsScreen() {
           ListFooterComponent={<View style={{ height: 20 }} />}
         />
       )}
+
+      <Modal
+        visible={!!selectedNotification}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedNotification(null)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setSelectedNotification(null)}>
+          <Pressable style={styles.modalCard} onPress={(event) => event.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderLeft}>
+                <View style={[styles.modalIcon, { backgroundColor: selectedTypeConfig.color + "15" }]}>
+                  <Ionicons name={selectedTypeConfig.icon} size={20} color={selectedTypeConfig.color} />
+                </View>
+                <View>
+                  <Text style={styles.modalEyebrow}>Notification</Text>
+                  <Text style={styles.modalTitle} numberOfLines={1}>{selectedNotification?.type ?? "Info"}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setSelectedNotification(null)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={22} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalBody}>
+              <Text style={styles.modalItemTitle}>{selectedNotification?.title}</Text>
+              {selectedMessage ? (
+                <Text style={styles.modalMessage}>{selectedMessage}</Text>
+              ) : (
+                <Text style={styles.modalMessageMuted}>No additional message was provided.</Text>
+              )}
+              {selectedNotification?.created_at && (
+                <View style={styles.modalMetaRow}>
+                  <Ionicons name="time-outline" size={14} color="#9ca3af" />
+                  <Text style={styles.modalTime}>{formatDateTime(selectedNotification.created_at)}</Text>
+                </View>
+              )}
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.modalDoneButton} onPress={() => setSelectedNotification(null)} activeOpacity={0.85}>
+                <Text style={styles.modalDoneText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -205,7 +281,75 @@ const styles = StyleSheet.create({
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: BRAND.primary, marginLeft: 8 },
   notifMessage: { fontSize: 12, color: "#6b7280", marginTop: 3, lineHeight: 17 },
   notifTime: { fontSize: 10, color: "#9ca3af", marginTop: 4 },
+  notifFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  detailsHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  detailsHintText: { fontSize: 11, fontWeight: "600", color: BRAND.primary },
   loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   emptyText: { fontSize: 14, color: "#9ca3af" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.46)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 22,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 390,
+    maxHeight: "78%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  modalHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  modalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalEyebrow: { fontSize: 11, fontWeight: "600", color: "#9ca3af", textTransform: "uppercase" },
+  modalTitle: { fontSize: 15, fontWeight: "700", color: "#1a1a2e", textTransform: "capitalize" },
+  modalCloseBtn: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
+  modalScroll: { maxHeight: 300 },
+  modalBody: { paddingHorizontal: 18, paddingVertical: 18, gap: 10 },
+  modalItemTitle: { fontSize: 18, fontWeight: "700", color: "#1a1a2e", lineHeight: 24 },
+  modalMessage: { fontSize: 14, color: "#4b5563", lineHeight: 21 },
+  modalMessageMuted: { fontSize: 13, color: "#9ca3af", lineHeight: 19 },
+  modalMetaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  modalTime: { fontSize: 12, color: "#9ca3af" },
+  modalFooter: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+    alignItems: "flex-end",
+  },
+  modalDoneButton: {
+    backgroundColor: BRAND.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  modalDoneText: { fontSize: 13, fontWeight: "700", color: "#fff" },
 });

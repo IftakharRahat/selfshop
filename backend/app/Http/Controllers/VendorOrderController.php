@@ -412,6 +412,9 @@ class VendorOrderController extends Controller
             // Restore product stock on vendor cancellation
             app(\App\Services\StockService::class)->restoreForOrder($order->id);
 
+            // Refund delivery charge to reseller wallet
+            app(\App\Services\OrderDeliveryService::class)->refundDeliveryCharge($order);
+
             if ($request->filled('cancel_reason')) {
                 $order->cancel_comment = (string) $request->cancel_reason;
             }

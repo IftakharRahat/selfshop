@@ -9,9 +9,41 @@ import MetricCard from "@/components/pages/dashboard/metric-card";
 import OrderInsightCards from "@/components/pages/dashboard/order-insight-cards";
 import OrdersTable from "@/components/pages/dashboard/orders-table";
 import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { trackPurchase } from "@/lib/trackingEvents";
 
 export default function Dashboard() {
 	const { data } = useGetAllDashboardDataQuery(undefined);
+	const searchParams = useSearchParams();
+	const purchaseTracked = useRef(false);
+
+	// Fire Purchase event when redirected from payment gateway
+	useEffect(() => {
+		if (searchParams.get("payment") === "success" && !purchaseTracked.current) {
+			purchaseTracked.current = true;
+			const invoiceID = searchParams.get("invoiceID") || undefined;
+			const value = searchParams.get("value") ? Number(searchParams.get("value")) : undefined;
+			const packageName = searchParams.get("package_name") || undefined;
+			const packageId = searchParams.get("package_id") ? Number(searchParams.get("package_id")) : undefined;
+			trackPurchase({
+				transactionId: invoiceID,
+				currency: "BDT",
+				value,
+				packageName,
+				packageId,
+			});
+			// Clean up URL params without triggering re-render
+			const url = new URL(window.location.href);
+			url.searchParams.delete("payment");
+			url.searchParams.delete("invoiceID");
+			url.searchParams.delete("expire_date");
+			url.searchParams.delete("value");
+			url.searchParams.delete("package_name");
+			url.searchParams.delete("package_id");
+			window.history.replaceState({}, "", url.pathname);
+		}
+	}, [searchParams]);
 
 	// 🛠 FIXING API TYPO: blance → balance
 	const metrics = {

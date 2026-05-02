@@ -41,7 +41,7 @@ class VendorEarningsController extends Controller
         $data = Cache::remember($cacheKey, now()->addSeconds(60), function () use ($vendor) {
             $this->ensureEarningsForVendorOrders($vendor->id);
 
-            $total_sales = (float) $vendor->earnings()->sum('line_total');
+            $total_sales = (float) $vendor->earnings()->sum('net_amount');
             $total_commission = (float) $vendor->earnings()->sum('commission_amount');
             $net_earnings = (float) $vendor->earnings()->sum('net_amount');
             $pending_balance = (float) $vendor->earnings()->where('status', 'pending')->sum('net_amount');
@@ -55,12 +55,16 @@ class VendorEarningsController extends Controller
                 ->where('status', 'pending')
                 ->sum('amount');
 
+            // Subtract pending payout requests from available balance so suppliers
+            // see their actual withdrawable amount (industry-standard 'hold' pattern).
+            $effective_available = max(0, $available_balance - $pending_request_amount);
+
             return [
                 'total_sales' => $total_sales,
                 'total_commission' => $total_commission,
                 'net_earnings' => $net_earnings,
                 'pending_balance' => $pending_balance,
-                'available_balance' => $available_balance,
+                'available_balance' => $effective_available,
                 'paid_total' => $paid_total,
                 'pending_payout_request_amount' => round($pending_request_amount, 2),
             ];

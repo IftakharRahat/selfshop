@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   View,
   ScrollView,
@@ -7,12 +7,15 @@ import {
   RefreshControl,
   Dimensions,
   ActivityIndicator,
+  Share,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { Text } from "tamagui";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSession, logout } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
@@ -56,6 +59,7 @@ function formatCurrency(value: number | string | undefined): string {
 }
 
 export default function DashboardScreen() {
+  const insets = useSafeAreaInsets();
   const { data: session, signOut } = useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
@@ -122,8 +126,30 @@ export default function DashboardScreen() {
   const unreadNotifs = notificationsQuery.data ?? 0;
   const walletBalance = Number(
     metrics?.balance ?? metrics?.blance ?? profile?.account_balance ?? 0
-
   );
+
+  /* ── Referral data ── */
+  const referralCode = profile?.my_referral_code ?? "";
+  const referralLink = referralCode
+    ? `https://selfshop.com.bd/register?refer=${referralCode}`
+    : "";
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  const copyReferralCode = useCallback(async () => {
+    if (!referralCode) return;
+    await Clipboard.setStringAsync(referralCode);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  }, [referralCode]);
+
+  const shareReferralLink = useCallback(async () => {
+    if (!referralLink) return;
+    try {
+      await Share.share({
+        message: `Join SelfShop and start your reselling business! Use my referral code: ${referralCode}\n\n${referralLink}`,
+      });
+    } catch {}
+  }, [referralLink, referralCode]);
 
   const kpiCards = useMemo(() => [
     { title: "Total Sale", value: formatCurrency(metrics?.total_sales), icon: "trending-up-outline" as const, color: "#059669", bg: "#ECFDF5" },
@@ -182,7 +208,7 @@ export default function DashboardScreen() {
           colors={["#E5005F", "#B8004C", "#8C003A"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.headerGradient}
+          style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
         >
           <View style={styles.headerTop}>
             <View style={styles.headerLeft}>
@@ -248,6 +274,70 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
+
+        {/* ─── Referral Invite Banner ─── */}
+        {referralCode ? (
+          <View style={styles.sectionContainer}>
+            <LinearGradient
+              colors={["#FF6B35", "#E5005F"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.referralBanner}
+            >
+              {/* Decorative circles */}
+              <View style={styles.referralDecor1} />
+              <View style={styles.referralDecor2} />
+
+              <View style={styles.referralHeader}>
+                <View style={styles.referralIconCircle}>
+                  <Ionicons name="gift" size={22} color="#E5005F" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.referralTitle}>Invite & Earn</Text>
+                  <Text style={styles.referralSubtitle}>
+                    Share your code and earn bonus on each referral!
+                  </Text>
+                </View>
+              </View>
+
+              {/* Referral Code */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.referralCodeBox,
+                  pressed && { opacity: 0.9 },
+                ]}
+                onPress={copyReferralCode}
+              >
+                <View style={styles.referralCodeLeft}>
+                  <Text style={styles.referralCodeLabel}>Your Referral Code</Text>
+                  <Text style={styles.referralCodeValue}>{referralCode}</Text>
+                </View>
+                <View style={styles.referralCopyBtn}>
+                  <Ionicons
+                    name={codeCopied ? "checkmark-circle" : "copy-outline"}
+                    size={18}
+                    color={codeCopied ? "#059669" : "#E5005F"}
+                  />
+                  <Text style={[styles.referralCopyText, codeCopied && { color: "#059669" }]}>
+                    {codeCopied ? "Copied!" : "Copy"}
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* Share Button */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.referralShareBtn,
+                  pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                ]}
+                onPress={shareReferralLink}
+              >
+                <Ionicons name="share-social" size={18} color="#E5005F" />
+                <Text style={styles.referralShareText}>Share Referral Link</Text>
+              </Pressable>
+            </LinearGradient>
+          </View>
+        ) : null}
 
         {/* ─── Quick Actions ─── */}
         <View style={styles.sectionContainer}>
@@ -484,7 +574,6 @@ const styles = StyleSheet.create({
 
   /* ── Header ── */
   headerGradient: {
-    paddingTop: 56,
     paddingBottom: 24,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,
@@ -767,6 +856,111 @@ const styles = StyleSheet.create({
   menuItemContent: {
     flex: 1,
     gap: 1,
+  },
+
+  /* ── Referral Banner ── */
+  referralBanner: {
+    borderRadius: 20,
+    padding: 20,
+    overflow: "hidden",
+    position: "relative",
+  },
+  referralDecor1: {
+    position: "absolute",
+    top: -20,
+    right: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  referralDecor2: {
+    position: "absolute",
+    bottom: -15,
+    left: -15,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  referralHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  referralIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  referralTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  referralSubtitle: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 2,
+  },
+  referralCodeBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
+  },
+  referralCodeLeft: {
+    flex: 1,
+  },
+  referralCodeLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "500",
+    marginBottom: 2,
+  },
+  referralCodeValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1A1A2E",
+    letterSpacing: 1.5,
+  },
+  referralCopyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FDF2F8",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  referralCopyText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#E5005F",
+  },
+  referralShareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 14,
+  },
+  referralShareText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#E5005F",
   },
 
   /* ── Sign Out ── */

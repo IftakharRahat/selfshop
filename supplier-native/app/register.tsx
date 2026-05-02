@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -156,7 +157,11 @@ export default function RegisterScreen() {
         {/* Branding */}
         <View style={styles.brandingSection}>
           <View style={styles.logoWrap}>
-            <Ionicons name="storefront" size={36} color="#fff" />
+            <Image
+              source={require("@/assets/images/supplier_app_logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.title}>{step === 1 ? "Create your account" : "Business details"}</Text>
           <Text style={styles.subtitle}>
@@ -336,7 +341,8 @@ const styles = StyleSheet.create({
   stepLabel: { fontSize: 12, fontWeight: "500", color: "#9ca3af" },
   // Branding
   brandingSection: { alignItems: "center", marginTop: 12, marginBottom: 24 },
-  logoWrap: { width: 68, height: 68, borderRadius: 18, backgroundColor: BRAND.primary, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  logoWrap: { width: 72, height: 72, borderRadius: 18, overflow: "hidden", marginBottom: 14 },
+  logoImage: { width: 72, height: 72 },
   title: { fontSize: 22, fontWeight: "700", color: "#1a1a2e" },
   subtitle: { fontSize: 13, color: "#6b7280", marginTop: 4, textAlign: "center" },
   // Form

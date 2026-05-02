@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   View,
   FlatList,
@@ -13,6 +13,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -58,8 +59,15 @@ export default function OrderIncomeScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const incomeList: any[] = Array.isArray(incomeQuery.data) ? incomeQuery.data : [];
+  const [dateFilter, setDateFilter] = useState<DateFilterKey>("all");
+
+  const incomeListRaw: any[] = Array.isArray(incomeQuery.data) ? incomeQuery.data : [];
   const profile = meQuery.data;
+
+  const incomeList = useMemo(
+    () => incomeListRaw.filter((item) => isWithinDateRange(item.created_at, dateFilter)),
+    [incomeListRaw, dateFilter],
+  );
 
   const isRefreshing = incomeQuery.isRefetching;
   const onRefresh = useCallback(() => {
@@ -137,6 +145,9 @@ export default function OrderIncomeScreen() {
             </View>
           ))}
         </View>
+
+        {/* ── Date Filter ── */}
+        <DateFilter value={dateFilter} onChange={setDateFilter} />
 
         {/* ── Income List ── */}
         <View style={styles.sectionHeader}>

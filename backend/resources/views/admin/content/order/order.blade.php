@@ -148,17 +148,18 @@
             <div class="admin-card-header">
                 <h6 class="admin-card-title">Total <span class="total">0</span> Orders</h6>
                 <div class="admin-card-actions d-flex align-items-center gap-2">
-                    <a href="{{ url('admin/create/order') }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-lg"></i> Create New
+                    <a href="{{ url('admin/create/order') }}" class="btn btn-sm" style="background: var(--admin-primary, #2d2a5d); color: #fff; border-radius: 6px;">
+                        <i class="bi bi-plus-lg me-1"></i>Create New
                     </a>
-                    <button type="button" class="btn btn-outline-secondary order-print-btn btn-sm">
-                        <i class="bi bi-printer"></i> Invoice Print
+                    <button type="button" class="btn btn-sm order-print-btn" style="background: #fff; color: var(--admin-primary, #2d2a5d); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 6px;">
+                        <i class="bi bi-printer me-1"></i>Invoice Print
                     </button>
                     <div class="btn-group dropdown">
                         <a href="javascript: void(0);"
-                            class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                            class="btn btn-sm dropdown-toggle"
+                            style="background: #fff; color: var(--admin-primary, #2d2a5d); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 6px;"
                             data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-truck"></i> Assign Courier
+                            <i class="bi bi-truck me-1"></i>Assign Courier
                         </a>
                         <div class="dropdown-menu dropdown-menu-end">
                             @foreach (App\Models\Courier::where('status','Active')->get()->reverse() as $courier)
@@ -178,10 +179,22 @@
                     </div>
                 @endif
 
-                <div class="mb-4 d-flex align-items-center">
-                    <input type="text" id="admin_order_search" class="form-control" 
-                        placeholder="Search orders..." 
-                        style="width: 250px; border-radius: 6px; border: 1px solid #ced4da; padding-left: 15px;">
+                <div class="dash-toolbar">
+                    <div class="dash-presets">
+                        <button class="dash-preset-btn date-preset" data-preset="today">Today</button>
+                        <button class="dash-preset-btn date-preset" data-preset="week">This Week</button>
+                        <button class="dash-preset-btn active date-preset" data-preset="month">This Month</button>
+                        <button class="dash-preset-btn date-preset" data-preset="year">This Year</button>
+                        <button class="dash-preset-btn date-preset" data-preset="all">All Time</button>
+                    </div>
+                    <div class="dash-filter-group">
+                        <label>FROM</label>
+                        <input type="date" id="filter_from_date" class="form-control">
+                    </div>
+                    <div class="dash-filter-group">
+                        <label>TO</label>
+                        <input type="date" id="filter_to_date" class="form-control">
+                    </div>
                 </div>
 
                 @if($admin->hasrole('Shop'))
@@ -319,6 +332,10 @@
                 var orderinfotbl = $('#orderinfo').DataTable({
                     ajax: {
                         url: "{{ url('admin/admin_order/') }}" + '/' + orderstatus,
+                        data: function (d) {
+                            d.from_date = $('#filter_from_date').val();
+                            d.to_date = $('#filter_to_date').val();
+                        }
                     },
                     ordering: false,
                     processing: true,
@@ -840,7 +857,7 @@
                                 '<td><span class="productName">' + e.params.data
                                 .text + '</span></td>' +
                                 '<td><input type="number" class="productQuantity form-control" style="width:80px;" value="1"></td>' +
-                                '<td><input type="number" id="productPrice" class="form-control" style="width:80px;" value="'+ e.params.data
+                                '<td><input type="number" class="productPrice form-control" style="width:80px;" value="'+ e.params.data
                                 .productPrice +'"></td>' +
                                 '<td><button class="btn btn-sm btn-danger delete-btn"><i class="fa fa-trash"></i></button></td>\n' +
                                 "</tr>"
@@ -1138,7 +1155,7 @@
                         $(document).on("input", "#paymentAmount", function() {
                             calculation();
                         });
-                        $(document).on("input", "#productPrice", function() {
+                        $(document).on("input", ".productPrice", function() {
                             calculation();
                         });
                         $(document).on("input", "#deliveryCharge", function() {
@@ -1147,24 +1164,28 @@
                         $(document).on("input", "#discountCharge", function() {
                             calculation();
                         });
+                        $(document).on("input", "#editSellerProfit", function() {
+                            calculation();
+                        });
                         calculation();
 
                         function calculation() {
                             var subtotal = 0;
                             var deliveryCharge = +$("#deliveryCharge").val();
                             var discountCharge = +$("#discountCharge").val();
-                            var profit = +$("#orderProfit").val() || 0;
+                            var profit = +$("#editSellerProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
-                                subtotal = subtotal + +$(this).find("#productPrice").val() * +$(this).find(".productQuantity").val();
+                                subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
-                            subtotal = subtotal + profit;
-                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            subtotal = Math.round((subtotal + profit) * 100) / 100;
+                            $("#editSubTotal").val(subtotal);
+                            $("#orderProfit").val(profit);
                             var totalDue = subtotal - discountCharge;
                             if (advanceDelivery == 0) {
                                 totalDue = totalDue + deliveryCharge;
                             }
-                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
+                            $("#total").val(Math.round(totalDue * 100) / 100);
                         }
 
                         $(document).on("click", ".delete-btn", function() {
@@ -1237,7 +1258,7 @@
                 var customerNote = $("#customerNote");
                 var cancel_comment = $("#cancel_comment");
                 var storeID = $("#storeID");
-                var total = +$("#total").attr('data-raw') || +$("#total").text();
+                var total = +$("#total").val();
                 var deliveryCharge = +$("#deliveryCharge").val();
                 var discountCharge = +$("#discountCharge").val();
                 var paymentTypeID = $("#paymentTypeID").val();
@@ -1261,7 +1282,7 @@
                     obj.productCode = currentRow.find(".productCode").text();
                     obj.productName = currentRow.find(".productName").text();
                     obj.productQuantity = currentRow.find(".productQuantity").val();
-                    obj.productPrice = currentRow.find("#productPrice").val();
+                    obj.productPrice = currentRow.find(".productPrice").val();
                     product.push(obj);
                     productCount++;
                 });
@@ -1347,6 +1368,8 @@
                 data["products"] = product;
                 data["memo"] = memo;
                 data["parcelID"] = parcelID;
+                data["editSellerProfit"] = +$("#editSellerProfit").val();
+                data["editSubTotal"] = +$("#editSubTotal").val();
                 $.ajax({
                     type: "PUT",
                     url: "{{ url('admin_orders') }}/" + id,
@@ -1544,6 +1567,10 @@
                 var orderinfotbl = $('#orderinfo').DataTable({
                     ajax: {
                         url: "{{ url('admin/admin_order/') }}" + '/' + orderstatus,
+                        data: function (d) {
+                            d.from_date = $('#filter_from_date').val();
+                            d.to_date = $('#filter_to_date').val();
+                        }
                     },
                     ordering: false,
                     processing: true,
@@ -2071,7 +2098,7 @@
                                 '<td><span class="productName">' + e.params.data
                                 .text + '</span></td>' +
                                 '<td><input type="number" class="productQuantity form-control" style="width:80px;" value="1"></td>' +
-                                '<td><input type="number" id="productPrice" class="form-control" style="width:80px;" value="'+ e.params.data
+                                '<td><input type="number" class="productPrice form-control" style="width:80px;" value="'+ e.params.data
                                 .productPrice +'"></td>' +
                                 '<td><button class="btn btn-sm btn-danger delete-btn"><i class="fa fa-trash"></i></button></td>\n' +
                                 "</tr>"
@@ -2369,7 +2396,7 @@
                         $(document).on("input", "#paymentAmount", function() {
                             calculation();
                         });
-                        $(document).on("input", "#productPrice", function() {
+                        $(document).on("input", ".productPrice", function() {
                             calculation();
                         });
                         $(document).on("input", "#deliveryCharge", function() {
@@ -2378,24 +2405,28 @@
                         $(document).on("input", "#discountCharge", function() {
                             calculation();
                         });
+                        $(document).on("input", "#editSellerProfit", function() {
+                            calculation();
+                        });
                         calculation();
 
                         function calculation() {
                             var subtotal = 0;
                             var deliveryCharge = +$("#deliveryCharge").val();
                             var discountCharge = +$("#discountCharge").val();
-                            var profit = +$("#orderProfit").val() || 0;
+                            var profit = +$("#editSellerProfit").val() || 0;
                             var advanceDelivery = +$("#advanceDelivery").val() || 0;
                             $("#productTable tbody tr").each(function(index) {
-                                subtotal = subtotal + +$(this).find("#productPrice").val() * +$(this).find(".productQuantity").val();
+                                subtotal = subtotal + +$(this).find(".productPrice").val() * +$(this).find(".productQuantity").val();
                             });
-                            subtotal = subtotal + profit;
-                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            subtotal = Math.round((subtotal + profit) * 100) / 100;
+                            $("#editSubTotal").val(subtotal);
+                            $("#orderProfit").val(profit);
                             var totalDue = subtotal - discountCharge;
                             if (advanceDelivery == 0) {
                                 totalDue = totalDue + deliveryCharge;
                             }
-                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
+                            $("#total").val(Math.round(totalDue * 100) / 100);
                         }
 
                         $(document).on("click", ".delete-btn", function() {
@@ -2467,7 +2498,7 @@
                 var customerNote = $("#customerNote");
                 var cancel_comment = $("#cancel_comment");
                 var storeID = $("#storeID");
-                var total = +$("#total").attr('data-raw') || +$("#total").text();
+                var total = +$("#total").val();
                 var deliveryCharge = +$("#deliveryCharge").val();
                 var discountCharge = +$("#discountCharge").val();
                 var paymentTypeID = $("#paymentTypeID").val();
@@ -2491,7 +2522,7 @@
                     obj.productCode = currentRow.find(".productCode").text();
                     obj.productName = currentRow.find(".productName").text();
                     obj.productQuantity = currentRow.find(".productQuantity").val();
-                    obj.productPrice = currentRow.find("#productPrice").val();
+                    obj.productPrice = currentRow.find(".productPrice").val();
                     product.push(obj);
                     productCount++;
                 });
@@ -2814,6 +2845,76 @@
                     toastr.error('An error occurred while notifying vendor.');
                 }
             });
+        });
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            // Wait a moment for tables to initialize
+            setTimeout(function() {
+                var theTable = (typeof orderinfotbl !== 'undefined' && orderinfotbl !== null) ? orderinfotbl : $('#orderinfo').DataTable();
+
+                // Set default to This Month
+                var today = new Date();
+                var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                
+                function formatDate(date) {
+                    var d = new Date(date),
+                        month = '' + (d.getMonth() + 1),
+                        day = '' + d.getDate(),
+                        year = d.getFullYear();
+
+                    if (month.length < 2) month = '0' + month;
+                    if (day.length < 2) day = '0' + day;
+
+                    return [year, month, day].join('-');
+                }
+
+                $('#filter_from_date').val(formatDate(firstDay));
+                $('#filter_to_date').val(formatDate(today));
+
+                // Date Picker Change Event
+                $('#filter_from_date, #filter_to_date').on('change', function() {
+                    $('.date-preset').removeClass('active');
+                    theTable.ajax.reload();
+                });
+
+                // Preset Buttons Click Event
+                $('.date-preset').on('click', function() {
+                    $('.date-preset').removeClass('active');
+                    $(this).addClass('active');
+
+                    var preset = $(this).data('preset');
+                    var fromDate = '';
+                    var toDate = '';
+                    var dt = new Date();
+
+                    if (preset === 'today') {
+                        fromDate = formatDate(dt);
+                        toDate = formatDate(dt);
+                    } else if (preset === 'week') {
+                        var first = dt.getDate() - dt.getDay() + (dt.getDay() === 0 ? -6 : 1); // Monday
+                        var firstDate = new Date(dt.setDate(first));
+                        fromDate = formatDate(firstDate);
+                        toDate = formatDate(new Date());
+                    } else if (preset === 'month') {
+                        dt = new Date();
+                        fromDate = formatDate(new Date(dt.getFullYear(), dt.getMonth(), 1));
+                        toDate = formatDate(new Date());
+                    } else if (preset === 'year') {
+                        dt = new Date();
+                        fromDate = formatDate(new Date(dt.getFullYear(), 0, 1));
+                        toDate = formatDate(new Date());
+                    } else if (preset === 'all') {
+                        fromDate = '';
+                        toDate = '';
+                    }
+
+                    $('#filter_from_date').val(fromDate);
+                    $('#filter_to_date').val(toDate);
+                    theTable.ajax.reload();
+                });
+            }, 500);
         });
     </script>
 @endsection

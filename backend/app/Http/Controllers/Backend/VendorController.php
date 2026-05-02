@@ -82,6 +82,75 @@ class VendorController extends Controller
     }
 
     /**
+     * Supplier sales overview page.
+     * GET /admin/vendors/{vendor}/sales-summary
+     */
+    public function salesSummary(Vendor $vendor)
+    {
+        $vendor->load(['user', 'payoutAccounts']);
+        $vendorId = $vendor->id;
+
+        // ── Counts ──
+        $productCount = $vendor->products()->count();
+        $totalOrders = \App\Models\Order::whereHas('orderproducts.product', fn ($q) => $q->where('vendor_id', $vendorId))->count();
+        $ordersByStatus = \App\Models\Order::whereHas('orderproducts.product', fn ($q) => $q->where('vendor_id', $vendorId))
+            ->select('status', \DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->all();
+
+        // ── Earnings ──
+        $totalSales = (float) $vendor->earnings()->sum('line_total');
+        $totalCommission = (float) $vendor->earnings()->sum('commission_amount');
+        $netEarnings = (float) $vendor->earnings()->sum('net_amount');
+        $pendingBalance = (float) $vendor->earnings()->where('status', 'pending')->sum('net_amount');
+        $rawAvailable = (float) ($vendor->earnings()
+            ->where('status', 'available')
+            ->selectRaw('SUM(net_amount - COALESCE(paid_amount, 0)) as total')
+            ->value('total') ?? 0);
+        $paidTotal = (float) $vendor->earnings()->sum(\DB::raw('COALESCE(paid_amount, 0)'));
+        $pendingPayoutAmount = (float) $vendor->payoutRequests()->where('status', 'pending')->sum('amount');
+        $availableBalance = max(0, $rawAvailable - $pendingPayoutAmount);
+
+        // ── Top 10 delivered products ──
+        $topProducts = \App\Models\VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
+            ->where('vendor_earnings.status', 'available')
+            ->join('orderproducts', 'vendor_earnings.order_product_id', '=', 'orderproducts.id')
+            ->join('products', 'orderproducts.product_id', '=', 'products.id')
+            ->select(
+                'products.ProductName',
+                \DB::raw('SUM(orderproducts.quantity) as total_qty'),
+                \DB::raw('SUM(vendor_earnings.line_total) as total_revenue'),
+                \DB::raw('SUM(vendor_earnings.net_amount) as total_net')
+            )
+            ->groupBy('products.id', 'products.ProductName')
+            ->orderByDesc('total_revenue')
+            ->limit(10)
+            ->get();
+
+        // ── Recent orders (paginated, 10 per page) ──
+        $recentOrders = \App\Models\Order::whereHas('orderproducts.product', fn ($q) => $q->where('vendor_id', $vendorId))
+            ->with('customers')
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'orders_page')
+            ->withQueryString();
+
+        // ── All products (paginated, 10 per page) ──
+        $allProducts = $vendor->products()
+            ->select('id', 'ProductName', 'ProductRegularPrice', 'ProductSalePrice', 'qty', 'status')
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'products_page')
+            ->withQueryString();
+
+        return view('backend.content.vendors.sales_summary', compact(
+            'vendor', 'productCount', 'totalOrders', 'ordersByStatus',
+            'totalSales', 'totalCommission', 'netEarnings',
+            'pendingBalance', 'availableBalance', 'paidTotal',
+            'pendingPayoutAmount', 'topProducts', 'recentOrders', 'allProducts'
+        ));
+    }
+
+    /**
      * Edit supplier account details.
      * GET /admin/vendors/{vendor}/edit
      */
@@ -439,6 +508,24 @@ class VendorController extends Controller
             return response()->json(['status' => true, 'message' => "Supplier '{$companyName}' deleted."]);
         }
         return redirect()->route('admin.vendors.index')->with('message', "Supplier '{$companyName}' has been permanently deleted.");
+    }
+    /**
+     * Auto-login as the vendor's user account in the storefront.
+     * GET /admin/vendor-autologin/{vendor}
+     */
+    public function autologin(Vendor $vendor)
+    {
+        $user = User::find($vendor->user_id);
+        if (!$user) {
+            return redirect()->back()->with('error', 'User account not found for this supplier.');
+        }
+
+        // Generate a Sanctum token for the target user (same as user autologin)
+        $token = $user->createToken('admin-impersonate')->plainTextToken;
+
+        // Redirect to the vendor panel (supplier dashboard) with the token
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'https://selfshop.com.bd'), '/');
+        return redirect($frontendUrl . '/impersonate?token=' . urlencode($token) . '&redirect=/vendor');
     }
 }
 
