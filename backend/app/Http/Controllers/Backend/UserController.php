@@ -318,10 +318,10 @@ class UserController extends Controller
     {
         $user = User::where('id', $id)->first();
         if (is_null($user)) {
-            return redirect()->back()->with('error', 'Something went wrong');
+            return response()->json(['error' => 'User not found'], 404);
         } else {
             $user->delete();
-            return redirect()->back()->with('message', 'User Deleted Successfully');
+            return response()->json(['message' => 'User Deleted Successfully']);
         }
     }
 }

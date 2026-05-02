@@ -85,7 +85,7 @@
 
 <script>
 $(document).ready(function() {
-    var token = $("input[name='_token']").val();
+    var token = $('meta[name="csrf_token"]').attr('content') || $("input[name='_token']").val();
     $(".datepicker").flatpickr();
     var brandinfo = $('#roleinfo').DataTable({
         order: [
@@ -186,9 +186,9 @@ $(document).ready(function() {
             .then((willDelete) => {
                 if (willDelete) {
                     $.ajax({
-                        type: 'DELETE', url: 'brands/' + brandId, data: { '_token': token },
+                        type: 'DELETE', url: 'users/' + brandId, data: { '_token': token },
                         success: function(data) {
-                            swal("Brand has been deleted!", { icon: "success" });
+                            swal("User has been deleted!", { icon: "success" });
                             brandinfo.ajax.reload();
                         },
                         error: function(error) { console.log('error'); }
