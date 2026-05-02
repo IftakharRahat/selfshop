@@ -14,6 +14,7 @@ import { queryClient } from "@/lib/query-client";
 import { tamaguiConfig } from "../tamagui.config";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import { ForceUpdateModal } from "@/components/force-update-modal";
+import NotificationProvider from "@/components/NotificationProvider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -69,6 +70,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <GestureHandlerRootView style={styles.container}>
+          <NotificationProvider>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -128,6 +130,7 @@ export default function RootLayout() {
               closeButton
             />
             <ForceUpdateGate />
+          </NotificationProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
     </TamaguiProvider>
