@@ -61,7 +61,7 @@ export function ProductCard({
 
         {isResellerActive ? (
           <Text fontSize="$4" color="#1A1A2E" fontWeight="bold">
-            ৳{price}
+            ৳{parseFloat(price).toFixed(2)}
           </Text>
         ) : (
           <View style={styles.lockedRow}>

@@ -506,7 +506,7 @@ export default function HomeScreen() {
                   </Text>
                   {(product.storefront_price || product.ProductSalePrice) && (
                     <Text style={styles.promoProductPrice}>
-                      ৳{product.storefront_price ?? product.ProductSalePrice}
+                      ৳{parseFloat(product.storefront_price ?? product.ProductSalePrice).toFixed(2)}
                     </Text>
                   )}
                 </Pressable>
