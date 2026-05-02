@@ -1,0 +1,65 @@
+# EAS archives the Git root for this monorepo, even when the command is run
+# from native/. Exclude sibling apps, backend files, VCS data, and local caches
+# so the cloud upload only contains the Expo app and small root metadata.
+/.git
+/.git/
+/.git/**
+.git
+.git/
+.git/**
+/.idea
+/.idea/
+/.idea/**
+/.run-logs
+/.run-logs/
+/.run-logs/**
+/backend
+/backend/
+/backend/**
+/Client
+/Client/
+/Client/**
+/db-recovery-backups
+/db-recovery-backups/
+/db-recovery-backups/**
+/doc
+/doc/
+/doc/**
+/docs
+/docs/
+/docs/**
+/Microsoft
+/Microsoft/
+/Microsoft/**
+/supplier-native
+/supplier-native/
+/supplier-native/**
+
+# Root-level dumps, logs, and temp/debug files are not needed by EAS.
+/*.html
+/*.log
+/*.php
+/*.resolved
+/*.sql
+/*.txt
+
+# Keep local native build outputs and caches out of the upload as well.
+/native/node_modules/
+/native/.expo/
+/native/.tamagui/
+/native/dist/
+/native/web-build/
+/native/coverage/
+/native/android/
+/native/ios/
+/native/expo-env.d.ts
+/native/npm-debug.*
+/native/.metro-health-check*
+
+# Credentials should be supplied through EAS credentials/env, not uploaded.
+/native/*.jks
+/native/*.p8
+/native/*.p12
+/native/*.key
+/native/*.mobileprovision
+/native/*.orig.*

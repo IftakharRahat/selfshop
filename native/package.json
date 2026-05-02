@@ -10,6 +10,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build:apk": "npx eas-cli@latest build -p android --profile preview",
+    "build:ios": "npx eas-cli@18.9.1 build -p ios --profile preview",
     "build:aab": "npx eas-cli@latest build -p android --profile production"
   },
   "dependencies": {
