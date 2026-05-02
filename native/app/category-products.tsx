@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Pressable,
   Animated,
-  Dimensions,
+  TextInput,
 } from "react-native";
 import { Text } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
@@ -44,6 +44,7 @@ export default function CategoryProductsScreen() {
   const insets = useSafeAreaInsets();
   const [sort, setSort] = useState("rating");
   const [showSort, setShowSort] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const sheetTranslateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
@@ -139,8 +140,15 @@ export default function CategoryProductsScreen() {
   });
 
   // Flatten all pages into a single products array
-  const products = data?.pages.flatMap((page) => page.products) ?? [];
+  const allProducts = data?.pages.flatMap((page) => page.products) ?? [];
   const totalCount = data?.pages[0]?.total ?? 0;
+
+  // Client-side search filter
+  const products = searchQuery.trim()
+    ? allProducts.filter((p: any) =>
+        (p.ProductName || "").toLowerCase().includes(searchQuery.trim().toLowerCase())
+      )
+    : allProducts;
 
   const handleEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -179,6 +187,25 @@ export default function CategoryProductsScreen() {
         <View style={{ width: 40 }} />
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={16} color="#999" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={`Search in ${displayTitle}...`}
+          placeholderTextColor="#aaa"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+        {searchQuery.length > 0 && (
+          <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+            <Ionicons name="close-circle" size={18} color="#ccc" />
+          </Pressable>
+        )}
+      </View>
+
       {/* Sort Bar */}
       <View style={styles.toolbar}>
         <Pressable style={styles.sortButton} onPress={openSheet}>
@@ -189,9 +216,9 @@ export default function CategoryProductsScreen() {
           <Ionicons name="chevron-down" size={14} color="#999" />
         </Pressable>
 
-        {!isLoading && totalCount > 0 && (
+        {!isLoading && (
           <Text fontSize={12} color="#999">
-            {totalCount} products
+            {searchQuery.trim() ? `${products.length} of ${totalCount}` : `${totalCount} products`}
           </Text>
         )}
       </View>
@@ -213,7 +240,7 @@ export default function CategoryProductsScreen() {
       ) : (
         <FlatList
           data={products}
-          keyExtractor={(item: any) => String(item.id)}
+          keyExtractor={(item: any, index: number) => `${item.id}-${index}`}
           numColumns={2}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.columnWrapper}
@@ -327,6 +354,23 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
+  },
+  searchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 12,
+    marginVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#F5F5FA",
+    borderRadius: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#1A1A2E",
+    paddingVertical: 0,
   },
   toolbar: {
     flexDirection: "row",
