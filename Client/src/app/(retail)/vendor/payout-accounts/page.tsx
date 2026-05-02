@@ -212,12 +212,12 @@ export default function VendorPayoutAccountsPage() {
 											key={opt.value}
 											type="button"
 											onClick={() => { setForm({ ...EMPTY_FORM, channel_type: opt.value, is_default: form.is_default }); }}
-											className={"flex flex-col items-center gap-1 rounded-lg px-3 py-3 text-xs font-semibold border-2 transition-all cursor-pointer " + (form.channel_type === opt.value ? "ring-1 ring-offset-1" : "opacity-60 hover:opacity-100")}
+											className={"flex flex-col items-center gap-1 rounded-lg px-3 py-3 text-xs font-semibold border-2 transition-all cursor-pointer " + (form.channel_type === opt.value ? "outline outline-1 outline-offset-1" : "opacity-60 hover:opacity-100")}
 											style={{
 												backgroundColor: form.channel_type === opt.value ? opt.bg : "#f9fafb",
 												borderColor: form.channel_type === opt.value ? opt.color : "#e5e7eb",
 												color: form.channel_type === opt.value ? opt.color : "#6b7280",
-												ringColor: opt.color,
+												outlineColor: form.channel_type === opt.value ? opt.color : undefined,
 											}}
 										>
 											{opt.label}
