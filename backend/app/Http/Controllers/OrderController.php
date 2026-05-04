@@ -18,8 +18,10 @@ use App\Models\Resellerapi;
 use Cart;
 use Session;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Hash;
+use App\Services\SupplierOrderNotificationService;
 
 class OrderController extends Controller
 {
@@ -66,6 +68,17 @@ class OrderController extends Controller
 
             // Decrement product stock
             app(StockService::class)->decrementForOrder($order->id);
+
+            try {
+                app(SupplierOrderNotificationService::class)
+                    ->notify($order, !empty($product->vendor_id) ? [(int) $product->vendor_id] : [], $request->userName);
+            } catch (\Throwable $e) {
+                Log::warning('Supplier SMS/Email notification failed (buy-now)', [
+                    'order_id' => $order->id,
+                    'invoice_id' => $order->invoiceID,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $notification = new Comment();
             $notification->order_id = $order->id;
@@ -147,6 +160,7 @@ class OrderController extends Controller
                     $customer->customerPhone = $request->customerPhone;
                     $customer->customerAddress = $request->customerAddress;
                     $customer->save();
+                    $vendorIds = [];
                     foreach ($shopproduct as $product) {
                         $orderProducts = new Orderproduct();
                         $orderProducts->order_id = $order->id;
@@ -166,10 +180,26 @@ class OrderController extends Controller
                         $orderProducts->quantity = $product->qty;
                         $orderProducts->productPrice = $product->price;
                         $orderProducts->save();
+
+                        $vendorId = Product::where('id', $product->id)->value('vendor_id');
+                        if ($vendorId) {
+                            $vendorIds[(int) $vendorId] = true;
+                        }
                     }
 
                     // Decrement product stock
                     app(StockService::class)->decrementForOrder($order->id);
+
+                    try {
+                        app(SupplierOrderNotificationService::class)
+                            ->notify($order, array_keys($vendorIds), $request->customerName);
+                    } catch (\Throwable $e) {
+                        Log::warning('Supplier SMS/Email notification failed (press-order)', [
+                            'order_id' => $order->id,
+                            'invoice_id' => $order->invoiceID,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
 
                     if ($request->blance_from == 'from_account') {
                         $accountuser = User::where('id', Auth::user()->id)->first();

@@ -83,7 +83,7 @@ return [
         'command_info' => env('SENTRY_BREADCRUMBS_COMMAND_JOBS_ENABLED', true),
 
         // Capture HTTP client request information as breadcrumbs
-        'http_client_requests' => env('SENTRY_BREADCRUMBS_HTTP_CLIENT_REQUESTS_ENABLED', true),
+        'http_client_requests' => env('SENTRY_BREADCRUMBS_HTTP_CLIENT_REQUESTS_ENABLED', false),
 
         // Capture send notifications as breadcrumbs
         'notifications' => env('SENTRY_BREADCRUMBS_NOTIFICATIONS_ENABLED', true),
@@ -116,7 +116,7 @@ return [
         'livewire' => env('SENTRY_TRACE_LIVEWIRE_ENABLED', true),
 
         // Capture HTTP client requests as spans
-        'http_client_requests' => env('SENTRY_TRACE_HTTP_CLIENT_REQUESTS_ENABLED', true),
+        'http_client_requests' => env('SENTRY_TRACE_HTTP_CLIENT_REQUESTS_ENABLED', false),
 
         // Capture Laravel cache events (hits, writes etc.) as spans
         'cache' => env('SENTRY_TRACE_CACHE_ENABLED', true),
