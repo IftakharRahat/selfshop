@@ -58,5 +58,14 @@
 		"eslint-config-next": "^16.1.6",
 		"tailwindcss": "^4",
 		"typescript": "^5"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@firebase/util",
+			"@sentry/cli",
+			"protobufjs",
+			"sharp",
+			"unrs-resolver"
+		]
 	}
 }
