@@ -15,6 +15,7 @@ class BulkSmsService
     {
         $this->apiKey = config('services.bulksms.api_key', env('BULKSMS_API_KEY', ''));
         $this->senderId = config('services.bulksms.sender_id', env('BULKSMS_SENDER_ID', ''));
+        $this->apiUrl = config('services.bulksms.api_url', env('BULKSMS_API_URL', $this->apiUrl));
     }
 
     /**
@@ -43,27 +44,33 @@ class BulkSmsService
 
             $body = $response->json() ?? $response->body();
             $success = $response->successful() && $this->providerResponseLooksSuccessful($body);
+            $safeResponse = $this->summarizeProviderResponse($body, $number);
 
             Log::info('BulkSmsService: SMS API response received', [
-                'number'   => $number,
+                'number'   => $this->maskPhone($number),
                 'status'   => $response->status(),
                 'success'  => $success,
-                'response' => $body,
+                'response' => $safeResponse,
             ]);
 
             return [
                 'success' => $success,
                 'status' => $response->status(),
-                'response' => $body,
+                'response' => $safeResponse,
                 'number' => $number,
             ];
         } catch (\Throwable $e) {
             Log::error('BulkSmsService: Failed to send SMS', [
-                'number' => $number,
+                'number' => $this->maskPhone($number),
                 'error'  => $e->getMessage(),
             ]);
 
-            return ['success' => false, 'status' => null, 'response' => $e->getMessage(), 'number' => $number];
+            return [
+                'success' => false,
+                'status' => null,
+                'response' => $this->summarizeProviderResponse($e->getMessage(), $number),
+                'number' => $number,
+            ];
         }
     }
 
@@ -92,5 +99,41 @@ class BulkSmsService
         }
 
         return trim($text) !== '';
+    }
+
+    protected function maskPhone(string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        if (strlen($digits) <= 4) {
+            return '****';
+        }
+
+        return str_repeat('*', max(0, strlen($digits) - 4)) . substr($digits, -4);
+    }
+
+    protected function summarizeProviderResponse($body, string $number): string
+    {
+        $text = is_scalar($body) || $body === null
+            ? (string) $body
+            : json_encode($body);
+
+        $text = (string) $text;
+
+        foreach ([
+            $this->apiKey => '[redacted_api_key]',
+            $this->senderId => '[redacted_sender_id]',
+            $number => '[redacted_phone]',
+        ] as $secret => $replacement) {
+            if ($secret !== '') {
+                $text = str_replace($secret, $replacement, $text);
+            }
+        }
+
+        $text = preg_replace('/((?:api_key|apikey|senderid|sender_id|number|phone|message)=)[^&\s]+/i', '$1[redacted]', $text) ?? $text;
+        $text = preg_replace('/("(?:api_key|apikey|senderid|sender_id|number|phone|message)"\s*:\s*)"[^"]*"/i', '$1"[redacted]"', $text) ?? $text;
+        $text = preg_replace('/\b(?:\+?88)?01[3-9]\d{8}\b/', '[redacted_phone]', $text) ?? $text;
+
+        return substr($text, 0, 1000);
     }
 }

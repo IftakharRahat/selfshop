@@ -33,6 +33,7 @@ return [
     'bulksms' => [
         'api_key'   => env('BULKSMS_API_KEY', ''),
         'sender_id' => env('BULKSMS_SENDER_ID', ''),
+        'api_url'   => env('BULKSMS_API_URL', 'http://bulksmsbd.net/api/smsapi'),
     ],
 
     'carrybee' => [

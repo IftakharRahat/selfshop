@@ -34,6 +34,8 @@ class SupplierOrderNotificationService
      */
     public function notify(Order $order, array $vendorIds, ?string $customerName = null): void
     {
+        $vendorIds = array_values(array_unique(array_filter(array_map('intval', $vendorIds))));
+
         if (empty($vendorIds)) {
             Log::warning('SupplierOrderNotificationService: No vendor IDs found for order', [
                 'order_id' => $order->id,
@@ -52,10 +54,31 @@ class SupplierOrderNotificationService
             return;
         }
 
+        $summary = [
+            'vendor_count' => count($vendorIds),
+            'vendors_started' => 0,
+            'vendors_completed' => 0,
+            'vendors_skipped' => 0,
+            'vendors_failed' => 0,
+        ];
+
+        $this->captureNotificationMessage(
+            'Supplier order notification started',
+            Severity::info(),
+            $order,
+            null,
+            'all',
+            [
+                'reason' => 'notification_started',
+                'vendor_count' => $summary['vendor_count'],
+            ]
+        );
+
         foreach ($vendorIds as $vendorId) {
             $vendor = null;
 
             try {
+                $summary['vendors_started']++;
                 $vendor = Vendor::find($vendorId);
 
                 if (!$vendor) {
@@ -74,6 +97,7 @@ class SupplierOrderNotificationService
                         ['vendor_id' => $vendorId, 'reason' => 'vendor_not_found']
                     );
 
+                    $summary['vendors_skipped']++;
                     continue;
                 }
 
@@ -98,6 +122,7 @@ class SupplierOrderNotificationService
                         ['reason' => 'no_vendor_products_in_order']
                     );
 
+                    $summary['vendors_skipped']++;
                     continue;
                 }
 
@@ -108,8 +133,38 @@ class SupplierOrderNotificationService
                     'product_count' => $orderProducts->count(),
                 ]);
 
-                $this->sendSms($vendor, $order, $orderProducts);
-                $this->sendEmail($vendor, $order, $orderProducts, $customerName);
+                $this->captureNotificationMessage(
+                    'Supplier order vendor notification started',
+                    Severity::info(),
+                    $order,
+                    $vendor,
+                    'all',
+                    [
+                        'reason' => 'vendor_notification_started',
+                        'product_count' => $orderProducts->count(),
+                        'has_contact_phone' => !empty($vendor->contact_phone),
+                        'has_contact_email' => !empty($vendor->contact_email),
+                    ]
+                );
+
+                $smsStatus = $this->sendSms($vendor, $order, $orderProducts);
+                $emailStatus = $this->sendEmail($vendor, $order, $orderProducts, $customerName);
+
+                $this->captureNotificationMessage(
+                    'Supplier order vendor notification finished',
+                    Severity::info(),
+                    $order,
+                    $vendor,
+                    'all',
+                    [
+                        'reason' => 'vendor_notification_finished',
+                        'sms_status' => $smsStatus,
+                        'email_status' => $emailStatus,
+                        'product_count' => $orderProducts->count(),
+                    ]
+                );
+
+                $summary['vendors_completed']++;
             } catch (Throwable $e) {
                 Log::warning('SupplierOrderNotificationService: Failed for vendor', [
                     'vendor_id' => $vendorId,
@@ -122,11 +177,22 @@ class SupplierOrderNotificationService
                     'reason' => 'vendor_notification_exception',
                     'vendor_id' => $vendorId,
                 ]);
+
+                $summary['vendors_failed']++;
             }
         }
+
+        $this->captureNotificationMessage(
+            'Supplier order notification finished',
+            Severity::info(),
+            $order,
+            null,
+            'all',
+            array_merge(['reason' => 'notification_finished'], $summary)
+        );
     }
 
-    protected function sendSms(Vendor $vendor, Order $order, $orderProducts): void
+    protected function sendSms(Vendor $vendor, Order $order, $orderProducts): string
     {
         $phone = $vendor->contact_phone;
 
@@ -146,7 +212,7 @@ class SupplierOrderNotificationService
                 ['reason' => 'missing_contact_phone']
             );
 
-            return;
+            return 'skipped_missing_contact_phone';
         }
 
         $productSummary = $orderProducts->map(function ($item) {
@@ -158,6 +224,22 @@ class SupplierOrderNotificationService
         if (strlen($message) > 320) {
             $message = "SelfShop: New order {$order->invoiceID} with {$orderProducts->count()} product(s). Please check your supplier dashboard.";
         }
+
+        $attemptContext = [
+            'reason' => 'sms_attempt_started',
+            'recipient' => $this->maskPhone((string) $phone),
+            'message_length' => strlen($message),
+            'product_count' => $orderProducts->count(),
+        ];
+
+        $this->captureNotificationMessage(
+            'Supplier order SMS attempt started',
+            Severity::info(),
+            $order,
+            $vendor,
+            'sms',
+            $attemptContext
+        );
 
         try {
             $result = $this->sms->send($phone, $message);
@@ -178,7 +260,7 @@ class SupplierOrderNotificationService
                     'invoice_id' => $order->invoiceID,
                     'phone' => $context['recipient'],
                     'provider_status' => $result['status'] ?? null,
-                    'provider_response' => $result['response'] ?? null,
+                    'provider_response' => $context['provider_response'],
                 ]);
 
                 $this->captureNotificationMessage(
@@ -190,7 +272,7 @@ class SupplierOrderNotificationService
                     $context
                 );
 
-                return;
+                return 'failed_provider';
             }
 
             Log::info('SupplierOrderNotificationService: SMS sent', [
@@ -200,6 +282,17 @@ class SupplierOrderNotificationService
                 'phone' => $context['recipient'],
                 'provider_status' => $result['status'] ?? null,
             ]);
+
+            $this->captureNotificationMessage(
+                'Supplier order SMS sent',
+                Severity::info(),
+                $order,
+                $vendor,
+                'sms',
+                $context
+            );
+
+            return 'sent';
         } catch (Throwable $e) {
             Log::warning('SupplierOrderNotificationService: SMS failed', [
                 'vendor_id' => $vendor->id,
@@ -213,10 +306,12 @@ class SupplierOrderNotificationService
                 'recipient' => $this->maskPhone((string) $phone),
                 'message_length' => strlen($message),
             ]);
+
+            return 'failed_exception';
         }
     }
 
-    protected function sendEmail(Vendor $vendor, Order $order, $orderProducts, ?string $customerName): void
+    protected function sendEmail(Vendor $vendor, Order $order, $orderProducts, ?string $customerName): string
     {
         $email = $vendor->contact_email;
 
@@ -236,8 +331,23 @@ class SupplierOrderNotificationService
                 ['reason' => 'missing_contact_email']
             );
 
-            return;
+            return 'skipped_missing_contact_email';
         }
+
+        $attemptContext = [
+            'reason' => 'email_attempt_started',
+            'recipient' => $this->maskEmail($email),
+            'product_count' => $orderProducts->count(),
+        ];
+
+        $this->captureNotificationMessage(
+            'Supplier order email attempt started',
+            Severity::info(),
+            $order,
+            $vendor,
+            'email',
+            $attemptContext
+        );
 
         try {
             Mail::to($email)->send(new NewOrderForSupplier($order, $vendor, $orderProducts, $customerName));
@@ -248,6 +358,17 @@ class SupplierOrderNotificationService
                 'order_id' => $order->id,
                 'invoice_id' => $order->invoiceID,
             ]);
+
+            $this->captureNotificationMessage(
+                'Supplier order email sent',
+                Severity::info(),
+                $order,
+                $vendor,
+                'email',
+                array_merge($attemptContext, ['reason' => 'email_sent'])
+            );
+
+            return 'sent';
         } catch (Throwable $e) {
             Log::warning('SupplierOrderNotificationService: Email failed', [
                 'vendor_id' => $vendor->id,
@@ -262,6 +383,8 @@ class SupplierOrderNotificationService
                 'recipient' => $this->maskEmail($email),
                 'product_count' => $orderProducts->count(),
             ]);
+
+            return 'failed_exception';
         }
     }
 
@@ -296,6 +419,11 @@ class SupplierOrderNotificationService
 
         if (isset($context['reason'])) {
             $scope->setTag('notification_reason', (string) $context['reason']);
+            $scope->setTag('notification_status', $this->statusFromReason((string) $context['reason']));
+        }
+
+        if (isset($context['status'])) {
+            $scope->setTag('notification_status', (string) $context['status']);
         }
 
         $scope->setContext('supplier_order_notification', array_merge([
@@ -305,6 +433,31 @@ class SupplierOrderNotificationService
             'vendor_company' => $vendor?->company_name,
             'channel' => $channel,
         ], $context));
+    }
+
+    protected function statusFromReason(string $reason): string
+    {
+        if (str_contains($reason, 'started')) {
+            return 'started';
+        }
+
+        if (str_contains($reason, 'sent')) {
+            return 'sent';
+        }
+
+        if (str_contains($reason, 'finished')) {
+            return 'finished';
+        }
+
+        if (str_contains($reason, 'skipped') || str_contains($reason, 'missing') || str_contains($reason, 'not_found') || str_contains($reason, 'no_vendor')) {
+            return 'skipped';
+        }
+
+        if (str_contains($reason, 'failed') || str_contains($reason, 'exception')) {
+            return 'failed';
+        }
+
+        return 'unknown';
     }
 
     protected function maskPhone(string $phone): string
@@ -335,6 +488,10 @@ class SupplierOrderNotificationService
         $text = is_scalar($value) || $value === null
             ? (string) $value
             : json_encode($value);
+
+        $text = preg_replace('/((?:api_key|apikey|senderid|sender_id|number|phone|message)=)[^&\s]+/i', '$1[redacted]', (string) $text) ?? (string) $text;
+        $text = preg_replace('/("(?:api_key|apikey|senderid|sender_id|number|phone|message)"\s*:\s*)"[^"]*"/i', '$1"[redacted]"', $text) ?? $text;
+        $text = preg_replace('/\b(?:\+?88)?01[3-9]\d{8}\b/', '[redacted_phone]', $text) ?? $text;
 
         return substr((string) $text, 0, 1000);
     }

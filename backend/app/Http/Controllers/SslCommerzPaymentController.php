@@ -1173,14 +1173,12 @@ private function createOrderDetails($orderId, $cartData, $request)
             app(\App\Services\StockService::class)->decrementForOrder($storeOrder->id);
 
             // Send SMS + Email to suppliers
-            if (!empty($vendorIds)) {
-                try {
-                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                    $customerName = $request->customer_name ?? $request->customerName ?? null;
-                    $supplierNotification->notify($storeOrder, array_keys($vendorIds), $customerName);
-                } catch (\Throwable $e) {
-                    Log::warning('Supplier SMS/Email notification failed (SSLCommerz)', ['error' => $e->getMessage()]);
-                }
+            try {
+                $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                $customerName = $request->customer_name ?? $request->customerName ?? null;
+                $supplierNotification->notify($storeOrder, array_keys($vendorIds), $customerName);
+            } catch (\Throwable $e) {
+                Log::warning('Supplier SMS/Email notification failed (SSLCommerz)', ['error' => $e->getMessage()]);
             }
         }
         

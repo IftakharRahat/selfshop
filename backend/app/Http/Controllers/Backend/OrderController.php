@@ -603,13 +603,11 @@ class OrderController extends Controller
             app(\App\Services\StockService::class)->decrementForOrder($order->id);
 
             // Send SMS + Email to suppliers
-            if (!empty($vendorIds)) {
-                try {
-                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                    $supplierNotification->notify($order, array_keys($vendorIds), $request['data']['customerName'] ?? null);
-                } catch (\Throwable $e) {
-                    \Log::warning('Supplier SMS/Email notification failed (admin order)', ['error' => $e->getMessage()]);
-                }
+            try {
+                $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                $supplierNotification->notify($order, array_keys($vendorIds), $request['data']['customerName'] ?? null);
+            } catch (\Throwable $e) {
+                \Log::warning('Supplier SMS/Email notification failed (admin order)', ['error' => $e->getMessage()]);
             }
 
             $notification = new Comment();
