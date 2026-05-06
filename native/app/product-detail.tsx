@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
-  TextInput, Alert, StatusBar, Platform, Keyboard,
+  TextInput, Alert, StatusBar, Platform, Keyboard, Share,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProductDetailSkeleton } from "@/components/skeleton";
@@ -700,7 +700,16 @@ export default function ProductDetailScreen() {
             </Animated.View>
           )}
           <Animated.View style={[s.overlayBtn, { top: insets.top + 8, right: 16, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
-            <Pressable hitSlop={8}>
+            <Pressable
+              hitSlop={8}
+              onPress={async () => {
+                try {
+                  await Share.share({
+                    message: `${product.ProductName} - ৳${salePrice}\nhttps://selfshop.com.bd/product/${slug}`,
+                  });
+                } catch {}
+              }}
+            >
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
           </Animated.View>
