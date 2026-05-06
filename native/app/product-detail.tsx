@@ -577,7 +577,7 @@ export default function ProductDetailScreen() {
       }
     }
 
-    let lastSuccess = false;
+    const cartIds: number[] = [];
     for (const item of items) {
       const formData = new FormData();
       formData.append("product_id", String(product.id));
@@ -591,13 +591,17 @@ export default function ProductDetailScreen() {
       if (item.variantTitle) formData.append("color", item.variantTitle);
 
       try {
-        await addToCartMutation.mutateAsync(formData);
-        lastSuccess = true;
+        const result = await addToCartMutation.mutateAsync(formData);
+        const cartId = Number(result?.data?.id);
+        if (cartId) cartIds.push(cartId);
       } catch { /* error handled */ }
     }
 
-    if (lastSuccess) {
-      router.push("/order-confirmation" as any);
+    if (cartIds.length > 0) {
+      router.push({
+        pathname: "/order-confirmation",
+        params: { cartIds: cartIds.join(",") },
+      } as any);
     }
   };
 

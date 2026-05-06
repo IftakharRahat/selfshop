@@ -3442,9 +3442,18 @@ class FrontendApiController extends Controller
             'advance_delivery' => 'nullable|string|in:yes,no',
         ]);
 
-        $shopproducts = Cart::where('user_id', Auth::user()->id)
-            ->get()
-            ->groupBy('shop_id');
+        $cartIds = collect(explode(',', (string) $request->input('cart_ids', '')))
+            ->map(fn ($id) => (int) trim($id))
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $cartQuery = Cart::where('user_id', Auth::user()->id);
+        if ($cartIds->isNotEmpty()) {
+            $cartQuery->whereIn('id', $cartIds->all());
+        }
+
+        $shopproducts = $cartQuery->get()->groupBy('shop_id');
 
         if ($shopproducts->isEmpty()) {
             return response()->json([
@@ -3586,7 +3595,11 @@ class FrontendApiController extends Controller
         }
 
         // Get all cart items and group by vendor_id (actual supplier)
-        $allCartItems = Cart::where('user_id', Auth::user()->id)->get();
+        $allCartItemsQuery = Cart::where('user_id', Auth::user()->id);
+        if ($cartIds->isNotEmpty()) {
+            $allCartItemsQuery->whereIn('id', $cartIds->all());
+        }
+        $allCartItems = $allCartItemsQuery->get();
         $vendorGroups = $allCartItems->groupBy(function ($item) {
             $product = Product::find($item->product_id);
             return $product ? ($product->vendor_id ?? $item->shop_id) : ($item->shop_id ?: 1);
@@ -3767,8 +3780,12 @@ class FrontendApiController extends Controller
             ];
         }
 
-        // Clear cart
-        Cart::where('user_id', Auth::user()->id)->delete();
+        // Clear only the items that were checked out. Buy Now passes cart_ids; cart checkout clears all.
+        $clearCartQuery = Cart::where('user_id', Auth::user()->id);
+        if ($cartIds->isNotEmpty()) {
+            $clearCartQuery->whereIn('id', $cartIds->all());
+        }
+        $clearCartQuery->delete();
 
         return response()->json([
             'status' => 'success',

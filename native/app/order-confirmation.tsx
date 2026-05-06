@@ -4,7 +4,7 @@ import {
   TextInput, Image, Modal, Platform, KeyboardAvoidingView, Alert,
 } from "react-native";
 import { Text } from "tamagui";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -41,16 +41,25 @@ export default function OrderConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const webViewRef = useRef<WebView>(null);
+  const params = useLocalSearchParams<{ cartIds?: string | string[] }>();
+  const cartIdsParam = Array.isArray(params.cartIds) ? params.cartIds[0] : params.cartIds;
+  const checkoutCartIds = (cartIdsParam ?? "")
+    .split(",")
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0);
 
   // ── Cart items ──
-  const { data: cartData, isLoading: cartLoading } = useQuery({
+  const { data: cartData, isLoading: cartLoading, isFetching: cartFetching } = useQuery({
     queryKey: ["cart-items"],
     queryFn: async () => {
       const { data } = await apiClient.get("/user-cart-content");
       return data?.data ?? [];
     },
   });
-  const cartItems: any[] = cartData ?? [];
+  const allCartItems: any[] = cartData ?? [];
+  const cartItems: any[] = checkoutCartIds.length > 0
+    ? allCartItems.filter((item: any) => checkoutCartIds.includes(Number(item.id)))
+    : allCartItems;
 
   // ── Remove item from cart ──
   const deleteMutation = useMutation({
@@ -74,10 +83,10 @@ export default function OrderConfirmationScreen() {
 
   // Redirect if cart empty
   useEffect(() => {
-    if (!cartLoading && cartItems.length === 0) {
+    if (!cartLoading && !cartFetching && cartItems.length === 0) {
       router.replace("/(tabs)");
     }
-  }, [cartLoading, cartItems.length]);
+  }, [cartFetching, cartLoading, cartItems.length]);
 
   // ── Basic info (delivery charges) ──
   const { data: basicInfo } = useQuery({
@@ -266,6 +275,7 @@ export default function OrderConfirmationScreen() {
     formData.append("delivery_zone", deliveryZoneLabel!);
     formData.append("advance_delivery", advanceDelivery);
     formData.append("balance_from", paymentMethod === "account" ? "from_account" : "online_pay");
+    if (checkoutCartIds.length > 0) formData.append("cart_ids", checkoutCartIds.join(","));
     if (selectedCityId) formData.append("city_id", selectedCityId.toString());
     if (selectedZoneId) formData.append("zone_id", selectedZoneId.toString());
     if (customerData.note) formData.append("customerNote", customerData.note);
