@@ -184,15 +184,13 @@ export default function HomeScreen() {
   const notificationsQuery = useQuery({
     queryKey: ["notifications-count"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/user-notification?per_page=1&page=1");
-      return data?.data ?? data;
+      const { data } = await apiClient.get("/user-notification?unread_only=true&per_page=1");
+      return data?.unread_count ?? 0;
     },
     enabled: !!session?.user,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
   });
-  const unreadCount = (notificationsQuery.data?.data ?? []).filter(
-    (n: any) => !n.read_at,
-  ).length;
+  const unreadCount = notificationsQuery.data ?? 0;
 
   if (newProducts.isLoading && categories.isLoading) {
     return <HomeSkeleton />;
