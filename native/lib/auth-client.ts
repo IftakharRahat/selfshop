@@ -1,6 +1,8 @@
 import * as SecureStore from "expo-secure-store";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import apiClient, { TOKEN_KEY } from "./api-client";
+import { queryClient } from "./query-client";
 
 interface User {
   id: number;
@@ -23,7 +25,10 @@ export async function login(email: string, password: string): Promise<Session> {
 
   if (!token) throw new Error("No token received");
   await SecureStore.setItemAsync(TOKEN_KEY, token);
-  return { user, token };
+  const session = { user, token };
+  queryClient.setQueryData(["session"], session);
+  queryClient.setQueryData(["auth-token"], token);
+  return session;
 }
 
 export async function register(
@@ -43,7 +48,10 @@ export async function register(
 
   if (!token) throw new Error("No token received");
   await SecureStore.setItemAsync(TOKEN_KEY, token);
-  return { user, token };
+  const session = { user, token };
+  queryClient.setQueryData(["session"], session);
+  queryClient.setQueryData(["auth-token"], token);
+  return session;
 }
 
 export async function logout(): Promise<void> {
@@ -53,6 +61,8 @@ export async function logout(): Promise<void> {
     // ignore — token may already be invalid
   }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+  queryClient.setQueryData(["session"], null);
+  queryClient.setQueryData(["auth-token"], null);
 }
 
 export async function forgotPassword(phone: string) {
@@ -86,37 +96,37 @@ export async function getToken(): Promise<string | null> {
 
 // ── React hook ──
 
+async function readSession(): Promise<Session | null> {
+  try {
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    if (!token) return null;
+
+    const { data } = await apiClient.get("/user");
+    const user = data?.data ?? data;
+    return { user, token };
+  } catch {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    queryClient.setQueryData(["auth-token"], null);
+    return null;
+  }
+}
+
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const checkSession = useCallback(async () => {
-    try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        setSession(null);
-        return;
-      }
-
-      const { data } = await apiClient.get("/user");
-      const user = data?.data ?? data;
-      setSession({ user, token });
-    } catch {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-      setSession(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+  const sessionQuery = useQuery({
+    queryKey: ["session"],
+    queryFn: readSession,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const signOut = useCallback(async () => {
     await logout();
-    setSession(null);
   }, []);
 
-  return { data: session, isLoading, refetch: checkSession, signOut };
+  return {
+    data: sessionQuery.data ?? null,
+    isLoading: sessionQuery.isLoading,
+    isFetching: sessionQuery.isFetching,
+    refetch: sessionQuery.refetch,
+    signOut,
+  };
 }

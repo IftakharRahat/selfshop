@@ -60,7 +60,7 @@ function formatCurrency(value: number | string | undefined): string {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { data: session, signOut } = useSession();
+  const { data: session, signOut, isLoading: isSessionLoading } = useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
 
@@ -164,6 +164,10 @@ export default function DashboardScreen() {
     { title: "Sold Amount", value: String(profileQuery.data?.soldamount ?? 0), icon: "cart-outline" as const },
     { title: "Pending", value: formatCurrency(metrics?.pending_amount), icon: "hourglass-outline" as const },
   ], [profileQuery.data, metrics]);
+
+  if (isSessionLoading) {
+    return <DashboardSkeleton />;
+  }
 
   /* ── Guest View ── */
   if (!isLoggedIn) {
