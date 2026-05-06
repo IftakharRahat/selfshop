@@ -4,7 +4,7 @@
     "slug": "selfshop",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/reseller_app_logo.jpeg",
+    "icon": "./assets/images/reseller-app-icon.png",
     "scheme": "selfshop",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -19,7 +19,8 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E5005F",
-        "foregroundImage": "./assets/images/reseller_app_logo.jpeg"
+        "foregroundImage": "./assets/images/reseller-adaptive-icon-foreground.png",
+        "monochromeImage": "./assets/images/reseller-adaptive-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize",
@@ -37,7 +38,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/reseller_app_logo.jpeg"
+      "favicon": "./assets/images/reseller-app-icon.png"
     },
     "plugins": [
       "expo-router",
