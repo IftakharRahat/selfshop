@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import mapImage from "@/assets/images/contact/dhaka-map-marker.png";
@@ -18,9 +18,24 @@ const contactSchema = z.object({
 
 type ContactFormData = z.infer<typeof contactSchema>;
 
+interface ContactInfo {
+	phone_one?: string;
+	phone_two?: string;
+	email?: string;
+	address?: string;
+}
+
 export default function ContactPage() {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [submitSuccess, setSubmitSuccess] = useState(false);
+	const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
+
+	useEffect(() => {
+		fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/contact-info`)
+			.then((res) => res.json())
+			.then((data) => setContactInfo(data?.data ?? null))
+			.catch(() => {});
+	}, []);
 
 	const {
 		register,
@@ -34,7 +49,6 @@ export default function ContactPage() {
 	const onSubmit = async (data: ContactFormData) => {
 		setIsSubmitting(true);
 		try {
-			// Simulate API call
 			await new Promise((resolve) => setTimeout(resolve, 2000));
 			console.log("Form submitted:", data);
 			setSubmitSuccess(true);
@@ -46,6 +60,11 @@ export default function ContactPage() {
 			setIsSubmitting(false);
 		}
 	};
+
+	const address = contactInfo?.address || "Momotaz Plaza, 6th Floor, Flat-C, PTI More, College Road, Sadar Lakshmipur, Lakshmipur.";
+	const email = contactInfo?.email || "contact@selfshop.com.bd";
+	const phone1 = contactInfo?.phone_one || "+(88) 01976367981";
+	const phone2 = contactInfo?.phone_two || phone1;
 
 	return (
 		<div className="min-h-screen bg-gray-50">
@@ -84,113 +103,44 @@ export default function ContactPage() {
 							)}
 
 							<form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-								{/* Name and Email Row */}
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div>
-										<label
-											htmlFor="name"
-											className="block text-sm font-medium text-gray-700 mb-2"
-										>
-											Your Name
-										</label>
-										<input
-											{...register("name")}
-											type="text"
-											id="name"
-											placeholder="Enter customer name"
-											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.name ? "border-red-300" : "border-gray-300"
-												}`}
+										<label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+										<input {...register("name")} type="text" id="name" placeholder="Enter customer name"
+											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.name ? "border-red-300" : "border-gray-300"}`}
 										/>
-										{errors.name && (
-											<p className="mt-1 text-sm text-red-600">
-												{errors.name.message}
-											</p>
-										)}
+										{errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
 									</div>
-
 									<div>
-										<label
-											htmlFor="email"
-											className="block text-sm font-medium text-gray-700 mb-2"
-										>
-											Email Address
-										</label>
-										<input
-											{...register("email")}
-											type="email"
-											id="email"
-											placeholder="Enter email address"
-											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.email ? "border-red-300" : "border-gray-300"
-												}`}
+										<label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+										<input {...register("email")} type="email" id="email" placeholder="Enter email address"
+											className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.email ? "border-red-300" : "border-gray-300"}`}
 										/>
-										{errors.email && (
-											<p className="mt-1 text-sm text-red-600">
-												{errors.email.message}
-											</p>
-										)}
+										{errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
 									</div>
 								</div>
 
-								{/* Title */}
 								<div>
-									<label
-										htmlFor="title"
-										className="block text-sm font-medium text-gray-700 mb-2"
-									>
-										Title
-									</label>
-									<input
-										{...register("title")}
-										type="text"
-										id="title"
-										placeholder="Enter title"
-										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.title ? "border-red-300" : "border-gray-300"
-											}`}
+									<label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+									<input {...register("title")} type="text" id="title" placeholder="Enter title"
+										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors ${errors.title ? "border-red-300" : "border-gray-300"}`}
 									/>
-									{errors.title && (
-										<p className="mt-1 text-sm text-red-600">
-											{errors.title.message}
-										</p>
-									)}
+									{errors.title && <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>}
 								</div>
 
-								{/* Message */}
 								<div>
-									<label
-										htmlFor="message"
-										className="block text-sm font-medium text-gray-700 mb-2"
-									>
-										Message
-									</label>
-									<textarea
-										{...register("message")}
-										id="message"
-										rows={6}
-										placeholder="Enter your message"
-										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors resize-none ${errors.message ? "border-red-300" : "border-gray-300"
-											}`}
+									<label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+									<textarea {...register("message")} id="message" rows={6} placeholder="Enter your message"
+										className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors resize-none ${errors.message ? "border-red-300" : "border-gray-300"}`}
 									/>
-									{errors.message && (
-										<p className="mt-1 text-sm text-red-600">
-											{errors.message.message}
-										</p>
-									)}
+									{errors.message && <p className="mt-1 text-sm text-red-600">{errors.message.message}</p>}
 								</div>
 
-								{/* Submit Button */}
-								<button
-									type="submit"
-									disabled={isSubmitting}
-									className="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-pink-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center"
-								>
+								<button type="submit" disabled={isSubmitting}
+									className="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-pink-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors flex items-center justify-center">
 									{isSubmitting ? (
-										<>
-											<Loader2 className="animate-spin h-5 w-5 mr-2" />
-											Sending...
-										</>
-									) : (
-										"Send Message"
-									)}
+										<><Loader2 className="animate-spin h-5 w-5 mr-2" />Sending...</>
+									) : ("Send Message")}
 								</button>
 							</form>
 						</div>
@@ -202,33 +152,22 @@ export default function ContactPage() {
 			<div className="bg-white py-12">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-						{/* Location */}
 						<div className="flex items-center space-x-4">
 							<div className="flex-shrink-0">
 								<div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
 									<MapPin className="h-6 w-6 text-pink-600" />
 								</div>
 							</div>
-							<div>
-								<p className="text-gray-900 font-medium">Momotaz Plaza, 6th Floor, Flat-C, PTI More, College Road, Sadar Lakshmipur, Lakshmipur.</p>
-							</div>
+							<div><p className="text-gray-900 font-medium">{address}</p></div>
 						</div>
-
-						{/* Email */}
 						<div className="flex items-center space-x-4">
 							<div className="flex-shrink-0">
 								<div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
 									<Mail className="h-6 w-6 text-pink-600" />
 								</div>
 							</div>
-							<div>
-								<p className="text-gray-900 font-medium">
-									contact@selfshop.com.bd
-								</p>
-							</div>
+							<div><p className="text-gray-900 font-medium">{email}</p></div>
 						</div>
-
-						{/* Phone */}
 						<div className="flex items-center space-x-4">
 							<div className="flex-shrink-0">
 								<div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
@@ -236,8 +175,8 @@ export default function ContactPage() {
 								</div>
 							</div>
 							<div>
-								<p className="text-gray-900 font-medium">+(88) 01976367981</p>
-								<p className="text-gray-900 font-medium">+(88) 01976367981</p>
+								<p className="text-gray-900 font-medium">{phone1}</p>
+								{phone2 !== phone1 && <p className="text-gray-900 font-medium">{phone2}</p>}
 							</div>
 						</div>
 					</div>
@@ -248,11 +187,8 @@ export default function ContactPage() {
 			<div className="bg-gray-50 py-16">
 				<div className="container mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-						{/* Left Side - Text */}
 						<div>
-							<h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
-								Live location
-							</h2>
+							<h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Live location</h2>
 							<p className="text-gray-600 leading-relaxed mb-8">
 								Have questions, suggestions, or need assistance? We&apos;d love
 								to hear from you! Whether you&apos;re looking to collaborate,
@@ -260,22 +196,12 @@ export default function ContactPage() {
 								sustainability initiatives, our team is ready to assist.
 							</p>
 						</div>
-
-						{/* Right Side - Map */}
 						<div className="relative">
 							<div className="bg-gray-200 rounded-2xl overflow-hidden h-80 relative">
-								<Image
-									src={mapImage}
-									alt="Map showing Dhaka, Bangladesh location"
-									fill
-									className="object-cover"
-									priority
-								/>
+								<Image src={mapImage} alt="Map showing Dhaka, Bangladesh location" fill className="object-cover" priority />
 								<div className="absolute inset-0 flex items-center justify-center">
 									<div className="bg-white rounded-lg px-4 py-2 shadow-lg">
-										<p className="text-gray-900 font-semibold">
-											Lakshmipur, Bangladesh
-										</p>
+										<p className="text-gray-900 font-semibold">Lakshmipur, Bangladesh</p>
 									</div>
 								</div>
 							</div>

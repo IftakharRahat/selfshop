@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
-  TextInput, Alert, StatusBar, Platform, Keyboard,
+  TextInput, Alert, StatusBar, Platform, Keyboard, Share,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProductDetailSkeleton } from "@/components/skeleton";
@@ -61,6 +61,10 @@ export default function ProductDetailScreen() {
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
   const [variantQuantities, setVariantQuantities] = useState<Record<number, Record<string, number>>>({});
   const [variantSellingPrices, setVariantSellingPrices] = useState<Record<number, Record<string, string>>>({});
+
+  // ── Busy lock to prevent Buy Now / Add to Cart race condition ──
+  const busyRef = useRef(false);
+  const [isBusy, setIsBusy] = useState(false);
 
   // Scroll tracking for animated header
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -511,6 +515,7 @@ export default function ProductDetailScreen() {
 
   // ── Add to Cart ──
   const handleAddToCart = async () => {
+    if (busyRef.current) return;
     if (!isLoggedIn) {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
       return;
@@ -530,34 +535,42 @@ export default function ProductDetailScreen() {
       }
     }
 
-    let successCount = 0;
-    for (const item of items) {
-      const formData = new FormData();
-      formData.append("product_id", String(product.id));
-      formData.append("price", item.price.toString());
-      if (showDropshipping && item.sellingPrice) {
-        formData.append("selling_price", item.sellingPrice.toString());
-      }
-      formData.append("qty", item.qty.toString());
-      formData.append("size", item.size);
-      if (item.variantId) formData.append("varient_id", item.variantId.toString());
-      if (item.variantTitle) formData.append("color", item.variantTitle);
+    busyRef.current = true;
+    setIsBusy(true);
+    try {
+      let successCount = 0;
+      for (const item of items) {
+        const formData = new FormData();
+        formData.append("product_id", String(product.id));
+        formData.append("price", item.price.toString());
+        if (showDropshipping && item.sellingPrice) {
+          formData.append("selling_price", item.sellingPrice.toString());
+        }
+        formData.append("qty", item.qty.toString());
+        formData.append("size", item.size);
+        if (item.variantId) formData.append("varient_id", item.variantId.toString());
+        if (item.variantTitle) formData.append("color", item.variantTitle);
 
-      try {
-        await addToCartMutation.mutateAsync(formData);
-        successCount++;
-      } catch { /* error handled in mutation */ }
-    }
-    if (successCount > 0) {
-      toast.success(`${successCount} item${successCount > 1 ? "s" : ""} added to cart`);
-      // Reset quantities after adding
-      setVariantQuantities({});
-      setVariantSellingPrices({});
+        try {
+          await addToCartMutation.mutateAsync(formData);
+          successCount++;
+        } catch { /* error handled in mutation */ }
+      }
+      if (successCount > 0) {
+        toast.success(`${successCount} item${successCount > 1 ? "s" : ""} added to cart`);
+        // Reset quantities after adding
+        setVariantQuantities({});
+        setVariantSellingPrices({});
+      }
+    } finally {
+      busyRef.current = false;
+      setIsBusy(false);
     }
   };
 
   // ── Buy Now ──
   const handleBuyNow = async () => {
+    if (busyRef.current) return;
     if (!isLoggedIn) {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
       return;
@@ -577,31 +590,34 @@ export default function ProductDetailScreen() {
       }
     }
 
-    const cartIds: number[] = [];
-    for (const item of items) {
-      const formData = new FormData();
-      formData.append("product_id", String(product.id));
-      formData.append("price", item.price.toString());
-      if (showDropshipping && item.sellingPrice) {
-        formData.append("selling_price", item.sellingPrice.toString());
+    busyRef.current = true;
+    setIsBusy(true);
+    try {
+      let lastSuccess = false;
+      for (const item of items) {
+        const formData = new FormData();
+        formData.append("product_id", String(product.id));
+        formData.append("price", item.price.toString());
+        if (showDropshipping && item.sellingPrice) {
+          formData.append("selling_price", item.sellingPrice.toString());
+        }
+        formData.append("qty", item.qty.toString());
+        formData.append("size", item.size);
+        if (item.variantId) formData.append("varient_id", item.variantId.toString());
+        if (item.variantTitle) formData.append("color", item.variantTitle);
+
+        try {
+          await addToCartMutation.mutateAsync(formData);
+          lastSuccess = true;
+        } catch { /* error handled */ }
       }
-      formData.append("qty", item.qty.toString());
-      formData.append("size", item.size);
-      if (item.variantId) formData.append("varient_id", item.variantId.toString());
-      if (item.variantTitle) formData.append("color", item.variantTitle);
 
-      try {
-        const result = await addToCartMutation.mutateAsync(formData);
-        const cartId = Number(result?.data?.id);
-        if (cartId) cartIds.push(cartId);
-      } catch { /* error handled */ }
-    }
-
-    if (cartIds.length > 0) {
-      router.push({
-        pathname: "/order-confirmation",
-        params: { cartIds: cartIds.join(",") },
-      } as any);
+      if (lastSuccess) {
+        router.push("/order-confirmation" as any);
+      }
+    } finally {
+      busyRef.current = false;
+      setIsBusy(false);
     }
   };
 
@@ -684,7 +700,16 @@ export default function ProductDetailScreen() {
             </Animated.View>
           )}
           <Animated.View style={[s.overlayBtn, { top: insets.top + 8, right: 16, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
-            <Pressable hitSlop={8}>
+            <Pressable
+              hitSlop={8}
+              onPress={async () => {
+                try {
+                  await Share.share({
+                    message: `${product.ProductName} - ৳${salePrice}\nhttps://selfshop.com.bd/product/${slug}`,
+                  });
+                } catch {}
+              }}
+            >
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
           </Animated.View>
@@ -1262,7 +1287,7 @@ export default function ProductDetailScreen() {
             <Pressable
               style={({ pressed }) => [s.cartBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
               onPress={handleAddToCart}
-              disabled={addToCartMutation.isPending || totalQuantity === 0}
+              disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
             >
               {addToCartMutation.isPending ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -1278,7 +1303,7 @@ export default function ProductDetailScreen() {
             <Pressable
               style={({ pressed }) => [s.buyBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
               onPress={handleBuyNow}
-              disabled={addToCartMutation.isPending || totalQuantity === 0}
+              disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
             >
               <Text fontSize="$3" fontWeight="700" color="#fff">Buy Now</Text>
             </Pressable>
@@ -1566,20 +1591,20 @@ export default function ProductDetailScreen() {
               <View style={s.sheetActionRow}>
                 <Pressable
                   onPress={handleBuyNow}
-                  disabled={addToCartMutation.isPending || totalQuantity === 0}
+                  disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
                   style={({ pressed }) => [
                     s.sheetBuyBtn,
-                    (pressed || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                    (pressed || isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
                   ]}
                 >
                   <Text fontSize={15} fontWeight="800" color="#fff">Buy Now</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleAddToCart}
-                  disabled={addToCartMutation.isPending || totalQuantity === 0}
+                  disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
                   style={({ pressed }) => [
                     s.sheetCartBtn,
-                    (pressed || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                    (pressed || isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
                   ]}
                 >
                   {addToCartMutation.isPending ? (

@@ -79,6 +79,9 @@ Route::get('/app-version-check', function (Request $request) {
     ]);
 })->name('api.app-version-check');
 
+// Contact info — public, no auth required
+Route::get('/contact-info', [FrontendApiController::class, 'contactInfo'])->name('api.contact-info');
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');
@@ -134,6 +137,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::get('announcements', [FrontendApiController::class, 'announcements']);
     Route::get('our-packages', [FrontendApiController::class, 'packages']);
     Route::post('purchese-package', [FrontendApiController::class, 'purchesepackage']);
     Route::post('package-payment/initiate', [FrontendApiController::class, 'initiatePackagePayment']);
@@ -154,6 +158,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('faqs', [FrontendApiController::class, 'faqs']);
     Route::get('track-order', [FrontendApiController::class, 'trackorder']);
     Route::post('update-bank-info', [FrontendApiController::class, 'bankinfo']);
+    Route::get('bank-info', [FrontendApiController::class, 'getBankInfo']);
     // supportticket
     Route::get('get-supporttickets', [FrontendApiController::class, 'supportticket']);
     Route::post('create-supportticket', [FrontendApiController::class, 'createticket']);

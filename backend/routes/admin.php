@@ -61,6 +61,7 @@ use App\Http\Controllers\Backend\AdminNotificationController;
 use App\Http\Controllers\Backend\AdminActivityController;
 use App\Http\Controllers\Backend\PromotionalSectionController;
 use App\Http\Controllers\Backend\MarketingCampaignController;
+use App\Http\Controllers\Backend\AnnouncementController;
 
 /*
 |--------------------------------------------------------------------------
@@ -270,6 +271,12 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::post('faq/{id}', [FaqController::class, 'update']);
     Route::put('faq/status', [FaqController::class, 'updatestatus']);
     Route::get('faq/data', [FaqController::class, 'faqdata'])->name('faq.data');
+
+    //announcements
+    Route::resource('announcements', AnnouncementController::class);
+    Route::post('announcement/{id}', [AnnouncementController::class, 'update']);
+    Route::put('announcement/status', [AnnouncementController::class, 'updatestatus']);
+    Route::get('announcement/data', [AnnouncementController::class, 'announcementdata'])->name('announcement.data');
 
     //products
     Route::resource('products', ProductController::class, ['names' => 'admin.products']);

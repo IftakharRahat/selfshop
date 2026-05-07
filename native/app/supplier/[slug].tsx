@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   logoRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   logo: { width: 56, height: 56, borderRadius: 16, borderWidth: 2, borderColor: "#fff", backgroundColor: "#F9FAFB" },
   logoPlaceholder: { backgroundColor: "#059669", justifyContent: "center", alignItems: "center" },
-  vendorName: { fontSize: 16, fontWeight: "800", color: "#1A1A2E", flex: 1 },
+  vendorName: { fontSize: 16, fontWeight: "800", color: "#1A1A2E", flexShrink: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 3 },
   metaText: { fontSize: 11, color: "#6B7280" },

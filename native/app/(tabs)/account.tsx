@@ -145,6 +145,12 @@ export default function AccountScreen() {
             onPress={() => router.push("/account/tickets")}
           />
           <MenuItem
+            icon="chatbubbles-outline"
+            label="Live Chat"
+            subtitle="Chat with us directly"
+            onPress={() => router.push("/account/live-chat")}
+          />
+          <MenuItem
             icon="settings-outline"
             label="Settings"
             subtitle="Password, legal, and more"
