@@ -627,6 +627,23 @@ export default function ProductDetailScreen() {
   };
 
   const formatBDT = (num: number, dec = 2) => num.toLocaleString("en-BD", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  const productSlug = String(product.ProductSlug ?? slug ?? "").trim();
+  const productUrl = productSlug
+    ? `https://selfshop.com.bd/product/${encodeURIComponent(productSlug)}`
+    : "https://selfshop.com.bd";
+  const productName = String(product.ProductName ?? "SelfShop product");
+  const handleShareProduct = async () => {
+    try {
+      await Share.share({
+        title: productName,
+        message: `${productName} - \u09F3${formatBDT(salePrice, 0)}\n${productUrl}`,
+        url: productUrl,
+      });
+    } catch (error) {
+      console.warn("Product share failed:", error);
+      toast.error("Failed to open share sheet");
+    }
+  };
   const selectedItemsTotal = getSelectedItems().reduce((sum, item) => sum + item.price * item.qty, 0);
   const selectedVariantSummary = normalizedVariants.flatMap((variant) =>
     Object.entries(variantQuantities[variant.variantId] ?? {})
@@ -702,13 +719,7 @@ export default function ProductDetailScreen() {
           <Animated.View style={[s.overlayBtn, { top: insets.top + 8, right: 16, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
             <Pressable
               hitSlop={8}
-              onPress={async () => {
-                try {
-                  await Share.share({
-                    message: `${product.ProductName} - ৳${salePrice}\nhttps://selfshop.com.bd/product/${slug}`,
-                  });
-                } catch {}
-              }}
+              onPress={handleShareProduct}
             >
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
@@ -1273,7 +1284,7 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Pressable style={s.fixedHeaderBtn} hitSlop={8}>
+            <Pressable style={s.fixedHeaderBtn} onPress={handleShareProduct} hitSlop={8}>
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
           </View>

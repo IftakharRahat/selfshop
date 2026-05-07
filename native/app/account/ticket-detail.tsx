@@ -54,7 +54,7 @@ export default function TicketDetailScreen() {
   });
 
   const ticket = ticketQuery.data?.ticket ?? ticketQuery.data;
-  const replies = ticket?.replies ?? [];
+  const replies = ticketQuery.data?.replays ?? ticket?.replies ?? [];
 
   if (ticketQuery.isLoading) {
     return (
@@ -76,7 +76,7 @@ export default function TicketDetailScreen() {
   }
 
   const status = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.open;
-  const canReply = ticket.status !== "closed";
+  const canReply = String(ticket.status ?? "").toLowerCase() !== "closed";
 
   return (
     <>
@@ -101,7 +101,7 @@ export default function TicketDetailScreen() {
           {/* Ticket Info */}
           <View style={styles.ticketInfo}>
             <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-              <Text fontSize="$3" fontWeight="bold" color={status.color}>
+              <Text fontSize="$3" fontWeight="bold" style={{ color: status.color }}>
                 {status.label}
               </Text>
             </View>
@@ -130,7 +130,7 @@ export default function TicketDetailScreen() {
 
             {/* Replies */}
             {replies.map((reply: any) => {
-              const isStaff = reply.isStaffReply ?? reply.is_staff_reply;
+              const isStaff = (reply.isStaffReply ?? reply.is_staff_reply) ?? reply.type === "Admin";
               return (
                 <View
                   key={reply.id}
@@ -145,10 +145,10 @@ export default function TicketDetailScreen() {
                     fontWeight="600"
                     mb="$1"
                   >
-                    {isStaff ? (reply.user?.name ?? "Support") : "You"}
+                    {isStaff ? (reply.user?.name ?? reply.users?.name ?? "Support") : "You"}
                   </Text>
                   <Text fontSize="$3" color="#1A1A2E">
-                    {reply.message}
+                    {reply.message ?? reply.replay}
                   </Text>
                   <Text fontSize={10} color="#C7C7CC" mt="$1">
                     {new Date(reply.createdAt ?? reply.created_at).toLocaleString("en-BD", {
