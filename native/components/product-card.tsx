@@ -8,12 +8,18 @@ const CARD_WIDTH = (Dimensions.get("window").width - 48 - 12) / 2;
 
 interface ProductCardProps {
   name: string;
-  price: string;
+  price: string | number;
   image: string;
   slug?: string;
   category?: string;
   onPress?: () => void;
   variant?: "horizontal" | "grid";
+}
+
+function formatProductPrice(value: string | number): string {
+  const normalized = String(value ?? "").replace(/[^0-9.-]/g, "");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed.toFixed(2) : "0.00";
 }
 
 export function ProductCard({
@@ -61,7 +67,7 @@ export function ProductCard({
 
         {isResellerActive ? (
           <Text fontSize="$4" color="#1A1A2E" fontWeight="bold">
-            ৳{parseFloat(price).toFixed(2)}
+            {"\u09F3"}{formatProductPrice(price)}
           </Text>
         ) : (
           <View style={styles.lockedRow}>
