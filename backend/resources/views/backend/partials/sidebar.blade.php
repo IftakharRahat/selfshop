@@ -191,6 +191,9 @@
                     <a href="{{ url('admin/information/return-refund-policy') }}" class="dropdown-item">Return & Refund Policy</a>
                 </div>
             </div>
+            <a href="{{ url('admin/announcements') }}" class="nav-item nav-link {{ request()->is('admin/announcements*') ? 'active-nav' : '' }}">
+                <i class="bi bi-megaphone"></i> Announcements
+            </a>
             @endif
 
             {{-- ═══ REPORTS ═══ --}}
