@@ -11,6 +11,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Orderproduct;
 use App\Models\Product;
+use App\Services\SslCommerzOrderFinalizer;
 use Cart;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -1204,10 +1205,37 @@ public function success(Request $request)
     $tran_id = $request->input('tran_id');
     
     // Package payments have PKG_ prefix in transaction ID
-    if (strpos($tran_id, 'PKG_') === 0) {
+    if ($tran_id && strpos($tran_id, 'PKG_') === 0) {
         Log::info('Detected package payment, redirecting to packagePaymentSuccess');
         return $this->packagePaymentSuccess($request);
     }
+
+    $result = app(SslCommerzOrderFinalizer::class)->finalizeFromCallback($request, false);
+
+    Session::forget(['sslcommerz_tran_id', 'sslcommerz_order_id', 'cart_data', 'order_data']);
+
+    if ($result['success'] ?? false) {
+        Session::put('last_successful_order_id', $result['order_id'] ?? null);
+        Session::put('payment_completed_at', now()->toDateTimeString());
+
+        if ($request->filled('value_a')) {
+            Session::put('payment_user_id', $request->input('value_a'));
+        }
+
+        return redirect($this->frontendUrl('/order-received', [
+            'payment' => 'success',
+            'order_id' => $result['order_id'] ?? null,
+            'tran_id' => $result['transaction_id'] ?? $tran_id,
+        ]));
+    }
+
+    Log::error('SSLCommerz success callback could not finalize order', $result);
+
+    return redirect()->away($this->frontendUrl('/checkout', [
+        'payment' => 'failed',
+        'tran_id' => $tran_id,
+        'message' => $result['message'] ?? 'Payment finalization failed.',
+    ]));
 
         
     try {
@@ -1587,37 +1615,13 @@ public function success(Request $request)
             return $this->packagePaymentIPN($request);
         }
 
-        # Instant Payment Notification handler
-        if ($tran_id) {
-            $order_details = DB::table('orders')
-                ->where('transaction_id', $tran_id)
-                ->select('transaction_id', 'status', 'amount', 'currency')
-                ->first();
-            
-            if ($order_details && $order_details->status == 'Pending') {
-                $sslc = new SslCommerzNotification();
-                $validation = $sslc->orderValidate($request->all(), $tran_id, $order_details->amount, $order_details->currency);
-                
-                if ($validation) {
-                    # Update order status
-                    DB::table('orders')
-                        ->where('transaction_id', $tran_id)
-                        ->update([
-                            'status' => 'Processing',
-                            'payment_status' => 'Paid',
-                            'updated_at' => now(),
-                        ]);
-                    
-                    echo "Transaction validated and updated via IPN";
-                } else {
-                    echo "IPN validation failed";
-                }
-            } else {
-                echo "Order already processed or invalid";
-            }
-        } else {
-            echo "Invalid IPN data";
+        $result = app(SslCommerzOrderFinalizer::class)->finalizeFromCallback($request, true);
+
+        if ($result['success'] ?? false) {
+            return response('Transaction validated and order finalized via IPN', 200);
         }
+
+        return response($result['message'] ?? 'IPN validation failed', $result['status_code'] ?? 422);
     }
     
     public function uniqueID()
