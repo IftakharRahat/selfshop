@@ -190,6 +190,7 @@ export default function SettingsScreen() {
               label="Announcements"
               subtitle="Latest news and updates"
               badge={announcements.length > 0 ? announcements.length : undefined}
+              onPress={() => router.push("/account/announcements" as any)}
             />
             <MenuItem
               icon="chatbubble-ellipses-outline"

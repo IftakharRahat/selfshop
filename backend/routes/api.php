@@ -134,6 +134,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::get('announcements', [FrontendApiController::class, 'announcements']);
     Route::get('our-packages', [FrontendApiController::class, 'packages']);
     Route::post('purchese-package', [FrontendApiController::class, 'purchesepackage']);
     Route::post('package-payment/initiate', [FrontendApiController::class, 'initiatePackagePayment']);

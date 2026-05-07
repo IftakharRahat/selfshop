@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Addbanner;
 use App\Models\Admin;
+use App\Models\Announcement;
 use App\Models\Bank;
 use App\Models\Basicinfo;
 use App\Models\Brand;
@@ -1868,6 +1869,27 @@ class FrontendApiController extends Controller
             'status' => true,
             'message' => 'Bank info',
             'data' => $bank
+        ], 200);
+    }
+
+    public function announcements()
+    {
+        try {
+            $announcements = Announcement::where('status', 'Active')
+                ->orderBy('published_at', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        } catch (\Throwable $e) {
+            // Table may not exist yet
+            $announcements = collect();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Announcements list',
+            'data' => [
+                'announcements' => $announcements,
+            ],
         ], 200);
     }
 
