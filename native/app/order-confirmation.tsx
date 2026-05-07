@@ -37,10 +37,30 @@ const fmt = (n: number, d = 0) =>
 
 type DeliveryZone = "inside" | "near" | "outside" | null;
 
+type OnlinePaymentReference = {
+  orderId?: number;
+  transactionId?: string;
+};
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function getQueryParam(url: string, key: string): string | null {
+  const match = url.match(new RegExp(`[?&]${key}=([^&#]+)`, "i"));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function extractOrders(response: any): any[] {
+  const ordersList =
+    response?.data?.data ?? response?.data ?? (Array.isArray(response) ? response : []);
+  return Array.isArray(ordersList) ? ordersList : [];
+}
+
 export default function OrderConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const webViewRef = useRef<WebView>(null);
+  const onlinePaymentRef = useRef<OnlinePaymentReference>({});
+  const paymentHandledRef = useRef(false);
   const params = useLocalSearchParams<{ cartIds?: string | string[] }>();
   const cartIdsParam = Array.isArray(params.cartIds) ? params.cartIds[0] : params.cartIds;
   const checkoutCartIds = (cartIdsParam ?? "")
@@ -157,6 +177,7 @@ export default function OrderConfirmationScreen() {
   // WebView for SSLCommerz
   const [gatewayUrl, setGatewayUrl] = useState<string | null>(null);
   const [webViewLoading, setWebViewLoading] = useState(true);
+  const [paymentVerificationLoading, setPaymentVerificationLoading] = useState(false);
 
   // ── Calculations ──
   const deliveryCharge = deliveryZone === "inside" ? insideDhakaCharge
@@ -226,6 +247,11 @@ export default function OrderConfirmationScreen() {
 
       // Handle SSLCommerz redirect
       if (result?.ssl_redirect && result?.gateway_url) {
+        onlinePaymentRef.current = {
+          orderId: Number(result.order_id) || undefined,
+          transactionId: result.transaction_id,
+        };
+        paymentHandledRef.current = false;
         setGatewayUrl(result.gateway_url);
         setWebViewLoading(true);
         return;
@@ -283,23 +309,89 @@ export default function OrderConfirmationScreen() {
     createOrderMutation.mutate(formData);
   };
 
+  const verifyOnlineOrderFinalized = async (successUrl: string) => {
+    if (paymentHandledRef.current) return;
+    paymentHandledRef.current = true;
+    setPaymentVerificationLoading(true);
+
+    const orderIdFromUrl = Number(getQueryParam(successUrl, "order_id"));
+    const orderId = Number.isFinite(orderIdFromUrl) && orderIdFromUrl > 0
+      ? orderIdFromUrl
+      : onlinePaymentRef.current.orderId;
+    const transactionId = getQueryParam(successUrl, "tran_id") || onlinePaymentRef.current.transactionId;
+
+    try {
+      if (!orderId && !transactionId) {
+        toast.error("Payment returned without an order reference. Please check My Orders shortly.");
+        setGatewayUrl(null);
+        router.replace("/account/orders" as any);
+        return;
+      }
+
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        if (attempt > 0) await delay(1200);
+
+        const params = new URLSearchParams({ page: "1" });
+        if (orderId) {
+          params.set("search", String(orderId));
+        } else if (transactionId) {
+          params.set("search", transactionId);
+        }
+
+        const { data } = await apiClient.get(`/order-data/all?${params.toString()}`);
+        const orders = extractOrders(data);
+        const finalizedOrder = orders.find((order: any) => {
+          const matchesOrder = orderId ? Number(order.id) === Number(orderId) : true;
+          const matchesTransaction = transactionId
+            ? String(order.transaction_id ?? "") === String(transactionId)
+            : true;
+          const visibleStatus = String(order.status ?? "").toLowerCase() !== "pending payment";
+
+          return matchesOrder && matchesTransaction && visibleStatus;
+        });
+
+        if (finalizedOrder) {
+          toast.success("Payment successful. Order placed.");
+          setGatewayUrl(null);
+          queryClient.invalidateQueries({ queryKey: ["cart-items"] });
+          queryClient.invalidateQueries({ queryKey: ["order-count"] });
+          queryClient.invalidateQueries({ queryKey: ["orders"] });
+          router.replace("/account/orders" as any);
+          return;
+        }
+      }
+
+      toast.error("Payment received, but the order is still finalizing. Please check My Orders shortly.");
+      setGatewayUrl(null);
+      queryClient.invalidateQueries({ queryKey: ["order-count"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      router.replace("/account/orders" as any);
+    } catch (error) {
+      paymentHandledRef.current = false;
+      toast.error("Could not verify the order yet. Please check My Orders shortly.");
+    } finally {
+      setPaymentVerificationLoading(false);
+    }
+  };
+
   // WebView navigation for SSLCommerz
   const handleNavChange = (navState: { url: string }) => {
     const url = navState.url.toLowerCase();
-    const isSuccess = url.includes("payment=success") || url.includes("/payment/success") || url.includes("status=success");
+    const isSuccess = url.includes("payment=success") || url.includes("/payment/success") || url.includes("status=success") || url.includes("/order-received");
     const isFail = url.includes("payment=failed") || url.includes("payment=error") || url.includes("/payment/fail");
     const isCancel = url.includes("payment=canceled") || url.includes("payment=cancelled") || url.includes("/payment/cancel");
 
     if (isSuccess) {
-      toast.success("Payment successful! 🎉");
-      setGatewayUrl(null);
-      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
-      router.replace("/(tabs)");
+      void verifyOnlineOrderFinalized(navState.url);
     } else if (isFail) {
       toast.error("Payment failed. Please try again.");
+      paymentHandledRef.current = false;
+      setPaymentVerificationLoading(false);
       setGatewayUrl(null);
     } else if (isCancel) {
       toast.info("Payment cancelled.");
+      paymentHandledRef.current = false;
+      setPaymentVerificationLoading(false);
       setGatewayUrl(null);
     }
   };
@@ -729,10 +821,12 @@ export default function OrderConfirmationScreen() {
             <View style={{ width: 36 }} />
           </View>
 
-          {webViewLoading && (
+          {(webViewLoading || paymentVerificationLoading) && (
             <View style={st.webViewLoader}>
               <ActivityIndicator size="large" color={ACCENT} />
-              <Text mt="$2" color={GREY} fontSize="$3">Loading payment gateway...</Text>
+              <Text mt="$2" color={GREY} fontSize="$3">
+                {paymentVerificationLoading ? "Verifying order..." : "Loading payment gateway..."}
+              </Text>
             </View>
           )}
 

@@ -3620,35 +3620,42 @@ class FrontendApiController extends Controller
             }
             $profit = $sell - $buy;
 
-            $update_product = DB::table('orders')
-                ->where('transaction_id', $post_data['tran_id'])
-                ->updateOrInsert([
-                    'store_id' => 1,
-                    'shop_count' => count($shopproducts),
-                    'invoiceID' => $this->uniqueIDN(),
-                    'subTotal' => $sell,
-                    'profit' => $profit,
-                    'order_bonus' => $orderBonus,
-                    'deliveryCharge' => $request->deliveryCharge,
-                    'advance_delivery' => $request->advance_delivery === 'yes' ? 1 : 0,
-                    'data' => json_encode([
-                        'customer_name' => $request->customerName,
-                        'customer_phone' => $request->customerPhone,
-                        'customer_address' => $request->customerAddress,
-                        'customer_note' => $request->customerNote ?? '',
-                        'delivery_charge_per_shop' => $request->deliveryCharge,
-                        'cart_subtotal' => $request->subTotal,
-                        'advance_delivery' => $request->advance_delivery,
-                        'balance_from' => $request->balance_from,
-                    ]),
-                    'cart' => json_encode($shopproducts),
-                    'orderDate' => date('Y-m-d'),
-                    'transaction_id' => $post_data['tran_id'],
-                    'user_id' => Auth::id(),
-                    'status' => 'Pending Payment',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            $cartIdsForPayment = $shopproducts
+                ->flatMap(fn ($items) => $items->pluck('id'))
+                ->filter()
+                ->values()
+                ->all();
+            $orderId = DB::table('orders')->insertGetId([
+                'store_id' => 1,
+                'shop_count' => count($shopproducts),
+                'invoiceID' => $this->uniqueIDN(),
+                'subTotal' => $sell,
+                'profit' => $profit,
+                'order_bonus' => $orderBonus,
+                'deliveryCharge' => $request->deliveryCharge,
+                'paymentAmount' => $post_data['total_amount'],
+                'payment_type_id' => 6,
+                'advance_delivery' => $request->advance_delivery === 'yes' ? 1 : 0,
+                'data' => json_encode([
+                    'customer_name' => $request->customerName,
+                    'customer_phone' => $request->customerPhone,
+                    'customer_address' => $request->customerAddress,
+                    'customer_note' => $request->customerNote ?? '',
+                    'delivery_charge_per_shop' => $request->deliveryCharge,
+                    'cart_subtotal' => $request->subTotal,
+                    'cart_ids' => $cartIdsForPayment,
+                    'advance_delivery' => $request->advance_delivery,
+                    'balance_from' => $request->balance_from,
+                    'payment_status' => 'Pending',
+                ]),
+                'cart' => json_encode($shopproducts),
+                'orderDate' => date('Y-m-d'),
+                'transaction_id' => $post_data['tran_id'],
+                'user_id' => Auth::id(),
+                'status' => 'Pending Payment',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             try {
                 $sslc = new SslCommerzNotification();
@@ -3661,18 +3668,24 @@ class FrontendApiController extends Controller
                         'status' => true,
                         'ssl_redirect' => true,
                         'gateway_url' => $decoded['data'],
+                        'order_id' => $orderId,
+                        'transaction_id' => $post_data['tran_id'],
                         'message' => 'Redirecting to payment gateway...',
                     ]);
                 }
 
                 // If we got a fail response from SSLCommerz
                 $errorMessage = $decoded['message'] ?? 'Payment gateway error. Please try Account Wallet.';
+                DB::table('orders')->where('id', $orderId)->delete();
                 return response()->json([
                     'status' => false,
                     'message' => $errorMessage,
                 ], 422);
             } catch (\Throwable $e) {
                 \Log::error('SSLCommerz payment error: ' . $e->getMessage());
+                if (isset($orderId)) {
+                    DB::table('orders')->where('id', $orderId)->delete();
+                }
                 return response()->json([
                     'status' => false,
                     'message' => 'Online payment is currently unavailable. Please use Account Wallet instead.',
