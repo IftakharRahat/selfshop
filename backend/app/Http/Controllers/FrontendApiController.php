@@ -66,6 +66,27 @@ use Str;
 class FrontendApiController extends Controller
 {
 
+    public function contactInfo()
+    {
+        $info = Basicinfo::first();
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'phone_one'      => $info->phone_one ?? null,
+                'phone_two'      => $info->phone_two ?? null,
+                'email'          => $info->email ?? null,
+                'address'        => $info->address ?? null,
+                'wp_number'      => $info->wp_number ?? null,
+                'wp_link'        => $info->wp_link ?? null,
+                'messanger_link' => $info->messanger_link ?? null,
+                'facebook'       => $info->facebook ?? null,
+                'instagram'      => $info->linkedin ?? null,  // stored as linkedin in DB
+                'youtube'        => $info->youtube ?? null,
+                'tiktok'         => $info->rss ?? null,       // stored as rss in DB
+            ],
+        ], 200);
+    }
+
     public function packages()
     {
         $invoice = Resellerinvoice::where('user_id', Auth::id())

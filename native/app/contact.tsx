@@ -14,10 +14,112 @@ import { Text } from "tamagui";
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
+import { useQuery } from "@tanstack/react-query";
+
+import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
 
-const CONTACT_METHODS = [
+const API_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
+
+/* ── Build contact methods dynamically from API data ── */
+function buildContactMethods(data: any) {
+  const methods: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: string;
+    color: string;
+    action: string;
+  }[] = [];
+
+  if (data?.wp_number || data?.wp_link) {
+    const num = (data.wp_number || "").replace(/\D/g, "");
+    methods.push({
+      icon: "logo-whatsapp",
+      label: "WhatsApp",
+      value: data.wp_number || num,
+      color: "#25D366",
+      action: data.wp_link || `https://wa.me/${num}`,
+    });
+  }
+
+  if (data?.phone_one) {
+    methods.push({
+      icon: "call-outline",
+      label: "Phone",
+      value: data.phone_one,
+      color: "#2563EB",
+      action: `tel:${data.phone_one}`,
+    });
+  }
+
+  if (data?.email) {
+    methods.push({
+      icon: "mail-outline",
+      label: "Email",
+      value: data.email,
+      color: ACCENT,
+      action: `mailto:${data.email}`,
+    });
+  }
+
+  if (data?.facebook) {
+    methods.push({
+      icon: "logo-facebook",
+      label: "Facebook",
+      value: "Facebook Page",
+      color: "#1877F2",
+      action: data.facebook,
+    });
+  }
+
+  if (data?.instagram) {
+    methods.push({
+      icon: "logo-instagram",
+      label: "Instagram",
+      value: "Instagram",
+      color: "#E4405F",
+      action: data.instagram,
+    });
+  }
+
+  if (data?.youtube) {
+    methods.push({
+      icon: "logo-youtube",
+      label: "YouTube",
+      value: "YouTube Channel",
+      color: "#FF0000",
+      action: data.youtube,
+    });
+  }
+
+  if (data?.tiktok) {
+    methods.push({
+      icon: "logo-tiktok",
+      label: "TikTok",
+      value: "TikTok",
+      color: "#010101",
+      action: data.tiktok,
+    });
+  }
+
+  if (data?.messanger_link) {
+    methods.push({
+      icon: "chatbubble-ellipses-outline",
+      label: "Messenger",
+      value: "Messenger",
+      color: "#0084FF",
+      action: data.messanger_link,
+    });
+  }
+
+  return methods;
+}
+
+/* ── Hardcoded fallback if API fails ── */
+const FALLBACK_METHODS = [
   { icon: "logo-whatsapp" as const, label: "WhatsApp", value: "+8801976367981", color: "#25D366", action: "https://wa.me/8801976367981" },
   { icon: "call-outline" as const, label: "Phone", value: "+8801976367981", color: "#2563EB", action: "tel:+8801976367981" },
   { icon: "mail-outline" as const, label: "Email", value: "contact@selfshop.com.bd", color: ACCENT, action: "mailto:contact@selfshop.com.bd" },
@@ -28,6 +130,22 @@ export default function ContactScreen() {
   const [form, setForm] = useState({ name: "", email: "", title: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const contactQuery = useQuery({
+    queryKey: ["contact-info"],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get("/contact-info");
+        return data?.data ?? data ?? null;
+      } catch {
+        return null;
+      }
+    },
+  });
+
+  const contactData = contactQuery.data;
+  const contactMethods = contactData ? buildContactMethods(contactData) : FALLBACK_METHODS;
+  const address = contactData?.address || "Momotaz Plaza, 6th Floor, Flat-C, PTI More, College Road, Sadar Lakshmipur, Lakshmipur.";
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -43,7 +161,6 @@ export default function ContactScreen() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      // The web contact form also simulates - no API endpoint for this
       await new Promise((r) => setTimeout(r, 1500));
       toast.success("Message sent successfully!");
       setForm({ name: "", email: "", title: "", message: "" });
@@ -61,14 +178,14 @@ export default function ContactScreen() {
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Quick Contact Methods */}
           <View style={styles.methodsGrid}>
-            {CONTACT_METHODS.map((m) => (
+            {contactMethods.map((m) => (
               <Pressable
                 key={m.label}
                 style={({ pressed }) => [styles.methodCard, pressed && { opacity: 0.8 }]}
                 onPress={() => Linking.openURL(m.action)}
               >
                 <View style={[styles.methodIcon, { backgroundColor: `${m.color}15` }]}>
-                  <Ionicons name={m.icon} size={22} color={m.color} />
+                  <Ionicons name={m.icon as any} size={22} color={m.color} />
                 </View>
                 <Text style={styles.methodLabel}>{m.label}</Text>
                 <Text style={styles.methodValue} numberOfLines={1}>{m.value}</Text>
@@ -83,9 +200,7 @@ export default function ContactScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.addressTitle}>Office Address</Text>
-              <Text style={styles.addressText}>
-                Momotaz Plaza, 6th Floor, Flat-C, PTI More, College Road, Sadar Lakshmipur, Lakshmipur.
-              </Text>
+              <Text style={styles.addressText}>{address}</Text>
             </View>
           </View>
 

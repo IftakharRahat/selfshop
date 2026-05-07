@@ -79,6 +79,9 @@ Route::get('/app-version-check', function (Request $request) {
     ]);
 })->name('api.app-version-check');
 
+// Contact info — public, no auth required
+Route::get('/contact-info', [FrontendApiController::class, 'contactInfo'])->name('api.contact-info');
+
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
     Route::get('/categories', [FrontendApiController::class, 'categoryData'])->name('api.user.category-data');
