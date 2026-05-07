@@ -130,10 +130,22 @@ export default function PaymentMethodsScreen() {
 
   /* ── Derived ── */
   const rawMethods: any[] = methodsQuery.data ?? [];
-  const methods = useMemo(
-    () => rawMethods.filter((method) => !isWalletMethod(method)),
-    [rawMethods]
-  );
+  const methods = useMemo(() => {
+    const filtered = rawMethods.filter((method) => !isWalletMethod(method));
+    // Ensure "Bank" is always present as a payment option
+    const hasBank = filtered.some(
+      (m: any) => String(m.paymentTypeName ?? "").toLowerCase().includes("bank")
+    );
+    if (!hasBank) {
+      filtered.push({
+        id: -1,
+        paymentTypeName: "Bank",
+        icon: null,
+        status: "Active",
+      });
+    }
+    return filtered;
+  }, [rawMethods]);
 
   /* ── Refresh ── */
   const isRefreshing = methodsQuery.isRefetching || bankQuery.isRefetching;

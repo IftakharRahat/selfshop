@@ -117,10 +117,22 @@ export default function WithdrawScreen() {
 
   /* ── Derived ── */
   const rawMethods: any[] = methodsQuery.data ?? [];
-  const methods = useMemo(
-    () => rawMethods.filter((method) => !isWalletMethod(method)),
-    [rawMethods]
-  );
+  const methods = useMemo(() => {
+    const filtered = rawMethods.filter((method) => !isWalletMethod(method));
+    // Ensure "Bank" is always present as a payment option
+    const hasBank = filtered.some(
+      (m: any) => String(m.paymentTypeName ?? "").toLowerCase().includes("bank")
+    );
+    if (!hasBank) {
+      filtered.push({
+        id: -1, // sentinel id – backend will ignore if not in DB
+        paymentTypeName: "Bank",
+        icon: null,
+        status: "Active",
+      });
+    }
+    return filtered;
+  }, [rawMethods]);
   const history: any[] = historyQuery.data ?? [];
   const walletBalance = Number(dashboardQuery.data?.balance ?? dashboardQuery.data?.blance ?? 0);
   const lastWithdraw = history.length > 0
@@ -257,13 +269,27 @@ export default function WithdrawScreen() {
                     >
                     {(() => {
                         const iconUri = resolveImageUrl(method.icon);
-                        return iconUri ? (
-                          <Image
-                            source={{ uri: iconUri }}
-                            style={styles.methodIcon}
-                            resizeMode="contain"
+                        const name = String(method.paymentTypeName ?? "").toLowerCase();
+                        if (iconUri) {
+                          return (
+                            <Image
+                              source={{ uri: iconUri }}
+                              style={styles.methodIcon}
+                              resizeMode="contain"
+                            />
+                          );
+                        }
+                        // Fallback icon for methods without an image (e.g. Bank)
+                        const fallbackIcon = name.includes("bank")
+                          ? "business-outline"
+                          : "card-outline";
+                        return (
+                          <Ionicons
+                            name={fallbackIcon as any}
+                            size={24}
+                            color={isSelected ? ACCENT : "#6B7280"}
                           />
-                        ) : null;
+                        );
                       })()}
                       <Text
                         style={[
