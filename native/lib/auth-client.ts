@@ -1,6 +1,8 @@
 import * as SecureStore from "expo-secure-store";
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import apiClient, { TOKEN_KEY } from "./api-client";
+import { queryClient } from "./query-client";
 
 interface User {
   id: number;
@@ -14,16 +16,63 @@ interface Session {
   token: string;
 }
 
+function parseAuthResponse(data: any) {
+  const payload = data?.data ?? data;
+
+  return {
+    token:
+      payload?.token ??
+      payload?.access_token ??
+      data?.token ??
+      data?.access_token,
+    user: payload?.user ?? data?.user,
+  };
+}
+
+async function fetchCurrentUser(): Promise<User> {
+  const { data } = await apiClient.get("/user");
+  const user = data?.data?.user ?? data?.data ?? data?.user ?? data;
+
+  if (!user?.id) {
+    throw new Error("No user received");
+  }
+
+  return user;
+}
+
+function cacheSession(session: Session | null) {
+  queryClient.setQueryData(["session"], session);
+  queryClient.setQueryData(["auth-token"], session?.token ?? null);
+}
+
+async function createSessionFromAuthResponse(data: any): Promise<Session> {
+  if (data?.status === false) {
+    throw new Error(data?.message ?? "Authentication failed");
+  }
+
+  const { token, user: responseUser } = parseAuthResponse(data);
+
+  if (!token) throw new Error(data?.message ?? "No token received");
+
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
+
+  try {
+    const user = responseUser?.id ? responseUser : await fetchCurrentUser();
+    const session = { user, token };
+    cacheSession(session);
+    return session;
+  } catch (error) {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    cacheSession(null);
+    throw error;
+  }
+}
+
 // ── Auth functions ──
 
 export async function login(email: string, password: string): Promise<Session> {
   const { data } = await apiClient.post("/login", { email, password });
-  const token = data?.data?.token ?? data?.token;
-  const user = data?.data?.user ?? data?.user;
-
-  if (!token) throw new Error("No token received");
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-  return { user, token };
+  return createSessionFromAuthResponse(data);
 }
 
 export async function register(
@@ -38,12 +87,7 @@ export async function register(
     password,
     password_confirmation,
   });
-  const token = data?.data?.token ?? data?.token;
-  const user = data?.data?.user ?? data?.user;
-
-  if (!token) throw new Error("No token received");
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-  return { user, token };
+  return createSessionFromAuthResponse(data);
 }
 
 export async function logout(): Promise<void> {
@@ -53,6 +97,7 @@ export async function logout(): Promise<void> {
     // ignore — token may already be invalid
   }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+  cacheSession(null);
 }
 
 export async function forgotPassword(phone: string) {
@@ -86,37 +131,36 @@ export async function getToken(): Promise<string | null> {
 
 // ── React hook ──
 
+async function readSession(): Promise<Session | null> {
+  try {
+    const token = await SecureStore.getItemAsync(TOKEN_KEY);
+    if (!token) return null;
+
+    const user = await fetchCurrentUser();
+    return { user, token };
+  } catch {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    cacheSession(null);
+    return null;
+  }
+}
+
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const checkSession = useCallback(async () => {
-    try {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (!token) {
-        setSession(null);
-        return;
-      }
-
-      const { data } = await apiClient.get("/user");
-      const user = data?.data ?? data;
-      setSession({ user, token });
-    } catch {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-      setSession(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    checkSession();
-  }, [checkSession]);
+  const sessionQuery = useQuery({
+    queryKey: ["session"],
+    queryFn: readSession,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const signOut = useCallback(async () => {
     await logout();
-    setSession(null);
   }, []);
 
-  return { data: session, isLoading, refetch: checkSession, signOut };
+  return {
+    data: sessionQuery.data ?? null,
+    isLoading: sessionQuery.isLoading,
+    isFetching: sessionQuery.isFetching,
+    refetch: sessionQuery.refetch,
+    signOut,
+  };
 }

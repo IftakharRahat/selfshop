@@ -123,7 +123,7 @@ const FALLBACK_METHODS = [
   { icon: "logo-whatsapp" as const, label: "WhatsApp", value: "+8801976367981", color: "#25D366", action: "https://wa.me/8801976367981" },
   { icon: "call-outline" as const, label: "Phone", value: "+8801976367981", color: "#2563EB", action: "tel:+8801976367981" },
   { icon: "mail-outline" as const, label: "Email", value: "contact@selfshop.com.bd", color: ACCENT, action: "mailto:contact@selfshop.com.bd" },
-  { icon: "logo-facebook" as const, label: "Facebook", value: "SelfShop BD", color: "#1877F2", action: "https://facebook.com/selfshopbd" },
+  { icon: "logo-facebook" as const, label: "Facebook", value: "Facebook Page", color: "#1877F2", action: "https://www.facebook.com/selfshop.reseller" },
 ];
 
 export default function ContactScreen() {

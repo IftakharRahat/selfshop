@@ -107,7 +107,7 @@ export default function DashboardSidebar({
 	};
 
 	return (
-		<aside className="w-full bg-white h-full flex flex-col overflow-hidden">
+		<aside className="w-full bg-white h-full min-h-0 flex flex-col overflow-hidden">
 			{/* User Info */}
 			<div className="p-5 bg-gradient-to-br from-[#E5005F] to-[#b80050] flex-shrink-0">
 				<div className="flex items-center gap-3 mb-3">

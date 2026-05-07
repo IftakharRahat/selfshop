@@ -34,9 +34,9 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 	};
 
 	return (
-		<div className="flex min-h-screen">
+		<div className="flex flex-1 min-h-0">
 			{/* Desktop Sidebar - hidden on mobile */}
-			<div className="hidden lg:block">
+			<div className="hidden lg:block h-full min-h-0 w-[280px] flex-shrink-0">
 				<DashboardSidebar />
 			</div>
 
@@ -58,9 +58,9 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 			</Drawer>
 
 			{/* Main Content Area */}
-			<div className="flex-1 flex flex-col min-w-0">
+			<div className="flex-1 flex flex-col min-w-0 min-h-0">
 				{/* Mobile Header with Hamburger */}
-				<div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
+				<div className="lg:hidden flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
 					<div className="flex items-center justify-between">
 						<button
 							onClick={() => setDrawerOpen(true)}
@@ -106,7 +106,7 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 				</div>
 
 				{/* Main Content */}
-				<div className="h-full max-h-[calc(100vh-75px)] overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+				<div className="flex-1 min-h-0 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
 					{children}
 				</div>
 			</div>

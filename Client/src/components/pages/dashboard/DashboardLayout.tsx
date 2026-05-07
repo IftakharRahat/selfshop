@@ -24,9 +24,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 	};
 
 	return (
-		<div className="h-screen bg-gray-50  overflow-hidden">
+		<div className="h-screen bg-gray-50 overflow-hidden flex flex-col">
 			{/* Desktop Header - hidden on mobile */}
-			<header className="hidden lg:block bg-white border-b border-gray-200 px-6 py-3">
+			<header className="hidden lg:block flex-shrink-0 bg-white border-b border-gray-200 px-6 py-3">
 				<div className="flex items-center justify-between">
 					<div className="flex items-center gap-8">
 						<Link href="/" className="w-[240px] flex-shrink-0 pr-6">

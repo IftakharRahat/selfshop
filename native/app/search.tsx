@@ -48,6 +48,25 @@ function resolveImageUrl(path?: string | null): string {
   return `${IMAGE_BASE}/storage/${clean}`;
 }
 
+function isPriceValue(value: unknown): value is string | number {
+  const normalized = String(value ?? "").replace(/[^0-9.-]/g, "");
+  return normalized.length > 0 && Number.isFinite(Number.parseFloat(normalized));
+}
+
+function getProductCardPrice(product: any): string | number {
+  return [
+    product?.storefront_price,
+    product?.ProductSellingPrice,
+    product?.ProductSalePrice,
+    product?.ProductRegularPrice,
+  ].find(isPriceValue) ?? 0;
+}
+
+function toPriceNumber(value: unknown): number {
+  const parsed = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 /* ═══════════════════════════════════════════════════ */
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
@@ -99,10 +118,10 @@ export default function SearchScreen() {
     const sorted = [...rawProducts];
     switch (sortBy) {
       case "price_asc":
-        sorted.sort((a, b) => Number(a.ProductSalePrice ?? a.ProductRegularPrice ?? 0) - Number(b.ProductSalePrice ?? b.ProductRegularPrice ?? 0));
+        sorted.sort((a, b) => toPriceNumber(getProductCardPrice(a)) - toPriceNumber(getProductCardPrice(b)));
         break;
       case "price_desc":
-        sorted.sort((a, b) => Number(b.ProductSalePrice ?? b.ProductRegularPrice ?? 0) - Number(a.ProductSalePrice ?? a.ProductRegularPrice ?? 0));
+        sorted.sort((a, b) => toPriceNumber(getProductCardPrice(b)) - toPriceNumber(getProductCardPrice(a)));
         break;
       case "discount":
         sorted.sort((a, b) => Number(b.Discount ?? 0) - Number(a.Discount ?? 0));
@@ -289,7 +308,7 @@ export default function SearchScreen() {
             <View style={{ width: CARD_WIDTH }}>
               <ProductCard
                 name={item.ProductName ?? ""}
-                price={`৳${Number(item.ProductSellingPrice ?? item.ProductSalePrice ?? item.ProductRegularPrice ?? 0).toLocaleString("en-BD")}`}
+                price={getProductCardPrice(item)}
                 image={resolveImageUrl(item.ViewProductImage)}
                 slug={item.ProductSlug}
                 category={item.category_name ?? ""}

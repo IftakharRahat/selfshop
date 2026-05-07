@@ -14,15 +14,45 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import apiClient from "@/lib/api-client";
 
+const DEPARTMENTS = ["Billing", "Parcel Support", "Technical Support"] as const;
+const PRIORITIES = ["Low", "Medium", "High"] as const;
+
+type Department = (typeof DEPARTMENTS)[number];
+type Priority = (typeof PRIORITIES)[number];
+type CreateTicketPayload = {
+  subject: string;
+  department: Department;
+  priority: Priority;
+  message: string;
+};
+
 export default function CreateTicketScreen() {
   const queryClient = useQueryClient();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [department, setDepartment] = useState<Department>("Billing");
+  const [priority, setPriority] = useState<Priority>("Medium");
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      apiClient.post("/create-supportticket", { subject, message, priority }),
+    mutationFn: async (payload: CreateTicketPayload) => {
+      const formData = new FormData();
+      formData.append("subject", payload.subject);
+      formData.append("department", payload.department);
+      formData.append("priority", payload.priority);
+      formData.append("message", payload.message);
+
+      const { data } = await apiClient.post("/create-supportticket", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (data?.status === false) {
+        const error: any = new Error(data?.message ?? "Failed to create ticket");
+        error.response = { data };
+        throw error;
+      }
+
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       Alert.alert("Success", "Support ticket created!", [
@@ -30,11 +60,34 @@ export default function CreateTicketScreen() {
       ]);
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to create ticket");
+      const errors = err?.response?.data?.errors as Record<string, string[]> | undefined;
+      const firstValidationError = errors ? Object.values(errors).flat().find(Boolean) : undefined;
+      Alert.alert("Error", firstValidationError || err?.response?.data?.message || "Failed to create ticket");
     },
   });
 
-  const isFormValid = subject.trim().length > 0 && message.trim().length > 0;
+  const isFormValid = subject.trim().length >= 3 && message.trim().length >= 10;
+  const handleSubmit = () => {
+    const trimmedSubject = subject.trim();
+    const trimmedMessage = message.trim();
+
+    if (trimmedSubject.length < 3) {
+      Alert.alert("Invalid", "Subject must be at least 3 characters.");
+      return;
+    }
+
+    if (trimmedMessage.length < 10) {
+      Alert.alert("Invalid", "Message must be at least 10 characters.");
+      return;
+    }
+
+    createMutation.mutate({
+      subject: trimmedSubject,
+      department,
+      priority,
+      message: trimmedMessage,
+    });
+  };
 
   return (
     <>
@@ -52,20 +105,47 @@ export default function CreateTicketScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.form}>
+          {/* Department */}
+          <View>
+            <Text fontSize="$3" fontWeight="600" color="#1A1A2E" mb="$2">
+              Department
+            </Text>
+            <View style={styles.departmentList}>
+              {DEPARTMENTS.map((item) => (
+                <Pressable
+                  key={item}
+                  style={[
+                    styles.departmentChip,
+                    department === item && styles.departmentChipActive,
+                  ]}
+                  onPress={() => setDepartment(item)}
+                >
+                  <Text
+                    fontSize="$3"
+                    fontWeight={department === item ? "bold" : "500"}
+                    color={department === item ? "#fff" : "#1A1A2E"}
+                  >
+                    {item}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
           {/* Priority */}
           <View>
             <Text fontSize="$3" fontWeight="600" color="#1A1A2E" mb="$2">
               Priority
             </Text>
             <View style={styles.priorityRow}>
-              {(["low", "medium", "high"] as const).map((p) => (
+              {PRIORITIES.map((p) => (
                 <Pressable
                   key={p}
                   style={[
                     styles.priorityChip,
                     priority === p && styles.priorityChipActive,
-                    priority === p && p === "high" && { backgroundColor: "#DC2626", borderColor: "#DC2626" },
-                    priority === p && p === "low" && { backgroundColor: "#8E8E93", borderColor: "#8E8E93" },
+                    priority === p && p === "High" && { backgroundColor: "#DC2626", borderColor: "#DC2626" },
+                    priority === p && p === "Low" && { backgroundColor: "#8E8E93", borderColor: "#8E8E93" },
                   ]}
                   onPress={() => setPriority(p)}
                 >
@@ -120,8 +200,8 @@ export default function CreateTicketScreen() {
               !isFormValid && styles.submitButtonDisabled,
               pressed && isFormValid && { opacity: 0.85 },
             ]}
-            onPress={() => createMutation.mutate()}
-            disabled={!isFormValid || createMutation.isPending}
+            onPress={handleSubmit}
+            disabled={createMutation.isPending}
           >
             {createMutation.isPending ? (
               <ActivityIndicator color="#fff" />
@@ -140,6 +220,22 @@ export default function CreateTicketScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   form: { padding: 20, gap: 20 },
+  departmentList: {
+    gap: 10,
+  },
+  departmentChip: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: "#F5F5F5",
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
+    alignItems: "center",
+  },
+  departmentChipActive: {
+    backgroundColor: "#E5005F",
+    borderColor: "#E5005F",
+  },
   priorityRow: {
     flexDirection: "row",
     gap: 10,

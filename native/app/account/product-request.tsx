@@ -93,9 +93,7 @@ export default function ProductRequestScreen() {
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
       quality: 0.8,
-      aspect: [1, 1],
     });
 
     if (!result.canceled && result.assets[0]) {
@@ -231,7 +229,7 @@ export default function ProductRequestScreen() {
                 <Image
                   source={{ uri: selectedImage.uri }}
                   style={styles.previewImage}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               ) : (
                 <View style={styles.imagePickerContent}>

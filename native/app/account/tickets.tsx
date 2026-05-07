@@ -24,10 +24,13 @@ export default function SupportTicketsScreen() {
     queryKey: ["tickets"],
     queryFn: async () => {
       const { data } = await apiClient.get("/get-supporttickets");
-      return data?.data ?? data ?? { tickets: [] };
+      const payload = data?.data ?? data;
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.tickets)) return payload.tickets;
+      return payload && typeof payload === "object" ? Object.values(payload) : [];
     },
   });
-  const tickets = ticketsQuery.data?.tickets ?? [];
+  const tickets = ticketsQuery.data ?? [];
 
   if (ticketsQuery.isLoading) {
     return (
@@ -61,8 +64,10 @@ export default function SupportTicketsScreen() {
         ) : (
           <View style={styles.list}>
             {tickets.map((ticket: any) => {
-              const status = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.open;
-              const priority = PRIORITY_CONFIG[ticket.priority] ?? PRIORITY_CONFIG.medium;
+              const statusKey = String(ticket.status ?? "open").toLowerCase().replace(/-/g, "_");
+              const priorityKey = String(ticket.priority ?? "medium").toLowerCase();
+              const status = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.open;
+              const priority = PRIORITY_CONFIG[priorityKey] ?? PRIORITY_CONFIG.medium;
               const date = new Date(ticket.createdAt ?? ticket.created_at).toLocaleDateString("en-BD", {
                 day: "numeric",
                 month: "short",
@@ -87,7 +92,7 @@ export default function SupportTicketsScreen() {
                       {ticket.ticketNumber ?? ticket.ticket_number}
                     </Text>
                     <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-                      <Text fontSize={11} fontWeight="bold" color={status.color}>
+                      <Text fontSize={11} fontWeight="bold" style={{ color: status.color }}>
                         {status.label}
                       </Text>
                     </View>
@@ -98,7 +103,7 @@ export default function SupportTicketsScreen() {
                   <View style={styles.ticketFooter}>
                     <View style={styles.infoRow}>
                       <Ionicons name="flag-outline" size={14} color={priority.color} />
-                      <Text fontSize="$2" color={priority.color} ml="$1" style={{ textTransform: "capitalize" }}>
+                      <Text fontSize="$2" ml="$1" style={{ color: priority.color, textTransform: "capitalize" }}>
                         {ticket.priority}
                       </Text>
                     </View>

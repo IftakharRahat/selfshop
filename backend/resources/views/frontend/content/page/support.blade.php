@@ -4,6 +4,11 @@
 @section('title')
     {{ env('APP_NAME') }}-Help & Support
 @endsection
+@php
+    $basicinfo = App\Models\Basicinfo::first();
+    $facebookLink = optional($basicinfo)->facebook ?: 'https://www.facebook.com/selfshop.reseller';
+    $messengerLink = optional($basicinfo)->messanger_link ?: $facebookLink;
+@endphp
  <style>
     .about-section {
       background: url('public/aboutbanner.png') no-repeat center center;
@@ -82,7 +87,7 @@
                 <p style="font-size: 18px;color:black;text-align:justify">
                     Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.
                 </p>
-                <a href="tel:{{ App\Models\Basicinfo::first()->phone_one }}" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
+                <a href="tel:{{ optional($basicinfo)->phone_one }}" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
             </div>
         </div>
     </div>
@@ -93,7 +98,7 @@
                 <p style="font-size: 18px;color:black;text-align:justify">
                     Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.
                 </p>
-                <a href="mailto:{{ App\Models\Basicinfo::first()->email }}" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
+                <a href="mailto:{{ optional($basicinfo)->email }}" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
             </div>
             <div class="col-lg-6">
                 <img src="{{asset('public/h2.png')}}" alt="" style="width:100%">
@@ -111,7 +116,7 @@
                 <p style="font-size: 18px;color:black;text-align:justify">
                     Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.
                 </p>
-                <a href="https://www.facebook.com/selfshop.reseller" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
+                <a href="{{ $facebookLink }}" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
             </div>
         </div>
     </div>
@@ -140,7 +145,7 @@
                 <p style="font-size: 18px;color:black;text-align:justify">
                     Lorem ipsum dolor sit amet consectetur. Faucibus tempus lacus ultrices eu. Tristique nunc morbi viverra nec malesuada amet a consectetur.
                 </p>
-                <a href="https://www.facebook.com/selfshop.reseller" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
+                <a href="{{ $messengerLink }}" class="btn btn-info" style="border-radius: 4.707px;">Contact Now</a>
             </div>
         </div>
     </div>
