@@ -154,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('faqs', [FrontendApiController::class, 'faqs']);
     Route::get('track-order', [FrontendApiController::class, 'trackorder']);
     Route::post('update-bank-info', [FrontendApiController::class, 'bankinfo']);
+    Route::get('bank-info', [FrontendApiController::class, 'getBankInfo']);
     // supportticket
     Route::get('get-supporttickets', [FrontendApiController::class, 'supportticket']);
     Route::post('create-supportticket', [FrontendApiController::class, 'createticket']);

@@ -1860,6 +1860,17 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    public function getBankInfo()
+    {
+        $id = Auth::user()->id;
+        $bank = Bank::where('user_id', $id)->first();
+        return response()->json([
+            'status' => true,
+            'message' => 'Bank info',
+            'data' => $bank
+        ], 200);
+    }
+
     public function createticket(Request $request)
     {
         $validator = Validator::make($request->all(), [

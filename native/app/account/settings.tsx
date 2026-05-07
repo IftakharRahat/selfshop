@@ -117,6 +117,7 @@ export default function SettingsScreen() {
               icon="card-outline"
               label="Payment Methods"
               subtitle="Add or remove payment cards"
+              onPress={() => router.push("/account/payment-methods" as any)}
             />
           </View>
         </View>
