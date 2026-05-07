@@ -528,35 +528,51 @@ class FrontendApiController extends Controller
 
     public function collection(Request $request, $slug)
     {
-        $limit = $request->limit ?? 15;
+        $limit = $request->input('limit', 15);
+        $sort = $request->input('sort', 'rating');
         $total = 0;
         $searchcontents = null;
         $title = 'Products';
+        $query = null;
+        $productSelects = [
+            'id',
+            'ProductName',
+            'ProductSlug',
+            'ProductRegularPrice',
+            'ProductSalePrice',
+            'ProductResellerPrice',
+            'min_sell_price',
+            'Discount',
+            'ViewProductImage',
+            'vendor_id',
+            'category_id',
+            'selling_type',
+            'created_at',
+        ];
 
         if ($slug == 'hot_selling') {
             $title = 'Hot Selling Products';
-            $total = Product::visibleOnStorefront()->where('hot_list', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('hot_list', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->paginate($limit);
+            $query = Product::visibleOnStorefront()->where('hot_list', 'On');
         } elseif ($slug == 'ready_to_bost') {
             $title = 'Ready To Bost Products';
-            $total = Product::visibleOnStorefront()->where('ready_bost', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('ready_bost', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->paginate($limit);
+            $query = Product::visibleOnStorefront()->where('ready_bost', 'On');
         } elseif ($slug == 'profitable_product') {
             $title = 'Profitable Products';
-            $total = Product::visibleOnStorefront()->where('profitable', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('profitable', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->paginate($limit);
+            $query = Product::visibleOnStorefront()->where('profitable', 'On');
         } elseif ($slug == 'new_arrivel') {
             $title = 'New Arrivel Products';
-            $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->latest('id')->paginate($limit);
+            $query = Product::visibleOnStorefront()->where('show_new_product', 'On');
         } elseif ($slug == 'limited_offer') {
             $title = 'Limited Offer Products';
-            $total = Product::visibleOnStorefront()->where('limited', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('limited', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->paginate($limit);
+            $query = Product::visibleOnStorefront()->where('limited', 'On');
         } elseif ($slug == 'summer_collection') {
             $title = 'Summer Collection Products';
-            $total = Product::visibleOnStorefront()->where('summer', 'On')->count();
-            $searchcontents = Product::visibleOnStorefront()->where('summer', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->paginate($limit);
+            $query = Product::visibleOnStorefront()->where('summer', 'On');
+        }
+
+        if ($query !== null) {
+            $total = (clone $query)->count();
+            $searchcontents = $this->applyProductSort($query->select($productSelects), $sort)->paginate($limit);
         }
 
         if ($searchcontents === null || $searchcontents->count() == 0) {
@@ -578,10 +594,15 @@ class FrontendApiController extends Controller
 
     public function newarrivels(Request $request)
     {
-        $limit = $request->limit ?? 15;
-        $total = Product::visibleOnStorefront()->where('show_new_product', 'On')->count();
+        $limit = $request->input('limit', 15);
+        $sort = $request->input('sort', 'newest');
+        $query = Product::visibleOnStorefront()->where('show_new_product', 'On');
+        $total = (clone $query)->count();
 
-        $searchcontents = Product::visibleOnStorefront()->where('show_new_product', 'On')->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->paginate($limit);
+        $searchcontents = $this->applyProductSort(
+            $query->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type', 'created_at'),
+            $sort
+        )->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
@@ -597,6 +618,28 @@ class FrontendApiController extends Controller
             'message' => 'New arrivels products found successfully',
             'data' => $searchcontents
         ], 200);
+    }
+
+    protected function applyProductSort($query, $sort)
+    {
+        switch ($sort) {
+            case 'newest':
+                return $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+            case 'oldest':
+                return $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
+            case 'price_asc':
+                return $query->orderBy('ProductSalePrice', 'asc')->orderBy('id', 'desc');
+            case 'price_desc':
+                return $query->orderBy('ProductSalePrice', 'desc')->orderBy('id', 'desc');
+            case 'rating':
+            default:
+                return $query->selectSub(
+                    Review::selectRaw('COALESCE(AVG(rating), 0)')
+                        ->whereColumn('product_id', 'products.id')
+                        ->where('status', 'Active'),
+                    'avg_rating'
+                )->orderBy('avg_rating', 'desc')->orderBy('id', 'desc');
+        }
     }
 
     public function newproducts(Request $request)

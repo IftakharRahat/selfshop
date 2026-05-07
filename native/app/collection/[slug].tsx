@@ -30,6 +30,59 @@ const SORT_OPTIONS = [
   { key: "price_desc", label: "Price: High → Low", icon: "trending-down" as const },
 ];
 
+function toNumber(value: unknown): number {
+  const number = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(number) ? number : 0;
+}
+
+function getDisplayPrice(product: any): number {
+  return toNumber(
+    product?.storefront_price ??
+      product?.ProductSalePrice ??
+      product?.ProductRegularPrice,
+  );
+}
+
+function getCreatedTime(product: any): number {
+  const parsed = Date.parse(String(product?.created_at ?? ""));
+  return Number.isFinite(parsed) ? parsed : toNumber(product?.id);
+}
+
+function sortProducts(products: any[], sort: string) {
+  const sorted = [...products];
+
+  switch (sort) {
+    case "newest":
+      sorted.sort(
+        (a, b) => getCreatedTime(b) - getCreatedTime(a) || toNumber(b?.id) - toNumber(a?.id),
+      );
+      break;
+    case "oldest":
+      sorted.sort(
+        (a, b) => getCreatedTime(a) - getCreatedTime(b) || toNumber(a?.id) - toNumber(b?.id),
+      );
+      break;
+    case "price_asc":
+      sorted.sort(
+        (a, b) => getDisplayPrice(a) - getDisplayPrice(b) || toNumber(b?.id) - toNumber(a?.id),
+      );
+      break;
+    case "price_desc":
+      sorted.sort(
+        (a, b) => getDisplayPrice(b) - getDisplayPrice(a) || toNumber(b?.id) - toNumber(a?.id),
+      );
+      break;
+    case "rating":
+    default:
+      sorted.sort(
+        (a, b) => toNumber(b?.avg_rating) - toNumber(a?.avg_rating) || toNumber(b?.id) - toNumber(a?.id),
+      );
+      break;
+  }
+
+  return sorted;
+}
+
 export default function CollectionScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
@@ -109,7 +162,10 @@ export default function CollectionScreen() {
     enabled: !!slug,
   });
 
-  const products = Array.isArray(data) ? data : [];
+  const products = useMemo(
+    () => sortProducts(Array.isArray(data) ? data : [], sort),
+    [data, sort],
+  );
   const isNewArrivals = slug === "new_arrivel";
   const trimmedSearch = searchQuery.trim().toLowerCase();
 

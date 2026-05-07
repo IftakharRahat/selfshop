@@ -16,19 +16,63 @@ interface Session {
   token: string;
 }
 
+function parseAuthResponse(data: any) {
+  const payload = data?.data ?? data;
+
+  return {
+    token:
+      payload?.token ??
+      payload?.access_token ??
+      data?.token ??
+      data?.access_token,
+    user: payload?.user ?? data?.user,
+  };
+}
+
+async function fetchCurrentUser(): Promise<User> {
+  const { data } = await apiClient.get("/user");
+  const user = data?.data?.user ?? data?.data ?? data?.user ?? data;
+
+  if (!user?.id) {
+    throw new Error("No user received");
+  }
+
+  return user;
+}
+
+function cacheSession(session: Session | null) {
+  queryClient.setQueryData(["session"], session);
+  queryClient.setQueryData(["auth-token"], session?.token ?? null);
+}
+
+async function createSessionFromAuthResponse(data: any): Promise<Session> {
+  if (data?.status === false) {
+    throw new Error(data?.message ?? "Authentication failed");
+  }
+
+  const { token, user: responseUser } = parseAuthResponse(data);
+
+  if (!token) throw new Error(data?.message ?? "No token received");
+
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
+
+  try {
+    const user = responseUser?.id ? responseUser : await fetchCurrentUser();
+    const session = { user, token };
+    cacheSession(session);
+    return session;
+  } catch (error) {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    cacheSession(null);
+    throw error;
+  }
+}
+
 // ── Auth functions ──
 
 export async function login(email: string, password: string): Promise<Session> {
   const { data } = await apiClient.post("/login", { email, password });
-  const token = data?.data?.token ?? data?.token;
-  const user = data?.data?.user ?? data?.user;
-
-  if (!token) throw new Error("No token received");
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-  const session = { user, token };
-  queryClient.setQueryData(["session"], session);
-  queryClient.setQueryData(["auth-token"], token);
-  return session;
+  return createSessionFromAuthResponse(data);
 }
 
 export async function register(
@@ -43,15 +87,7 @@ export async function register(
     password,
     password_confirmation,
   });
-  const token = data?.data?.token ?? data?.token;
-  const user = data?.data?.user ?? data?.user;
-
-  if (!token) throw new Error("No token received");
-  await SecureStore.setItemAsync(TOKEN_KEY, token);
-  const session = { user, token };
-  queryClient.setQueryData(["session"], session);
-  queryClient.setQueryData(["auth-token"], token);
-  return session;
+  return createSessionFromAuthResponse(data);
 }
 
 export async function logout(): Promise<void> {
@@ -61,8 +97,7 @@ export async function logout(): Promise<void> {
     // ignore — token may already be invalid
   }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
-  queryClient.setQueryData(["session"], null);
-  queryClient.setQueryData(["auth-token"], null);
+  cacheSession(null);
 }
 
 export async function forgotPassword(phone: string) {
@@ -101,12 +136,11 @@ async function readSession(): Promise<Session | null> {
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     if (!token) return null;
 
-    const { data } = await apiClient.get("/user");
-    const user = data?.data ?? data;
+    const user = await fetchCurrentUser();
     return { user, token };
   } catch {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
-    queryClient.setQueryData(["auth-token"], null);
+    cacheSession(null);
     return null;
   }
 }

@@ -1,6 +1,11 @@
 @extends('frontend.master')
 
 @section('maincontent')
+@php
+    $basicinfo = App\Models\Basicinfo::first();
+    $facebookLink = optional($basicinfo)->facebook ?: 'https://www.facebook.com/selfshop.reseller';
+    $messengerLink = optional($basicinfo)->messanger_link ?: $facebookLink;
+@endphp
 <style>
     #fontcss{
         font-size: 30px;
@@ -19,8 +24,8 @@
         <div class="row">
             <div class="col-md-12" style="text-align: center;">
                 <p class="p-0 pb-2 m-0" style="color: black;font-size: 22px;">Call Center</p>
-                <a href="telto:+88{{ App\Models\Basicinfo::first()->phone_one }}">
-                    <button class="btn btn-danger" style="background:#FF5000;border-radius: 6px;"> <i class="fa fa-phone-alt" id="fontcss"></i> {{ App\Models\Basicinfo::first()->phone_one }}</button>
+                <a href="tel:+88{{ optional($basicinfo)->phone_one }}">
+                    <button class="btn btn-danger" style="background:#FF5000;border-radius: 6px;"> <i class="fa fa-phone-alt" id="fontcss"></i> {{ optional($basicinfo)->phone_one }}</button>
                 </a>
             </div>
         </div>
@@ -29,8 +34,8 @@
         <div class="row">
             <div class="col-md-12" style="text-align: center;">
                 <p class="p-0 pb-2 m-0" style="color: black;font-size: 22px;">Mail Us</p>
-                <a href="mail:{{ App\Models\Basicinfo::first()->email }}">
-                    <button class="btn btn-danger" style="background:#003687;border:1px solid #003687; border-radius: 6px;" id="fontcss"> <i class="fa fa-envelope"></i> {{ App\Models\Basicinfo::first()->email }}</button>
+                <a href="mailto:{{ optional($basicinfo)->email }}">
+                    <button class="btn btn-danger" style="background:#003687;border:1px solid #003687; border-radius: 6px;" id="fontcss"> <i class="fa fa-envelope"></i> {{ optional($basicinfo)->email }}</button>
                 </a>
             </div>
         </div>
@@ -39,8 +44,8 @@
         <div class="row">
             <div class="col-md-12" style="text-align: center;">
                 <p class="p-0 pb-2 m-0" style="color: black;font-size: 22px;">Our Page</p>
-                <a href="https://www.facebook.com/selfshop.reseller">
-                    <button class="btn btn-danger" style="background:#613EEA;border:1px solid #613EEA; border-radius: 6px;" id="fontcss"> <img src="{{ asset('public/facebook.png') }}" alt="" style="width: 45px;"> /selfshop.reseller</button>
+                <a href="{{ $facebookLink }}">
+                    <button class="btn btn-danger" style="background:#613EEA;border:1px solid #613EEA; border-radius: 6px;" id="fontcss"> <img src="{{ asset('public/facebook.png') }}" alt="" style="width: 45px;"> Facebook Page</button>
                 </a>
             </div>
         </div>
@@ -61,8 +66,8 @@
         <div class="row">
             <div class="col-md-12" style="text-align: center;">
                 <p class="p-0 pb-2 m-0" style="color: black;font-size: 22px;">Messanger Group</p>
-                <a href="https://www.facebook.com/selfshop.reseller">
-                    <button class="btn btn-danger" style="background:#613EEA;border:1px solid #613EEA; border-radius: 6px;" id="fontcss"> <img src="{{ asset('public/messenger.png') }}" alt="" style="width: 35px;"> /m.selfshop.reseller</button>
+                <a href="{{ $messengerLink }}">
+                    <button class="btn btn-danger" style="background:#613EEA;border:1px solid #613EEA; border-radius: 6px;" id="fontcss"> <img src="{{ asset('public/messenger.png') }}" alt="" style="width: 35px;"> Messenger</button>
                 </a>
             </div>
         </div>
@@ -90,7 +95,7 @@
 
 </div>
 
-{!! App\Models\Basicinfo::first()->chat_box !!}
+{!! optional($basicinfo)->chat_box !!}
 
 
 <style>
