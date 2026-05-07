@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   View, ScrollView, Pressable, StyleSheet, ActivityIndicator,
   TextInput, Image, Modal, Platform, KeyboardAvoidingView, Alert,
+  Animated, Easing,
 } from "react-native";
 import { Text } from "tamagui";
 import { router, useLocalSearchParams } from "expo-router";
@@ -43,6 +44,111 @@ type OnlinePaymentReference = {
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/* ─── Reusable animated loaders ─── */
+
+function PulseLoader({
+  icon,
+  title,
+  subtitle,
+  accentColor = ACCENT,
+  showShimmer = true,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle?: string;
+  accentColor?: string;
+  showShimmer?: boolean;
+}) {
+  const pulse = useRef(new Animated.Value(1)).current;
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.12, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    pulseLoop.start();
+    return () => pulseLoop.stop();
+  }, [pulse]);
+
+  useEffect(() => {
+    if (!showShimmer) return;
+    const shimmerLoop = Animated.loop(
+      Animated.timing(shimmer, { toValue: 1, duration: 1500, easing: Easing.linear, useNativeDriver: false }),
+    );
+    shimmerLoop.start();
+    return () => shimmerLoop.stop();
+  }, [shimmer, showShimmer]);
+
+  const shimmerTranslateX = shimmer.interpolate({ inputRange: [0, 1], outputRange: [-140, 140] });
+
+  return (
+    <View style={loaderSt.root}>
+      <Animated.View style={[loaderSt.iconRing, { borderColor: accentColor + "30", transform: [{ scale: pulse }] }]}>
+        <View style={[loaderSt.iconCircle, { backgroundColor: accentColor + "14" }]}>
+          <Ionicons name={icon} size={32} color={accentColor} />
+        </View>
+      </Animated.View>
+
+      <Text fontSize="$4" fontWeight="700" color={DARK} mt="$4">{title}</Text>
+      {subtitle ? <Text fontSize="$2" color={GREY} mt="$1.5" textAlign="center" px="$4">{subtitle}</Text> : null}
+
+      {showShimmer && (
+        <View style={loaderSt.shimmerTrack}>
+          <Animated.View style={[loaderSt.shimmerBar, { backgroundColor: accentColor, transform: [{ translateX: shimmerTranslateX }] }]} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function DotPulse({ color = "#fff" }: { color?: string }) {
+  const anims = [useRef(new Animated.Value(0.3)).current, useRef(new Animated.Value(0.3)).current, useRef(new Animated.Value(0.3)).current];
+
+  useEffect(() => {
+    const animations = anims.map((a, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 180),
+          Animated.timing(a, { toValue: 1, duration: 320, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(a, { toValue: 0.3, duration: 320, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        ]),
+      ),
+    );
+    animations.forEach((a) => a.start());
+    return () => animations.forEach((a) => a.stop());
+  }, []);
+
+  return (
+    <View style={{ flexDirection: "row", gap: 5, alignItems: "center", height: 22 }}>
+      {anims.map((a, i) => (
+        <Animated.View key={i} style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color, opacity: a, transform: [{ scale: a.interpolate({ inputRange: [0.3, 1], outputRange: [0.8, 1.2] }) }] }} />
+      ))}
+    </View>
+  );
+}
+
+const loaderSt = StyleSheet.create({
+  root: { flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: 40 },
+  iconRing: {
+    width: 88, height: 88, borderRadius: 44, borderWidth: 3,
+    justifyContent: "center", alignItems: "center",
+  },
+  iconCircle: {
+    width: 64, height: 64, borderRadius: 32,
+    justifyContent: "center", alignItems: "center",
+  },
+  shimmerTrack: {
+    width: 140, height: 4, borderRadius: 2,
+    backgroundColor: "#E5E5EA", overflow: "hidden", marginTop: 20,
+  },
+  shimmerBar: {
+    width: 60, height: 4, borderRadius: 2, opacity: 0.7,
+  },
+});
 
 function getQueryParam(url: string, key: string): string | null {
   const match = url.match(new RegExp(`[?&]${key}=([^&#]+)`, "i"));
@@ -399,9 +505,12 @@ export default function OrderConfirmationScreen() {
   // ── Loading ──
   if (cartLoading) {
     return (
-      <View style={[st.center, { paddingTop: insets.top + 60 }]}>
-        <ActivityIndicator size="large" color={ACCENT} />
-        <Text fontSize="$3" color={GREY} mt="$3">Loading order...</Text>
+      <View style={[st.center, { paddingTop: insets.top }]}>
+        <PulseLoader
+          icon="cart-outline"
+          title="Preparing your order"
+          subtitle="Loading cart items and delivery options…"
+        />
       </View>
     );
   }
@@ -790,7 +899,7 @@ export default function OrderConfirmationScreen() {
           disabled={!agreedToTerms || !deliveryZone || createOrderMutation.isPending}
         >
           {createOrderMutation.isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <DotPulse />
           ) : (
             <>
               <Ionicons name="bag-check-outline" size={20} color="#fff" />
@@ -823,10 +932,20 @@ export default function OrderConfirmationScreen() {
 
           {(webViewLoading || paymentVerificationLoading) && (
             <View style={st.webViewLoader}>
-              <ActivityIndicator size="large" color={ACCENT} />
-              <Text mt="$2" color={GREY} fontSize="$3">
-                {paymentVerificationLoading ? "Verifying order..." : "Loading payment gateway..."}
-              </Text>
+              {paymentVerificationLoading ? (
+                <PulseLoader
+                  icon="checkmark-circle-outline"
+                  title="Verifying your order"
+                  subtitle="Confirming payment with the server — please wait…"
+                  accentColor="#10b981"
+                />
+              ) : (
+                <PulseLoader
+                  icon="shield-checkmark-outline"
+                  title="Connecting to payment"
+                  subtitle="Opening secure payment gateway…"
+                />
+              )}
             </View>
           )}
 
