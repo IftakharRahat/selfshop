@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
   Share,
+  Image,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Text } from "tamagui";
@@ -22,6 +23,20 @@ import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
+
+const IMAGE_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
+
+function resolveImageUrl(path?: string | null): string | null {
+  if (!path || path.trim().length < 2) return null;
+  const p = path.trim();
+  if (p.startsWith("http")) return p;
+  const clean = p.replace(/^\//, "");
+  if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
+  if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
+  return `${IMAGE_BASE}/storage/${clean}`;
+}
 
 /* ── Quick Action items ── */
 const QUICK_ACTIONS = [
@@ -430,9 +445,22 @@ export default function DashboardScreen() {
                   }
                 >
                   <View style={styles.orderLeft}>
-                    <View style={styles.orderIconWrapper}>
-                      <Ionicons name="cube-outline" size={20} color="#E5005F" />
-                    </View>
+                    {(() => {
+                      const imgPath = order.orderproducts?.[0]?.product?.ViewProductImage;
+                      const imgUri = resolveImageUrl(imgPath);
+
+                      return imgUri ? (
+                        <Image
+                          source={{ uri: imgUri }}
+                          style={styles.orderImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.orderIconWrapper}>
+                          <Ionicons name="cube-outline" size={20} color="#E5005F" />
+                        </View>
+                      );
+                    })()}
                     <View style={styles.orderInfo}>
                       <Text style={styles.orderInvoice} numberOfLines={1}>
                         {order.invoiceID}
@@ -805,6 +833,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+  },
+  orderImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: "#F3F4F6",
   },
   orderInfo: {
     flex: 1,
