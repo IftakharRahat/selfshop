@@ -219,7 +219,7 @@ class AdminNotificationController extends Controller
                             $pushService = app(\App\Services\PushNotificationService::class);
                             User::query()->select('id')->orderBy('id')->chunkById(500, function ($users) use ($pushService, $title, $message) {
                                 foreach ($users as $user) {
-                                    $pushService->notifyUser((int) $user->id, $title, $message, 'info', ['event' => 'admin_broadcast']);
+                                    $pushService->notifyUser((int) $user->id, $title, $message, 'info', ['event' => 'admin_broadcast', 'skip_fcm' => true]);
                                 }
                             });
                         } catch (\Throwable $pe) {
@@ -274,7 +274,7 @@ class AdminNotificationController extends Controller
                 try {
                     $pushService = app(\App\Services\PushNotificationService::class);
                     foreach ($recipientUserIds as $userId) {
-                        $pushService->notifyUser((int) $userId, $validated['title'], $validated['message'], 'info', ['event' => 'admin_notification']);
+                        $pushService->notifyUser((int) $userId, $validated['title'], $validated['message'], 'info', ['event' => 'admin_notification', 'skip_fcm' => true]);
                     }
                 } catch (\Throwable $pe) {
                     $this->safeLog('warning', 'Pusher broadcast to users failed', ['error' => $pe->getMessage()]);
@@ -329,7 +329,7 @@ class AdminNotificationController extends Controller
                     try {
                         $pushService = app(\App\Services\PushNotificationService::class);
                         foreach ($recipientUserIds as $userId) {
-                            $pushService->notifyUser((int) $userId, $validated['title'], $validated['message'], 'info', ['event' => 'admin_notification']);
+                            $pushService->notifyUser((int) $userId, $validated['title'], $validated['message'], 'info', ['event' => 'admin_notification', 'skip_fcm' => true]);
                         }
                     } catch (\Throwable $pe) {
                         $this->safeLog('warning', 'Pusher broadcast to suppliers failed', ['error' => $pe->getMessage()]);

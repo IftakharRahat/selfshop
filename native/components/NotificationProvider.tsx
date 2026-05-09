@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from "react";
-import { Text, Platform, Vibration } from "react-native";
+import { Linking, Text, Platform, Vibration } from "react-native";
 import * as Haptics from "expo-haptics";
+import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner-native";
 import PusherRN from "pusher-js/react-native";
@@ -13,10 +15,39 @@ const Pusher: any = PusherModule.Pusher ?? PusherModule;
 const Echo: any = (EchoModule as any).default ?? EchoModule;
 
 import { useSession } from "@/lib/auth-client";
+import {
+  registerDeviceForPushNotificationsAsync,
+  registerPushTokenWithBackendAsync,
+} from "@/lib/push-notifications";
 
 const PUSHER_KEY = process.env.EXPO_PUBLIC_PUSHER_APP_KEY || "";
 const PUSHER_CLUSTER = process.env.EXPO_PUBLIC_PUSHER_APP_CLUSTER || "ap1";
 const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "");
+
+function getNotificationActionTarget(data: Record<string, unknown>) {
+  const value =
+    data.route ??
+    data.url ??
+    data.link ??
+    data.action_url ??
+    data.click_action;
+
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function openNotificationTarget(target: string | null) {
+  if (!target || target === "/") return;
+
+  if (/^https?:\/\//i.test(target)) {
+    Linking.openURL(target).catch((error) => {
+      if (__DEV__) console.warn("[Push] Failed to open notification URL.", error);
+    });
+    return;
+  }
+
+  const route = target.startsWith("/") ? target : `/${target}`;
+  router.push(route as any);
+}
 
 // Enable Pusher logging in dev
 if (__DEV__) {
@@ -30,13 +61,18 @@ export default function NotificationProvider({
 }) {
   const { data: session, isLoading } = useSession();
   const queryClient = useQueryClient();
-  const echoRef = useRef<Echo<"pusher"> | null>(null);
+  const echoRef = useRef<any | null>(null);
+  const handledNotificationResponsesRef = useRef<Set<string>>(new Set());
+
+  const refreshNotifications = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
+  }, [queryClient]);
 
   const showNotification = useCallback(
     (data: { title: string; message: string; type?: string }) => {
       // Refresh notification list & badge count
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
+      refreshNotifications();
 
       const iconMap: Record<string, string> = {
         success: "✅",
@@ -64,8 +100,76 @@ export default function NotificationProvider({
         icon: <Text>{emoji}</Text>,
       });
     },
-    [queryClient],
+    [refreshNotifications],
   );
+
+  const handleNotificationResponse = useCallback(
+    (response: Notifications.NotificationResponse | null) => {
+      if (!response) return;
+
+      const responseId = response.notification.request.identifier;
+      if (handledNotificationResponsesRef.current.has(responseId)) return;
+      handledNotificationResponsesRef.current.add(responseId);
+
+      refreshNotifications();
+
+      if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
+
+      const data = response.notification.request.content.data as Record<string, unknown>;
+      openNotificationTarget(getNotificationActionTarget(data));
+    },
+    [refreshNotifications],
+  );
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const userId = session?.user?.id;
+    if (!session?.token || !userId) return;
+
+    let cancelled = false;
+
+    registerDeviceForPushNotificationsAsync(userId).catch((error) => {
+      if (__DEV__ && !cancelled) {
+        console.warn("[Push] Failed to register device for notifications.", error);
+      }
+    });
+
+    const tokenSubscription = Notifications.addPushTokenListener((token) => {
+      if (cancelled) return;
+
+      registerPushTokenWithBackendAsync(token, userId).catch((error) => {
+        if (__DEV__) {
+          console.warn("[Push] Failed to refresh backend token registration.", error);
+        }
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      tokenSubscription.remove();
+    };
+  }, [session?.token, session?.user?.id, isLoading]);
+
+  useEffect(() => {
+    const receivedSubscription = Notifications.addNotificationReceivedListener(() => {
+      refreshNotifications();
+    });
+
+    try {
+      handleNotificationResponse(Notifications.getLastNotificationResponse());
+    } catch (error) {
+      if (__DEV__) console.warn("[Push] Failed to read last notification response.", error);
+    }
+
+    const responseSubscription =
+      Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+
+    return () => {
+      receivedSubscription.remove();
+      responseSubscription.remove();
+    };
+  }, [handleNotificationResponse, refreshNotifications]);
 
   useEffect(() => {
     if (isLoading) return;
