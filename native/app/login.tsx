@@ -70,7 +70,7 @@ export default function Login() {
         <View style={styles.logoContainer}>
           <View style={styles.logoBg}>
             <Image
-              source={require("@/assets/images/reseller_app_logo.jpeg")}
+              source={require("@/assets/images/selfshop_png.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     width: width * 0.45,
     height: width * 0.45,
     borderRadius: width * 0.225,
-    backgroundColor: "#FDF2F8",
+    backgroundColor: "#E5005F",
     justifyContent: "center",
     alignItems: "center",
   },

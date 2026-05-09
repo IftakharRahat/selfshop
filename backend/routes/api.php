@@ -97,6 +97,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/collection/{slug}', [FrontendApiController::class, 'collection'])->name('api.user.collection');
     Route::get('/new-arrivels', [FrontendApiController::class, 'newarrivels'])->name('api.user.newarrivels');
     Route::get('/new-products', [FrontendApiController::class, 'newproducts'])->name('api.user.newarrivels');
+    Route::get('/all-new-products', [FrontendApiController::class, 'newproducts'])->name('api.user.all-new-products');
     Route::get('/featured-products', [FrontendApiController::class, 'featuredproducts'])->name('api.user.featuredproducts');
     Route::get('/category-products', [FrontendApiController::class, 'categoryproducts'])->name('api.user.categoryproducts');
     Route::get('/big-selling', [FrontendApiController::class, 'bigselling'])->name('api.user.bigselling');

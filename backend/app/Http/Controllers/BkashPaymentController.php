@@ -19,6 +19,7 @@ use App\Models\User;
 use Cart;
 use Session;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class BkashPaymentController extends Controller
@@ -98,6 +99,9 @@ class BkashPaymentController extends Controller
             }
             $order->paymentAmount = $info['deliveryCharge'];
             $order->payment_type_id = 1;
+            if (Schema::hasColumn('orders', 'payment_status')) {
+                $order->payment_status = 'Paid';
+            }
             $order->trx_id = $request->payment_info['trxID'];
 
             $order->orderDate = date('Y-m-d');

@@ -86,9 +86,11 @@ export default function HomeScreen() {
   });
 
   const newProducts = useQuery({
-    queryKey: ["new-products"],
+    queryKey: ["new-arrivals-preview"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/new-products");
+      const { data } = await apiClient.get("/new-products", {
+        params: { sort: "newest", limit: 20 },
+      });
       return data?.data?.data ?? data?.data ?? [];
     },
   });
@@ -538,27 +540,25 @@ export default function HomeScreen() {
       )}
 
       {/* New Arrivals */}
-      {newArrivals.length > 0 && (
-        <View style={styles.sectionContainer}>
-          <SectionHeader title="New Arrivals" onSeeAll={() => router.push("/collection/new_arrivel" as any)} />
-          <FlatList
-            data={newArrivals}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.productList}
-            keyExtractor={(item: any) => String(item.id)}
-            renderItem={({ item }: any) => (
-              <ProductCard
-                name={item.ProductName}
-                price={String(item.storefront_price ?? item.ProductSalePrice ?? item.ProductRegularPrice)}
-                image={item.ViewProductImage}
-                slug={item.ProductSlug}
-                variant="horizontal"
-              />
-            )}
-          />
-        </View>
-      )}
+      <View style={styles.sectionContainer}>
+        <SectionHeader title="New Arrivals" onSeeAll={() => router.push("/collection/all-new-products" as any)} />
+        <FlatList
+          data={newArrivals}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.productList}
+          keyExtractor={(item: any) => String(item.id)}
+          renderItem={({ item }: any) => (
+            <ProductCard
+              name={item.ProductName}
+              price={String(item.storefront_price ?? item.ProductSalePrice ?? item.ProductRegularPrice)}
+              image={item.ViewProductImage}
+              slug={item.ProductSlug}
+              variant="horizontal"
+            />
+          )}
+        />
+      </View>
 
       {/* ── Most Popular Brands ── */}
       {brandList.length > 0 && (

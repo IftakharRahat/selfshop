@@ -15,6 +15,7 @@ use App\Services\SslCommerzOrderFinalizer;
 use Cart;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Session;
 
 class SslCommerzPaymentController extends Controller
@@ -1111,6 +1112,9 @@ private function createOrderDetails($orderId, $cartData, $request)
             $storeOrder->deliveryCharge = $request->delivery_charge ?? $request->deliveryCharge ?? 0;
             $storeOrder->paymentAmount = $request->delivery_charge ?? $request->deliveryCharge ?? 0;
             $storeOrder->payment_type_id = 6;
+            if (Schema::hasColumn('orders', 'payment_status')) {
+                $storeOrder->payment_status = 'Paid';
+            }
             $storeOrder->transaction_id = 'STORE_' . $orderId . '_' . $storeId;
             $storeOrder->orderDate = date('Y-m-d');
             $storeOrder->admin_id = $admin->id ?? $storeId;
@@ -1417,13 +1421,19 @@ public function success(Request $request)
         $originalDataArray['sslcommerz_tran_id'] = $tran_id;
         $originalDataArray['sslcommerz_val_id'] = $val_id;
         
+        $orderUpdates = [
+            'status' => 'Pending',
+            'data' => json_encode($originalDataArray),
+            'updated_at' => now(),
+        ];
+
+        if (Schema::hasColumn('orders', 'payment_status')) {
+            $orderUpdates['payment_status'] = 'Paid';
+        }
+
         DB::table('orders')
             ->where('id', $sessionOrderId)
-            ->update([
-                'status' => 'Pending',
-                'data' => json_encode($originalDataArray),
-                'updated_at' => now(),
-            ]);
+            ->update($orderUpdates);
         
         Log::info('Main order updated. Creating detailed order records...');
         

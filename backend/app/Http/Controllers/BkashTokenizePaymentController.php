@@ -14,6 +14,7 @@ use App\Models\Resellerinvoice;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Karim007\LaravelBkashTokenize\Facade\BkashPaymentTokenize;
 use Karim007\LaravelBkashTokenize\Facade\BkashRefundTokenize;
 use Cart;
@@ -152,6 +153,9 @@ class BkashTokenizePaymentController extends Controller
                         }
                         $order->paymentAmount = $info['deliveryCharge'];
                         $order->payment_type_id = 1;
+                        if (Schema::hasColumn('orders', 'payment_status')) {
+                            $order->payment_status = 'Paid';
+                        }
                         $order->trx_id = $response['trxID'];
 
                         $order->orderDate = date('Y-m-d');

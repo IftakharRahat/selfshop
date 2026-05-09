@@ -157,15 +157,28 @@ export default function CategoryProductsScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderFooter = () => {
-    if (!isFetchingNextPage) return null;
-    return (
-      <View style={styles.loadingFooter}>
-        <ActivityIndicator size="small" color="#E5005F" />
-        <Text fontSize={12} color="#999" style={{ marginTop: 6 }}>
-          Loading more...
-        </Text>
-      </View>
-    );
+    if (isFetchingNextPage) {
+      return (
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color="#E5005F" />
+          <Text fontSize={12} color="#999" style={{ marginTop: 6 }}>
+            Loading more...
+          </Text>
+        </View>
+      );
+    }
+
+    if (!hasNextPage && allProducts.length > 0 && !searchQuery.trim()) {
+      return (
+        <View style={styles.loadingFooter}>
+          <Text fontSize={12} color="#9CA3AF" fontWeight="600">
+            All products loaded
+          </Text>
+        </View>
+      );
+    }
+
+    return null;
   };
 
   return (

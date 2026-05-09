@@ -67,10 +67,25 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
-  if (num >= 1000) {
-    return `৳${num.toLocaleString("en-BD")}`;
+  const safeNum = Number.isFinite(num) ? num : 0;
+  return `৳${safeNum.toLocaleString("en-BD", {
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-BD", { month: "short", day: "numeric" });
+}
+
+function formatTargetValue(value: number | string | undefined, type?: string): string {
+  const parsed = Number(value ?? 0);
+  if (type === "amount") {
+    return formatCurrency(parsed);
   }
-  return `৳${num}`;
+  return `${parsed.toLocaleString()} Qty`;
 }
 
 export default function DashboardScreen() {
@@ -179,6 +194,15 @@ export default function DashboardScreen() {
     { title: "Sold Amount", value: String(profileQuery.data?.soldamount ?? 0), icon: "cart-outline" as const },
     { title: "Pending", value: formatCurrency(metrics?.pending_amount), icon: "hourglass-outline" as const },
   ], [profileQuery.data, metrics]);
+
+  const eventChallenges = useMemo(() => {
+    const targets = Array.isArray(metrics?.active_sales_targets)
+      ? metrics.active_sales_targets
+      : [];
+    const joined = targets.filter((item: any) => item?.participation?.joined);
+    const available = targets.filter((item: any) => !item?.participation?.joined);
+    return [...joined, ...available];
+  }, [metrics]);
 
   if (isSessionLoading) {
     return <DashboardSkeleton />;
@@ -382,25 +406,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ─── Order Insights ─── */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Order Insights</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.insightsScroll}
-          >
-            {orderInsights.map((insight, i) => (
-              <View key={i} style={styles.insightCard}>
-                <View style={styles.insightIconWrapper}>
-                  <Ionicons name={insight.icon} size={20} color="#E5005F" />
-                </View>
-                <Text style={styles.insightValue}>{insight.value}</Text>
-                <Text style={styles.insightLabel}>{insight.title}</Text>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
+        <EventChallengeSlider challenges={eventChallenges} />
 
         {/* ─── Recent Orders ─── */}
         <View style={styles.sectionContainer}>
@@ -485,6 +491,26 @@ export default function DashboardScreen() {
           )}
         </View>
 
+        {/* ─── Order Insights ─── */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>Order Insights</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.insightsScroll}
+          >
+            {orderInsights.map((insight, i) => (
+              <View key={i} style={styles.insightCard}>
+                <View style={styles.insightIconWrapper}>
+                  <Ionicons name={insight.icon} size={20} color="#E5005F" />
+                </View>
+                <Text style={styles.insightValue}>{insight.value}</Text>
+                <Text style={styles.insightLabel}>{insight.title}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* ─── Account Actions ─── */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account</Text>
@@ -542,6 +568,124 @@ export default function DashboardScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
     </View>
+  );
+}
+
+function EventChallengeSlider({ challenges }: { challenges: any[] }) {
+  if (challenges.length === 0) return null;
+
+  return (
+    <View style={styles.sectionContainer}>
+      <View style={styles.sectionHeaderRow}>
+        <Text style={styles.sectionTitle}>Event Challenge</Text>
+        <Pressable onPress={() => router.push("/account/events" as any)}>
+          <Text fontSize="$3" color="#E5005F" fontWeight="600">
+            View All
+          </Text>
+        </Pressable>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.challengeSlider}
+      >
+        {challenges.map((item: any, index: number) => (
+          <DashboardChallengeCard
+            key={item?.target?.id ?? index}
+            item={item}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+function DashboardChallengeCard({ item }: { item: any }) {
+  const target = item?.target ?? {};
+  const progress = item?.progress ?? {};
+  const joined = Boolean(item?.participation?.joined);
+  const completed = Boolean(progress?.completed);
+  const progressPercent = Math.max(0, Math.min(100, Number(progress?.progress_percent ?? 0)));
+  const statusLabel = completed ? "Completed" : joined ? "In Progress" : "New";
+  const statusColor = completed ? "#059669" : joined ? "#F59E0B" : "#E5005F";
+  const targetType = target?.target_type ?? "";
+  const rewardValue = target?.reward_value
+    ? Number(target.reward_value).toLocaleString("en-BD")
+    : null;
+  const rewardText = target?.reward_type
+    ? `${target.reward_type}${rewardValue ? ` ${rewardValue}` : ""}`
+    : "Reward available";
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.challengeCard,
+        pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+      ]}
+      onPress={() => router.push("/account/events" as any)}
+    >
+      <LinearGradient
+        colors={joined ? ["#FFF7ED", "#FDF2F8"] : ["#FFFFFF", "#FDF2F8"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.challengeCardGradient}
+      >
+        <View style={styles.challengeCardTop}>
+          <View style={[styles.challengeIcon, { backgroundColor: `${statusColor}18` }]}>
+            <Ionicons name={completed ? "trophy" : joined ? "flash" : "rocket"} size={18} color={statusColor} />
+          </View>
+          <View style={[styles.challengeStatusPill, { backgroundColor: `${statusColor}18` }]}>
+            <Text style={[styles.challengeStatusText, { color: statusColor }]}>
+              {statusLabel}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.challengeTitle} numberOfLines={1}>
+          {target?.title || "Sales Target"}
+        </Text>
+        <Text style={styles.challengeDate} numberOfLines={1}>
+          {formatDate(target?.start_date)} - {formatDate(target?.end_date)}
+        </Text>
+
+        <View style={styles.challengeMetaRow}>
+          <View style={styles.challengeMetaItem}>
+            <Text style={styles.challengeMetaLabel}>Target</Text>
+            <Text style={styles.challengeMetaValue} numberOfLines={1}>
+              {formatTargetValue(target?.target_value, targetType)}
+            </Text>
+          </View>
+          <View style={styles.challengeMetaItem}>
+            <Text style={styles.challengeMetaLabel}>Reward</Text>
+            <Text style={styles.challengeMetaValue} numberOfLines={1}>
+              {rewardText}
+            </Text>
+          </View>
+        </View>
+
+        {joined ? (
+          <View style={styles.challengeProgressBlock}>
+            <View style={styles.challengeProgressLabels}>
+              <Text style={styles.challengeProgressLabel}>Progress</Text>
+              <Text style={styles.challengeProgressPercent}>{progressPercent.toFixed(0)}%</Text>
+            </View>
+            <View style={styles.challengeProgressTrack}>
+              <View
+                style={[
+                  styles.challengeProgressFill,
+                  { width: `${progressPercent}%`, backgroundColor: statusColor },
+                ]}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.challengeCtaRow}>
+            <Text style={styles.challengeCtaText}>Tap to join from Event Challenges</Text>
+            <Ionicons name="chevron-forward" size={16} color="#E5005F" />
+          </View>
+        )}
+      </LinearGradient>
+    </Pressable>
   );
 }
 
@@ -758,6 +902,122 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#374151",
+  },
+
+  /* ── Event Challenge ── */
+  challengeSlider: {
+    gap: 12,
+  },
+  challengeCard: {
+    width: width - 40,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#F0DCE7",
+    backgroundColor: "#fff",
+  },
+  challengeCardGradient: {
+    minHeight: 188,
+    padding: 16,
+  },
+  challengeCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  challengeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  challengeStatusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  challengeStatusText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  challengeTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1A1A2E",
+  },
+  challengeDate: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+  challengeMetaRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  challengeMetaItem: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.82)",
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(229,0,95,0.08)",
+  },
+  challengeMetaLabel: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    fontWeight: "600",
+    marginBottom: 3,
+  },
+  challengeMetaValue: {
+    fontSize: 12,
+    color: "#1A1A2E",
+    fontWeight: "700",
+  },
+  challengeProgressBlock: {
+    marginTop: 14,
+  },
+  challengeProgressLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  challengeProgressLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  challengeProgressPercent: {
+    fontSize: 11,
+    color: "#1A1A2E",
+    fontWeight: "800",
+  },
+  challengeProgressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    overflow: "hidden",
+  },
+  challengeProgressFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  challengeCtaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(229,0,95,0.08)",
+  },
+  challengeCtaText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#E5005F",
+    fontWeight: "700",
   },
 
   /* ── Order Insights ── */
