@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type Dispatch, type SetStateAction } from "react";
 import {
   View, ScrollView, Pressable, StyleSheet, ActivityIndicator,
   TextInput, Image, Modal, Platform, KeyboardAvoidingView, Alert,
@@ -187,33 +187,95 @@ export default function OrderConfirmationScreen() {
   const cartItems: any[] = checkoutCartIds.length > 0
     ? allCartItems.filter((item: any) => checkoutCartIds.includes(Number(item.id)))
     : allCartItems;
+  const [deletingCartIds, setDeletingCartIds] = useState<Record<number, boolean>>({});
+  const [confirmingDeleteIds, setConfirmingDeleteIds] = useState<Record<number, boolean>>({});
+  const hasPendingDelete = Object.keys(deletingCartIds).length > 0 || Object.keys(confirmingDeleteIds).length > 0;
+  const setCartIdFlag = useCallback((
+    setter: Dispatch<SetStateAction<Record<number, boolean>>>,
+    cartId: number,
+    value: boolean,
+  ) => {
+    setter((prev) => {
+      const key = Number(cartId);
+      if (value) return { ...prev, [key]: true };
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+  const removeCartItemFromCache = useCallback((cartId: number) => {
+    queryClient.setQueryData<any[]>(["cart-items"], (oldItems) => (
+      Array.isArray(oldItems)
+        ? oldItems.filter((item: any) => Number(item.id) !== Number(cartId))
+        : oldItems
+    ));
+  }, [queryClient]);
 
   // ── Remove item from cart ──
   const deleteMutation = useMutation({
     mutationFn: async (cartId: number) => {
-      const { data } = await apiClient.post("/user-destroy-cart", { cart_id: cartId });
+      const { data } = await apiClient.post("/user-destroy-cart", { cart_id: cartId, id: cartId });
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
-      toast.success("Item removed");
+    onMutate: async (cartId) => {
+      setCartIdFlag(setDeletingCartIds, cartId, true);
+      await queryClient.cancelQueries({ queryKey: ["cart-items"] });
+      const previousCartItems = queryClient.getQueryData<any[]>(["cart-items"]);
+      removeCartItemFromCache(cartId);
+      return { previousCartItems };
     },
-    onError: () => toast.error("Failed to remove item"),
+    onSuccess: (data) => {
+      if (Array.isArray(data?.data)) {
+        queryClient.setQueryData(["cart-items"], data.data);
+      }
+      toast.success(data?.message || "Item removed");
+    },
+    onError: (error: any, cartId, context) => {
+      if (error?.response?.status === 404) {
+        removeCartItemFromCache(cartId);
+        toast.success("Item removed");
+        return;
+      }
+      if (context?.previousCartItems) {
+        queryClient.setQueryData(["cart-items"], context.previousCartItems);
+      }
+      toast.error(error?.response?.data?.message || "Failed to remove item");
+    },
+    onSettled: (_data, _error, cartId) => {
+      if (cartId !== undefined) setCartIdFlag(setDeletingCartIds, cartId, false);
+      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
+    },
   });
 
   const handleRemoveItem = (cartId: number, itemName: string) => {
+    if (deletingCartIds[Number(cartId)] || confirmingDeleteIds[Number(cartId)]) return;
+    setCartIdFlag(setConfirmingDeleteIds, cartId, true);
     Alert.alert("Remove Item", `Remove "${itemName}" from your order?`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => deleteMutation.mutate(cartId) },
-    ]);
+      {
+        text: "Cancel",
+        style: "cancel",
+        onPress: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+      },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () => {
+          setCartIdFlag(setConfirmingDeleteIds, cartId, false);
+          deleteMutation.mutate(cartId);
+        },
+      },
+    ], {
+      cancelable: true,
+      onDismiss: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+    });
   };
 
   // Redirect if cart empty
   useEffect(() => {
-    if (!cartLoading && !cartFetching && cartItems.length === 0) {
+    if (!cartLoading && !cartFetching && !hasPendingDelete && cartItems.length === 0) {
       router.replace("/(tabs)");
     }
-  }, [cartFetching, cartLoading, cartItems.length]);
+  }, [cartFetching, cartLoading, cartItems.length, hasPendingDelete]);
 
   // ── Basic info (delivery charges) ──
   const { data: basicInfo } = useQuery({
@@ -559,8 +621,10 @@ export default function OrderConfirmationScreen() {
             <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">
               Order Items ({cartItems.length})
             </Text>
-            {cartItems.map((item: any) => (
-              <View key={item.id} style={st.orderItem}>
+            {cartItems.map((item: any) => {
+              const isDeleting = Boolean(deletingCartIds[Number(item.id)] || confirmingDeleteIds[Number(item.id)]);
+              return (
+                <View key={item.id} style={st.orderItem}>
                 <Image source={{ uri: resolveImg(item.image) }} style={st.orderItemImg} resizeMode="cover" />
                 <View style={{ flex: 1 }}>
                   <Text fontSize={13} fontWeight="600" color={DARK} numberOfLines={1}>{item.name}</Text>
@@ -577,14 +641,15 @@ export default function OrderConfirmationScreen() {
                   </View>
                 </View>
                 <Pressable
-                  style={st.removeItemBtn}
+                  style={[st.removeItemBtn, isDeleting && { opacity: 0.45 }]}
                   onPress={() => handleRemoveItem(item.id, item.name)}
-                  disabled={deleteMutation.isPending}
+                  disabled={isDeleting}
                 >
                   <Ionicons name="close-circle" size={22} color="#EF4444" />
                 </Pressable>
-              </View>
-            ))}
+                </View>
+              );
+            })}
           </View>
 
           {/* ═══ CUSTOMER DETAILS ═══ */}

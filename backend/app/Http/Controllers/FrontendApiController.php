@@ -3326,7 +3326,18 @@ class FrontendApiController extends Controller
 
     public function userUpdateCart(Request $request)
     {
-        $cart = Cart::where('id', $request->cart_id)
+        $userId = Auth::id();
+        $cartId = $request->input('cart_id') ?: $request->input('id');
+
+        if (!$cartId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Cart item id is required',
+            ], 422);
+        }
+
+        $cart = Cart::where('user_id', $userId)
+            ->where('id', $cartId)
             ->first();
 
         if (!$cart) {
@@ -3432,37 +3443,49 @@ class FrontendApiController extends Controller
 
     public function userDestroyCart(Request $request)
     {
-        // Find the cart item based on IP address and product ID
-        $cart = Cart::where('id', $request->cart_id)
+        $userId = Auth::id();
+        $cartId = $request->input('cart_id') ?: $request->input('id');
+
+        if (!$cartId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Cart item id is required',
+            ], 422);
+        }
+
+        $cart = Cart::where('user_id', $userId)
+            ->where('id', $cartId)
             ->first();
+
+        if ($cart) {
+            $cart->delete();
+        }
+
+        $cartProducts = Cart::where('user_id', $userId)->get();
 
         if (!$cart) {
             return response()->json([
-                'status' => false,
-                'message' => 'Cart item not found',
-            ], 404);
-        }
-
-        // Remove the specific cart item
-        $cart->delete();
-
-        // Check if there are any remaining items in the cart
-        $remainingItems = Cart::where('user_id', Auth::user()->id)->count();
-
-        if ($remainingItems === 0) {
-            return response()->json([
                 'status' => true,
-                'message' => 'Cart is now empty',
+                'message' => 'Cart item already removed',
+                'data' => $cartProducts,
+                'cart_count' => $cartProducts->count(),
             ], 200);
         }
 
-        // Fetch updated cart items
-        $cartProducts = Cart::where('user_id', Auth::user()->id)->get();
+        if ($cartProducts->isEmpty()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Cart is now empty',
+                'data' => [],
+                'cart_count' => 0,
+            ], 200);
+        }
 
         return response()->json([
             'status' => true,
             'message' => 'Cart item removed successfully',
             'data' => $cartProducts,
+            'cart_count' => $cartProducts->count(),
         ], 200);
     }
 

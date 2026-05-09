@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "634594589289",
+    "project_id": "selfshop-911",
+    "storage_bucket": "selfshop-911.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:634594589289:android:a5b95b4ca2f532446c40f8",
+        "android_client_info": {
+          "package_name": "com.selfshop.reseller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOJdP7FDYaBvO2kDxvoDZyplYVOcCZW1c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

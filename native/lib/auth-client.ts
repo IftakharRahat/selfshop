@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import apiClient, { TOKEN_KEY } from "./api-client";
 import { queryClient } from "./query-client";
+import { unregisterDevicePushTokenAsync } from "./push-notifications";
 
 interface User {
   id: number;
@@ -92,6 +93,7 @@ export async function register(
 
 export async function logout(): Promise<void> {
   try {
+    await unregisterDevicePushTokenAsync();
     await apiClient.post("/logout");
   } catch {
     // ignore — token may already be invalid

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   StyleSheet,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack } from "expo-router";
@@ -14,10 +15,13 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
+const CHAT_READY_FALLBACK_MS = 8000;
 
 export default function LiveChatScreen() {
   const insets = useSafeAreaInsets();
   const [chatReady, setChatReady] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [webViewKey, setWebViewKey] = useState(0);
 
   const infoQuery = useQuery({
     queryKey: ["basic-info"],
@@ -27,10 +31,41 @@ export default function LiveChatScreen() {
     },
   });
 
-  const chatScript = infoQuery.data?.chat_box ?? "";
+  const chatScript = typeof infoQuery.data?.chat_box === "string"
+    ? infoQuery.data.chat_box.trim()
+    : "";
   const isLoading = infoQuery.isLoading;
+  const hasChatScript = chatScript.length > 0;
+  const showFallback = !isLoading && (infoQuery.isError || !!chatError || !hasChatScript);
+  const showOverlay = isLoading || (hasChatScript && !chatReady && !chatError);
 
-  const chatHtml = `
+  useEffect(() => {
+    setChatReady(false);
+    setChatError(null);
+  }, [chatScript]);
+
+  useEffect(() => {
+    if (isLoading || !hasChatScript || chatReady || chatError) return;
+
+    const timeout = setTimeout(() => {
+      setChatReady(true);
+    }, CHAT_READY_FALLBACK_MS);
+
+    return () => clearTimeout(timeout);
+  }, [chatError, chatReady, hasChatScript, isLoading]);
+
+  const markChatReady = useCallback(() => {
+    setChatReady(true);
+  }, []);
+
+  const retryChat = useCallback(() => {
+    setChatError(null);
+    setChatReady(false);
+    setWebViewKey((key) => key + 1);
+    infoQuery.refetch();
+  }, [infoQuery]);
+
+  const chatHtml = useMemo(() => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -70,13 +105,30 @@ export default function LiveChatScreen() {
   <script type="text/javascript">
     var Tawk_API = Tawk_API || {};
     var Tawk_LoadStart = new Date();
+    var isChatReady = false;
+
+    function postChatReady() {
+      if (isChatReady) return;
+      isChatReady = true;
+      var loader = document.getElementById('loader');
+      if (loader) loader.style.display = 'none';
+      window.ReactNativeWebView && window.ReactNativeWebView.postMessage('CHAT_READY');
+    }
+
+    function tryMaximize() {
+      try {
+        if (typeof Tawk_API !== 'undefined' && typeof Tawk_API.maximize === 'function') {
+          Tawk_API.maximize();
+        }
+      } catch(e) {}
+    }
 
     Tawk_API.onLoad = function() {
-      Tawk_API.maximize();
+      postChatReady();
+      setTimeout(tryMaximize, 250);
     };
     Tawk_API.onChatMaximized = function() {
-      document.getElementById('loader').style.display = 'none';
-      window.ReactNativeWebView && window.ReactNativeWebView.postMessage('CHAT_READY');
+      postChatReady();
     };
   </script>
 
@@ -86,20 +138,20 @@ export default function LiveChatScreen() {
     var attempts = 0;
     var iv = setInterval(function() {
       attempts++;
-      try {
-        if (typeof Tawk_API !== 'undefined' && typeof Tawk_API.maximize === 'function') {
-          Tawk_API.maximize();
-        }
-      } catch(e) {}
-      if (attempts > 30) {
+      tryMaximize();
+
+      if (typeof Tawk_API !== 'undefined' && typeof Tawk_API.maximize === 'function') {
+        postChatReady();
+      }
+
+      if (attempts > 20) {
         clearInterval(iv);
-        document.getElementById('loader').style.display = 'none';
-        window.ReactNativeWebView && window.ReactNativeWebView.postMessage('CHAT_READY');
+        postChatReady();
       }
     }, 500);
   </script>
 </body>
-</html>`;
+</html>`, [chatScript]);
 
   return (
     <>
@@ -112,7 +164,39 @@ export default function LiveChatScreen() {
         }}
       />
       <View style={[styles.container, { paddingBottom: insets.bottom }]}>
-        {(isLoading || !chatReady) && (
+        {hasChatScript && !chatError ? (
+          <WebView
+            key={webViewKey}
+            source={{
+              html: chatHtml,
+              baseUrl: "https://selfshop.com.bd",
+            }}
+            style={styles.webview}
+            javaScriptEnabled
+            domStorageEnabled
+            originWhitelist={["*"]}
+            mixedContentMode="always"
+            thirdPartyCookiesEnabled
+            sharedCookiesEnabled
+            setSupportMultipleWindows={false}
+            onLoadEnd={markChatReady}
+            onError={() => {
+              setChatError("Live chat failed to load.");
+              setChatReady(true);
+            }}
+            onHttpError={() => {
+              setChatError("Live chat service is unavailable.");
+              setChatReady(true);
+            }}
+            onMessage={(event) => {
+              if (event.nativeEvent.data === "CHAT_READY") {
+                markChatReady();
+              }
+            }}
+          />
+        ) : null}
+
+        {showOverlay && (
           <View style={styles.overlayLoader}>
             <View style={styles.loaderIcon}>
               <Ionicons name="chatbubbles" size={36} color={ACCENT} />
@@ -127,25 +211,24 @@ export default function LiveChatScreen() {
             </Text>
           </View>
         )}
-        {!isLoading && chatScript ? (
-          <WebView
-            source={{
-              html: chatHtml,
-              baseUrl: "https://selfshop.com.bd",
-            }}
-            style={[styles.webview, !chatReady && { opacity: 0 }]}
-            javaScriptEnabled
-            domStorageEnabled
-            originWhitelist={["*"]}
-            mixedContentMode="always"
-            setSupportMultipleWindows={false}
-            onMessage={(event) => {
-              if (event.nativeEvent.data === "CHAT_READY") {
-                setChatReady(true);
-              }
-            }}
-          />
-        ) : null}
+
+        {showFallback && (
+          <View style={styles.fallback}>
+            <View style={styles.loaderIcon}>
+              <Ionicons name="chatbubble-ellipses" size={36} color={ACCENT} />
+            </View>
+            <Text style={styles.fallbackTitle}>Live chat is unavailable</Text>
+            <Text style={styles.fallbackText}>
+              {chatError ??
+                (infoQuery.isError
+                  ? "Could not load live chat settings."
+                  : "Support chat has not been configured yet.")}
+            </Text>
+            <Pressable style={styles.retryButton} onPress={retryChat}>
+              <Text style={styles.retryText}>Try again</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </>
   );
@@ -162,6 +245,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F8F8FA",
     zIndex: 10,
+    elevation: 10,
   },
   loaderIcon: {
     width: 72,
@@ -179,5 +263,39 @@ const styles = StyleSheet.create({
   webview: {
     flex: 1,
     backgroundColor: "#F8F8FA",
+  },
+  fallback: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    backgroundColor: "#F8F8FA",
+  },
+  fallbackTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A1A2E",
+    marginTop: 18,
+  },
+  fallbackText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 20,
+    minHeight: 44,
+    paddingHorizontal: 22,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: ACCENT,
+  },
+  retryText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "700",
   },
 });

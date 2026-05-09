@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -6,16 +6,16 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import apiClient from "@/lib/api-client";
-import { useSession } from "@/lib/auth-client";
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
   open: { color: "#E5005F", bg: "#FDF2F8", label: "Open" },
@@ -29,7 +29,9 @@ export default function TicketDetailScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
   const [replyText, setReplyText] = useState("");
-  const { data: session } = useSession();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [replyBarHeight, setReplyBarHeight] = useState(88);
+  const insets = useSafeAreaInsets();
 
   const ticketQuery = useQuery({
     queryKey: ["ticket", ticketId],
@@ -55,6 +57,23 @@ export default function TicketDetailScreen() {
 
   const ticket = ticketQuery.data?.ticket ?? ticketQuery.data;
   const replies = ticketQuery.data?.replays ?? ticket?.replies ?? [];
+  const composerBottom = keyboardHeight > 0 ? keyboardHeight + 8 : Math.max(insets.bottom, 14);
+  const scrollBottomPadding = replyBarHeight + composerBottom + 20;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(Math.max(event.endCoordinates.height - insets.bottom, 0));
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [insets.bottom]);
 
   if (ticketQuery.isLoading) {
     return (
@@ -83,19 +102,21 @@ export default function TicketDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: ticket.ticketNumber ?? ticket.ticket_number,
+          title: ticket.ticketNumber ?? ticket.ticket_number ?? "Ticket Details",
           headerShadowVisible: false,
           headerStyle: { backgroundColor: "#fff" },
         }}
       />
-      <KeyboardAvoidingView
-        style={styles.wrapper}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={90}
-      >
+      <View style={styles.wrapper}>
         <ScrollView
           ref={scrollRef}
           style={styles.container}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: canReply ? scrollBottomPadding : Math.max(insets.bottom, 18) },
+          ]}
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Ticket Info */}
@@ -163,12 +184,17 @@ export default function TicketDetailScreen() {
             })}
           </View>
 
-          <View style={{ height: 20 }} />
         </ScrollView>
 
         {/* Reply Input */}
         {canReply && (
-          <View style={styles.replyBar}>
+          <View
+            onLayout={(event) => setReplyBarHeight(event.nativeEvent.layout.height)}
+            style={[
+              styles.replyBar,
+              { bottom: composerBottom },
+            ]}
+          >
             <TextInput
               style={styles.replyInput}
               value={replyText}
@@ -176,6 +202,8 @@ export default function TicketDetailScreen() {
               placeholder="Type your reply..."
               placeholderTextColor="#C7C7CC"
               multiline
+              textAlignVertical="top"
+              onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120)}
             />
             <Pressable
               style={({ pressed }) => [
@@ -194,7 +222,7 @@ export default function TicketDetailScreen() {
             </Pressable>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </>
   );
 }
@@ -202,6 +230,9 @@ export default function TicketDetailScreen() {
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#F8F8F8" },
   container: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -215,7 +246,9 @@ const styles = StyleSheet.create({
   },
   ticketInfo: {
     backgroundColor: "#fff",
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 22,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
     alignItems: "flex-start",
@@ -226,13 +259,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   messageSection: {
-    padding: 16,
+    flexGrow: 1,
+    paddingHorizontal: 16,
+    paddingTop: 18,
     gap: 12,
   },
   messageBubble: {
-    padding: 14,
-    borderRadius: 14,
-    maxWidth: "85%",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 18,
+    maxWidth: "82%",
+    minWidth: 96,
   },
   userBubble: {
     backgroundColor: "#FDF2F8",
@@ -249,31 +286,45 @@ const styles = StyleSheet.create({
     borderColor: "#BBDEFB",
   },
   replyBar: {
+    position: "absolute",
+    left: 14,
+    right: 14,
     flexDirection: "row",
     alignItems: "flex-end",
     backgroundColor: "#fff",
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: "#F0F0F0",
-    gap: 10,
+    borderWidth: 1,
+    borderColor: "#F2F2F4",
+    borderRadius: 26,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -3 },
+    elevation: 8,
   },
   replyInput: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
+    minHeight: 46,
+    maxHeight: 120,
     borderWidth: 1,
     borderColor: "#E8E8E8",
-    borderRadius: 20,
+    borderRadius: 23,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    fontSize: 14,
+    paddingTop: Platform.OS === "ios" ? 12 : 10,
+    paddingBottom: Platform.OS === "ios" ? 12 : 9,
+    fontSize: 16,
     color: "#1A1A2E",
     backgroundColor: "#FAFAFA",
+    lineHeight: 20,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#E5005F",
     justifyContent: "center",
     alignItems: "center",

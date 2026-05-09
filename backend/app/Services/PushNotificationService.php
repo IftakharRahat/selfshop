@@ -32,9 +32,34 @@ class PushNotificationService
                         $meta
                     ));
                 }
+
+                if (!($meta['skip_fcm'] ?? false)) {
+                    $this->notifyFcmUser($userId, $title, $message, $meta);
+                }
             }
         } catch (\Throwable $e) {
             Log::warning('PushNotificationService: broadcast failed', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function notifyFcmUser(int $userId, string $title, string $message, array $meta = []): void
+    {
+        try {
+            $imageUrl = $meta['image_url'] ?? null;
+            $actionUrl = $meta['action_url'] ?? ($meta['link'] ?? null);
+
+            app(FcmService::class)->sendToUsers(
+                [$userId],
+                $title,
+                $message,
+                is_string($imageUrl) ? $imageUrl : null,
+                is_string($actionUrl) ? $actionUrl : null
+            );
+        } catch (\Throwable $e) {
+            Log::warning('PushNotificationService: FCM notification failed', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
