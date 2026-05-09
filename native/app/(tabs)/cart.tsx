@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, type Dispatch, type SetStateAction } from "react";
 import {
   View,
   ScrollView,
@@ -68,6 +68,8 @@ export default function CartScreen() {
   });
 
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingCartIds, setDeletingCartIds] = useState<Record<number, boolean>>({});
+  const [confirmingDeleteIds, setConfirmingDeleteIds] = useState<Record<number, boolean>>({});
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refetch();
@@ -76,12 +78,33 @@ export default function CartScreen() {
 
   const cartItems: any[] = cartData ?? [];
   const itemCount = cartItems.length;
+  const setCartIdFlag = useCallback((
+    setter: Dispatch<SetStateAction<Record<number, boolean>>>,
+    cartId: number,
+    value: boolean,
+  ) => {
+    setter((prev) => {
+      const key = Number(cartId);
+      if (value) return { ...prev, [key]: true };
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+  const removeCartItemFromCache = useCallback((cartId: number) => {
+    queryClient.setQueryData<any[]>(["cart-items"], (oldItems) => (
+      Array.isArray(oldItems)
+        ? oldItems.filter((item: any) => Number(item.id) !== Number(cartId))
+        : oldItems
+    ));
+  }, [queryClient]);
 
   // Update cart item
   const updateMutation = useMutation({
     mutationFn: async ({ cartId, qty }: { cartId: number; qty: number }) => {
       const { data } = await apiClient.post("/user-update-cart", {
         cart_id: cartId,
+        id: cartId,
         qty,
       });
       return data;
@@ -99,15 +122,37 @@ export default function CartScreen() {
     mutationFn: async (cartId: number) => {
       const { data } = await apiClient.post("/user-destroy-cart", {
         cart_id: cartId,
+        id: cartId,
       });
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
-      toast.success("Item removed from cart");
+    onMutate: async (cartId) => {
+      setCartIdFlag(setDeletingCartIds, cartId, true);
+      await queryClient.cancelQueries({ queryKey: ["cart-items"] });
+      const previousCartItems = queryClient.getQueryData<any[]>(["cart-items"]);
+      removeCartItemFromCache(cartId);
+      return { previousCartItems };
     },
-    onError: () => {
-      toast.error("Failed to remove item");
+    onSuccess: (data) => {
+      if (Array.isArray(data?.data)) {
+        queryClient.setQueryData(["cart-items"], data.data);
+      }
+      toast.success(data?.message || "Item removed from cart");
+    },
+    onError: (error: any, cartId, context) => {
+      if (error?.response?.status === 404) {
+        removeCartItemFromCache(cartId);
+        toast.success("Item removed from cart");
+        return;
+      }
+      if (context?.previousCartItems) {
+        queryClient.setQueryData(["cart-items"], context.previousCartItems);
+      }
+      toast.error(error?.response?.data?.message || "Failed to remove item");
+    },
+    onSettled: (_data, _error, cartId) => {
+      if (cartId !== undefined) setCartIdFlag(setDeletingCartIds, cartId, false);
+      queryClient.invalidateQueries({ queryKey: ["cart-items"] });
     },
   });
 
@@ -117,17 +162,30 @@ export default function CartScreen() {
   };
 
   const handleDelete = (cartId: number, itemName: string) => {
+    if (deletingCartIds[Number(cartId)] || confirmingDeleteIds[Number(cartId)]) return;
+    setCartIdFlag(setConfirmingDeleteIds, cartId, true);
     Alert.alert(
       "Remove Item",
       `Remove "${itemName}" from your cart?`,
       [
-        { text: "Cancel", style: "cancel" },
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+        },
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => deleteMutation.mutate(cartId),
+          onPress: () => {
+            setCartIdFlag(setConfirmingDeleteIds, cartId, false);
+            deleteMutation.mutate(cartId);
+          },
         },
-      ]
+      ],
+      {
+        cancelable: true,
+        onDismiss: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+      },
     );
   };
 
@@ -157,7 +215,7 @@ export default function CartScreen() {
           <Text fontSize="$5" fontWeight="bold" color={DARK} mt="$3">
             Login Required
           </Text>
-          <Text fontSize="$3" color={GREY} mt="$1" textAlign="center" style={{ maxWidth: 260 }}>
+          <Text fontSize="$3" color={GREY} mt="$1" style={{ maxWidth: 260, textAlign: "center" }}>
             Please log in to view your cart and start ordering.
           </Text>
           <Pressable
@@ -202,7 +260,7 @@ export default function CartScreen() {
             <Text fontSize="$5" fontWeight="bold" color={DARK} mt="$3">
               Your cart is empty
             </Text>
-            <Text fontSize="$3" color={GREY} mt="$1" textAlign="center" style={{ maxWidth: 260 }}>
+            <Text fontSize="$3" color={GREY} mt="$1" style={{ maxWidth: 260, textAlign: "center" }}>
               Browse products and add items to your cart to get started.
             </Text>
             <Pressable
@@ -237,6 +295,7 @@ export default function CartScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
       >
         {cartItems.map((item: any) => {
+          const isDeleting = Boolean(deletingCartIds[Number(item.id)] || confirmingDeleteIds[Number(item.id)]);
           const unitPrice = parseFloat(item.price || "0");
           const qty = item.qty || 0;
           const lineTotal = unitPrice * qty;
@@ -340,9 +399,9 @@ export default function CartScreen() {
 
               {/* Delete Button */}
               <Pressable
-                style={s.deleteBtn}
+                style={[s.deleteBtn, isDeleting && { opacity: 0.45 }]}
                 onPress={() => handleDelete(item.id, item.name)}
-                disabled={deleteMutation.isPending}
+                disabled={isDeleting}
               >
                 <Ionicons name="trash-outline" size={18} color="#EF4444" />
               </Pressable>

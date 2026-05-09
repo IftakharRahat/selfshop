@@ -48,7 +48,7 @@ const courseApi = baseApi.injectEndpoints({
 				return {
 					url: `/user-update-cart`,
 					method: "POST",
-					body: { cart_id: cartId, qty },
+					body: { cart_id: cartId, id: cartId, qty },
 				};
 			},
 			invalidatesTags: ["cartApi"],
@@ -58,7 +58,7 @@ const courseApi = baseApi.injectEndpoints({
 				return {
 					url: `/user-destroy-cart`,
 					method: "POST",
-					body: { cart_id: cartId },
+					body: { cart_id: cartId, id: cartId },
 				};
 			},
 			invalidatesTags: ["cartApi"],

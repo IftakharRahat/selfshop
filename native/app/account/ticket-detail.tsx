@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { Text } from "tamagui";
@@ -29,6 +29,8 @@ export default function TicketDetailScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
   const [replyText, setReplyText] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [replyBarHeight, setReplyBarHeight] = useState(88);
   const insets = useSafeAreaInsets();
 
   const ticketQuery = useQuery({
@@ -55,6 +57,23 @@ export default function TicketDetailScreen() {
 
   const ticket = ticketQuery.data?.ticket ?? ticketQuery.data;
   const replies = ticketQuery.data?.replays ?? ticket?.replies ?? [];
+  const composerBottom = keyboardHeight > 0 ? keyboardHeight + 8 : Math.max(insets.bottom, 14);
+  const scrollBottomPadding = replyBarHeight + composerBottom + 20;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(Math.max(event.endCoordinates.height - insets.bottom, 0));
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [insets.bottom]);
 
   if (ticketQuery.isLoading) {
     return (
@@ -88,18 +107,15 @@ export default function TicketDetailScreen() {
           headerStyle: { backgroundColor: "#fff" },
         }}
       />
-      <KeyboardAvoidingView
-        style={styles.wrapper}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
+      <View style={styles.wrapper}>
         <ScrollView
           ref={scrollRef}
           style={styles.container}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: canReply ? 18 : Math.max(insets.bottom, 18) },
+            { paddingBottom: canReply ? scrollBottomPadding : Math.max(insets.bottom, 18) },
           ]}
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -173,9 +189,10 @@ export default function TicketDetailScreen() {
         {/* Reply Input */}
         {canReply && (
           <View
+            onLayout={(event) => setReplyBarHeight(event.nativeEvent.layout.height)}
             style={[
               styles.replyBar,
-              { paddingBottom: Math.max(insets.bottom + 10, 16) },
+              { bottom: composerBottom },
             ]}
           >
             <TextInput
@@ -185,7 +202,8 @@ export default function TicketDetailScreen() {
               placeholder="Type your reply..."
               placeholderTextColor="#C7C7CC"
               multiline
-              textAlignVertical="center"
+              textAlignVertical="top"
+              onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120)}
             />
             <Pressable
               style={({ pressed }) => [
@@ -204,7 +222,7 @@ export default function TicketDetailScreen() {
             </Pressable>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </>
   );
 }
@@ -268,13 +286,19 @@ const styles = StyleSheet.create({
     borderColor: "#BBDEFB",
   },
   replyBar: {
+    position: "absolute",
+    left: 14,
+    right: 14,
     flexDirection: "row",
     alignItems: "flex-end",
     backgroundColor: "#fff",
-    paddingHorizontal: 18,
-    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: "#F0F0F0",
+    borderWidth: 1,
+    borderColor: "#F2F2F4",
+    borderRadius: 26,
     gap: 12,
     shadowColor: "#000",
     shadowOpacity: 0.06,
@@ -284,25 +308,25 @@ const styles = StyleSheet.create({
   },
   replyInput: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 46,
     maxHeight: 120,
     borderWidth: 1,
     borderColor: "#E8E8E8",
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: Platform.OS === "ios" ? 12 : 8,
+    borderRadius: 23,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 12 : 10,
+    paddingBottom: Platform.OS === "ios" ? 12 : 9,
     fontSize: 16,
     color: "#1A1A2E",
     backgroundColor: "#FAFAFA",
     lineHeight: 20,
   },
   sendButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#E5005F",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 1,
   },
 });

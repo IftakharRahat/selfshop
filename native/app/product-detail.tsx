@@ -291,7 +291,8 @@ export default function ProductDetailScreen() {
 
   // Selling type
   const sellingType: "wholesale" | "dropshipping" | "both" = product.selling_type || "both";
-  const showWholesale = (sellingType === "wholesale" || sellingType === "both") && hasTiers;
+  const supportsWholesale = sellingType === "wholesale" || sellingType === "both";
+  const showWholesale = supportsWholesale && hasTiers;
   const showDropshipping = sellingType === "dropshipping" || sellingType === "both";
 
   // Meta
@@ -409,13 +410,42 @@ export default function ProductDetailScreen() {
     .flatMap((sizes) => Object.values(sizes))
     .reduce((a, b) => a + b, 0);
 
+  const getTierMinQty = (tier: any): number => Number(tier?.min_qty ?? tier?.minQty ?? 0);
+  const getTierMaxQty = (tier: any): number | null => {
+    const rawMax = tier?.max_qty ?? tier?.maxQty;
+    if (rawMax === undefined || rawMax === null || rawMax === "") return null;
+    const maxQty = Number(rawMax);
+    return Number.isFinite(maxQty) && maxQty > 0 ? maxQty : null;
+  };
+  const sortTiersByQty = (tiers: any[] = []) =>
+    tiers.slice().sort((a: any, b: any) => getTierMinQty(a) - getTierMinQty(b));
+  const findApplicableTier = (tiers: any[] = [], qty: number) => {
+    const normalizedQty = Number(qty || 0);
+    if (normalizedQty <= 0) return null;
+    return tiers
+      .slice()
+      .sort((a: any, b: any) => getTierMinQty(b) - getTierMinQty(a))
+      .find((tier: any) => {
+        const minQty = getTierMinQty(tier);
+        const maxQty = getTierMaxQty(tier);
+        return normalizedQty >= minQty && (maxQty === null || normalizedQty <= maxQty);
+      }) ?? null;
+  };
+  const getTierPrice = (tier: any): number =>
+    Math.round(Number(tier?.bulk_price ?? tier?.unit_price ?? 0) * commissionFactor * 100) / 100;
+  const getTierQtyLabel = (tier: any): string => {
+    const minQty = getTierMinQty(tier);
+    const maxQty = getTierMaxQty(tier);
+    return maxQty ? `${minQty}-${maxQty} pcs` : `${minQty}+ pcs`;
+  };
+  const isSameTier = (left: any, right: any): boolean => {
+    if (!left || !right) return false;
+    if (left.id !== undefined && right.id !== undefined) return String(left.id) === String(right.id);
+    return left === right;
+  };
+
   // Active tier based on total qty
-  const activeTier = hasTiers
-    ? priceTiers
-        .slice()
-        .sort((a: any, b: any) => b.min_qty - a.min_qty)
-        .find((t: any) => totalQuantity >= t.min_qty) ?? priceTiers[0]
-    : null;
+  const activeTier = hasTiers ? findApplicableTier(priceTiers, totalQuantity) : null;
 
   // Get price for a size item
   const getSizePrice = (sizeItem: any, qty: number): number => {
@@ -423,10 +453,10 @@ export default function ProductDetailScreen() {
       return parseFloat(flashSale.flash_price);
     }
     // Size-level bulk tiers
-    const tiers = sizeItem.bulk_prices || [];
+    const tiers = sizeItem.bulkPrices || sizeItem.bulk_prices || [];
     if (tiers.length > 0) {
-      const tier = tiers.slice().sort((a: any, b: any) => b.min_qty - a.min_qty).find((t: any) => qty >= t.min_qty);
-      if (tier) return Math.round(parseFloat(tier.bulk_price || tier.unit_price) * commissionFactor * 100) / 100;
+      const tier = findApplicableTier(tiers, qty);
+      if (tier) return getTierPrice(tier);
     }
     // Size-level base price
     if (sizeItem.price !== null && sizeItem.price !== undefined) {
@@ -435,7 +465,7 @@ export default function ProductDetailScreen() {
     }
     // Product-level tier
     if (hasTiers && activeTier) {
-      return Math.round(parseFloat(activeTier.unit_price) * commissionFactor * 100) / 100;
+      return getTierPrice(activeTier);
     }
     // Fallback
     return Math.round(basePrice * commissionFactor * 100) / 100;
@@ -445,7 +475,7 @@ export default function ProductDetailScreen() {
   const salePrice = flashSale && flashSale.flash_price > 0
     ? parseFloat(flashSale.flash_price)
     : activeTier
-      ? Math.round(parseFloat(activeTier.unit_price) * commissionFactor * 100) / 100
+      ? getTierPrice(activeTier)
       : Math.round(
           Number(product.storefront_price ?? product.ProductSalePrice ?? basePrice) *
             (product.storefront_price ? 1 : commissionFactor) *
@@ -454,6 +484,30 @@ export default function ProductDetailScreen() {
 
   const hasDiscount = regularPrice > salePrice && regularPrice > 0;
   const discountPercent = hasDiscount ? Math.round(((regularPrice - salePrice) / regularPrice) * 100) : 0;
+
+  const getBulkTierSizeForVariant = (variant?: NormalizedVariant | null): NormalizedVariantSize | null => {
+    if (!variant) return null;
+    const selectedBulkSize = variant.sizes.find((sizeItem) => {
+      const qty = variantQuantities[variant.variantId]?.[sizeItem.sizeName] || 0;
+      return qty > 0 && sizeItem.bulkPrices.length > 0;
+    });
+    return selectedBulkSize ?? variant.sizes.find((sizeItem) => sizeItem.bulkPrices.length > 0) ?? null;
+  };
+  const activeVariantForBulkTiers = normalizedVariants[activeVariantIdx] ?? normalizedVariants[0];
+  const activeSizeBulkItem = getBulkTierSizeForVariant(activeVariantForBulkTiers);
+  const activeSizeBulkQty = activeSizeBulkItem && activeVariantForBulkTiers
+    ? variantQuantities[activeVariantForBulkTiers.variantId]?.[activeSizeBulkItem.sizeName] || 0
+    : 0;
+  const activeSizeBulkTier = activeSizeBulkItem
+    ? findApplicableTier(activeSizeBulkItem.bulkPrices, activeSizeBulkQty)
+    : null;
+  const selectedSheetBulkSize = getBulkTierSizeForVariant(selectedVariant);
+  const selectedSheetBulkQty = selectedSheetBulkSize
+    ? variantQuantities[selectedVariant.variantId]?.[selectedSheetBulkSize.sizeName] || 0
+    : 0;
+  const selectedSheetBulkTier = selectedSheetBulkSize
+    ? findApplicableTier(selectedSheetBulkSize.bulkPrices, selectedSheetBulkQty)
+    : null;
 
   // ── Qty handlers ──
   const handleQtyChange = (variantId: number, size: string, type: "increase" | "decrease", stock?: number) => {
@@ -831,6 +885,51 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* ═══ WHOLESALE BULK TIER BADGES ═══ */}
+        {supportsWholesale && isResellerActive && activeSizeBulkItem && activeVariantForBulkTiers && (
+          <View style={s.sizeTierCard}>
+            <View style={s.sizeTierHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
+                <Ionicons name="pricetag-outline" size={15} color={ACCENT} />
+                <Text fontSize={12} fontWeight="800" color={ACCENT} style={{ textTransform: "uppercase" }}>
+                  Bulk discounts for size {activeSizeBulkItem.sizeName}
+                </Text>
+              </View>
+              {activeSizeBulkQty > 0 && (
+                <View style={s.sizeTierQtyBadge}>
+                  <Text fontSize={10} fontWeight="800" color={ACCENT}>{activeSizeBulkQty} pcs</Text>
+                </View>
+              )}
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={s.sizeTierList}
+            >
+              {sortTiersByQty(activeSizeBulkItem.bulkPrices).map((tier: any, tierIdx: number) => {
+                const isActive = isSameTier(activeSizeBulkTier, tier);
+                return (
+                  <View
+                    key={tier.id ?? tierIdx}
+                    style={[s.sizeTierBadge, isActive && s.sizeTierBadgeActive]}
+                  >
+                    <Text fontSize={11} fontWeight="800" color={isActive ? "#fff" : ACCENT}>
+                      {getTierQtyLabel(tier)}: {"\u09F3"}{formatBDT(getTierPrice(tier), 0)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            {activeSizeBulkQty > 0 && activeSizeBulkTier ? (
+              <View style={s.sizeTierMessage}>
+                <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                <Text fontSize={12} fontWeight="700" color="#065F46">
+                  Size {activeSizeBulkItem.sizeName} discount applied automatically
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        )}
+
         {showWholesale && isResellerActive && (
           <View style={s.card}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -845,13 +944,13 @@ export default function ProductDetailScreen() {
               )}
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              {priceTiers.map((tier: any, tierIdx: number) => {
-                const isActive = activeTier?.id === tier.id;
-                const qtyLabel = tier.max_qty ? `${tier.min_qty}-${tier.max_qty} Pcs` : `${tier.min_qty}+ Pcs`;
-                const tierPrice = parseFloat(tier.unit_price) * commissionFactor;
+              {sortTiersByQty(priceTiers).map((tier: any, tierIdx: number) => {
+                const isActive = isSameTier(activeTier, tier);
+                const qtyLabel = getTierQtyLabel(tier);
+                const tierPrice = getTierPrice(tier);
                 return (
                   <View
-                    key={tier.id}
+                    key={tier.id ?? tierIdx}
                     style={[
                       s.tierBadge,
                       isActive && { borderColor: ACCENT, backgroundColor: "#FFF0F5", transform: [{ scale: 1.04 }] },
@@ -872,20 +971,19 @@ export default function ProductDetailScreen() {
             </ScrollView>
             {/* Contextual tier message */}
             {(() => {
-              if (!activeTier) return null;
-              const nextTier = priceTiers.find((t: any) => t.min_qty > totalQuantity);
+              const nextTier = sortTiersByQty(priceTiers).find((tier: any) => getTierMinQty(tier) > totalQuantity);
               if (nextTier && totalQuantity > 0) {
-                const moreNeeded = nextTier.min_qty - totalQuantity;
+                const moreNeeded = getTierMinQty(nextTier) - totalQuantity;
                 return (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FFFBEB", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
                     <Ionicons name="flash" size={14} color="#D97706" />
                     <Text fontSize={12} fontWeight="600" color="#92400E">
-                      Add {moreNeeded} more for ৳{formatBDT(parseFloat(nextTier.unit_price) * commissionFactor, 0)}/pc pricing!
+                      Add {moreNeeded} more for {"\u09F3"}{formatBDT(getTierPrice(nextTier), 0)}/pc pricing!
                     </Text>
                   </View>
                 );
               }
-              if (totalQuantity > 0) {
+              if (activeTier && totalQuantity > 0) {
                 return (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
                     <Ionicons name="checkmark-circle" size={14} color="#059669" />
@@ -1415,15 +1513,54 @@ export default function ProductDetailScreen() {
               </Pressable>
             </View>
 
+            {supportsWholesale && isResellerActive && selectedSheetBulkSize && (
+              <View style={s.sheetTierPanel}>
+                <View style={s.sheetTierTitleRow}>
+                  <Ionicons name="pricetag-outline" size={14} color={ACCENT} />
+                  <Text fontSize={12} fontWeight="800" color={ACCENT} style={{ textTransform: "uppercase" }}>
+                    Bulk discounts for size {selectedSheetBulkSize.sizeName}
+                  </Text>
+                  {selectedSheetBulkQty > 0 && (
+                    <View style={s.sheetTierQtyBadge}>
+                      <Text fontSize={10} fontWeight="800" color={ACCENT}>{selectedSheetBulkQty} pcs</Text>
+                    </View>
+                  )}
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {sortTiersByQty(selectedSheetBulkSize.bulkPrices).map((tier: any, tierIdx: number) => {
+                    const isActive = isSameTier(selectedSheetBulkTier, tier);
+                    return (
+                      <View key={tier.id ?? tierIdx} style={[s.sheetTierBadge, isActive && s.sheetTierBadgeActive]}>
+                        <Text fontSize={11} fontWeight="800" color={isActive ? ACCENT : DARK}>
+                          {getTierQtyLabel(tier)}
+                        </Text>
+                        <Text fontSize={13} fontWeight="900" color={isActive ? ACCENT : DARK}>
+                          {"\u09F3"}{formatBDT(getTierPrice(tier), 0)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                {selectedSheetBulkTier && selectedSheetBulkQty > 0 && (
+                  <View style={s.sheetTierMessage}>
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text fontSize={12} fontWeight="700" color="#065F46">
+                      Size discount applied to the unit price below
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             {showWholesale && isResellerActive && priceTiers.length > 0 && (
               <View style={s.sheetTierPanel}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                  {priceTiers.map((tier: any) => {
-                    const isActive = activeTier?.id === tier.id;
-                    const qtyLabel = tier.max_qty ? String(tier.min_qty) + "-" + String(tier.max_qty) + " Pcs" : ">" + String(tier.min_qty) + " Pcs";
-                    const tierPrice = parseFloat(tier.unit_price) * commissionFactor;
+                  {sortTiersByQty(priceTiers).map((tier: any, tierIdx: number) => {
+                    const isActive = isSameTier(activeTier, tier);
+                    const qtyLabel = getTierQtyLabel(tier);
+                    const tierPrice = getTierPrice(tier);
                     return (
-                      <View key={tier.id} style={[s.sheetTierBadge, isActive && s.sheetTierBadgeActive]}>
+                      <View key={tier.id ?? tierIdx} style={[s.sheetTierBadge, isActive && s.sheetTierBadgeActive]}>
                         <Text fontSize={15} fontWeight="800" color={isActive ? ACCENT : DARK}>
                           {"\u09F3"}{formatBDT(tierPrice, 0)}
                         </Text>
@@ -1508,6 +1645,7 @@ export default function ProductDetailScreen() {
                 const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
                 const rowEarnings = qty > 0 && rowSP >= unitPrice ? (rowSP - unitPrice) * qty : 0;
                 const rowPriceInvalid = rowSPStr !== "" && rowSP < unitPrice;
+                const rowBulkTier = findApplicableTier(sizeItem.bulkPrices, qty);
 
                 return (
                   <View key={String(selectedVariant.variantId) + "-" + size} style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}>
@@ -1523,7 +1661,9 @@ export default function ProductDetailScreen() {
                       <View style={{ flex: 1 }}>
                         <Text fontSize={13} fontWeight="700" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
                         {sizeItem.bulkPrices.length > 0 && (
-                          <Text fontSize={9} fontWeight="800" color="#059669">BULK</Text>
+                          <Text fontSize={9} fontWeight="800" color={rowBulkTier ? ACCENT : "#059669"}>
+                            {rowBulkTier ? getTierQtyLabel(rowBulkTier).toUpperCase() : "BULK"}
+                          </Text>
                         )}
                       </View>
                       <View style={s.sheetStepperWrap}>
@@ -1972,6 +2112,54 @@ const s = StyleSheet.create({
   metaDot: { width: 6, height: 6, borderRadius: 3 },
 
   // Tier badges
+  sizeTierCard: {
+    marginHorizontal: 12,
+    marginTop: 10,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FAD6E6",
+    backgroundColor: "#FFF7FB",
+  },
+  sizeTierHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 10,
+  },
+  sizeTierQtyBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#FFEAF3",
+  },
+  sizeTierList: {
+    gap: 8,
+    paddingRight: 12,
+  },
+  sizeTierBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#F5B8D0",
+    backgroundColor: "#fff",
+  },
+  sizeTierBadgeActive: {
+    borderColor: ACCENT,
+    backgroundColor: ACCENT,
+  },
+  sizeTierMessage: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    backgroundColor: "#ECFDF5",
+  },
   tierBadge: {
     alignItems: "center", paddingHorizontal: 16, paddingVertical: 10,
     borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E5EA", backgroundColor: "#fff",
@@ -2284,6 +2472,19 @@ const s = StyleSheet.create({
     backgroundColor: "#FFF8E8",
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F5",
+  },
+  sheetTierTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  sheetTierQtyBadge: {
+    marginLeft: "auto",
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: "#FFEAF3",
   },
   sheetTierBadge: {
     minWidth: 104,
