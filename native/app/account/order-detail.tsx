@@ -73,6 +73,17 @@ function getOrderTotal(order: any): number {
   return parseMoney(order?.total ?? order?.paymentAmount ?? order?.payable_amount);
 }
 
+function getPaymentStatus(order: any): "Paid" | "Unpaid" | null {
+  const rawStatus = String(order?.payment_status ?? order?.data?.payment_status ?? "").toLowerCase();
+  if (rawStatus === "paid" || rawStatus === "success") return "Paid";
+  if (rawStatus === "failed" || rawStatus === "pending") return "Unpaid";
+
+  const hasPaymentMethod = hasMoneyValue(order?.payment_type_id) || hasMoneyValue(order?.Payment);
+  if (hasPaymentMethod && parseMoney(order?.paymentAmount) > 0) return "Paid";
+
+  return null;
+}
+
 export default function OrderDetailScreen() {
   const params = useLocalSearchParams<{ invoiceID?: string; id?: string }>();
   const invoiceID = (params.invoiceID ?? "").trim().replace(/^[^A-Za-z0-9]+/, "");
@@ -134,6 +145,7 @@ export default function OrderDetailScreen() {
   /* ── Read fields matching web API response ── */
   const displayStatus = order.customer_status ?? order.display_status ?? order.status ?? "Pending";
   const statusStyle = STATUS_COLORS[displayStatus] ?? STATUS_COLORS.Pending;
+  const paymentStatus = getPaymentStatus(order);
   const customer = order.customers ?? {};
   const courier = order.couriers ?? {};
   const orderProducts: any[] = order.orderproducts ?? order.order_products ?? order.products ?? order.items ?? order.order_items ?? [];
@@ -173,6 +185,17 @@ export default function OrderDetailScreen() {
               <Text style={[styles.statusText, { color: statusStyle.color }]}>{displayStatus}</Text>
             </View>
           </View>
+          {paymentStatus === "Paid" && (
+            <View style={styles.paymentStatusRow}>
+              <View style={styles.paymentPill}>
+                <Ionicons name="checkmark-circle" size={13} color="#047857" />
+                <Text style={styles.paymentText}>Payment paid</Text>
+              </View>
+              {displayStatus === "Pending" && (
+                <Text style={styles.paymentHint}>Waiting for supplier acceptance</Text>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Tracking Info (if available) */}
@@ -354,6 +377,24 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 12, color: "#9CA3AF", marginTop: 4 },
   statusPill: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14 },
   statusText: { fontSize: 12, fontWeight: "700" },
+  paymentStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  paymentPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: "#ECFDF5",
+  },
+  paymentText: { fontSize: 12, fontWeight: "700", color: "#047857" },
+  paymentHint: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
 
   section: {
     margin: 16, marginBottom: 0, backgroundColor: "#fff", borderRadius: 16,

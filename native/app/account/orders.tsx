@@ -85,6 +85,17 @@ function getOrderTotal(order: any): number {
   return parseMoney(order?.total ?? order?.paymentAmount ?? order?.payable_amount);
 }
 
+function getPaymentStatus(order: any): "Paid" | "Unpaid" | null {
+  const rawStatus = String(order?.payment_status ?? order?.data?.payment_status ?? "").toLowerCase();
+  if (rawStatus === "paid" || rawStatus === "success") return "Paid";
+  if (rawStatus === "failed" || rawStatus === "pending") return "Unpaid";
+
+  const hasPaymentMethod = hasMoneyValue(order?.payment_type_id) || hasMoneyValue(order?.Payment);
+  if (hasPaymentMethod && parseMoney(order?.paymentAmount) > 0) return "Paid";
+
+  return null;
+}
+
 export default function OrdersScreen() {
   const queryClient = useQueryClient();
   const [activeStatus, setActiveStatus] = useState("Pending");
@@ -203,6 +214,7 @@ export default function OrdersScreen() {
       order.customer_status ?? order.display_status ?? order.status ?? activeStatus;
     const statusStyle = STATUS_COLORS[displayStatus] ?? STATUS_COLORS.Pending;
     const orderTotal = getOrderTotal(order);
+    const paymentStatus = getPaymentStatus(order);
 
     return (
       <Pressable
@@ -248,6 +260,12 @@ export default function OrdersScreen() {
                 {displayStatus}
               </Text>
             </View>
+            {paymentStatus === "Paid" && (
+              <View style={styles.paymentPill}>
+                <Ionicons name="checkmark-circle" size={11} color="#047857" />
+                <Text style={styles.paymentText}>Paid</Text>
+              </View>
+            )}
             <Text style={styles.orderAmount}>{formatCurrency(orderTotal)}</Text>
           </View>
         </View>
@@ -543,6 +561,20 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: "600",
+  },
+  paymentPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "#ECFDF5",
+  },
+  paymentText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#047857",
   },
   orderAmount: {
     fontSize: 14,

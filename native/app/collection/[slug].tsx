@@ -136,7 +136,7 @@ export default function CollectionScreen() {
   const title =
     slug === "featured"
       ? "Featured Products"
-      : slug === "new_arrivel"
+      : slug === "new_arrivel" || slug === "all-new-products"
         ? "New Arrivals"
         : slug === "hot_selling"
           ? "Hot Selling"
@@ -160,7 +160,11 @@ export default function CollectionScreen() {
     queryKey: ["collection", slug, sort],
     queryFn: async ({ pageParam = 1 }) => {
       const endpoint =
-        slug === "featured" ? "/featured-products" : `/collection/${slug}`;
+        slug === "featured"
+          ? "/featured-products"
+          : slug === "all-new-products"
+            ? "/new-products"
+            : `/collection/${slug}`;
       const response = await apiClient.get(endpoint, {
         params: { sort, limit: PAGE_LIMIT, page: pageParam },
       });
@@ -196,7 +200,7 @@ export default function CollectionScreen() {
     () => sortProducts(allProducts, sort),
     [allProducts, sort],
   );
-  const isNewArrivals = slug === "new_arrivel";
+  const isNewArrivals = slug === "new_arrivel" || slug === "all-new-products";
   const trimmedSearch = searchQuery.trim().toLowerCase();
 
   const filteredProducts = useMemo(() => {

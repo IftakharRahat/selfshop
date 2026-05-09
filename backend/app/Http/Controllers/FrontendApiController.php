@@ -644,10 +644,15 @@ class FrontendApiController extends Controller
 
     public function newproducts(Request $request)
     {
-        $limit = $request->limit ?? 15;
-        $total = Product::visibleOnStorefront()->count();
+        $limit = $request->input('limit', 15);
+        $sort = $request->input('sort', 'newest');
+        $query = Product::visibleOnStorefront();
+        $total = (clone $query)->count();
 
-        $searchcontents = Product::visibleOnStorefront()->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type')->latest('id')->paginate($limit);
+        $searchcontents = $this->applyProductSort(
+            $query->select('id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'min_sell_price', 'Discount', 'ViewProductImage', 'vendor_id', 'category_id', 'selling_type', 'created_at'),
+            $sort
+        )->paginate($limit);
 
         if ($searchcontents->count() == 0) {
             return response()->json([
