@@ -86,9 +86,11 @@ export default function HomeScreen() {
   });
 
   const newProducts = useQuery({
-    queryKey: ["new-products"],
+    queryKey: ["new-arrivals-preview"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/new-products");
+      const { data } = await apiClient.get("/collection/new_arrivel", {
+        params: { sort: "newest", limit: 20 },
+      });
       return data?.data?.data ?? data?.data ?? [];
     },
   });

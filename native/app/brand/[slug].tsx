@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
@@ -21,26 +21,76 @@ import { ProductGridSkeleton } from "@/components/skeleton";
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
 const CARD_WIDTH = (width - 48) / 2;
+const PAGE_LIMIT = 20;
 
 export default function BrandProductsScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const queryClient = useQueryClient();
   const brandName = (slug ?? "").replace(/-/g, " ");
 
-  const productsQuery = useQuery({
+  const productsQuery = useInfiniteQuery({
     queryKey: ["brand-products", slug],
-    queryFn: async () => {
-      const { data } = await apiClient.get(`/brand-products/${slug}`);
-      return data?.data ?? data ?? [];
+    queryFn: async ({ pageParam = 1 }) => {
+      const { data } = await apiClient.get(`/brand-products/${slug}`, {
+        params: { page: pageParam, limit: PAGE_LIMIT },
+      });
+      const paginated = data?.data;
+
+      if (paginated && Array.isArray(paginated?.data)) {
+        return {
+          products: paginated.data,
+          currentPage: paginated.current_page ?? pageParam,
+          lastPage: paginated.last_page ?? 1,
+          total: paginated.total ?? 0,
+        };
+      }
+
+      const items = Array.isArray(paginated) ? paginated : [];
+      return {
+        products: items,
+        currentPage: 1,
+        lastPage: 1,
+        total: items.length,
+      };
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.currentPage < lastPage.lastPage ? lastPage.currentPage + 1 : undefined,
     enabled: !!slug,
   });
 
-  const products: any[] = Array.isArray(productsQuery.data) ? productsQuery.data : [];
+  const products: any[] = productsQuery.data?.pages.flatMap((page) => page.products) ?? [];
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["brand-products", slug] });
   }, [queryClient, slug]);
+
+  const handleEndReached = useCallback(() => {
+    if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
+      productsQuery.fetchNextPage();
+    }
+  }, [productsQuery]);
+
+  const renderFooter = () => {
+    if (productsQuery.isFetchingNextPage) {
+      return (
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color={ACCENT} />
+          <Text style={styles.loadingFooterText}>Loading more...</Text>
+        </View>
+      );
+    }
+
+    if (!productsQuery.hasNextPage && products.length > 0) {
+      return (
+        <View style={styles.loadingFooter}>
+          <Text style={styles.doneFooterText}>All products loaded</Text>
+        </View>
+      );
+    }
+
+    return null;
+  };
 
   const renderProduct = ({ item }: { item: any }) => (
     <View style={{ width: CARD_WIDTH }}>
@@ -82,6 +132,9 @@ export default function BrandProductsScreen() {
               tintColor={ACCENT}
             />
           }
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.35}
+          ListFooterComponent={renderFooter}
           ListEmptyComponent={
             productsQuery.isLoading ? (
               <ProductGridSkeleton />
@@ -107,6 +160,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F8FA" },
   gridContent: { padding: 16, paddingBottom: 40 },
   gridRow: { justifyContent: "space-between", marginBottom: 12 },
+  loadingFooter: { paddingVertical: 18, alignItems: "center" },
+  loadingFooterText: { marginTop: 6, fontSize: 12, color: "#8E8E93", fontWeight: "600" },
+  doneFooterText: { fontSize: 12, color: "#9CA3AF", fontWeight: "600" },
   emptyState: {
     flex: 1,
     justifyContent: "center",

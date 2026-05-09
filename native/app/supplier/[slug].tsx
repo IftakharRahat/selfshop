@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
 
@@ -23,6 +23,7 @@ import { SupplierDetailSkeleton } from "@/components/skeleton";
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
 const CARD_WIDTH = (width - 48) / 2;
+const PAGE_LIMIT = 12;
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -43,30 +44,47 @@ export default function SupplierDetailScreen() {
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<number | undefined>(undefined);
 
-  const supplierQuery = useQuery({
+  const supplierQuery = useInfiniteQuery({
     queryKey: ["supplier-detail", slug, selectedCategory],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const params: any = {};
       if (selectedCategory) params.category = selectedCategory;
+      params.page = pageParam;
+      params.limit = PAGE_LIMIT;
       const { data } = await apiClient.get(`/supplier/${slug}`, { params });
-      return data?.data ?? data;
+      const payload = data?.data ?? data;
+      const products = payload?.products;
+
+      return {
+        vendor: payload?.vendor,
+        categories: payload?.categories ?? [],
+        products: products?.data ?? [],
+        currentPage: products?.current_page ?? pageParam,
+        lastPage: products?.last_page ?? 1,
+        total: products?.total ?? 0,
+      };
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.currentPage < lastPage.lastPage ? lastPage.currentPage + 1 : undefined,
     enabled: !!slug,
     placeholderData: (prev: any) => prev,
   });
 
+  const firstPage = supplierQuery.data?.pages?.[0];
+
   const followStatusQuery = useQuery({
-    queryKey: ["vendor-follow-status", supplierQuery.data?.vendor?.id],
+    queryKey: ["vendor-follow-status", firstPage?.vendor?.id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/vendor-follow/${supplierQuery.data.vendor.id}/status`);
+      const { data } = await apiClient.get(`/vendor-follow/${firstPage?.vendor?.id}/status`);
       return data?.data ?? data;
     },
-    enabled: !!supplierQuery.data?.vendor?.id,
+    enabled: !!firstPage?.vendor?.id,
   });
 
   const followMut = useMutation({
     mutationFn: async () => {
-      const vendorId = supplierQuery.data?.vendor?.id;
+      const vendorId = firstPage?.vendor?.id;
       const isFollowed = followStatusQuery.data?.is_following;
       const url = `/vendor-follow/${vendorId}/${isFollowed ? "unfollow" : "follow"}`;
       const { data } = await apiClient.post(url);
@@ -79,10 +97,10 @@ export default function SupplierDetailScreen() {
     onError: () => toast.error("Could not update follow status"),
   });
 
-  const vendor = supplierQuery.data?.vendor;
-  const categories: any[] = supplierQuery.data?.categories ?? [];
-  const products: any[] = supplierQuery.data?.products?.data ?? [];
-  const totalProducts = supplierQuery.data?.products?.total ?? 0;
+  const vendor = firstPage?.vendor;
+  const categories: any[] = firstPage?.categories ?? [];
+  const products: any[] = supplierQuery.data?.pages.flatMap((page) => page.products) ?? [];
+  const totalProducts = firstPage?.total ?? 0;
 
   const isFollowed = followStatusQuery.data?.is_following ?? false;
   const followersCount = followStatusQuery.data?.followers_count ?? vendor?.followers_count ?? 0;
@@ -93,8 +111,35 @@ export default function SupplierDetailScreen() {
   const initials = companyName.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
 
   const onRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["supplier-detail", slug] });
-  }, [queryClient, slug]);
+    queryClient.invalidateQueries({ queryKey: ["supplier-detail", slug, selectedCategory] });
+  }, [queryClient, selectedCategory, slug]);
+
+  const handleEndReached = useCallback(() => {
+    if (supplierQuery.hasNextPage && !supplierQuery.isFetchingNextPage) {
+      supplierQuery.fetchNextPage();
+    }
+  }, [supplierQuery]);
+
+  const renderFooter = () => {
+    if (supplierQuery.isFetchingNextPage) {
+      return (
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color={ACCENT} />
+          <Text style={styles.loadingFooterText}>Loading more...</Text>
+        </View>
+      );
+    }
+
+    if (!supplierQuery.hasNextPage && products.length > 0) {
+      return (
+        <View style={styles.loadingFooter}>
+          <Text style={styles.doneFooterText}>All products loaded</Text>
+        </View>
+      );
+    }
+
+    return null;
+  };
 
   const renderProduct = ({ item }: { item: any }) => (
     <View style={{ width: CARD_WIDTH }}>
@@ -146,6 +191,8 @@ export default function SupplierDetailScreen() {
           refreshControl={
             <RefreshControl refreshing={supplierQuery.isRefetching} onRefresh={onRefresh} tintColor={ACCENT} />
           }
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.35}
           ListHeaderComponent={
             <>
               {/* Banner */}
@@ -261,6 +308,7 @@ export default function SupplierDetailScreen() {
               <Text fontSize="$3" color="#9CA3AF" mt="$2">No products available</Text>
             </View>
           }
+          ListFooterComponent={renderFooter}
         />
       </View>
     </>
@@ -298,5 +346,8 @@ const styles = StyleSheet.create({
 
   gridContent: { paddingBottom: 40 },
   gridRow: { paddingHorizontal: 16, justifyContent: "space-between", marginBottom: 12 },
+  loadingFooter: { paddingVertical: 18, alignItems: "center" },
+  loadingFooterText: { marginTop: 6, fontSize: 12, color: "#8E8E93", fontWeight: "600" },
+  doneFooterText: { fontSize: 12, color: "#9CA3AF", fontWeight: "600" },
   emptyProducts: { alignItems: "center", paddingVertical: 40 },
 });

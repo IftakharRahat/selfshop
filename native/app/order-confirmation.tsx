@@ -18,6 +18,7 @@ const ACCENT = "#E5005F";
 const DARK = "#1A1A2E";
 const GREY = "#8E8E93";
 const BG = "#F5F5FA";
+const ORDER_CREATION_TIMEOUT_MS = 60000;
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -94,7 +95,7 @@ function PulseLoader({
       </Animated.View>
 
       <Text fontSize="$4" fontWeight="700" color={DARK} mt="$4">{title}</Text>
-      {subtitle ? <Text fontSize="$2" color={GREY} mt="$1.5" textAlign="center" px="$4">{subtitle}</Text> : null}
+      {subtitle ? <Text fontSize="$2" color={GREY} mt="$1.5" px="$4" style={{ textAlign: "center" }}>{subtitle}</Text> : null}
 
       {showShimmer && (
         <View style={loaderSt.shimmerTrack}>
@@ -345,11 +346,16 @@ export default function OrderConfirmationScreen() {
     mutationFn: async (formData: FormData) => {
       const { data } = await apiClient.post("/order-now", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: ORDER_CREATION_TIMEOUT_MS,
       });
       return data;
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["cart-items"] });
+      queryClient.invalidateQueries({ queryKey: ["order-count"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
 
       // Handle SSLCommerz redirect
       if (result?.ssl_redirect && result?.gateway_url) {
@@ -363,14 +369,24 @@ export default function OrderConfirmationScreen() {
         return;
       }
 
-      if (result?.status) {
+      if (result?.status === true || result?.status === "success") {
         Alert.alert("Order Confirmed", "Your order has been placed successfully!", [
           { text: "OK", onPress: () => router.replace("/(tabs)") },
         ]);
+        return;
       }
+
+      toast.error(result?.message || "Failed to place order. Please try again.");
     },
-    onError: () => {
-      toast.error("Failed to place order. Please try again.");
+    onError: (error: any) => {
+      const message = error?.response?.data?.message;
+      const isTimeout = error?.code === "ECONNABORTED";
+      toast.error(
+        message ||
+          (isTimeout
+            ? "Order is taking longer than expected. Please check My Orders shortly."
+            : "Failed to place order. Please try again.")
+      );
     },
   });
 

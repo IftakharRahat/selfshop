@@ -962,10 +962,21 @@ class FrontendApiController extends Controller
         }
     }
 
-    public function productbybrand($slug)
+    public function productbybrand(Request $request, $slug)
     {
         $brand = Brand::where('slug', $slug)->first();
-        $brandproducts = Product::visibleOnStorefront()->where('brand_id', $brand->id)->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'selling_type', 'vendor_id')->get();
+        if (!$brand) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Brand not found',
+            ], 404);
+        }
+
+        $brandproducts = Product::visibleOnStorefront()
+            ->where('brand_id', $brand->id)
+            ->select('id', 'category_id', 'subcategory_id', 'brand_id', 'ProductName', 'ProductSlug', 'ProductRegularPrice', 'ProductSalePrice', 'ProductResellerPrice', 'Discount', 'ViewProductImage', 'selling_type', 'vendor_id')
+            ->latest('id')
+            ->paginate($request->input('limit', 20));
 
         if ($brandproducts->count() == 0) {
             return response()->json([
@@ -3775,6 +3786,9 @@ class FrontendApiController extends Controller
             if ($request->balance_from == 'from_account') {
                 $order->paymentAmount = $perVendorDelivery;
                 $order->payment_type_id = 5;
+                if (Schema::hasColumn('orders', 'payment_status')) {
+                    $order->payment_status = 'Paid';
+                }
             }
 
             $order->orderDate = Carbon::today()->format('Y-m-d');
@@ -3898,7 +3912,7 @@ class FrontendApiController extends Controller
         $clearCartQuery->delete();
 
         return response()->json([
-            'status' => 'success',
+            'status' => true,
             'message' => 'Order placed successfully',
             'orders' => $ordersCreated
         ], 200);
@@ -4256,7 +4270,7 @@ public function popularVendors(Request $request)
             $productsQuery->where('category_id', $request->input('category'));
         }
 
-        $products = $productsQuery->latest()->paginate(12);
+        $products = $productsQuery->latest()->paginate($request->input('limit', 12));
 
         // Compute vendor average product rating
         $allProductIds = Product::where('vendor_id', $vendor->id)->pluck('id');

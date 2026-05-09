@@ -67,10 +67,10 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
-  if (num >= 1000) {
-    return `৳${num.toLocaleString("en-BD")}`;
-  }
-  return `৳${num}`;
+  const safeNum = Number.isFinite(num) ? num : 0;
+  return `৳${safeNum.toLocaleString("en-BD", {
+    maximumFractionDigits: 0,
+  })}`;
 }
 
 function formatDate(value?: string | null): string {
@@ -907,10 +907,9 @@ const styles = StyleSheet.create({
   /* ── Event Challenge ── */
   challengeSlider: {
     gap: 12,
-    paddingRight: 20,
   },
   challengeCard: {
-    width: width - 76,
+    width: width - 40,
     borderRadius: 18,
     overflow: "hidden",
     borderWidth: 1,

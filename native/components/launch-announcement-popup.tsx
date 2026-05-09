@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Image,
   Modal,
@@ -16,7 +16,6 @@ import { Text } from "tamagui";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
-const AUTO_CLOSE_MS = 5000;
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -73,12 +72,6 @@ export function LaunchAnnouncementPopup() {
   const publishedDate = formatDate(
     latestAnnouncement?.published_at ?? latestAnnouncement?.created_at,
   );
-
-  useEffect(() => {
-    if (!visible) return;
-    const timer = setTimeout(() => setDismissed(true), AUTO_CLOSE_MS);
-    return () => clearTimeout(timer);
-  }, [visible, latestAnnouncement?.id]);
 
   if (!latestAnnouncement) return null;
 
