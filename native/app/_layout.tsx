@@ -15,6 +15,7 @@ import { tamaguiConfig } from "../tamagui.config";
 import { useForceUpdate } from "@/hooks/useForceUpdate";
 import { ForceUpdateModal } from "@/components/force-update-modal";
 import NotificationProvider from "@/components/NotificationProvider";
+import { LaunchAnnouncementPopup } from "@/components/launch-announcement-popup";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -129,6 +130,7 @@ export default function RootLayout() {
               richColors
               closeButton
             />
+            <LaunchAnnouncementPopup />
             <ForceUpdateGate />
           </NotificationProvider>
         </GestureHandlerRootView>

@@ -77,7 +77,7 @@ export default function Register() {
         <View style={styles.logoContainer}>
           <View style={styles.logoBg}>
             <Image
-              source={require("@/assets/images/reseller_app_logo.jpeg")}
+              source={require("@/assets/images/selfshop_png.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     width: width * 0.35,
     height: width * 0.35,
     borderRadius: width * 0.175,
-    backgroundColor: "#FDF2F8",
+    backgroundColor: "#E5005F",
     justifyContent: "center",
     alignItems: "center",
   },
