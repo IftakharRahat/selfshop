@@ -151,6 +151,12 @@ export default function AccountScreen() {
             onPress={() => router.push("/account/live-chat")}
           />
           <MenuItem
+            icon="notifications-outline"
+            label="Push Notification Test"
+            subtitle="Send local test and copy FCM token"
+            onPress={() => router.push("/account/push-test" as any)}
+          />
+          <MenuItem
             icon="settings-outline"
             label="Settings"
             subtitle="Password, legal, and more"
