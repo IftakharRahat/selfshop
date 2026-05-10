@@ -22,12 +22,6 @@ export default function TabLayout() {
       />
       <Tabs.Screen name="orders" options={{ title: "Orders" }} />
       <Tabs.Screen name="dashboard" options={{ title: "Dashboard" }} />
-      <Tabs.Screen
-        name="account"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
