@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Image,
   Modal,
@@ -12,10 +12,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "tamagui";
+import * as SecureStore from "expo-secure-store";
 
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
+const DISMISSED_ANNOUNCEMENTS_KEY = "dismissed_launch_announcements_v1";
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -42,9 +44,39 @@ function formatDate(value?: string | null): string {
   });
 }
 
+function getAnnouncementKey(announcement: any): string {
+  const rawKey =
+    announcement?.id ??
+    announcement?.uuid ??
+    announcement?.slug ??
+    `${announcement?.title ?? "announcement"}-${announcement?.published_at ?? announcement?.created_at ?? ""}`;
+  return String(rawKey);
+}
+
+async function readDismissedAnnouncementKeys(): Promise<string[]> {
+  try {
+    const stored = await SecureStore.getItemAsync(DISMISSED_ANNOUNCEMENTS_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeDismissedAnnouncementKeys(keys: string[]) {
+  try {
+    await SecureStore.setItemAsync(
+      DISMISSED_ANNOUNCEMENTS_KEY,
+      JSON.stringify(Array.from(new Set(keys)).slice(-100)),
+    );
+  } catch {}
+}
+
 export function LaunchAnnouncementPopup() {
   const insets = useSafeAreaInsets();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
+  const [dismissalsLoaded, setDismissalsLoaded] = useState(false);
 
   const announcementsQuery = useQuery({
     queryKey: ["announcements"],
@@ -59,21 +91,56 @@ export function LaunchAnnouncementPopup() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const latestAnnouncement = useMemo(() => {
+  useEffect(() => {
+    let isMounted = true;
+
+    readDismissedAnnouncementKeys().then((keys) => {
+      if (!isMounted) return;
+      setDismissedKeys(keys);
+      setDismissalsLoaded(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activeAnnouncements = useMemo(() => {
     const announcements = announcementsQuery.data?.announcements;
     if (!Array.isArray(announcements) || announcements.length === 0) {
-      return null;
+      return [];
     }
-    return announcements[0];
+    return announcements;
   }, [announcementsQuery.data]);
 
-  const visible = Boolean(latestAnnouncement) && !dismissed;
-  const imageUrl = resolveImageUrl(latestAnnouncement?.image ?? latestAnnouncement?.banner);
-  const publishedDate = formatDate(
-    latestAnnouncement?.published_at ?? latestAnnouncement?.created_at,
+  const pendingAnnouncements = useMemo(
+    () =>
+      activeAnnouncements.filter(
+        (announcement: any) => !dismissedKeys.includes(getAnnouncementKey(announcement)),
+      ),
+    [activeAnnouncements, dismissedKeys],
   );
 
-  if (!latestAnnouncement) return null;
+  const currentAnnouncement = pendingAnnouncements[0] ?? null;
+  const currentAnnouncementKey = currentAnnouncement ? getAnnouncementKey(currentAnnouncement) : "";
+  const remainingCount = pendingAnnouncements.length;
+  const visible = dismissalsLoaded && Boolean(currentAnnouncement);
+  const imageUrl = resolveImageUrl(currentAnnouncement?.image ?? currentAnnouncement?.banner);
+  const publishedDate = formatDate(
+    currentAnnouncement?.published_at ?? currentAnnouncement?.created_at,
+  );
+
+  const dismissCurrentAnnouncement = useCallback(() => {
+    if (!currentAnnouncementKey) return;
+    setDismissedKeys((prev) => {
+      if (prev.includes(currentAnnouncementKey)) return prev;
+      const next = [...prev, currentAnnouncementKey];
+      writeDismissedAnnouncementKeys(next);
+      return next;
+    });
+  }, [currentAnnouncementKey]);
+
+  if (!currentAnnouncement) return null;
 
   return (
     <Modal
@@ -81,14 +148,14 @@ export function LaunchAnnouncementPopup() {
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={() => setDismissed(true)}
+      onRequestClose={dismissCurrentAnnouncement}
     >
       <View style={[styles.overlay, { paddingTop: insets.top + 24 }]}>
-        <Pressable style={styles.backdrop} onPress={() => setDismissed(true)} />
+        <Pressable style={styles.backdrop} onPress={dismissCurrentAnnouncement} />
         <View style={styles.card}>
           <Pressable
             style={styles.closeButton}
-            onPress={() => setDismissed(true)}
+            onPress={dismissCurrentAnnouncement}
             hitSlop={10}
           >
             <Ionicons name="close" size={22} color="#1A1A2E" />
@@ -114,24 +181,30 @@ export function LaunchAnnouncementPopup() {
             </View>
 
             <Text style={styles.title} numberOfLines={2}>
-              {latestAnnouncement.title || "New announcement"}
+              {currentAnnouncement.title || "New announcement"}
             </Text>
 
             <Text style={styles.dateText}>{publishedDate}</Text>
 
-            {(latestAnnouncement.description ||
-              latestAnnouncement.message ||
-              latestAnnouncement.content) ? (
+            {(currentAnnouncement.description ||
+              currentAnnouncement.message ||
+              currentAnnouncement.content) ? (
               <ScrollView
                 style={styles.descriptionScroll}
                 showsVerticalScrollIndicator={false}
               >
                 <Text style={styles.description}>
-                  {latestAnnouncement.description ||
-                    latestAnnouncement.message ||
-                    latestAnnouncement.content}
+                  {currentAnnouncement.description ||
+                    currentAnnouncement.message ||
+                    currentAnnouncement.content}
                 </Text>
               </ScrollView>
+            ) : null}
+
+            {remainingCount > 1 ? (
+              <Text style={styles.stackText}>
+                {remainingCount - 1} more announcement{remainingCount - 1 !== 1 ? "s" : ""}
+              </Text>
             ) : null}
 
             <Pressable
@@ -139,9 +212,11 @@ export function LaunchAnnouncementPopup() {
                 styles.doneButton,
                 pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
               ]}
-              onPress={() => setDismissed(true)}
+              onPress={dismissCurrentAnnouncement}
             >
-              <Text style={styles.doneButtonText}>Got it</Text>
+              <Text style={styles.doneButtonText}>
+                {remainingCount > 1 ? "Next" : "Got it"}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -242,6 +317,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: "#4B5563",
+  },
+  stackText: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "700",
+    textAlign: "center",
+    marginTop: 14,
   },
   doneButton: {
     alignItems: "center",
