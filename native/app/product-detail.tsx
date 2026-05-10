@@ -20,7 +20,7 @@ import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
-const { width: SW } = Dimensions.get("window");
+const { width: SW, height: SH } = Dimensions.get("window");
 const ACCENT = "#E5005F";
 const DARK = "#1A1A2E";
 const GREY = "#8E8E93";
@@ -55,7 +55,10 @@ export default function ProductDetailScreen() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
+  const variantSheetScrollRef = useRef<ScrollView>(null);
+  const variantSheetRowOffsets = useRef<Record<string, number>>({});
   const defaultQtySet = useRef(false);
+  const [variantSheetFooterHeight, setVariantSheetFooterHeight] = useState(112);
 
   // ── Variant / Size ordering state ──
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
@@ -79,6 +82,34 @@ export default function ProductDetailScreen() {
     const hideSub = Keyboard.addListener(hideEvent, () => setKbHeight(0));
     return () => { showSub.remove(); hideSub.remove(); };
   }, []);
+  const variantKeyboardOffset = selectedVariantId !== null ? Math.max(kbHeight - insets.bottom, 0) : 0;
+  const isVariantKeyboardOpen = variantKeyboardOffset > 0;
+  const variantSheetMaxHeight = isVariantKeyboardOpen
+    ? Math.max(360, SH - variantKeyboardOffset - insets.top - 12)
+    : undefined;
+  const variantSheetScrollBottomPadding = isVariantKeyboardOpen
+    ? variantSheetFooterHeight + 24
+    : 14;
+  const focusVariantPriceRow = (rowKey: string) => {
+    setTimeout(() => {
+      const rowY = variantSheetRowOffsets.current[rowKey] ?? 0;
+      variantSheetScrollRef.current?.scrollTo({
+        y: Math.max(rowY - 8, 0),
+        animated: true,
+      });
+    }, 120);
+  };
+
+  useEffect(() => {
+    if (selectedVariantId === null) {
+      variantSheetRowOffsets.current = {};
+      return;
+    }
+
+    setTimeout(() => {
+      variantSheetScrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, 0);
+  }, [selectedVariantId]);
 
   // Bottom sheet spring animation
   const sheetAnim = useRef(new Animated.Value(400)).current;
@@ -126,7 +157,8 @@ export default function ProductDetailScreen() {
   });
 
   // ── Shop hooks ──
-  const productId = (data?.product_details ?? data?.product ?? data)?.id;
+  const rawProductId = (data?.product_details ?? data?.product ?? data)?.id;
+  const productId = rawProductId ? Number(rawProductId) : null;
 
   const shopCheckQuery = useQuery({
     queryKey: ["check-in-shop", productId],
@@ -140,20 +172,42 @@ export default function ProductDetailScreen() {
   const isInShop = shopCheckQuery.data?.in_shop ?? false;
 
   const shopToggleMutation = useMutation({
-    mutationFn: async () => {
-      const endpoint = isInShop ? `/remove-from-shop/${productId}` : `/add-to-shop/${productId}`;
+    mutationFn: async (currentlyInShop: boolean) => {
+      if (!productId) throw new Error("Product is still loading.");
+      const endpoint = currentlyInShop ? `/remove-from-shop/${productId}` : `/add-to-shop/${productId}`;
       const { data: d } = await apiClient.get(endpoint);
       return d;
     },
-    onSuccess: () => {
+    onSuccess: (_data, currentlyInShop) => {
       queryClient.invalidateQueries({ queryKey: ["check-in-shop", productId] });
       queryClient.invalidateQueries({ queryKey: ["shop-products"] });
-      toast.success(isInShop ? "Removed from your shop" : "Added to your shop!");
+      toast.success(currentlyInShop ? "Removed from your shop" : "Added to your shop!");
     },
-    onError: () => {
-      toast.error("Something went wrong. Please try again.");
+    onError: (err: any) => {
+      const message = String(err?.response?.data?.message ?? err?.message ?? "");
+      if (message.toLowerCase().includes("already exist")) {
+        queryClient.invalidateQueries({ queryKey: ["check-in-shop", productId] });
+        queryClient.invalidateQueries({ queryKey: ["shop-products"] });
+        toast.success("Already in your shop");
+        return;
+      }
+      toast.error(message || "Something went wrong. Please try again.");
     },
   });
+  const isShopActionBusy = shopCheckQuery.isLoading || shopCheckQuery.isFetching || shopToggleMutation.isPending;
+
+  const handleToggleShop = () => {
+    if (!isLoggedIn) {
+      router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
+      return;
+    }
+    if (!productId) {
+      toast.error("Product is still loading. Please try again.");
+      return;
+    }
+    if (isShopActionBusy) return;
+    shopToggleMutation.mutate(isInShop);
+  };
 
   // ── Add to Cart mutation ──
   const addToCartMutation = useMutation({
@@ -760,16 +814,18 @@ export default function ProductDetailScreen() {
               <Ionicons name="arrow-back" size={22} color={DARK} />
             </Pressable>
           </Animated.View>
-          {isLoggedIn && (
-            <Animated.View
-              style={[s.overlayBtn, { top: insets.top + 8, right: 60, backgroundColor: isInShop ? "#D1FAE5" : "rgba(255,255,255,0.95)", opacity: heroOverlayBtnOpacity }]}
-              pointerEvents="auto"
-            >
-              <Pressable onPress={() => shopToggleMutation.mutate()} disabled={shopToggleMutation.isPending} hitSlop={8}>
+          <Animated.View
+            style={[s.overlayBtn, { top: insets.top + 8, right: 60, backgroundColor: isInShop ? "#D1FAE5" : "rgba(255,255,255,0.95)", opacity: heroOverlayBtnOpacity }]}
+            pointerEvents="auto"
+          >
+            <Pressable style={s.iconOnlyBtn} onPress={handleToggleShop} disabled={isShopActionBusy} hitSlop={8}>
+              {isShopActionBusy ? (
+                <ActivityIndicator size="small" color={isInShop ? "#059669" : DARK} />
+              ) : (
                 <Ionicons name={isInShop ? "storefront" : "storefront-outline"} size={18} color={isInShop ? "#059669" : DARK} />
-              </Pressable>
-            </Animated.View>
-          )}
+              )}
+            </Pressable>
+          </Animated.View>
           <Animated.View style={[s.overlayBtn, { top: insets.top + 8, right: 16, opacity: heroOverlayBtnOpacity }]} pointerEvents="auto">
             <Pressable
               hitSlop={8}
@@ -1382,6 +1438,18 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Pressable
+              style={[s.fixedHeaderBtn, isInShop && s.shopActiveBtn]}
+              onPress={handleToggleShop}
+              disabled={isShopActionBusy}
+              hitSlop={8}
+            >
+              {isShopActionBusy ? (
+                <ActivityIndicator size="small" color={isInShop ? "#059669" : DARK} />
+              ) : (
+                <Ionicons name={isInShop ? "storefront" : "storefront-outline"} size={20} color={isInShop ? "#059669" : DARK} />
+              )}
+            </Pressable>
             <Pressable style={s.fixedHeaderBtn} onPress={handleShareProduct} hitSlop={8}>
               <Ionicons name="share-social-outline" size={20} color={DARK} />
             </Pressable>
@@ -1494,9 +1562,17 @@ export default function ProductDetailScreen() {
         animationType="slide"
         onRequestClose={closeVariantSheet}
       >
-        <View style={s.variantSheetOverlay}>
+        <View style={[s.variantSheetOverlay, { paddingBottom: variantKeyboardOffset }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeVariantSheet} />
-          <View style={[s.variantSheetContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View
+            style={[
+              s.variantSheetContainer,
+              {
+                paddingBottom: Math.max(insets.bottom, 16),
+                ...(variantSheetMaxHeight ? { maxHeight: variantSheetMaxHeight } : {}),
+              },
+            ]}
+          >
             <View style={s.variantSheetHandleWrap}>
               <View style={s.variantSheetHandle} />
             </View>
@@ -1624,8 +1700,9 @@ export default function ProductDetailScreen() {
             </View>
 
             <ScrollView
+              ref={variantSheetScrollRef}
               style={{ flexGrow: 1, flexShrink: 1, minHeight: 120 }}
-              contentContainerStyle={{ paddingBottom: 14 }}
+              contentContainerStyle={{ paddingBottom: variantSheetScrollBottomPadding }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               nestedScrollEnabled
@@ -1646,9 +1723,16 @@ export default function ProductDetailScreen() {
                 const rowEarnings = qty > 0 && rowSP >= unitPrice ? (rowSP - unitPrice) * qty : 0;
                 const rowPriceInvalid = rowSPStr !== "" && rowSP < unitPrice;
                 const rowBulkTier = findApplicableTier(sizeItem.bulkPrices, qty);
+                const rowKey = String(selectedVariant.variantId) + "-" + size;
 
                 return (
-                  <View key={String(selectedVariant.variantId) + "-" + size} style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}>
+                  <View
+                    key={rowKey}
+                    onLayout={(event) => {
+                      variantSheetRowOffsets.current[rowKey] = event.nativeEvent.layout.y;
+                    }}
+                    style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}
+                  >
                     <View style={s.sheetSizeRow}>
                       <View style={{ flex: 1.2 }}>
                         <Text fontSize={14} fontWeight="700" color={DARK} numberOfLines={2}>
@@ -1704,6 +1788,7 @@ export default function ProductDetailScreen() {
                             keyboardType="numeric"
                             value={rowSPStr}
                             onChangeText={(value) => handleSellingPriceChange(selectedVariant.variantId, size, value)}
+                            onFocus={() => focusVariantPriceRow(rowKey)}
                             placeholder={"Min " + Math.ceil(unitPrice)}
                             placeholderTextColor="#bbb"
                           />
@@ -1728,7 +1813,10 @@ export default function ProductDetailScreen() {
               })}
             </ScrollView>
 
-            <View style={s.variantSheetFooter}>
+            <View
+              style={s.variantSheetFooter}
+              onLayout={(event) => setVariantSheetFooterHeight(event.nativeEvent.layout.height)}
+            >
               <View style={s.sheetTotalRows}>
                 <View style={s.sheetTotalRow}>
                   <Text fontSize={12} color={GREY}>Total items: {totalQuantity} Pieces</Text>
@@ -2049,6 +2137,10 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.95)", justifyContent: "center", alignItems: "center",
     elevation: 4, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
   },
+  iconOnlyBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    justifyContent: "center", alignItems: "center",
+  },
   imgCounter: {
     position: "absolute", bottom: 12, right: 16,
     backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4,
@@ -2064,6 +2156,9 @@ const s = StyleSheet.create({
   fixedHeaderBtn: {
     width: 38, height: 38, borderRadius: 19,
     justifyContent: "center", alignItems: "center",
+  },
+  shopActiveBtn: {
+    backgroundColor: "#D1FAE5",
   },
 
   // Thumbnails
