@@ -218,7 +218,8 @@ export function FloatingTabBar({
   navigation,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, 4);
+  const bottomInset = Math.max(insets.bottom, 0);
+  const barHeight = BAR_HEIGHT + bottomInset;
 
   const visibleRoutes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
@@ -254,8 +255,8 @@ export function FloatingTabBar({
   };
 
   return (
-    <View style={[styles.outerWrapper, { paddingBottom: bottomPadding }]}>
-      <View style={styles.bar}>
+    <View style={[styles.outerWrapper, { height: barHeight }]}>
+      <View style={[styles.bar, { height: barHeight, paddingBottom: bottomInset }]}>
         {/* Left tabs */}
         <View style={styles.sideGroup}>
           {leftTabs.map((route) => {
