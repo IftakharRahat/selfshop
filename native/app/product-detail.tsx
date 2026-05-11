@@ -26,6 +26,11 @@ const DARK = "#1A1A2E";
 const GREY = "#8E8E93";
 const BG = "#F5F5FA";
 const THUMB_SIZE = 52;
+const DESC_PREVIEW_BLOCKS = 4;
+const DESC_PREVIEW_CHARS = 360;
+const IMAGE_BASE =
+  (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
+  "https://api.selfshop.com.bd";
 
 type NormalizedVariantSize = {
   sizeName: string;
@@ -43,6 +48,221 @@ type NormalizedVariant = {
   sizes: NormalizedVariantSize[];
 };
 
+type DescriptionBlock =
+  | { type: "text"; text: string; variant: "body" | "heading"; level?: number }
+  | { type: "listItem"; text: string; ordered: boolean; index?: number }
+  | { type: "image"; uri: string; alt?: string };
+
+function resolveDescriptionUrl(path: string): string {
+  const raw = path.trim();
+  if (!raw) return "";
+  if (/^(?:https?:)?\/\//i.test(raw)) return raw.startsWith("//") ? `https:${raw}` : raw;
+  if (/^(?:data:|mailto:|tel:|#)/i.test(raw)) return raw;
+
+  const clean = raw.replace(/^\//, "");
+  if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
+  if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
+  return `${IMAGE_BASE}/storage/${clean}`;
+}
+
+function decodeHtmlEntities(input: string): string {
+  return input
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;/gi, "'")
+    .replace(/&quot;/gi, "\"")
+    .replace(/&#(\d+);/g, (_match, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_match, code) => String.fromCharCode(Number.parseInt(code, 16)));
+}
+
+function stripHtmlToText(input: string): string {
+  return input
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h1|h2|h3|h4|h5|h6|tr)>/gi, "\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+$/gm, "")
+    .split("\n")
+    .map((line) => decodeHtmlEntities(line))
+    .join("\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function getHtmlAttr(tag: string, attr: string): string {
+  const match = tag.match(new RegExp(`${attr}\\s*=\\s*["']([^"']+)["']`, "i"));
+  return match ? decodeHtmlEntities(match[1]) : "";
+}
+
+function htmlToReadableText(input: string): string {
+  return stripHtmlToText(input).replace(/\n+/g, "\n").trim();
+}
+
+function pushTextBlock(blocks: DescriptionBlock[], input: string, variant: "body" | "heading" = "body", level?: number) {
+  const text = htmlToReadableText(input);
+  if (!text) return;
+
+  if (variant === "heading") {
+    blocks.push({ type: "text", text, variant, level });
+    return;
+  }
+
+  text
+    .split(/\n+/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .forEach((paragraph) => blocks.push({ type: "text", text: paragraph, variant: "body" }));
+}
+
+function parseDescriptionBlocks(input: string): DescriptionBlock[] {
+  const trimmed = input.trim();
+  if (!trimmed) return [];
+
+  if (!/<\/?[a-z][\s\S]*>/i.test(trimmed)) {
+    return trimmed
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean)
+      .map((paragraph) => ({ type: "text", text: paragraph, variant: "body" }) as DescriptionBlock);
+  }
+
+  const sanitized = trimmed
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi, "")
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi, "")
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, "");
+
+  const blocks: DescriptionBlock[] = [];
+  const tokens = sanitized
+    .replace(/<\/(p|div|h[1-6]|li)>/gi, (tag) => `${tag}\n`)
+    .split(/(<img\b[^>]*>|<h[1-6]\b[\s\S]*?<\/h[1-6]>|<li\b[\s\S]*?<\/li>)/gi)
+    .filter((token) => token.trim().length > 0);
+
+  let listIndex = 0;
+  tokens.forEach((token) => {
+    if (/^<img\b/i.test(token)) {
+      const src = getHtmlAttr(token, "src") || getHtmlAttr(token, "data-src");
+      if (src) blocks.push({ type: "image", uri: resolveDescriptionUrl(src), alt: getHtmlAttr(token, "alt") });
+      return;
+    }
+
+    const headingMatch = token.match(/^<h([1-6])\b/i);
+    if (headingMatch) {
+      pushTextBlock(blocks, token, "heading", Number(headingMatch[1]));
+      return;
+    }
+
+    if (/^<li\b/i.test(token)) {
+      const text = htmlToReadableText(token);
+      if (text) {
+        listIndex += 1;
+        blocks.push({ type: "listItem", text, ordered: false, index: listIndex });
+      }
+      return;
+    }
+
+    pushTextBlock(blocks, token);
+  });
+
+  return blocks;
+}
+
+function getDescriptionPreview(blocks: DescriptionBlock[], expanded: boolean) {
+  if (expanded) return { blocks, canExpand: blocks.length > 0 };
+
+  const visibleBlocks: DescriptionBlock[] = [];
+  let usedChars = 0;
+
+  for (const block of blocks) {
+    if (visibleBlocks.length >= DESC_PREVIEW_BLOCKS) break;
+
+    if (block.type === "image") {
+      visibleBlocks.push(block);
+      usedChars += 120;
+      continue;
+    }
+
+    const remaining = DESC_PREVIEW_CHARS - usedChars;
+    const text = block.text.trim();
+    if (remaining <= 0) break;
+
+    if (text.length > remaining) {
+      visibleBlocks.push({ ...block, text: `${text.slice(0, remaining).trim()}...` });
+      usedChars = DESC_PREVIEW_CHARS;
+      break;
+    }
+
+    visibleBlocks.push(block);
+    usedChars += text.length;
+  }
+
+  return {
+    blocks: visibleBlocks.length > 0 ? visibleBlocks : blocks.slice(0, DESC_PREVIEW_BLOCKS),
+    canExpand: visibleBlocks.length < blocks.length || usedChars >= DESC_PREVIEW_CHARS,
+  };
+}
+
+function DescriptionImage({ uri }: { uri: string }) {
+  const [aspectRatio, setAspectRatio] = useState(16 / 9);
+
+  return (
+    <Image
+      source={{ uri }}
+      style={[s.descImage, { aspectRatio }]}
+      resizeMode="contain"
+      onLoad={(event) => {
+        const source = event.nativeEvent.source;
+        if (!source?.width || !source?.height) return;
+        const nextRatio = Math.min(Math.max(source.width / source.height, 0.55), 2.4);
+        setAspectRatio(nextRatio);
+      }}
+    />
+  );
+}
+
+function ProductDescriptionBlocks({ blocks }: { blocks: DescriptionBlock[] }) {
+  return (
+    <View style={s.descNativeWrap}>
+      {blocks.map((block, index) => {
+        if (block.type === "image") {
+          return <DescriptionImage key={`${block.uri}-${index}`} uri={block.uri} />;
+        }
+
+        if (block.type === "listItem") {
+          return (
+            <View key={`${block.text}-${index}`} style={s.descListRow}>
+              <Text style={s.descBullet}>{"\u2022"}</Text>
+              <Text style={s.descListText}>{block.text}</Text>
+            </View>
+          );
+        }
+
+        if (block.variant === "heading") {
+          const isLargeHeading = Number(block.level ?? 3) <= 2;
+          return (
+            <Text key={`${block.text}-${index}`} style={[s.descHeading, isLargeHeading && s.descHeadingLarge]}>
+              {block.text}
+            </Text>
+          );
+        }
+
+        return (
+          <Text key={`${block.text}-${index}`} style={s.descParagraph}>
+            {block.text}
+          </Text>
+        );
+      })}
+    </View>
+  );
+}
+
 export default function ProductDetailScreen() {
   const params = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
@@ -59,6 +279,10 @@ export default function ProductDetailScreen() {
   const variantSheetRowOffsets = useRef<Record<string, number>>({});
   const defaultQtySet = useRef(false);
   const [variantSheetFooterHeight, setVariantSheetFooterHeight] = useState(112);
+
+  useEffect(() => {
+    setDescExpanded(false);
+  }, [slug]);
 
   // ── Variant / Size ordering state ──
   const [activeVariantIdx, setActiveVariantIdx] = useState(0);
@@ -358,8 +582,14 @@ export default function ProductDetailScreen() {
   const youtubeLink = product.youtube_link ?? "";
 
   // Description
-  const rawDesc = product.ProductDetails ?? product.ProductBreaf ?? "";
-  const cleanDesc = rawDesc.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+  const rawDesc = String(product.ProductDetails ?? product.ProductBreaf ?? "");
+  const descriptionBlocks = parseDescriptionBlocks(rawDesc);
+  const descriptionPreview = getDescriptionPreview(descriptionBlocks, descExpanded);
+  const cleanDesc = stripHtmlToText(rawDesc);
+  const hasDescription = descriptionBlocks.length > 0;
+  const showReadMore = descriptionPreview.canExpand;
+  const showCopyDescription = cleanDesc.length > 0;
+  const showDescActions = showReadMore || showCopyDescription;
 
   // ── Copy description handler ──
   const handleCopyDescription = async () => {
@@ -367,7 +597,6 @@ export default function ProductDetailScreen() {
     await Clipboard.setStringAsync(cleanDesc);
     toast.success("Description copied!");
   };
-
   // ── Computed sizes for current variant ──
   const currentVariant = variants[activeVariantIdx];
   const currentVarId = currentVariant?.id ?? 0;
@@ -1326,28 +1555,30 @@ export default function ProductDetailScreen() {
             </Pressable>
           </View>
 
-          {activeTab === "desc" && cleanDesc ? (
+          {activeTab === "desc" && hasDescription ? (
             <View style={{ marginTop: 12 }}>
-              <Text fontSize="$3" color="#444" lineHeight={22} numberOfLines={descExpanded ? undefined : 5}>
-                {cleanDesc}
-              </Text>
-              <View style={s.descActions}>
-                {cleanDesc.length > 200 && (
-                  <Pressable onPress={() => setDescExpanded(p => !p)} style={s.readMoreBtn}>
-                    <Text fontSize="$2" fontWeight="600" color={ACCENT}>
-                      {descExpanded ? "Show less" : "Read more"}
-                    </Text>
-                    <Ionicons name={descExpanded ? "chevron-up" : "chevron-down"} size={14} color={ACCENT} />
-                  </Pressable>
-                )}
-                <Pressable
-                  onPress={handleCopyDescription}
-                  style={({ pressed }) => [s.copyDescBtn, pressed && { opacity: 0.7 }]}
-                >
-                  <Ionicons name="copy-outline" size={14} color={ACCENT} />
-                  <Text fontSize="$2" fontWeight="600" color={ACCENT}>Copy Description</Text>
-                </Pressable>
-              </View>
+              <ProductDescriptionBlocks blocks={descriptionPreview.blocks} />
+              {showDescActions ? (
+                <View style={s.descActions}>
+                  {showReadMore ? (
+                    <Pressable onPress={() => setDescExpanded(p => !p)} style={s.readMoreBtn}>
+                      <Text fontSize="$2" fontWeight="600" color={ACCENT}>
+                        {descExpanded ? "Show less" : "Read more"}
+                      </Text>
+                      <Ionicons name={descExpanded ? "chevron-up" : "chevron-down"} size={14} color={ACCENT} />
+                    </Pressable>
+                  ) : null}
+                  {showCopyDescription ? (
+                    <Pressable
+                      onPress={handleCopyDescription}
+                      style={({ pressed }) => [s.copyDescBtn, pressed && { opacity: 0.7 }]}
+                    >
+                      <Ionicons name="copy-outline" size={14} color={ACCENT} />
+                      <Text fontSize="$2" fontWeight="600" color={ACCENT}>Copy Description</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -2463,6 +2694,52 @@ const s = StyleSheet.create({
   readMoreBtn: {
     flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8, alignSelf: "flex-start",
   },
+  descNativeWrap: {
+    width: "100%",
+  },
+  descParagraph: {
+    fontSize: 14,
+    lineHeight: 23,
+    color: "#444",
+    marginBottom: 10,
+  },
+  descHeading: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: DARK,
+    fontWeight: "700" as any,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  descHeadingLarge: {
+    fontSize: 18,
+    lineHeight: 25,
+  },
+  descListRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginBottom: 8,
+  },
+  descBullet: {
+    width: 10,
+    fontSize: 16,
+    lineHeight: 22,
+    color: ACCENT,
+    fontWeight: "700" as any,
+  },
+  descListText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 22,
+    color: "#444",
+  },
+  descImage: {
+    width: "100%",
+    borderRadius: 12,
+    backgroundColor: BG,
+    marginVertical: 10,
+  },
 
   // Delivery
   deliveryRow: {
@@ -2752,6 +3029,7 @@ const s = StyleSheet.create({
   copyDescBtn: {
     flexDirection: "row",
     alignItems: "center",
+    marginLeft: "auto",
     gap: 5,
     backgroundColor: "#FFF0F5",
     paddingHorizontal: 12,

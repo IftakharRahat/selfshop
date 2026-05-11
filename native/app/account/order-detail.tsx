@@ -4,13 +4,12 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
   Linking,
   Image,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, useLocalSearchParams, router } from "expo-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
@@ -88,7 +87,6 @@ export default function OrderDetailScreen() {
   const params = useLocalSearchParams<{ invoiceID?: string; id?: string }>();
   const invoiceID = (params.invoiceID ?? "").trim().replace(/^[^A-Za-z0-9]+/, "");
   const orderId = params.id ?? "";
-  const queryClient = useQueryClient();
 
   /* ── Fetch order using track-order (same as web) ── */
   const orderQuery = useQuery({
@@ -102,18 +100,6 @@ export default function OrderDetailScreen() {
       return apiResponse?.data ?? apiResponse;
     },
     enabled: !!invoiceID || !!orderId,
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: (id: number) => apiClient.post(`/orders/${id}/cancel`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["order-detail"] });
-      Alert.alert("Success", "Order cancelled successfully");
-    },
-    onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to cancel order");
-    },
   });
 
   const order = orderQuery.data;
@@ -154,14 +140,6 @@ export default function OrderDetailScreen() {
   const deliveryCharge = parseMoney(order.deliveryCharge ?? order.delivery_charge);
   const discountCharge = parseMoney(order.discountCharge ?? order.discount_charge);
   const total = getOrderTotal(order);
-  const canCancel = displayStatus.toLowerCase() === "pending";
-
-  function handleCancel() {
-    Alert.alert("Cancel Order", "Are you sure you want to cancel this order?", [
-      { text: "No", style: "cancel" },
-      { text: "Yes, Cancel", style: "destructive", onPress: () => cancelMutation.mutate(order.id) },
-    ]);
-  }
 
   return (
     <>
@@ -338,26 +316,6 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
-        {/* Cancel Button */}
-        {canCancel && (
-          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-            <Pressable
-              style={({ pressed }) => [styles.cancelButton, pressed && { opacity: 0.8 }]}
-              onPress={handleCancel}
-              disabled={cancelMutation.isPending}
-            >
-              {cancelMutation.isPending ? (
-                <ActivityIndicator color="#DC2626" />
-              ) : (
-                <>
-                  <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#DC2626" }}>Cancel Order</Text>
-                </>
-              )}
-            </Pressable>
-          </View>
-        )}
-
         <View style={{ height: 30 }} />
       </ScrollView>
     </>
@@ -434,8 +392,4 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 15, fontWeight: "800", color: "#1A1A2E" },
   totalValue: { fontSize: 15, fontWeight: "800", color: ACCENT },
 
-  cancelButton: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
-    paddingVertical: 14, borderRadius: 14, borderWidth: 1, borderColor: "#FECACA", backgroundColor: "#FEF2F2",
-  },
 });

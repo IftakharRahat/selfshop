@@ -137,14 +137,16 @@ class PushNotificationService
     public function onNewOrder(Order $order): void
     {
         $invoiceID = $order->invoiceID;
+        $supplierTitle = 'New Order Received!';
+        $supplierMessage = "Order #{$invoiceID}. Please check and confirm for processing. Thanks, SelfShop Limited.";
 
         // Notify supplier(s)
         $this->notifyOrderVendors(
             $order->id,
-            '🛒 New Order Received',
-            "New order #{$invoiceID} has been placed.",
+            $supplierTitle,
+            $supplierMessage,
             'success',
-            ['event' => 'new_order']
+            ['event' => 'new_order', 'skip_fcm' => true]
         );
 
         // Notify admins

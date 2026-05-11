@@ -215,15 +215,8 @@ class SupplierOrderNotificationService
             return 'skipped_missing_contact_phone';
         }
 
-        $productSummary = $orderProducts->map(function ($item) {
-            return $item->productName . ' x' . $item->quantity;
-        })->implode(', ');
-
-        $message = "SelfShop: New order {$order->invoiceID}! Products: {$productSummary}. Please check your supplier dashboard.";
-
-        if (strlen($message) > 320) {
-            $message = "SelfShop: New order {$order->invoiceID} with {$orderProducts->count()} product(s). Please check your supplier dashboard.";
-        }
+        $orderReference = $order->invoiceID ?: $order->id;
+        $message = "New Order Received! Order #{$orderReference}.\nSelfShop Limited";
 
         $attemptContext = [
             'reason' => 'sms_attempt_started',

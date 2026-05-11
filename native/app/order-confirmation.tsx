@@ -44,7 +44,18 @@ type OnlinePaymentReference = {
   transactionId?: string;
 };
 
+type OrderSuccessState = {
+  visible: boolean;
+  method: "account" | "ssl";
+  orderId?: string;
+  amount: number;
+};
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function createCheckoutRequestId() {
+  return `checkout_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /* ─── Reusable animated loaders ─── */
 
@@ -168,6 +179,10 @@ export default function OrderConfirmationScreen() {
   const webViewRef = useRef<WebView>(null);
   const onlinePaymentRef = useRef<OnlinePaymentReference>({});
   const paymentHandledRef = useRef(false);
+  const checkoutTimingRef = useRef<{ tapAt?: number; apiStartAt?: number }>({});
+  const checkoutInFlightRef = useRef(false);
+  const orderCompletedRef = useRef(false);
+  const checkoutRequestIdRef = useRef(createCheckoutRequestId());
   const params = useLocalSearchParams<{ cartIds?: string | string[] }>();
   const cartIdsParam = Array.isArray(params.cartIds) ? params.cartIds[0] : params.cartIds;
   const checkoutCartIds = (cartIdsParam ?? "")
@@ -272,6 +287,7 @@ export default function OrderConfirmationScreen() {
 
   // Redirect if cart empty
   useEffect(() => {
+    if (orderCompletedRef.current || checkoutInFlightRef.current) return;
     if (!cartLoading && !cartFetching && !hasPendingDelete && cartItems.length === 0) {
       router.replace("/(tabs)");
     }
@@ -317,6 +333,11 @@ export default function OrderConfirmationScreen() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showCbZonePicker, setShowCbZonePicker] = useState(false);
   const [showAreaPicker, setShowAreaPicker] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<OrderSuccessState>({
+    visible: false,
+    method: "account",
+    amount: 0,
+  });
 
   const { data: citiesData } = useQuery({
     queryKey: ["carrybee-cities"],
@@ -371,6 +392,30 @@ export default function OrderConfirmationScreen() {
     ? subtotal + totalProfit
     : subtotal + totalProfit + deliveryCharge;
 
+  const showOrderSuccess = (method: "account" | "ssl", orderId?: string) => {
+    orderCompletedRef.current = true;
+    setOrderSuccess({
+      visible: true,
+      method,
+      orderId,
+      amount: grandTotal,
+    });
+  };
+
+  const closeSuccessModal = () => {
+    setOrderSuccess((prev) => ({ ...prev, visible: false }));
+  };
+
+  const goToOrdersAfterSuccess = () => {
+    closeSuccessModal();
+    router.replace("/account/orders" as any);
+  };
+
+  const continueShoppingAfterSuccess = () => {
+    closeSuccessModal();
+    router.replace("/(tabs)" as any);
+  };
+
   // ── Handlers ──
   const handleInputChange = (field: string, value: string) => {
     setCustomerData(prev => ({ ...prev, [field]: value }));
@@ -406,13 +451,43 @@ export default function OrderConfirmationScreen() {
   // ── Create order mutation ──
   const createOrderMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      const apiStartAt = Date.now();
+      checkoutTimingRef.current.apiStartAt = apiStartAt;
+      console.log("[CheckoutTiming] /order-now request started", {
+        checkoutRequestId: checkoutRequestIdRef.current,
+        paymentMethod,
+        deliveryCharge,
+        itemCount: cartItems.length,
+        checkoutCartIds: checkoutCartIds.length,
+        timeoutMs: ORDER_CREATION_TIMEOUT_MS,
+        msAfterTap: checkoutTimingRef.current.tapAt ? apiStartAt - checkoutTimingRef.current.tapAt : null,
+      });
+
       const { data } = await apiClient.post("/order-now", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: ORDER_CREATION_TIMEOUT_MS,
       });
+
+      console.log("[CheckoutTiming] /order-now response received", {
+        checkoutRequestId: checkoutRequestIdRef.current,
+        durationMs: Date.now() - apiStartAt,
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
+        status: data?.status,
+        sslRedirect: Boolean(data?.ssl_redirect),
+        orderCount: Array.isArray(data?.orders) ? data.orders.length : data?.order_id ? 1 : 0,
+      });
+
       return data;
     },
     onSuccess: (result) => {
+      console.log("[CheckoutTiming] mutation onSuccess", {
+        checkoutRequestId: checkoutRequestIdRef.current,
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
+        msAfterApiStart: checkoutTimingRef.current.apiStartAt ? Date.now() - checkoutTimingRef.current.apiStartAt : null,
+        status: result?.status,
+        sslRedirect: Boolean(result?.ssl_redirect),
+      });
+
       queryClient.invalidateQueries({ queryKey: ["cart-items"] });
       queryClient.invalidateQueries({ queryKey: ["order-count"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -432,15 +507,23 @@ export default function OrderConfirmationScreen() {
       }
 
       if (result?.status === true || result?.status === "success") {
-        Alert.alert("Order Confirmed", "Your order has been placed successfully!", [
-          { text: "OK", onPress: () => router.replace("/(tabs)") },
-        ]);
+        const createdOrderId = result?.order_id ?? result?.orders?.[0]?.order_id;
+        showOrderSuccess("account", createdOrderId ? String(createdOrderId) : undefined);
         return;
       }
 
       toast.error(result?.message || "Failed to place order. Please try again.");
     },
     onError: (error: any) => {
+      console.warn("[CheckoutTiming] mutation onError", {
+        checkoutRequestId: checkoutRequestIdRef.current,
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
+        msAfterApiStart: checkoutTimingRef.current.apiStartAt ? Date.now() - checkoutTimingRef.current.apiStartAt : null,
+        code: error?.code,
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+
       const message = error?.response?.data?.message;
       const isTimeout = error?.code === "ECONNABORTED";
       toast.error(
@@ -449,6 +532,10 @@ export default function OrderConfirmationScreen() {
             ? "Order is taking longer than expected. Please check My Orders shortly."
             : "Failed to place order. Please try again.")
       );
+    },
+    onSettled: () => {
+      checkoutInFlightRef.current = false;
+      checkoutRequestIdRef.current = createCheckoutRequestId();
     },
   });
 
@@ -466,6 +553,26 @@ export default function OrderConfirmationScreen() {
   });
 
   const handleConfirmOrder = () => {
+    const tapAt = Date.now();
+    if (checkoutInFlightRef.current || createOrderMutation.isPending) {
+      console.log("[CheckoutTiming] duplicate confirm ignored", {
+        checkoutRequestId: checkoutRequestIdRef.current,
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? tapAt - checkoutTimingRef.current.tapAt : null,
+      });
+      return;
+    }
+
+    checkoutTimingRef.current = { tapAt };
+    console.log("[CheckoutTiming] confirm tapped", {
+      checkoutRequestId: checkoutRequestIdRef.current,
+      paymentMethod,
+      deliveryCharge,
+      deliveryZone,
+      advanceDelivery,
+      itemCount: cartItems.length,
+      checkoutCartIds: checkoutCartIds.length,
+    });
+
     if (!validateForm()) return;
     if (!deliveryZone) {
       toast.error("Please select a delivery zone");
@@ -476,6 +583,8 @@ export default function OrderConfirmationScreen() {
       return;
     }
 
+    checkoutInFlightRef.current = true;
+
     const formData = new FormData();
     formData.append("customerName", customerData.name);
     formData.append("customerPhone", customerData.phone);
@@ -485,6 +594,7 @@ export default function OrderConfirmationScreen() {
     formData.append("delivery_zone", deliveryZoneLabel!);
     formData.append("advance_delivery", advanceDelivery);
     formData.append("balance_from", paymentMethod === "account" ? "from_account" : "online_pay");
+    formData.append("checkout_request_id", checkoutRequestIdRef.current);
     if (checkoutCartIds.length > 0) formData.append("cart_ids", checkoutCartIds.join(","));
     if (selectedCityId) formData.append("city_id", selectedCityId.toString());
     if (selectedZoneId) formData.append("zone_id", selectedZoneId.toString());
@@ -535,12 +645,11 @@ export default function OrderConfirmationScreen() {
         });
 
         if (finalizedOrder) {
-          toast.success("Payment successful. Order placed.");
           setGatewayUrl(null);
           queryClient.invalidateQueries({ queryKey: ["cart-items"] });
           queryClient.invalidateQueries({ queryKey: ["order-count"] });
           queryClient.invalidateQueries({ queryKey: ["orders"] });
-          router.replace("/account/orders" as any);
+          showOrderSuccess("ssl", String(finalizedOrder.id ?? orderId ?? ""));
           return;
         }
       }
@@ -1075,6 +1184,84 @@ export default function OrderConfirmationScreen() {
           )}
         </View>
       </Modal>
+
+      <Modal
+        visible={orderSuccess.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={goToOrdersAfterSuccess}
+      >
+        <View style={st.successOverlay}>
+          <View style={[st.successSheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
+            <View style={st.successHandle} />
+            <View style={st.successHero}>
+              <View style={st.successGlow} />
+              <View style={st.successIconWrap}>
+                <Ionicons name="checkmark" size={34} color="#fff" />
+              </View>
+            </View>
+
+            <Text fontSize="$6" fontWeight="800" color={DARK} mt="$3" style={{ textAlign: "center" }}>
+              Order confirmed
+            </Text>
+            <Text fontSize="$3" color={GREY} mt="$1" px="$3" lineHeight={20} style={{ textAlign: "center" }}>
+              Your order has been placed successfully. You can track the latest status from My Orders.
+            </Text>
+
+            <View style={st.successSummaryCard}>
+              <View style={st.successSummaryRow}>
+                <View style={st.successSummaryIcon}>
+                  <Ionicons
+                    name={orderSuccess.method === "account" ? "wallet" : "card"}
+                    size={18}
+                    color={ACCENT}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text fontSize={11} color={GREY} textTransform="uppercase" letterSpacing={0.5}>
+                    Payment method
+                  </Text>
+                  <Text fontSize="$3" fontWeight="700" color={DARK} mt="$0.5">
+                    {orderSuccess.method === "account" ? "Account Wallet" : "SSL Commerz"}
+                  </Text>
+                </View>
+                <View style={st.successPill}>
+                  <Ionicons name="shield-checkmark" size={13} color="#047857" />
+                  <Text fontSize={11} fontWeight="800" color="#047857">Confirmed</Text>
+                </View>
+              </View>
+
+              <View style={st.successDivider} />
+
+              <View style={st.successAmountRow}>
+                <Text fontSize={13} color={GREY}>Order total</Text>
+                <Text fontSize="$6" fontWeight="800" color={ACCENT}>৳{fmt(orderSuccess.amount)}</Text>
+              </View>
+              {orderSuccess.orderId ? (
+                <View style={st.successAmountRow}>
+                  <Text fontSize={13} color={GREY}>Order ID</Text>
+                  <Text fontSize="$3" fontWeight="700" color={DARK}>#{orderSuccess.orderId}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [st.successPrimaryBtn, pressed && { opacity: 0.86 }]}
+              onPress={goToOrdersAfterSuccess}
+            >
+              <Ionicons name="receipt-outline" size={18} color="#fff" />
+              <Text fontSize="$3" fontWeight="800" color="#fff">View My Orders</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [st.successSecondaryBtn, pressed && { opacity: 0.75 }]}
+              onPress={continueShoppingAfterSuccess}
+            >
+              <Ionicons name="storefront-outline" size={17} color={ACCENT} />
+              <Text fontSize="$3" fontWeight="700" color={ACCENT}>Continue Shopping</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1191,6 +1378,123 @@ const st = StyleSheet.create({
     backgroundColor: ACCENT, borderRadius: 14, paddingVertical: 16,
     shadowColor: ACCENT, shadowOpacity: 0.3, shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 }, elevation: 4,
+  },
+
+  // Success confirmation
+  successOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(17,17,24,0.56)",
+  },
+  successSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 16,
+  },
+  successHandle: {
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E5E7EB",
+    alignSelf: "center",
+    marginBottom: 18,
+  },
+  successHero: {
+    height: 96,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successGlow: {
+    position: "absolute",
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#ECFDF5",
+  },
+  successIconWrap: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 6,
+    borderColor: "#D1FAE5",
+  },
+  successSummaryCard: {
+    marginTop: 18,
+    marginBottom: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EEF0F4",
+    backgroundColor: "#FAFAFC",
+    padding: 14,
+  },
+  successSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  successSummaryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#FFF0F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "#D1FAE5",
+  },
+  successDivider: {
+    height: 1,
+    backgroundColor: "#ECEEF3",
+    marginVertical: 12,
+  },
+  successAmountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+  successPrimaryBtn: {
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: ACCENT,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  successSecondaryBtn: {
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#FFF0F5",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#FAD6E6",
   },
 
   // WebView

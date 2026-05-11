@@ -52,6 +52,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -2924,6 +2925,82 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    public function testingWalletTopUp(Request $request)
+    {
+        if (!app()->environment(['local', 'testing']) && !config('app.debug')) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Test wallet top-up is disabled in this environment.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'amount' => ['required', 'numeric', 'min:1', 'max:100000'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $amount = round((float) $validator->validated()['amount'], 2);
+
+        try {
+            $result = DB::transaction(function () use ($amount) {
+                $user = User::where('id', Auth::id())->lockForUpdate()->first();
+
+                if (!$user) {
+                    return null;
+                }
+
+                $previousBalance = (float) $user->account_balance;
+                $user->account_balance = $previousBalance + $amount;
+
+                if (Schema::hasColumn('users', 'total_account_balance')) {
+                    $user->total_account_balance = (float) $user->total_account_balance + $amount;
+                }
+
+                $user->save();
+
+                return [
+                    'user_id' => $user->id,
+                    'added_amount' => $amount,
+                    'previous_balance' => $previousBalance,
+                    'balance' => (float) $user->account_balance,
+                    'blance' => (float) $user->account_balance,
+                    'account_balance' => (float) $user->account_balance,
+                ];
+            });
+
+            if (!$result) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found.',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Test wallet balance added.',
+                'data' => $result,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Test wallet top-up failed', [
+                'user_id' => Auth::id(),
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to add test wallet balance.',
+            ], 500);
+        }
+    }
+
     public function shopproducts()
     {
         $products = Shopproduct::where('user_id', Auth::user()->id)
@@ -3578,6 +3655,31 @@ class FrontendApiController extends Controller
             'advance_delivery' => 'nullable|string|in:yes,no',
         ]);
 
+        $checkoutRequestId = trim((string) $request->input('checkout_request_id', ''));
+        $checkoutLockKey = 'checkout:order-now:user:' . (int) Auth::id();
+
+        if (!Cache::add($checkoutLockKey, [
+            'checkout_request_id' => $checkoutRequestId ?: null,
+            'user_id' => (int) Auth::id(),
+            'requested_cart_ids' => (string) $request->input('cart_ids', ''),
+            'created_at' => now()->toIso8601String(),
+        ], 90)) {
+            Log::info('Duplicate mobile checkout request blocked', [
+                'user_id' => Auth::id(),
+                'checkout_request_id' => $checkoutRequestId ?: null,
+                'requested_cart_ids' => (string) $request->input('cart_ids', ''),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'processing' => true,
+                'checkout_request_id' => $checkoutRequestId ?: null,
+                'message' => 'Checkout is already processing. Please wait.',
+            ], 409);
+        }
+
+        try {
+
         $cartIds = collect(explode(',', (string) $request->input('cart_ids', '')))
             ->map(fn ($id) => (int) trim($id))
             ->filter(fn ($id) => $id > 0)
@@ -3589,7 +3691,8 @@ class FrontendApiController extends Controller
             $cartQuery->whereIn('id', $cartIds->all());
         }
 
-        $shopproducts = $cartQuery->get()->groupBy('shop_id');
+        $cartItems = $cartQuery->get();
+        $shopproducts = $cartItems->groupBy('shop_id');
 
         if ($shopproducts->isEmpty()) {
             return response()->json([
@@ -3709,6 +3812,7 @@ class FrontendApiController extends Controller
                         'gateway_url' => $decoded['data'],
                         'order_id' => $orderId,
                         'transaction_id' => $post_data['tran_id'],
+                        'checkout_request_id' => $checkoutRequestId ?: null,
                         'message' => 'Redirecting to payment gateway...',
                     ]);
                 }
@@ -3889,42 +3993,44 @@ class FrontendApiController extends Controller
             $notification->admin_id = $order->admin_id;
             $notification->save();
 
-            // Notify this vendor
-            if ($vendorId) {
-                try {
-                    $vendorNotification = app(VendorAdminNotificationService::class);
-                    $vendorNotification->notifyVendorById(
-                        (int) $vendorId,
-                        'New order received',
-                        'Order ' . $order->invoiceID . ' is pending your action (accept or reject).',
-                        'info',
-                        [
-                            'event' => 'vendor_order_created',
-                            'order_id' => $order->id,
-                            'invoiceID' => $order->invoiceID,
-                        ],
-                        '/vendor/orders/' . $order->id
-                    );
-                } catch (\Throwable $e) {
-                    \Log::warning('Vendor notification failed', ['error' => $e->getMessage()]);
+            $customerName = $request->customerName;
+            app()->terminating(function () use ($order, $vendorId, $customerName) {
+                // Keep external notification providers out of the checkout response path.
+                if ($vendorId) {
+                    try {
+                        $vendorNotification = app(VendorAdminNotificationService::class);
+                        $vendorNotificationMessage = "Order #{$order->invoiceID}. Please check and confirm for processing. Thanks, SelfShop Limited.";
+                        $vendorNotification->notifyVendorById(
+                            (int) $vendorId,
+                            'New Order Received!',
+                            $vendorNotificationMessage,
+                            'info',
+                            [
+                                'event' => 'vendor_order_created',
+                                'order_id' => $order->id,
+                                'invoiceID' => $order->invoiceID,
+                            ],
+                            '/vendor/orders/' . $order->id
+                        );
+                    } catch (\Throwable $e) {
+                        \Log::warning('Vendor notification failed', ['error' => $e->getMessage()]);
+                    }
+
+                    try {
+                        $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                        $supplierNotification->notify($order, [(int) $vendorId], $customerName);
+                    } catch (\Throwable $e) {
+                        \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
+                    }
                 }
 
-                // Send SMS + Email to this supplier
                 try {
-                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                    $supplierNotification->notify($order, [(int) $vendorId], $request->customerName);
+                    $pushService = app(\App\Services\PushNotificationService::class);
+                    $pushService->onNewOrder($order);
                 } catch (\Throwable $e) {
-                    \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
+                    \Log::warning('Push notification failed for new order', ['error' => $e->getMessage()]);
                 }
-            }
-
-            // Real-time push notification
-            try {
-                $pushService = app(\App\Services\PushNotificationService::class);
-                $pushService->onNewOrder($order);
-            } catch (\Throwable $e) {
-                \Log::warning('Push notification failed for new order', ['error' => $e->getMessage()]);
-            }
+            });
 
             $ordersCreated[] = [
                 'order_id' => $order->id,
@@ -3942,8 +4048,12 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Order placed successfully',
+            'checkout_request_id' => $checkoutRequestId ?: null,
             'orders' => $ordersCreated
         ], 200);
+        } finally {
+            Cache::forget($checkoutLockKey);
+        }
     }
 
     public function orderByinvoice($id)
