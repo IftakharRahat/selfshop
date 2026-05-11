@@ -3895,10 +3895,11 @@ class FrontendApiController extends Controller
                 if ($vendorId) {
                     try {
                         $vendorNotification = app(VendorAdminNotificationService::class);
+                        $vendorNotificationMessage = "Order #{$order->invoiceID}. Please check and confirm for processing. Thanks, SelfShop Limited.";
                         $vendorNotification->notifyVendorById(
                             (int) $vendorId,
-                            'New order received',
-                            'Order ' . $order->invoiceID . ' is pending your action (accept or reject).',
+                            'New Order Received!',
+                            $vendorNotificationMessage,
                             'info',
                             [
                                 'event' => 'vendor_order_created',
