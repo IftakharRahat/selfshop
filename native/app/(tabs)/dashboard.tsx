@@ -888,7 +888,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionItem: {
-    width: (width - 64) / 3,
+    width: Math.floor((width - 64) / 3),
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 16,
