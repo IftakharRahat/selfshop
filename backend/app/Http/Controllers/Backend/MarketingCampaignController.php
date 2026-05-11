@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
 use App\Models\MarketingCampaign;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class MarketingCampaignController extends Controller
 {
@@ -17,6 +19,24 @@ class MarketingCampaignController extends Controller
     {
         $campaigns = MarketingCampaign::orderBy('created_at', 'desc')->get();
 
+        // Build stats in bulk to avoid N+1 queries in blade accessor.
+        $codes = $campaigns->pluck('code')->filter()->values();
+        $statsByCode = collect();
+        if ($codes->isNotEmpty()) {
+            $statsRows = User::query()
+                ->select(
+                    'campaign_code',
+                    DB::raw('COUNT(*) as signups'),
+                    DB::raw("SUM(CASE WHEN membership_status = 'Paid' THEN 1 ELSE 0 END) as subscriptions"),
+                    DB::raw("SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active")
+                )
+                ->whereIn('campaign_code', $codes)
+                ->groupBy('campaign_code')
+                ->get();
+
+            $statsByCode = $statsRows->keyBy('campaign_code');
+        }
+
         // Build frontend base URL for generating links
         $frontendUrl = rtrim(
             env('FRONTEND_URL')
@@ -26,7 +46,7 @@ class MarketingCampaignController extends Controller
             '/'
         );
 
-        return view('backend.content.marketing.campaigns', compact('campaigns', 'frontendUrl'));
+        return view('backend.content.marketing.campaigns', compact('campaigns', 'frontendUrl', 'statsByCode'));
     }
 
     /**

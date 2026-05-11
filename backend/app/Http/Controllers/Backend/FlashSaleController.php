@@ -179,19 +179,31 @@ class FlashSaleController extends Controller
 
     public function searchProducts(Request $request)
     {
-        $query = Product::where('status', 'Active')
-            ->with('subcategories:id,sub_category_name');
+        $term = trim((string) $request->q);
+        $query = Product::query()
+            ->where('products.status', 'Active')
+            ->leftJoin('subcategories', 'subcategories.id', '=', 'products.subcategory_id')
+            ->select(
+                'products.id',
+                'products.ProductName',
+                'products.ViewProductImage',
+                'products.ProductSalePrice',
+                'products.ProductRegularPrice',
+                'subcategories.sub_category_name'
+            );
 
-        if ($request->q) {
-            $query->where('ProductName', 'LIKE', '%' . $request->q . '%');
+        if ($term !== '') {
+            $query->where('products.ProductName', 'LIKE', '%' . $term . '%');
+            // Searching path can return more results, but still bounded.
+            $query->limit(200);
+        } else {
+            // Initial dropdown load should be lightweight.
+            $query->orderByDesc('products.id')->limit(60);
         }
 
-        $products = $query->select('id', 'ProductName', 'ViewProductImage', 'ProductSalePrice', 'ProductRegularPrice', 'subcategory_id')
-            ->orderBy('subcategory_id')
-            ->get()
-            ->groupBy(function ($product) {
-                return $product->subcategories ? $product->subcategories->sub_category_name : 'Uncategorized';
-            });
+        $products = $query->get()->groupBy(function ($product) {
+            return $product->sub_category_name ?: 'Uncategorized';
+        });
 
         return response()->json($products, 200);
     }
