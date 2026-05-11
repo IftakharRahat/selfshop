@@ -9,6 +9,7 @@ import {
   ScrollView,
   Image,
   TextInput,
+  Text as RNText,
 } from "react-native";
 import { Text } from "tamagui";
 import { router } from "expo-router";
@@ -48,7 +49,7 @@ const STATUS_TABS = [
   { key: "Processing", label: "Processing", color: "#3730A3", bg: "#E0E7FF" },
   { key: "Ontheway", label: "On the Way", color: "#155E75", bg: "#CFFAFE" },
   { key: "Delivered", label: "Delivered", color: "#065F46", bg: "#D1FAE5" },
-  { key: "Canceled", label: "Cancelled", color: "#991B1B", bg: "#FEE2E2" },
+  { key: "Rejected", label: "Rejected", color: "#991B1B", bg: "#FEE2E2" },
 ];
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -286,7 +287,7 @@ export default function OrdersTabScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
+        style={styles.tabsScroll}
         contentContainerStyle={styles.tabsContainer}
       >
         {STATUS_TABS.map((tab) => {
@@ -298,14 +299,14 @@ export default function OrdersTabScreen() {
               style={[styles.tab, isActive && styles.tabActive]}
               onPress={() => handleTabChange(tab.key)}
             >
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+              <RNText style={[styles.tabLabel, isActive && styles.tabLabelActive]} numberOfLines={1}>
                 {tab.label}
-              </Text>
+              </RNText>
               {count > 0 && (
                 <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
-                  <Text style={[styles.tabBadgeText, isActive && { color: "#fff" }]}>
+                  <RNText style={[styles.tabBadgeText, isActive && { color: "#fff" }]} numberOfLines={1}>
                     {count > 99 ? "99+" : count}
-                  </Text>
+                  </RNText>
                 </View>
               )}
             </Pressable>
@@ -431,17 +432,26 @@ const styles = StyleSheet.create({
   },
 
   /* ── Tabs ── */
+  tabsScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 58,
+    backgroundColor: "#F8F8FA",
+  },
   tabsContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
+    height: 58,
+    alignItems: "center",
   },
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    flexShrink: 0,
+    minWidth: 106,
+    justifyContent: "center",
     paddingHorizontal: 16,
-    paddingVertical: 9,
+    height: 38,
+    marginRight: 8,
     borderRadius: 24,
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -455,6 +465,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     color: "#374151",
+    flexShrink: 0,
+    lineHeight: 17,
+    textAlignVertical: "center",
   },
   tabLabelActive: {
     color: "#fff",
@@ -467,6 +480,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 5,
+    marginLeft: 6,
   },
   tabBadgeActive: {
     backgroundColor: "rgba(255,255,255,0.25)",
@@ -475,11 +489,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     color: "#374151",
+    lineHeight: 12,
+    textAlignVertical: "center",
   },
 
   /* ── Search ── */
   searchSection: {
     paddingHorizontal: 16,
+    paddingTop: 6,
     paddingBottom: 4,
     backgroundColor: "#F8F8FA",
   },
