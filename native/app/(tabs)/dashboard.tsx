@@ -26,9 +26,6 @@ import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
-const ENABLE_TEST_WALLET_TOP_UP =
-  (typeof __DEV__ !== "undefined" && __DEV__) ||
-  process.env.EXPO_PUBLIC_ENABLE_TEST_WALLET_TOPUP === "true";
 const TEST_WALLET_TOP_UP_AMOUNTS = ["100", "500", "1000"];
 
 const IMAGE_BASE =
@@ -342,20 +339,18 @@ export default function DashboardScreen() {
               <Text fontSize="$1" color="rgba(255,255,255,0.5)" mt="$0.5">
                 ID: #{profile?.id ?? "—"}
               </Text>
-              {ENABLE_TEST_WALLET_TOP_UP ? (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.walletTopUpButton,
-                    pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
-                  ]}
-                  onPress={() => setShowWalletTopUp(true)}
-                >
-                  <Ionicons name="add-circle" size={16} color="#E5005F" />
-                  <Text fontSize="$2" fontWeight="700" color="#E5005F">
-                    Add Test Balance
-                  </Text>
-                </Pressable>
-              ) : null}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.walletTopUpButton,
+                  pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
+                ]}
+                onPress={() => setShowWalletTopUp(true)}
+              >
+                <Ionicons name="add-circle" size={16} color="#E5005F" />
+                <Text fontSize="$2" fontWeight="700" color="#E5005F">
+                  Add Test Balance
+                </Text>
+              </Pressable>
             </View>
             <View style={styles.walletIcon}>
               <Ionicons name="wallet" size={36} color="rgba(255,255,255,0.25)" />

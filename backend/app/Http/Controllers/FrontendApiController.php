@@ -2927,13 +2927,6 @@ class FrontendApiController extends Controller
 
     public function testingWalletTopUp(Request $request)
     {
-        if (!app()->environment(['local', 'testing']) && !config('app.debug')) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Test wallet top-up is disabled in this environment.',
-            ], 403);
-        }
-
         $validator = Validator::make($request->all(), [
             'amount' => ['required', 'numeric', 'min:1', 'max:100000'],
         ]);
