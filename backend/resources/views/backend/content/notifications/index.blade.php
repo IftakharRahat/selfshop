@@ -54,7 +54,7 @@
                     <label class="form-label">Type <span class="text-danger">*</span></label>
                     <select name="target_type" id="target_type" class="form-select @error('target_type') is-invalid @enderror" required>
                         <option value="1" {{ old('target_type', '1') === '1' ? 'selected' : '' }}>1. All User</option>
-                        <option value="2" {{ old('target_type') === '2' ? 'selected' : '' }}>2. User</option>
+                        <option value="2" {{ old('target_type') === '2' ? 'selected' : '' }}>2. User (Selected or All)</option>
                         <option value="3" {{ old('target_type') === '3' ? 'selected' : '' }}>3. Supplier</option>
                     </select>
                     @error('target_type')
@@ -88,6 +88,7 @@
 
                 <div class="col-12" id="user_target_group" style="display: none;">
                     <label class="form-label">Select User(s)</label>
+                    <div class="form-text mb-1">Leave empty to send to all users.</div>
                     <select name="user_ids[]" id="user_ids" class="form-select @error('user_ids') is-invalid @enderror @error('user_ids.*') is-invalid @enderror" multiple></select>
                     @error('user_ids')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
