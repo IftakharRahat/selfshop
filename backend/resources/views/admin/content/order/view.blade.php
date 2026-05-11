@@ -174,11 +174,22 @@
                                         $subTotal = (float) ($orders->subTotal ?? 0);
                                         $deliveryCharge = (float) ($orders->deliveryCharge ?? 0);
                                         $discountCharge = (float) ($orders->discountCharge ?? 0);
-                                        $totalDue = $subTotal + $deliveryCharge - $discountCharge;
+                                        $advanceDelivery = (int) ($orders->advance_delivery ?? 0);
+                                        $totalDue = $subTotal - $discountCharge;
+                                        if ($advanceDelivery === 0) {
+                                            $totalDue += $deliveryCharge;
+                                        }
                                     @endphp
                                     <tr>
                                         <td class="order-detail-label">Total Amount</td>
-                                        <td class="order-detail-value">৳ {{ number_format($totalDue, 2) }} + <span class="text-danger">(Charge: {{ $deliveryCharge }} ৳)</span></td>
+                                        <td class="order-detail-value">
+                                            ৳ {{ number_format($totalDue, 2) }}
+                                            @if ($advanceDelivery === 0)
+                                                + <span class="text-danger">(Charge: {{ $deliveryCharge }} ৳)</span>
+                                            @else
+                                                <span class="text-success">(Delivery paid in advance)</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="order-detail-label">Payment Method</td>
