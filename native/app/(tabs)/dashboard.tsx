@@ -9,24 +9,20 @@ import {
   ActivityIndicator,
   Share,
   Image,
-  Modal,
-  TextInput,
 } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { Text } from "tamagui";
 import { router } from "expo-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { toast } from "sonner-native";
 
 import { useSession, logout } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
-const TEST_WALLET_TOP_UP_AMOUNTS = ["100", "500", "1000"];
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -97,38 +93,6 @@ export default function DashboardScreen() {
   const { data: session, signOut, isLoading: isSessionLoading } = useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
-  const [showWalletTopUp, setShowWalletTopUp] = useState(false);
-  const [walletTopUpAmount, setWalletTopUpAmount] = useState("500");
-
-  const testWalletTopUpMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      const { data } = await apiClient.post("/testing/wallet/top-up", { amount });
-      return data;
-    },
-    onSuccess: (response) => {
-      const nextBalance = Number(
-        response?.data?.balance ?? response?.data?.blance ?? response?.data?.account_balance,
-      );
-
-      if (Number.isFinite(nextBalance)) {
-        queryClient.setQueryData(["dashboard-data"], (oldData: any) => ({
-          ...(oldData && typeof oldData === "object" ? oldData : {}),
-          balance: nextBalance,
-          blance: nextBalance,
-        }));
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
-      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
-      setShowWalletTopUp(false);
-      setWalletTopUpAmount("500");
-      toast.success(response?.message || "Test wallet balance added.");
-    },
-    onError: (error: any) => {
-      toast.error(error?.response?.data?.message || "Could not add test wallet balance.");
-    },
-  });
-
   /* ── Data Queries ── */
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-data"],
@@ -215,16 +179,6 @@ export default function DashboardScreen() {
       });
     } catch {}
   }, [referralLink, referralCode]);
-
-  const addTestWalletBalance = useCallback(() => {
-    const amount = Number(walletTopUpAmount.trim());
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Enter a valid amount.");
-      return;
-    }
-
-    testWalletTopUpMutation.mutate(amount);
-  }, [testWalletTopUpMutation, walletTopUpAmount]);
 
   const kpiCards = useMemo(() => [
     { title: "Total Sale", value: formatCurrency(metrics?.total_sales), icon: "trending-up-outline" as const, color: "#059669", bg: "#ECFDF5" },
@@ -339,18 +293,6 @@ export default function DashboardScreen() {
               <Text fontSize="$1" color="rgba(255,255,255,0.5)" mt="$0.5">
                 ID: #{profile?.id ?? "—"}
               </Text>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.walletTopUpButton,
-                  pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
-                ]}
-                onPress={() => setShowWalletTopUp(true)}
-              >
-                <Ionicons name="add-circle" size={16} color="#E5005F" />
-                <Text fontSize="$2" fontWeight="700" color="#E5005F">
-                  Add Test Balance
-                </Text>
-              </Pressable>
             </View>
             <View style={styles.walletIcon}>
               <Ionicons name="wallet" size={36} color="rgba(255,255,255,0.25)" />
@@ -631,96 +573,6 @@ export default function DashboardScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      <Modal
-        visible={showWalletTopUp}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowWalletTopUp(false)}
-      >
-        <View style={styles.topUpOverlay}>
-          <View style={styles.topUpSheet}>
-            <View style={styles.topUpHeader}>
-              <View>
-                <Text fontSize="$5" fontWeight="800" color="#1A1A2E">
-                  Add Test Balance
-                </Text>
-                <Text fontSize="$2" color="#8E8E93" mt="$0.5">
-                  Available in debug/testing environments.
-                </Text>
-              </View>
-              <Pressable
-                style={styles.topUpCloseButton}
-                onPress={() => setShowWalletTopUp(false)}
-                hitSlop={10}
-              >
-                <Ionicons name="close" size={20} color="#6B7280" />
-              </Pressable>
-            </View>
-
-            <Text style={styles.topUpLabel}>Amount</Text>
-            <View style={styles.topUpInputWrap}>
-              <Text style={styles.topUpCurrency}>৳</Text>
-              <TextInput
-                value={walletTopUpAmount}
-                onChangeText={setWalletTopUpAmount}
-                keyboardType="numeric"
-                placeholder="500"
-                placeholderTextColor="#A3A3AA"
-                style={styles.topUpInput}
-              />
-            </View>
-
-            <View style={styles.topUpChipRow}>
-              {TEST_WALLET_TOP_UP_AMOUNTS.map((amount) => {
-                const selected = walletTopUpAmount === amount;
-                return (
-                  <Pressable
-                    key={amount}
-                    style={[styles.topUpChip, selected && styles.topUpChipSelected]}
-                    onPress={() => setWalletTopUpAmount(amount)}
-                  >
-                    <Text style={[styles.topUpChipText, selected && styles.topUpChipTextSelected]}>
-                      ৳{amount}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.topUpFooter}>
-              <Pressable
-                style={({ pressed }) => [styles.topUpCancelBtn, pressed && { opacity: 0.75 }]}
-                onPress={() => setShowWalletTopUp(false)}
-                disabled={testWalletTopUpMutation.isPending}
-              >
-                <Text fontSize="$3" fontWeight="700" color="#6B7280">
-                  Cancel
-                </Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.topUpSubmitBtn,
-                  pressed && { opacity: 0.86 },
-                  testWalletTopUpMutation.isPending && { opacity: 0.7 },
-                ]}
-                onPress={addTestWalletBalance}
-                disabled={testWalletTopUpMutation.isPending}
-              >
-                {testWalletTopUpMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="wallet" size={18} color="#fff" />
-                    <Text fontSize="$3" fontWeight="800" color="#fff">
-                      Add Balance
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -976,126 +828,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
 
-  /* Test wallet top-up */
-  walletTopUpButton: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 12,
-  },
-  topUpOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(17,17,24,0.56)",
-  },
-  topUpSheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 24,
-  },
-  topUpHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 16,
-    marginBottom: 20,
-  },
-  topUpCloseButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topUpLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#374151",
-    marginBottom: 8,
-  },
-  topUpInputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FAFAFC",
-    paddingHorizontal: 14,
-    height: 56,
-  },
-  topUpCurrency: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#E5005F",
-    marginRight: 8,
-  },
-  topUpInput: {
-    flex: 1,
-    color: "#1A1A2E",
-    fontSize: 22,
-    fontWeight: "800",
-    paddingVertical: 0,
-  },
-  topUpChipRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 12,
-  },
-  topUpChip: {
-    flex: 1,
-    height: 42,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topUpChipSelected: {
-    borderColor: "#F4A9C8",
-    backgroundColor: "#FFF0F5",
-  },
-  topUpChipText: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#6B7280",
-  },
-  topUpChipTextSelected: {
-    color: "#E5005F",
-  },
-  topUpFooter: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-  },
-  topUpCancelBtn: {
-    flex: 1,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topUpSubmitBtn: {
-    flex: 1.35,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: "#E5005F",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-
   /* KPI Cards */
   kpiSection: {
     paddingHorizontal: 20,
@@ -1156,7 +888,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   quickActionItem: {
-    width: (width - 64) / 3,
+    width: Math.floor((width - 64) / 3),
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 16,

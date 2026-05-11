@@ -1,5 +1,4 @@
-import { Pressable, StyleSheet, ScrollView } from "react-native";
-import { Text } from "tamagui";
+import { Pressable, StyleSheet, ScrollView, View, Text as RNText } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 const ACCENT = "#E5005F";
@@ -112,7 +111,7 @@ export default function DateFilter({ value, onChange }: DateFilterProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={{ flexGrow: 0 }}
+      style={styles.scroll}
       contentContainerStyle={styles.container}
     >
       {DATE_OPTIONS.map((opt) => {
@@ -123,14 +122,16 @@ export default function DateFilter({ value, onChange }: DateFilterProps) {
             style={[styles.pill, active && styles.pillActive]}
             onPress={() => onChange(opt.key)}
           >
-            <Ionicons
-              name={opt.icon}
-              size={14}
-              color={active ? "#fff" : "#6B7280"}
-            />
-            <Text style={[styles.pillLabel, active && styles.pillLabelActive]}>
+            <View style={styles.iconBox}>
+              <Ionicons
+                name={opt.icon}
+                size={14}
+                color={active ? "#fff" : "#6B7280"}
+              />
+            </View>
+            <RNText style={[styles.pillLabel, active && styles.pillLabelActive]} numberOfLines={1}>
               {opt.label}
-            </Text>
+            </RNText>
           </Pressable>
         );
       })}
@@ -139,17 +140,27 @@ export default function DateFilter({ value, onChange }: DateFilterProps) {
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    height: 50,
+    backgroundColor: "#F8F8FA",
+  },
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    height: 50,
+    alignItems: "center",
   },
   pill: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
+    flexShrink: 0,
+    minWidth: 110,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    height: 34,
+    marginRight: 8,
     borderRadius: 20,
     backgroundColor: "#fff",
     borderWidth: 1,
@@ -159,10 +170,19 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT,
     borderColor: ACCENT,
   },
+  iconBox: {
+    width: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pillLabel: {
     fontSize: 12,
     fontWeight: "600",
     color: "#374151",
+    flexShrink: 0,
+    lineHeight: 16,
+    textAlignVertical: "center",
   },
   pillLabelActive: {
     color: "#fff",

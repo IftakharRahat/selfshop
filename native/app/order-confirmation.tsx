@@ -173,6 +173,27 @@ function extractOrders(response: any): any[] {
   return Array.isArray(ordersList) ? ordersList : [];
 }
 
+function getOrderReferenceForDisplay(response: any): string | undefined {
+  const orders = Array.isArray(response?.orders) ? response.orders : [];
+  const invoiceIds = orders
+    .map((order: any) => order?.invoiceID ?? order?.invoice_id)
+    .filter((value: any) => value !== undefined && value !== null && String(value).trim() !== "")
+    .map((value: any) => String(value).trim());
+
+  if (invoiceIds.length > 0) return invoiceIds.join(", ");
+
+  const invoiceId =
+    response?.invoiceID ??
+    response?.invoice_id ??
+    response?.order?.invoiceID ??
+    response?.order?.invoice_id;
+
+  if (invoiceId) return String(invoiceId).trim();
+
+  const numericOrderId = response?.order_id ?? orders[0]?.order_id ?? orders[0]?.id;
+  return numericOrderId ? String(numericOrderId) : undefined;
+}
+
 export default function OrderConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -507,8 +528,7 @@ export default function OrderConfirmationScreen() {
       }
 
       if (result?.status === true || result?.status === "success") {
-        const createdOrderId = result?.order_id ?? result?.orders?.[0]?.order_id;
-        showOrderSuccess("account", createdOrderId ? String(createdOrderId) : undefined);
+        showOrderSuccess("account", getOrderReferenceForDisplay(result));
         return;
       }
 
@@ -649,7 +669,7 @@ export default function OrderConfirmationScreen() {
           queryClient.invalidateQueries({ queryKey: ["cart-items"] });
           queryClient.invalidateQueries({ queryKey: ["order-count"] });
           queryClient.invalidateQueries({ queryKey: ["orders"] });
-          showOrderSuccess("ssl", String(finalizedOrder.id ?? orderId ?? ""));
+          showOrderSuccess("ssl", getOrderReferenceForDisplay({ order: finalizedOrder }) ?? String(orderId ?? ""));
           return;
         }
       }
@@ -1240,7 +1260,7 @@ export default function OrderConfirmationScreen() {
               {orderSuccess.orderId ? (
                 <View style={st.successAmountRow}>
                   <Text fontSize={13} color={GREY}>Order ID</Text>
-                  <Text fontSize="$3" fontWeight="700" color={DARK}>#{orderSuccess.orderId}</Text>
+                  <Text fontSize="$3" fontWeight="700" color={DARK}>{orderSuccess.orderId}</Text>
                 </View>
               ) : null}
             </View>
