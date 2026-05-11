@@ -467,7 +467,8 @@ export default function OrderConfirmationScreen() {
       }
 
       if (result?.status === true || result?.status === "success") {
-        showOrderSuccess("account", result?.order_id ? String(result.order_id) : undefined);
+        const createdOrderId = result?.order_id ?? result?.orders?.[0]?.order_id;
+        showOrderSuccess("account", createdOrderId ? String(createdOrderId) : undefined);
         return;
       }
 

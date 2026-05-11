@@ -3889,42 +3889,43 @@ class FrontendApiController extends Controller
             $notification->admin_id = $order->admin_id;
             $notification->save();
 
-            // Notify this vendor
-            if ($vendorId) {
-                try {
-                    $vendorNotification = app(VendorAdminNotificationService::class);
-                    $vendorNotification->notifyVendorById(
-                        (int) $vendorId,
-                        'New order received',
-                        'Order ' . $order->invoiceID . ' is pending your action (accept or reject).',
-                        'info',
-                        [
-                            'event' => 'vendor_order_created',
-                            'order_id' => $order->id,
-                            'invoiceID' => $order->invoiceID,
-                        ],
-                        '/vendor/orders/' . $order->id
-                    );
-                } catch (\Throwable $e) {
-                    \Log::warning('Vendor notification failed', ['error' => $e->getMessage()]);
+            $customerName = $request->customerName;
+            app()->terminating(function () use ($order, $vendorId, $customerName) {
+                // Keep external notification providers out of the checkout response path.
+                if ($vendorId) {
+                    try {
+                        $vendorNotification = app(VendorAdminNotificationService::class);
+                        $vendorNotification->notifyVendorById(
+                            (int) $vendorId,
+                            'New order received',
+                            'Order ' . $order->invoiceID . ' is pending your action (accept or reject).',
+                            'info',
+                            [
+                                'event' => 'vendor_order_created',
+                                'order_id' => $order->id,
+                                'invoiceID' => $order->invoiceID,
+                            ],
+                            '/vendor/orders/' . $order->id
+                        );
+                    } catch (\Throwable $e) {
+                        \Log::warning('Vendor notification failed', ['error' => $e->getMessage()]);
+                    }
+
+                    try {
+                        $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
+                        $supplierNotification->notify($order, [(int) $vendorId], $customerName);
+                    } catch (\Throwable $e) {
+                        \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
+                    }
                 }
 
-                // Send SMS + Email to this supplier
                 try {
-                    $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                    $supplierNotification->notify($order, [(int) $vendorId], $request->customerName);
+                    $pushService = app(\App\Services\PushNotificationService::class);
+                    $pushService->onNewOrder($order);
                 } catch (\Throwable $e) {
-                    \Log::warning('Supplier SMS/Email notification failed', ['error' => $e->getMessage()]);
+                    \Log::warning('Push notification failed for new order', ['error' => $e->getMessage()]);
                 }
-            }
-
-            // Real-time push notification
-            try {
-                $pushService = app(\App\Services\PushNotificationService::class);
-                $pushService->onNewOrder($order);
-            } catch (\Throwable $e) {
-                \Log::warning('Push notification failed for new order', ['error' => $e->getMessage()]);
-            }
+            });
 
             $ordersCreated[] = [
                 'order_id' => $order->id,
