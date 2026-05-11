@@ -175,6 +175,7 @@ export default function OrderConfirmationScreen() {
   const webViewRef = useRef<WebView>(null);
   const onlinePaymentRef = useRef<OnlinePaymentReference>({});
   const paymentHandledRef = useRef(false);
+  const checkoutTimingRef = useRef<{ tapAt?: number; apiStartAt?: number }>({});
   const params = useLocalSearchParams<{ cartIds?: string | string[] }>();
   const cartIdsParam = Array.isArray(params.cartIds) ? params.cartIds[0] : params.cartIds;
   const checkoutCartIds = (cartIdsParam ?? "")
@@ -441,13 +442,40 @@ export default function OrderConfirmationScreen() {
   // ── Create order mutation ──
   const createOrderMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      const apiStartAt = Date.now();
+      checkoutTimingRef.current.apiStartAt = apiStartAt;
+      console.log("[CheckoutTiming] /order-now request started", {
+        paymentMethod,
+        deliveryCharge,
+        itemCount: cartItems.length,
+        checkoutCartIds: checkoutCartIds.length,
+        timeoutMs: ORDER_CREATION_TIMEOUT_MS,
+        msAfterTap: checkoutTimingRef.current.tapAt ? apiStartAt - checkoutTimingRef.current.tapAt : null,
+      });
+
       const { data } = await apiClient.post("/order-now", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: ORDER_CREATION_TIMEOUT_MS,
       });
+
+      console.log("[CheckoutTiming] /order-now response received", {
+        durationMs: Date.now() - apiStartAt,
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
+        status: data?.status,
+        sslRedirect: Boolean(data?.ssl_redirect),
+        orderCount: Array.isArray(data?.orders) ? data.orders.length : data?.order_id ? 1 : 0,
+      });
+
       return data;
     },
     onSuccess: (result) => {
+      console.log("[CheckoutTiming] mutation onSuccess", {
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
+        msAfterApiStart: checkoutTimingRef.current.apiStartAt ? Date.now() - checkoutTimingRef.current.apiStartAt : null,
+        status: result?.status,
+        sslRedirect: Boolean(result?.ssl_redirect),
+      });
+
       queryClient.invalidateQueries({ queryKey: ["cart-items"] });
       queryClient.invalidateQueries({ queryKey: ["order-count"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -475,6 +503,14 @@ export default function OrderConfirmationScreen() {
       toast.error(result?.message || "Failed to place order. Please try again.");
     },
     onError: (error: any) => {
+      console.warn("[CheckoutTiming] mutation onError", {
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
+        msAfterApiStart: checkoutTimingRef.current.apiStartAt ? Date.now() - checkoutTimingRef.current.apiStartAt : null,
+        code: error?.code,
+        status: error?.response?.status,
+        message: error?.response?.data?.message || error?.message,
+      });
+
       const message = error?.response?.data?.message;
       const isTimeout = error?.code === "ECONNABORTED";
       toast.error(
@@ -500,6 +536,16 @@ export default function OrderConfirmationScreen() {
   });
 
   const handleConfirmOrder = () => {
+    checkoutTimingRef.current = { tapAt: Date.now() };
+    console.log("[CheckoutTiming] confirm tapped", {
+      paymentMethod,
+      deliveryCharge,
+      deliveryZone,
+      advanceDelivery,
+      itemCount: cartItems.length,
+      checkoutCartIds: checkoutCartIds.length,
+    });
+
     if (!validateForm()) return;
     if (!deliveryZone) {
       toast.error("Please select a delivery zone");
