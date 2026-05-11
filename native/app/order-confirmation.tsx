@@ -44,6 +44,13 @@ type OnlinePaymentReference = {
   transactionId?: string;
 };
 
+type OrderSuccessState = {
+  visible: boolean;
+  method: "account" | "ssl";
+  orderId?: string;
+  amount: number;
+};
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* ─── Reusable animated loaders ─── */
@@ -317,6 +324,11 @@ export default function OrderConfirmationScreen() {
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [showCbZonePicker, setShowCbZonePicker] = useState(false);
   const [showAreaPicker, setShowAreaPicker] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState<OrderSuccessState>({
+    visible: false,
+    method: "account",
+    amount: 0,
+  });
 
   const { data: citiesData } = useQuery({
     queryKey: ["carrybee-cities"],
@@ -370,6 +382,29 @@ export default function OrderConfirmationScreen() {
   const grandTotal = advanceDelivery === "yes" || !deliveryZone
     ? subtotal + totalProfit
     : subtotal + totalProfit + deliveryCharge;
+
+  const showOrderSuccess = (method: "account" | "ssl", orderId?: string) => {
+    setOrderSuccess({
+      visible: true,
+      method,
+      orderId,
+      amount: grandTotal,
+    });
+  };
+
+  const closeSuccessModal = () => {
+    setOrderSuccess((prev) => ({ ...prev, visible: false }));
+  };
+
+  const goToOrdersAfterSuccess = () => {
+    closeSuccessModal();
+    router.replace("/account/orders" as any);
+  };
+
+  const continueShoppingAfterSuccess = () => {
+    closeSuccessModal();
+    router.replace("/(tabs)" as any);
+  };
 
   // ── Handlers ──
   const handleInputChange = (field: string, value: string) => {
@@ -432,9 +467,7 @@ export default function OrderConfirmationScreen() {
       }
 
       if (result?.status === true || result?.status === "success") {
-        Alert.alert("Order Confirmed", "Your order has been placed successfully!", [
-          { text: "OK", onPress: () => router.replace("/(tabs)") },
-        ]);
+        showOrderSuccess("account", result?.order_id ? String(result.order_id) : undefined);
         return;
       }
 
@@ -535,12 +568,11 @@ export default function OrderConfirmationScreen() {
         });
 
         if (finalizedOrder) {
-          toast.success("Payment successful. Order placed.");
           setGatewayUrl(null);
           queryClient.invalidateQueries({ queryKey: ["cart-items"] });
           queryClient.invalidateQueries({ queryKey: ["order-count"] });
           queryClient.invalidateQueries({ queryKey: ["orders"] });
-          router.replace("/account/orders" as any);
+          showOrderSuccess("ssl", String(finalizedOrder.id ?? orderId ?? ""));
           return;
         }
       }
@@ -1075,6 +1107,84 @@ export default function OrderConfirmationScreen() {
           )}
         </View>
       </Modal>
+
+      <Modal
+        visible={orderSuccess.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={goToOrdersAfterSuccess}
+      >
+        <View style={st.successOverlay}>
+          <View style={[st.successSheet, { paddingBottom: Math.max(insets.bottom, 18) }]}>
+            <View style={st.successHandle} />
+            <View style={st.successHero}>
+              <View style={st.successGlow} />
+              <View style={st.successIconWrap}>
+                <Ionicons name="checkmark" size={34} color="#fff" />
+              </View>
+            </View>
+
+            <Text fontSize="$6" fontWeight="800" color={DARK} mt="$3" style={{ textAlign: "center" }}>
+              Order confirmed
+            </Text>
+            <Text fontSize="$3" color={GREY} mt="$1" px="$3" lineHeight={20} style={{ textAlign: "center" }}>
+              Your order has been placed successfully. You can track the latest status from My Orders.
+            </Text>
+
+            <View style={st.successSummaryCard}>
+              <View style={st.successSummaryRow}>
+                <View style={st.successSummaryIcon}>
+                  <Ionicons
+                    name={orderSuccess.method === "account" ? "wallet" : "card"}
+                    size={18}
+                    color={ACCENT}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text fontSize={11} color={GREY} textTransform="uppercase" letterSpacing={0.5}>
+                    Payment method
+                  </Text>
+                  <Text fontSize="$3" fontWeight="700" color={DARK} mt="$0.5">
+                    {orderSuccess.method === "account" ? "Account Wallet" : "SSL Commerz"}
+                  </Text>
+                </View>
+                <View style={st.successPill}>
+                  <Ionicons name="shield-checkmark" size={13} color="#047857" />
+                  <Text fontSize={11} fontWeight="800" color="#047857">Confirmed</Text>
+                </View>
+              </View>
+
+              <View style={st.successDivider} />
+
+              <View style={st.successAmountRow}>
+                <Text fontSize={13} color={GREY}>Order total</Text>
+                <Text fontSize="$6" fontWeight="800" color={ACCENT}>৳{fmt(orderSuccess.amount)}</Text>
+              </View>
+              {orderSuccess.orderId ? (
+                <View style={st.successAmountRow}>
+                  <Text fontSize={13} color={GREY}>Order ID</Text>
+                  <Text fontSize="$3" fontWeight="700" color={DARK}>#{orderSuccess.orderId}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [st.successPrimaryBtn, pressed && { opacity: 0.86 }]}
+              onPress={goToOrdersAfterSuccess}
+            >
+              <Ionicons name="receipt-outline" size={18} color="#fff" />
+              <Text fontSize="$3" fontWeight="800" color="#fff">View My Orders</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [st.successSecondaryBtn, pressed && { opacity: 0.75 }]}
+              onPress={continueShoppingAfterSuccess}
+            >
+              <Ionicons name="storefront-outline" size={17} color={ACCENT} />
+              <Text fontSize="$3" fontWeight="700" color={ACCENT}>Continue Shopping</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1191,6 +1301,123 @@ const st = StyleSheet.create({
     backgroundColor: ACCENT, borderRadius: 14, paddingVertical: 16,
     shadowColor: ACCENT, shadowOpacity: 0.3, shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 }, elevation: 4,
+  },
+
+  // Success confirmation
+  successOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(17,17,24,0.56)",
+  },
+  successSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 16,
+  },
+  successHandle: {
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E5E7EB",
+    alignSelf: "center",
+    marginBottom: 18,
+  },
+  successHero: {
+    height: 96,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successGlow: {
+    position: "absolute",
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#ECFDF5",
+  },
+  successIconWrap: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 6,
+    borderColor: "#D1FAE5",
+  },
+  successSummaryCard: {
+    marginTop: 18,
+    marginBottom: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EEF0F4",
+    backgroundColor: "#FAFAFC",
+    padding: 14,
+  },
+  successSummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  successSummaryIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#FFF0F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "#D1FAE5",
+  },
+  successDivider: {
+    height: 1,
+    backgroundColor: "#ECEEF3",
+    marginVertical: 12,
+  },
+  successAmountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+  successPrimaryBtn: {
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: ACCENT,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  successSecondaryBtn: {
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#FFF0F5",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#FAD6E6",
   },
 
   // WebView
