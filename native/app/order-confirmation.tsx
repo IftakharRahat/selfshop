@@ -181,6 +181,7 @@ export default function OrderConfirmationScreen() {
   const paymentHandledRef = useRef(false);
   const checkoutTimingRef = useRef<{ tapAt?: number; apiStartAt?: number }>({});
   const checkoutInFlightRef = useRef(false);
+  const orderCompletedRef = useRef(false);
   const checkoutRequestIdRef = useRef(createCheckoutRequestId());
   const params = useLocalSearchParams<{ cartIds?: string | string[] }>();
   const cartIdsParam = Array.isArray(params.cartIds) ? params.cartIds[0] : params.cartIds;
@@ -286,6 +287,7 @@ export default function OrderConfirmationScreen() {
 
   // Redirect if cart empty
   useEffect(() => {
+    if (orderCompletedRef.current || checkoutInFlightRef.current) return;
     if (!cartLoading && !cartFetching && !hasPendingDelete && cartItems.length === 0) {
       router.replace("/(tabs)");
     }
@@ -391,6 +393,7 @@ export default function OrderConfirmationScreen() {
     : subtotal + totalProfit + deliveryCharge;
 
   const showOrderSuccess = (method: "account" | "ssl", orderId?: string) => {
+    orderCompletedRef.current = true;
     setOrderSuccess({
       visible: true,
       method,

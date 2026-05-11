@@ -2925,6 +2925,82 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    public function testingWalletTopUp(Request $request)
+    {
+        if (!app()->environment(['local', 'testing']) && !config('app.debug')) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Test wallet top-up is disabled in this environment.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'amount' => ['required', 'numeric', 'min:1', 'max:100000'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $amount = round((float) $validator->validated()['amount'], 2);
+
+        try {
+            $result = DB::transaction(function () use ($amount) {
+                $user = User::where('id', Auth::id())->lockForUpdate()->first();
+
+                if (!$user) {
+                    return null;
+                }
+
+                $previousBalance = (float) $user->account_balance;
+                $user->account_balance = $previousBalance + $amount;
+
+                if (Schema::hasColumn('users', 'total_account_balance')) {
+                    $user->total_account_balance = (float) $user->total_account_balance + $amount;
+                }
+
+                $user->save();
+
+                return [
+                    'user_id' => $user->id,
+                    'added_amount' => $amount,
+                    'previous_balance' => $previousBalance,
+                    'balance' => (float) $user->account_balance,
+                    'blance' => (float) $user->account_balance,
+                    'account_balance' => (float) $user->account_balance,
+                ];
+            });
+
+            if (!$result) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found.',
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Test wallet balance added.',
+                'data' => $result,
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Test wallet top-up failed', [
+                'user_id' => Auth::id(),
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to add test wallet balance.',
+            ], 500);
+        }
+    }
+
     public function shopproducts()
     {
         $products = Shopproduct::where('user_id', Auth::user()->id)
