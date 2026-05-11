@@ -52,6 +52,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -3578,6 +3579,31 @@ class FrontendApiController extends Controller
             'advance_delivery' => 'nullable|string|in:yes,no',
         ]);
 
+        $checkoutRequestId = trim((string) $request->input('checkout_request_id', ''));
+        $checkoutLockKey = 'checkout:order-now:user:' . (int) Auth::id();
+
+        if (!Cache::add($checkoutLockKey, [
+            'checkout_request_id' => $checkoutRequestId ?: null,
+            'user_id' => (int) Auth::id(),
+            'requested_cart_ids' => (string) $request->input('cart_ids', ''),
+            'created_at' => now()->toIso8601String(),
+        ], 90)) {
+            Log::info('Duplicate mobile checkout request blocked', [
+                'user_id' => Auth::id(),
+                'checkout_request_id' => $checkoutRequestId ?: null,
+                'requested_cart_ids' => (string) $request->input('cart_ids', ''),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'processing' => true,
+                'checkout_request_id' => $checkoutRequestId ?: null,
+                'message' => 'Checkout is already processing. Please wait.',
+            ], 409);
+        }
+
+        try {
+
         $cartIds = collect(explode(',', (string) $request->input('cart_ids', '')))
             ->map(fn ($id) => (int) trim($id))
             ->filter(fn ($id) => $id > 0)
@@ -3589,7 +3615,8 @@ class FrontendApiController extends Controller
             $cartQuery->whereIn('id', $cartIds->all());
         }
 
-        $shopproducts = $cartQuery->get()->groupBy('shop_id');
+        $cartItems = $cartQuery->get();
+        $shopproducts = $cartItems->groupBy('shop_id');
 
         if ($shopproducts->isEmpty()) {
             return response()->json([
@@ -3709,6 +3736,7 @@ class FrontendApiController extends Controller
                         'gateway_url' => $decoded['data'],
                         'order_id' => $orderId,
                         'transaction_id' => $post_data['tran_id'],
+                        'checkout_request_id' => $checkoutRequestId ?: null,
                         'message' => 'Redirecting to payment gateway...',
                     ]);
                 }
@@ -3944,8 +3972,12 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Order placed successfully',
+            'checkout_request_id' => $checkoutRequestId ?: null,
             'orders' => $ordersCreated
         ], 200);
+        } finally {
+            Cache::forget($checkoutLockKey);
+        }
     }
 
     public function orderByinvoice($id)

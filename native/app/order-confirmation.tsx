@@ -53,6 +53,10 @@ type OrderSuccessState = {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function createCheckoutRequestId() {
+  return `checkout_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /* ─── Reusable animated loaders ─── */
 
 function PulseLoader({
@@ -176,6 +180,8 @@ export default function OrderConfirmationScreen() {
   const onlinePaymentRef = useRef<OnlinePaymentReference>({});
   const paymentHandledRef = useRef(false);
   const checkoutTimingRef = useRef<{ tapAt?: number; apiStartAt?: number }>({});
+  const checkoutInFlightRef = useRef(false);
+  const checkoutRequestIdRef = useRef(createCheckoutRequestId());
   const params = useLocalSearchParams<{ cartIds?: string | string[] }>();
   const cartIdsParam = Array.isArray(params.cartIds) ? params.cartIds[0] : params.cartIds;
   const checkoutCartIds = (cartIdsParam ?? "")
@@ -445,6 +451,7 @@ export default function OrderConfirmationScreen() {
       const apiStartAt = Date.now();
       checkoutTimingRef.current.apiStartAt = apiStartAt;
       console.log("[CheckoutTiming] /order-now request started", {
+        checkoutRequestId: checkoutRequestIdRef.current,
         paymentMethod,
         deliveryCharge,
         itemCount: cartItems.length,
@@ -459,6 +466,7 @@ export default function OrderConfirmationScreen() {
       });
 
       console.log("[CheckoutTiming] /order-now response received", {
+        checkoutRequestId: checkoutRequestIdRef.current,
         durationMs: Date.now() - apiStartAt,
         totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
         status: data?.status,
@@ -470,6 +478,7 @@ export default function OrderConfirmationScreen() {
     },
     onSuccess: (result) => {
       console.log("[CheckoutTiming] mutation onSuccess", {
+        checkoutRequestId: checkoutRequestIdRef.current,
         totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
         msAfterApiStart: checkoutTimingRef.current.apiStartAt ? Date.now() - checkoutTimingRef.current.apiStartAt : null,
         status: result?.status,
@@ -504,6 +513,7 @@ export default function OrderConfirmationScreen() {
     },
     onError: (error: any) => {
       console.warn("[CheckoutTiming] mutation onError", {
+        checkoutRequestId: checkoutRequestIdRef.current,
         totalSinceTapMs: checkoutTimingRef.current.tapAt ? Date.now() - checkoutTimingRef.current.tapAt : null,
         msAfterApiStart: checkoutTimingRef.current.apiStartAt ? Date.now() - checkoutTimingRef.current.apiStartAt : null,
         code: error?.code,
@@ -519,6 +529,10 @@ export default function OrderConfirmationScreen() {
             ? "Order is taking longer than expected. Please check My Orders shortly."
             : "Failed to place order. Please try again.")
       );
+    },
+    onSettled: () => {
+      checkoutInFlightRef.current = false;
+      checkoutRequestIdRef.current = createCheckoutRequestId();
     },
   });
 
@@ -536,8 +550,18 @@ export default function OrderConfirmationScreen() {
   });
 
   const handleConfirmOrder = () => {
-    checkoutTimingRef.current = { tapAt: Date.now() };
+    const tapAt = Date.now();
+    if (checkoutInFlightRef.current || createOrderMutation.isPending) {
+      console.log("[CheckoutTiming] duplicate confirm ignored", {
+        checkoutRequestId: checkoutRequestIdRef.current,
+        totalSinceTapMs: checkoutTimingRef.current.tapAt ? tapAt - checkoutTimingRef.current.tapAt : null,
+      });
+      return;
+    }
+
+    checkoutTimingRef.current = { tapAt };
     console.log("[CheckoutTiming] confirm tapped", {
+      checkoutRequestId: checkoutRequestIdRef.current,
       paymentMethod,
       deliveryCharge,
       deliveryZone,
@@ -556,6 +580,8 @@ export default function OrderConfirmationScreen() {
       return;
     }
 
+    checkoutInFlightRef.current = true;
+
     const formData = new FormData();
     formData.append("customerName", customerData.name);
     formData.append("customerPhone", customerData.phone);
@@ -565,6 +591,7 @@ export default function OrderConfirmationScreen() {
     formData.append("delivery_zone", deliveryZoneLabel!);
     formData.append("advance_delivery", advanceDelivery);
     formData.append("balance_from", paymentMethod === "account" ? "from_account" : "online_pay");
+    formData.append("checkout_request_id", checkoutRequestIdRef.current);
     if (checkoutCartIds.length > 0) formData.append("cart_ids", checkoutCartIds.join(","));
     if (selectedCityId) formData.append("city_id", selectedCityId.toString());
     if (selectedZoneId) formData.append("zone_id", selectedZoneId.toString());
