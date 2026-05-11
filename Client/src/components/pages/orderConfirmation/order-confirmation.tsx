@@ -50,14 +50,25 @@ const customerSchema = z.object({
 
 export default function OrderConfirmation() {
 	const router = useRouter();
-	const { data: cartItems, isLoading } = useGetAllCartItemsQuery(undefined);
+	const {
+		data: cartItems,
+		isLoading,
+		isError: isCartError,
+		isSuccess: isCartSuccess,
+	} = useGetAllCartItemsQuery(undefined);
 
-	// Redirect to home if cart is empty
+	// Redirect only when cart fetch succeeds and is truly empty.
+	// Avoid redirecting on transient API/auth/network errors.
 	useEffect(() => {
-		if (!isLoading && (!cartItems?.data || cartItems.data.length === 0)) {
+		if (
+			!isLoading &&
+			isCartSuccess &&
+			!isCartError &&
+			(!cartItems?.data || cartItems.data.length === 0)
+		) {
 			router.replace("/");
 		}
-	}, [cartItems, isLoading, router]);
+	}, [cartItems, isLoading, isCartSuccess, isCartError, router]);
 	const [updateCartItem] = useUpdateCartItemMutation();
 	const [deleteCartItem] = useDeleteCartItemMutation();
 	const [createOrder] = useCreateOrderMutation();

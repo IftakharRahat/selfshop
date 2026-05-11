@@ -170,9 +170,15 @@
                                         <td class="order-detail-label">Courier Live Status</td>
                                         <td class="order-detail-value">{{ $orders->steadfast_status ?? 'Not synced yet' }}</td>
                                     </tr>
+                                    @php
+                                        $subTotal = (float) ($orders->subTotal ?? 0);
+                                        $deliveryCharge = (float) ($orders->deliveryCharge ?? 0);
+                                        $discountCharge = (float) ($orders->discountCharge ?? 0);
+                                        $totalDue = $subTotal + $deliveryCharge - $discountCharge;
+                                    @endphp
                                     <tr>
                                         <td class="order-detail-label">Total Amount</td>
-                                        <td class="order-detail-value">৳ {{ (float)($orders->subTotal ?? 0) + (float)($orders->paymentAmount ?? 0) - (float)($orders->deliveryCharge ?? 0) }} + <span class="text-danger">(Charge: {{ $orders->deliveryCharge ?? 0 }} ৳)</span></td>
+                                        <td class="order-detail-value">৳ {{ number_format($totalDue, 2) }} + <span class="text-danger">(Charge: {{ $deliveryCharge }} ৳)</span></td>
                                     </tr>
                                     <tr>
                                         <td class="order-detail-label">Payment Method</td>
@@ -196,7 +202,7 @@
                                     </tr>
                                     <tr>
                                         <td class="order-detail-label">Due</td>
-                                        <td class="order-detail-value">{{$orders->subTotal}} TK</td>
+                                        <td class="order-detail-value">{{ number_format($totalDue, 2) }} TK</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -49,12 +49,6 @@ export default function FlashSalePageComponent() {
     const flashSale = data?.data;
     const timeLeft = useCountdown(flashSale?.end_time ?? null);
 
-    const isExpired =
-        timeLeft.days === 0 &&
-        timeLeft.hours === 0 &&
-        timeLeft.minutes === 0 &&
-        timeLeft.seconds === 0;
-
     if (isLoading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
@@ -63,7 +57,7 @@ export default function FlashSalePageComponent() {
         );
     }
 
-    if (!flashSale || !data?.status || isExpired) {
+    if (!flashSale || !data?.status) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 px-4">
                 <Zap className="w-12 h-12 text-gray-300" />

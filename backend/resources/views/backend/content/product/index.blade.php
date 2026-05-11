@@ -76,7 +76,13 @@
                 }
             },
             columns: [{
-                    data: 'id'
+                    data: 'id',
+                    render: function(data, type, row, meta) {
+                        if (type === 'display') {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                        return data;
+                    }
                 }, {
                     data: 'ProductImage',
                     name: 'ProductImage',

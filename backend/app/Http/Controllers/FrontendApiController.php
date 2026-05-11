@@ -3561,30 +3561,41 @@ class FrontendApiController extends Controller
 
     public function userCartContent(Request $request)
     {
-        $carts = Cart::where('user_id', Auth::user()->id)->get();
+        $userId = Auth::id();
+        $carts = Cart::where('user_id', $userId)->get();
 
-        $cartgroups = Cart::where('user_id', Auth::id())
+        $cartgroups = Cart::where('user_id', $userId)
             ->get()
             ->groupBy('product_id');
         $extdv = 0;
         foreach ($cartgroups as $product_id => $items) {
             $product = Product::find($product_id);
+            if (!$product) {
+                // Product may be deleted/unpublished while still present in cart.
+                // Skip it here and allow client to render remaining valid rows.
+                continue;
+            }
+
             if ($product->bulk_status == 'on') {
-                $qtycrtgrp = Cart::where('user_id', Auth::user()->id)->where('product_id', $product_id)->sum('qty');
+                $qtycrtgrp = Cart::where('user_id', $userId)->where('product_id', $product_id)->sum('qty');
                 $variant = Varient::where('product_id', $product_id)
                     ->where('qty', '>=', $qtycrtgrp)
                     ->orderBy('qty', 'asc')
                     ->first();
-                $extdv += ($variant->extra_delivery_charge * $qtycrtgrp);
+                if ($variant) {
+                    $extdv += ((float) ($variant->extra_delivery_charge ?? 0) * (int) $qtycrtgrp);
+                }
             } else {
             }
         }
 
-        if (!$carts) {
+        if ($carts->isEmpty()) {
             return response()->json([
-                'status' => false,
-                'message' => 'Cart item not found',
-            ], 404);
+                'status' => true,
+                'message' => 'Cart is empty',
+                'data' => [],
+                'extra_delivery_charge' => 0,
+            ], 200);
         }
 
         // Enrich cart items with vendor_id from product table
@@ -4445,6 +4456,11 @@ public function popularVendors(Request $request)
         $products = $flashSale->flashSaleProducts->map(function ($fsp) {
             $product = $fsp->product;
             if (!$product) return null;
+
+            // Keep flash sale output aligned with storefront visibility rules
+            if ($product->status !== 'Active') return null;
+            if (!is_null($product->vendor_id) && $product->vendor_approval_status !== 'approved') return null;
+            if (!is_null($product->frature) && intval($product->frature) === 0) return null;
 
             $regularPrice = floatval($product->ProductRegularPrice ?? 0);
             $salePrice = floatval($product->ProductSalePrice ?? $regularPrice);

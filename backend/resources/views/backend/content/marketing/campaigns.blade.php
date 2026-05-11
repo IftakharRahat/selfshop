@@ -74,7 +74,14 @@
                     </thead>
                     <tbody>
                         @foreach($campaigns as $i => $campaign)
-                        @php $stats = $campaign->stats; @endphp
+                        @php
+                            $statsRow = $statsByCode->get($campaign->code);
+                            $stats = [
+                                'signups' => (int) ($statsRow->signups ?? 0),
+                                'subscriptions' => (int) ($statsRow->subscriptions ?? 0),
+                                'active' => (int) ($statsRow->active ?? 0),
+                            ];
+                        @endphp
                         <tr>
                             <td>{{ $i + 1 }}</td>
                             <td>

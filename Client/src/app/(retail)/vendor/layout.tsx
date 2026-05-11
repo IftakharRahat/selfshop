@@ -11,7 +11,6 @@ import {
 	Menu,
 	Package,
 	Plus,
-	ShieldCheck,
 	ShoppingBag,
 	Star,
 	TrendingUp,
@@ -87,12 +86,6 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
 		items: [
 			{ label: "Inventory", href: "/vendor/inventory", icon: Package },
 			{ label: "Warehouses", href: "/vendor/warehouses", icon: MapPin },
-		],
-	},
-	{
-		title: "Warranty / Exchange",
-		items: [
-			{ label: "Warranty / Exchange", href: "/vendor/warranty-claims", icon: ShieldCheck },
 		],
 	},
 	{

@@ -25,6 +25,7 @@ import Swal from "sweetalert2";
 import { cn, getImageUrl } from "@/lib/utils";
 import { formatBDT } from "@/lib/format-currency";
 import { useAppSelector } from "@/redux/hooks";
+import { useRouter } from "next/navigation";
 import OrderNowModal from "./OrderNowModal";
 import ProductReviewsSection from "./ProductReviewsSection";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
@@ -123,6 +124,7 @@ function DesktopTabs({
 }
 
 export default function ProductDetailPage({ product, flashSale, commissionPercent }: any) {
+	const router = useRouter();
 	if (!product) {
 		return (
 			<div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 px-4">
@@ -473,7 +475,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		}
 
 		if (lastResult?.data?.status) {
-			window.location.href = "/order-confirmation";
+			router.push("/order-confirmation");
 		}
 	};
 	const handleOrderNow = async () => {

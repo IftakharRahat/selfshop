@@ -473,7 +473,15 @@
         $('#fsSearchInput').on('input', function() {
             var q = $(this).val();
             clearTimeout(searchTimer);
-            searchTimer = setTimeout(function() { loadAllProducts(q); }, 300);
+            searchTimer = setTimeout(function() {
+                // Avoid expensive full-catalog scans on every keystroke.
+                // Keep default lightweight list when search is too short.
+                if (q && q.trim().length >= 2) {
+                    loadAllProducts(q);
+                } else {
+                    loadAllProducts('');
+                }
+            }, 300);
         });
 
         // Click product -> show discount overlay

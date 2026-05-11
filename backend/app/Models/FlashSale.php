@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class FlashSale extends Model
 {
@@ -29,8 +30,13 @@ class FlashSale extends Model
 
     public function scopeActive($query)
     {
+        // Flash sale times are created from admin datetime-local inputs (BD local time).
+        // Use a fixed local timezone for active-window checks to avoid UTC server drift.
+        $tz = env('FLASH_SALE_TIMEZONE', 'Asia/Dhaka');
+        $nowLocal = Carbon::now($tz)->format('Y-m-d H:i:s');
+
         return $query->where('status', 'Active')
-            ->where('start_time', '<=', now())
-            ->where('end_time', '>=', now());
+            ->where('start_time', '<=', $nowLocal)
+            ->where('end_time', '>=', $nowLocal);
     }
 }

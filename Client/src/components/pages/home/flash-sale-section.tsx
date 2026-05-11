@@ -55,15 +55,8 @@ export default function FlashSaleSection() {
     const flashSale = data?.data;
     const timeLeft = useCountdown(flashSale?.end_time ?? null);
 
-    const isExpired =
-        timeLeft.days === 0 &&
-        timeLeft.hours === 0 &&
-        timeLeft.minutes === 0 &&
-        timeLeft.seconds === 0;
-
     if (isLoading) return null;
     if (!flashSale || !data?.status) return null;
-    if (isExpired) return null;
 
     const products = flashSale.products || [];
     if (products.length === 0) return null;

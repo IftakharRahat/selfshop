@@ -149,7 +149,7 @@ class AdminNotificationController extends Controller
                 'image_url' => ['nullable', 'string', 'max:2048'],
                 'link' => ['nullable', 'string', 'max:2048'],
                 'target_type' => ['required', 'in:1,2,3'],
-                'user_ids' => ['required_if:target_type,2', 'array', 'min:1'],
+                'user_ids' => ['nullable', 'array'],
                 'user_ids.*' => ['integer', 'exists:users,id'],
                 'supplier_ids' => ['nullable', 'array'],
                 'supplier_ids.*' => ['integer', 'exists:vendors,id'],
@@ -251,6 +251,19 @@ class AdminNotificationController extends Controller
                     ->filter()
                     ->unique()
                     ->values();
+
+                // UX fallback:
+                // If admin chooses "User" but selects none, treat it as "all users"
+                // instead of failing validation.
+                if ($recipientUserIds->isEmpty()) {
+                    $recipientUserIds = User::query()
+                        ->whereDoesntHave('vendor')
+                        ->pluck('id')
+                        ->map(fn($id) => (int) $id)
+                        ->filter()
+                        ->unique()
+                        ->values();
+                }
 
                 User::query()
                     ->whereDoesntHave('vendor')
