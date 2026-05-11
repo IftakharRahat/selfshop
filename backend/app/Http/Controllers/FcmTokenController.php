@@ -6,6 +6,7 @@ use App\Models\FcmToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class FcmTokenController extends Controller
 {
@@ -14,6 +15,15 @@ class FcmTokenController extends Controller
      */
     public function store(Request $request)
     {
+        // If migration wasn't run yet on production, skip hard failure.
+        if (!Schema::hasTable('fcm_tokens')) {
+            Log::warning('FCM token table missing; skipping token registration');
+            return response()->json([
+                'status' => false,
+                'message' => 'FCM token storage is not ready on server',
+            ], 200);
+        }
+
         $validated = $request->validate([
             'token' => ['required', 'string', 'max:500'],
             'device_info' => ['nullable', 'string', 'max:255'],

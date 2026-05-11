@@ -186,8 +186,8 @@ export default function NotificationProvider({
         // Enable Pusher logging for debug
         Pusher.logToConsole = true;
 
-        // Base URL includes /api but broadcasting/auth is at root
-        const serverUrl = (baseUrl || "").replace(/\/api\/?$/, "");
+        // Use API route for broadcasting auth to keep the same Bearer token flow.
+        const serverUrl = (baseUrl || "").replace(/\/$/, "");
 
         console.log("[Pusher] Initializing Echo...");
 

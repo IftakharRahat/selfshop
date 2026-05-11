@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\FrontendApiController;
 use App\Http\Controllers\VendorApiController;
@@ -46,6 +47,11 @@ Route::get('/up', function () {
 // Return authenticated user data (used by Pusher notification system)
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return response()->json($request->user());
+});
+
+// API broadcasting auth endpoint for SPA clients using Bearer token.
+Route::middleware('auth:sanctum')->post('/broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
 });
 
 // Carry Bee courier – pickup point lookup (public, no auth needed)
