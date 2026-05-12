@@ -22,12 +22,19 @@ class SupplierController extends Controller
     public function supplierdata()
     {
         $suppliers = Supplier::all();
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($suppliers)
-            ->addColumn('action', function ($suppliers) {
-                return '<a href="#" type="button" id="editSupplierBtn" data-id="' . $suppliers->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainSupplier" ><i class="bi bi-pencil-square" ></i></a>
-                <a href="#" type="button" id="deleteSupplierBtn" data-id="' . $suppliers->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+            ->addColumn('action', function ($suppliers) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('supplier.edit')) {
+                    $a .= '<a href="#" type="button" id="editSupplierBtn" data-id="' . $suppliers->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainSupplier"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('supplier.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteSupplierBtn" data-id="' . $suppliers->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
 

@@ -44,12 +44,19 @@ class BrandController extends Controller
     public function branddata()
     {
         $brands = Brand::all();
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($brands)
-            ->addColumn('action', function ($brands) {
-                return '<a href="#" type="button" id="editBrandBtn" data-id="' . $brands->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainBrand" ><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="deleteBrandBtn" data-id="' . $brands->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($brands) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('category.edit')) {
+                    $a .= '<a href="#" type="button" id="editBrandBtn" data-id="' . $brands->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainBrand"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('category.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteBrandBtn" data-id="' . $brands->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
 
