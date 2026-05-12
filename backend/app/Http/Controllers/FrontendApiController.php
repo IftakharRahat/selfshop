@@ -2166,51 +2166,68 @@ class FrontendApiController extends Controller
 
     public function productrequest(Request $request)
     {
-        // ── Diagnostic logging for mobile upload debugging ──
-        Log::info('[ProductRequest] Incoming request', [
+        // ── Collect diagnostics ──
+        $debug = [
             'content_type' => $request->header('Content-Type'),
-            'has_file_attachment' => $request->hasFile('attachment'),
+            'has_file' => $request->hasFile('attachment'),
             'all_files_keys' => array_keys($request->allFiles()),
             'all_input_keys' => array_keys($request->all()),
-            'p_name' => $request->input('p_name'),
             'user_agent' => $request->userAgent(),
-        ]);
+        ];
 
         if ($request->hasFile('attachment')) {
             $file = $request->file('attachment');
-            Log::info('[ProductRequest] Attachment details', [
+            $debug['file_info'] = [
                 'original_name' => $file->getClientOriginalName(),
                 'mime_type' => $file->getClientMimeType(),
                 'extension' => $file->getClientOriginalExtension(),
                 'size_bytes' => $file->getSize(),
                 'is_valid' => $file->isValid(),
-                'error' => $file->getError(),
-            ]);
+                'error_code' => $file->getError(),
+            ];
         } else {
-            Log::warning('[ProductRequest] No file detected in attachment field', [
-                'raw_attachment' => $request->input('attachment'),
-                'content_type' => $request->header('Content-Type'),
-            ]);
+            $debug['file_info'] = null;
+            $debug['raw_attachment_type'] = gettype($request->input('attachment'));
+            $debug['raw_attachment_preview'] = is_string($request->input('attachment'))
+                ? substr($request->input('attachment'), 0, 100)
+                : null;
         }
+
+        // ── Sentry: breadcrumb for incoming request ──
+        \Sentry\addBreadcrumb(new \Sentry\Breadcrumb(
+            \Sentry\Breadcrumb::LEVEL_INFO,
+            \Sentry\Breadcrumb::TYPE_HTTP,
+            'product-request',
+            'Incoming product request',
+            $debug
+        ));
+
+        Log::info('[ProductRequest] Incoming request', $debug);
 
         $validator = Validator::make($request->all(), [
             'p_name' => ['required', 'string', 'max:255'],
             'p_quantity' => ['nullable', 'string', 'max:50'],
             'p_description' => ['nullable', 'string', 'max:2000'],
-            // Use file+mimes instead of 'image' — the 'image' rule can
-            // reject valid uploads from mobile apps where the temp file
-            // extension or MIME header doesn't match Laravel's expectations.
             'attachment' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
         ]);
 
         if ($validator->fails()) {
-            Log::warning('[ProductRequest] Validation failed', [
-                'errors' => $validator->errors()->toArray(),
-            ]);
+            // ── Sentry: capture validation failure as a message ──
+            \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($validator, $debug) {
+                $scope->setTag('feature', 'product-request-upload');
+                $scope->setContext('request_debug', $debug);
+                $scope->setContext('validation_errors', $validator->errors()->toArray());
+                \Sentry\captureMessage(
+                    'Product request validation failed: ' . $validator->errors()->first(),
+                    \Sentry\Severity::warning()
+                );
+            });
+
             return response()->json([
                 'status' => false,
                 'message' => $validator->errors()->first(),
                 'errors' => $validator->errors(),
+                '_debug' => $debug,
             ], 422);
         }
 
@@ -2223,10 +2240,16 @@ class FrontendApiController extends Controller
                     . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
                 $path = $productImg->storeAs('products/images', $safeName, 'r2');
                 $product->attachment = $r2BaseUrl . '/' . $path;
-                Log::info('[ProductRequest] File uploaded to R2', [
-                    'path' => $path,
-                    'url' => $product->attachment,
-                ]);
+                $debug['uploaded_path'] = $path;
+
+                // ── Sentry: breadcrumb for successful R2 upload ──
+                \Sentry\addBreadcrumb(new \Sentry\Breadcrumb(
+                    \Sentry\Breadcrumb::LEVEL_INFO,
+                    \Sentry\Breadcrumb::TYPE_DEFAULT,
+                    'product-request',
+                    'File uploaded to R2',
+                    ['path' => $path, 'url' => $product->attachment]
+                ));
             }
             $id = Auth::user()->id;
             $product->from_id = $id;
@@ -2244,16 +2267,23 @@ class FrontendApiController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Product request give successfully',
-                'data' => $product
+                'data' => $product,
+                '_debug' => $debug,
             ], 200);
         } catch (\Throwable $e) {
-            Log::error('[ProductRequest] Exception during save', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            $debug['exception'] = $e->getMessage();
+
+            // ── Sentry: capture the exception with full context ──
+            \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($e, $debug) {
+                $scope->setTag('feature', 'product-request-upload');
+                $scope->setContext('request_debug', $debug);
+                \Sentry\captureException($e);
+            });
+
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to submit product request: ' . $e->getMessage(),
+                '_debug' => $debug,
             ], 500);
         }
     }

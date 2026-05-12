@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { toast } from "sonner-native";
+import * as Sentry from "@sentry/react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -105,12 +106,18 @@ function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
     name: finalName,
   };
 
-  console.log("[ProductRequest] makeUploadFile:", {
-    originalUri: asset.uri?.substring(0, 80),
-    originalFileName: asset.fileName,
-    originalMimeType: asset.mimeType,
-    resolvedExtension: extension,
-    uploadFile,
+  Sentry.addBreadcrumb({
+    category: "product-request",
+    message: "File prepared for upload",
+    level: "info",
+    data: {
+      originalUri: asset.uri?.substring(0, 80),
+      originalFileName: asset.fileName,
+      originalMimeType: asset.mimeType,
+      resolvedExtension: extension,
+      finalName: uploadFile.name,
+      finalType: uploadFile.type,
+    },
   });
 
   return uploadFile as any;
@@ -139,31 +146,52 @@ export default function ProductRequestScreen() {
   /* ── Mutation ── */
   const createMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log("[ProductRequest] Submitting form data...");
+      Sentry.addBreadcrumb({
+        category: "product-request",
+        message: "Submitting product request",
+        level: "info",
+      });
       try {
         const { data } = await apiClient.post("/give-product-request", formData, {
           headers: { "Content-Type": "multipart/form-data" },
           timeout: IMAGE_UPLOAD_TIMEOUT_MS,
         });
-        console.log("[ProductRequest] Upload success:", data?.status, data?.message);
+        Sentry.addBreadcrumb({
+          category: "product-request",
+          message: "Upload succeeded",
+          level: "info",
+          data: { status: data?.status, serverDebug: data?._debug },
+        });
         return data;
       } catch (error: any) {
-        console.error("[ProductRequest] Upload failed:", {
-          status: error?.response?.status,
-          message: error?.response?.data?.message,
-          errors: error?.response?.data?.errors,
-          code: error?.code,
+        Sentry.captureException(error, {
+          tags: { feature: "product-request-upload" },
+          extra: {
+            httpStatus: error?.response?.status,
+            serverMessage: error?.response?.data?.message,
+            serverErrors: error?.response?.data?.errors,
+            serverDebug: error?.response?.data?._debug,
+            errorCode: error?.code,
+          },
         });
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data) => {
       toast.success("Product request submitted!");
       setProductName("");
       setDescription("");
       setQuantity("1");
       setSelectedImage(null);
       queryClient.invalidateQueries({ queryKey: ["product-request-list"] });
+      // Send success event to Sentry with server debug info
+      if (_data?._debug) {
+        Sentry.captureMessage("Product request upload succeeded", {
+          level: "info",
+          tags: { feature: "product-request-upload" },
+          extra: { serverDebug: _data._debug },
+        });
+      }
     },
     onError: (err: any) => {
       const serverMsg = err?.response?.data?.message;
