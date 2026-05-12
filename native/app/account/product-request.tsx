@@ -25,6 +25,7 @@ import apiClient from "@/lib/api-client";
 const ACCENT = "#E5005F";
 
 const QUANTITY_OPTIONS = ["1", "2", "3", "4", "5", "10", "20", "50", "100+"];
+const IMAGE_UPLOAD_TIMEOUT_MS = 60000;
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Paid: { bg: "#D1FAE5", text: "#065F46" },
@@ -46,6 +47,61 @@ function resolveImageUrl(path?: string | null): string | null {
   if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
   if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
   return `${IMAGE_BASE}/storage/${clean}`;
+}
+
+function getExtensionFromName(value?: string | null): string | null {
+  if (!value) return null;
+  const clean = value.split("?")[0].split("#")[0];
+  const match = clean.match(/\.([a-zA-Z0-9]+)$/);
+  return match ? match[1].toLowerCase() : null;
+}
+
+function getExtensionFromMime(mimeType?: string | null): string | null {
+  if (!mimeType) return null;
+  const normalized = mimeType.toLowerCase();
+  if (normalized === "image/jpeg" || normalized === "image/jpg") return "jpg";
+  if (normalized === "image/png") return "png";
+  if (normalized === "image/webp") return "webp";
+  if (normalized === "image/gif") return "gif";
+  return null;
+}
+
+function getMimeFromExtension(extension?: string | null): string {
+  switch ((extension ?? "").toLowerCase()) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    default:
+      return "image/jpeg";
+  }
+}
+
+function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
+  if (asset.file) {
+    return asset.file;
+  }
+
+  const extension =
+    getExtensionFromMime(asset.mimeType) ??
+    getExtensionFromName(asset.fileName) ??
+    getExtensionFromName(asset.uri) ??
+    "jpg";
+  const mimeType = asset.mimeType?.startsWith("image/")
+    ? asset.mimeType
+    : getMimeFromExtension(extension);
+  const baseName = asset.fileName?.replace(/[^\w.-]/g, "_") || `product_request_${Date.now()}.${extension}`;
+
+  return {
+    uri: asset.uri,
+    type: mimeType,
+    name: baseName.includes(".") ? baseName : `${baseName}.${extension}`,
+  };
 }
 
 export default function ProductRequestScreen() {
@@ -73,6 +129,7 @@ export default function ProductRequestScreen() {
     mutationFn: async (formData: FormData) => {
       const { data } = await apiClient.post("/give-product-request", formData, {
         headers: { "Content-Type": "multipart/form-data" },
+        timeout: IMAGE_UPLOAD_TIMEOUT_MS,
       });
       return data;
     },
@@ -94,13 +151,41 @@ export default function ProductRequestScreen() {
 
   /* ── Image Picker ── */
   const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showDialog({
+        tone: "warning",
+        title: "Photo access needed",
+        message: "Please allow photo library access to upload a product image.",
+      });
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
+      preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
-      setSelectedImage(result.assets[0]);
+      const asset = result.assets[0];
+      if (asset.type && asset.type !== "image") {
+        showDialog({
+          tone: "warning",
+          title: "Choose an image",
+          message: "Only image files can be uploaded for product requests.",
+        });
+        return;
+      }
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        showDialog({
+          tone: "warning",
+          title: "Image is too large",
+          message: "Please choose an image under 5MB.",
+        });
+        return;
+      }
+      setSelectedImage(asset);
     }
   };
 
@@ -121,13 +206,7 @@ export default function ProductRequestScreen() {
     formData.append("p_description", description.trim());
 
     if (selectedImage) {
-      const uri = selectedImage.uri;
-      const ext = uri.split(".").pop() ?? "jpg";
-      formData.append("attachment", {
-        uri,
-        type: `image/${ext}`,
-        name: `product_request.${ext}`,
-      } as any);
+      formData.append("attachment", makeUploadFile(selectedImage) as any);
     }
 
     createMutation.mutate(formData);
