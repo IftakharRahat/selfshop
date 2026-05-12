@@ -251,7 +251,7 @@ class FrontendApiController extends Controller
                 'amount' => $amount,
             ]);
 
-            $appUrl = rtrim((string) config('app.url'), '/');
+            $appUrl = rtrim((string) config('sslcommerz.callback_base_url', config('app.url')), '/');
             if ($appUrl === '') {
                 $appUrl = rtrim(url('/'), '/');
             }

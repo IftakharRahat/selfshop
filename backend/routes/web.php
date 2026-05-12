@@ -173,6 +173,7 @@ Route::post('/sslcommerz/fail', [SslCommerzPaymentController::class, 'fail'])->n
 Route::post('/sslcommerz/cancel', [SslCommerzPaymentController::class, 'cancel'])->name('sslcommerz.cancel');
 Route::post('/sslcommerz/ipn', [SslCommerzPaymentController::class, 'ipn'])->name('sslcommerz.ipn');
 // Aliases to match config/sslcommerz.php default callback paths.
+Route::match(['get', 'post'], '/success', [SslCommerzPaymentController::class, 'success'])->name('sslcommerz.success.alias');
 Route::match(['get', 'post'], '/fail', [SslCommerzPaymentController::class, 'fail'])->name('sslcommerz.fail.alias');
 Route::match(['get', 'post'], '/cancel', [SslCommerzPaymentController::class, 'cancel'])->name('sslcommerz.cancel.alias');
 Route::match(['get', 'post'], '/ipn', [SslCommerzPaymentController::class, 'ipn'])->name('sslcommerz.ipn.alias');
