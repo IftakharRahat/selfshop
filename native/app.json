@@ -43,14 +43,6 @@
       "favicon": "./assets/images/reseller-app-icon.png"
     },
     "plugins": [
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "selfshop-limited",
-          "project": "reseller-app",
-          "uploadSourceMaps": false
-        }
-      ],
       "expo-router",
       [
         "expo-splash-screen",
