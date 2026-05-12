@@ -2166,14 +2166,47 @@ class FrontendApiController extends Controller
 
     public function productrequest(Request $request)
     {
+        // ── Diagnostic logging for mobile upload debugging ──
+        Log::info('[ProductRequest] Incoming request', [
+            'content_type' => $request->header('Content-Type'),
+            'has_file_attachment' => $request->hasFile('attachment'),
+            'all_files_keys' => array_keys($request->allFiles()),
+            'all_input_keys' => array_keys($request->all()),
+            'p_name' => $request->input('p_name'),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            Log::info('[ProductRequest] Attachment details', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+                'size_bytes' => $file->getSize(),
+                'is_valid' => $file->isValid(),
+                'error' => $file->getError(),
+            ]);
+        } else {
+            Log::warning('[ProductRequest] No file detected in attachment field', [
+                'raw_attachment' => $request->input('attachment'),
+                'content_type' => $request->header('Content-Type'),
+            ]);
+        }
+
         $validator = Validator::make($request->all(), [
             'p_name' => ['required', 'string', 'max:255'],
             'p_quantity' => ['nullable', 'string', 'max:50'],
             'p_description' => ['nullable', 'string', 'max:2000'],
-            'attachment' => ['nullable', 'image', 'max:5120'],
+            // Use file+mimes instead of 'image' — the 'image' rule can
+            // reject valid uploads from mobile apps where the temp file
+            // extension or MIME header doesn't match Laravel's expectations.
+            'attachment' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
         ]);
 
         if ($validator->fails()) {
+            Log::warning('[ProductRequest] Validation failed', [
+                'errors' => $validator->errors()->toArray(),
+            ]);
             return response()->json([
                 'status' => false,
                 'message' => $validator->errors()->first(),
@@ -2190,6 +2223,10 @@ class FrontendApiController extends Controller
                     . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
                 $path = $productImg->storeAs('products/images', $safeName, 'r2');
                 $product->attachment = $r2BaseUrl . '/' . $path;
+                Log::info('[ProductRequest] File uploaded to R2', [
+                    'path' => $path,
+                    'url' => $product->attachment,
+                ]);
             }
             $id = Auth::user()->id;
             $product->from_id = $id;
@@ -2210,6 +2247,10 @@ class FrontendApiController extends Controller
                 'data' => $product
             ], 200);
         } catch (\Throwable $e) {
+            Log::error('[ProductRequest] Exception during save', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to submit product request: ' . $e->getMessage(),
