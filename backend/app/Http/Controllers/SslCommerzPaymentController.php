@@ -1437,59 +1437,71 @@ public function success(Request $request)
         
         // Create customer record for the main order
         try {
-            $custName  = $orderRequestData['customer_name']  ?? 'Customer';
-            $custPhone = $orderRequestData['customer_phone'] ?? '';
-            $custAddr  = $orderRequestData['customer_address'] ?? '';
+            if (!Customer::where('order_id', $sessionOrderId)->exists()) {
+                $custName  = $orderRequestData['customer_name']  ?? 'Customer';
+                $custPhone = $orderRequestData['customer_phone'] ?? '';
+                $custAddr  = $orderRequestData['customer_address'] ?? '';
 
-            $mainCustomer = new Customer();
-            $mainCustomer->order_id = $sessionOrderId;
-            $mainCustomer->customerName = $custName;
-            $mainCustomer->customerPhone = $custPhone;
-            $mainCustomer->customerAddress = $custAddr;
-            $mainCustomer->save();
+                $mainCustomer = new Customer();
+                $mainCustomer->order_id = $sessionOrderId;
+                $mainCustomer->customerName = $custName;
+                $mainCustomer->customerPhone = $custPhone;
+                $mainCustomer->customerAddress = $custAddr;
+                $mainCustomer->save();
 
-            Log::info('Main order customer created', [
-                'order_id' => $sessionOrderId,
-                'name'     => $custName,
-                'phone'    => $custPhone,
-            ]);
+                Log::info('Main order customer created', [
+                    'order_id' => $sessionOrderId,
+                    'name'     => $custName,
+                    'phone'    => $custPhone,
+                ]);
+            } else {
+                Log::info('Main order customer already exists, skipping duplicate create', [
+                    'order_id' => $sessionOrderId,
+                ]);
+            }
         } catch (\Exception $e) {
             Log::error('Error creating main customer: ' . $e->getMessage());
         }
 
         // Create order products for the MAIN order directly from cart
         try {
-            $mainCartData = $cartData;
-            if (!$mainCartData) {
-                $rawCart = DB::table('orders')->where('id', $sessionOrderId)->value('cart');
-                $mainCartData = $rawCart ? json_decode($rawCart, true) : [];
-            }
-            if (is_array($mainCartData)) {
-                foreach ($mainCartData as $key => $value) {
-                    // Handle nested structure {"1.00": [items]} or flat [items]
-                    $items = (is_array($value) && !isset($value['id'])) ? $value : [$value];
-                    foreach ($items as $item) {
-                        if (!is_array($item)) continue;
-                        // Cart stores 'id' as cart row ID, 'product_id' as the actual product ID
-                        $productId = $item['product_id'] ?? $item['id'] ?? null;
-                        if (!$productId) continue;
-                        $op = new Orderproduct();
-                        $op->order_id = $sessionOrderId;
-                        $op->product_id = $productId;
-                        $op->productName = $item['name'] ?? 'Product';
-                        $op->quantity = $item['qty'] ?? 1;
-                        $op->productPrice = $item['price'] ?? 0;
-                        $op->productCode = $item['options']['code'] ?? '';
-                        $op->color = $item['options']['color'] ?? null;
-                        $op->size = $item['options']['size'] ?? null;
-                        // Save selling_price from cart options
-                        if (!empty($item['options']['selling_price']) && $item['options']['selling_price'] !== 'undefined') {
-                            $op->selling_price = (float) $item['options']['selling_price'];
+            if (!Orderproduct::where('order_id', $sessionOrderId)->exists()) {
+                $mainCartData = $cartData;
+                if (!$mainCartData) {
+                    $rawCart = DB::table('orders')->where('id', $sessionOrderId)->value('cart');
+                    $mainCartData = $rawCart ? json_decode($rawCart, true) : [];
+                }
+                if (is_array($mainCartData)) {
+                    foreach ($mainCartData as $key => $value) {
+                        // Handle nested structure {"1.00": [items]} or flat [items]
+                        $items = (is_array($value) && !isset($value['id'])) ? $value : [$value];
+                        foreach ($items as $item) {
+                            if (!is_array($item)) continue;
+                            // Cart stores 'id' as cart row ID, 'product_id' as the actual product ID
+                            $productId = $item['product_id'] ?? $item['id'] ?? null;
+                            if (!$productId) continue;
+                            $op = new Orderproduct();
+                            $op->order_id = $sessionOrderId;
+                            $op->product_id = $productId;
+                            $op->productName = $item['name'] ?? 'Product';
+                            $op->quantity = $item['qty'] ?? 1;
+                            $op->productPrice = $item['price'] ?? 0;
+                            $op->productCode = $item['options']['code'] ?? '';
+                            $op->color = $item['options']['color'] ?? null;
+                            $op->size = $item['options']['size'] ?? null;
+                            // Save selling_price from cart options
+                            if (!empty($item['options']['selling_price']) && $item['options']['selling_price'] !== 'undefined') {
+                                $op->selling_price = (float) $item['options']['selling_price'];
+                            }
+                            $op->save();
+                            Log::info('Main order product created: ' . $op->productName . ' (product_id: ' . $productId . ')');
                         }
-                        $op->save();
-                        Log::info('Main order product created: ' . $op->productName . ' (product_id: ' . $productId . ')');
                     }
                 }
+            } else {
+                Log::info('Main order products already exist, skipping duplicate create', [
+                    'order_id' => $sessionOrderId,
+                ]);
             }
         } catch (\Exception $e) {
             Log::error('Error creating main order products: ' . $e->getMessage());
@@ -1497,8 +1509,18 @@ public function success(Request $request)
 
         // Create detailed order records (per-store sub-orders)
         try {
-            $this->createOrderDetails($sessionOrderId, $cartData, new Request($orderRequestData));
-            Log::info('Order details created successfully.');
+            $storeOrdersAlreadyCreated = DB::table('orders')
+                ->where('transaction_id', 'like', 'STORE_' . $sessionOrderId . '_%')
+                ->exists();
+
+            if (!$storeOrdersAlreadyCreated) {
+                $this->createOrderDetails($sessionOrderId, $cartData, new Request($orderRequestData));
+                Log::info('Order details created successfully.');
+            } else {
+                Log::info('Store order details already exist, skipping duplicate create', [
+                    'order_id' => $sessionOrderId,
+                ]);
+            }
         } catch (\Exception $e) {
             Log::error('Error creating order details: ' . $e->getMessage());
             Log::error('Error trace: ' . $e->getTraceAsString());
@@ -1541,6 +1563,7 @@ public function success(Request $request)
         
         return redirect($this->frontendUrl('/order-received', [
             'order_id' => $sessionOrderId,
+            'tran_id' => $tran_id,
         ]));
         
     } catch (\Exception $e) {
