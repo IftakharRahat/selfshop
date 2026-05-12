@@ -85,25 +85,35 @@ function getMimeFromExtension(extension?: string | null): string {
 }
 
 function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
+  // On Android production, asset.uri is often a content:// URI with no extension.
+  // Prefer mimeType (always reliable from ImagePicker) over URI-based guessing.
   const extension =
-    getExtensionFromName(asset.uri) ??
-    getExtensionFromName(asset.fileName) ??
     getExtensionFromMime(asset.mimeType) ??
+    getExtensionFromName(asset.fileName) ??
+    getExtensionFromName(asset.uri) ??
     "jpg";
-  const mimeType = getMimeFromExtension(extension);
+  const mimeType = asset.mimeType || getMimeFromExtension(extension);
   const fallbackName = `product_request_${Date.now()}.${extension}`;
   const sourceName = asset.fileName?.replace(/[^\w.-]/g, "_") || fallbackName;
-  const baseName = sourceName.replace(/\.[^.]+$/, "");
+  // Ensure the filename always ends with the correct extension
+  const hasCorrectExt = sourceName.toLowerCase().endsWith(`.${extension}`);
+  const finalName = hasCorrectExt ? sourceName : `${sourceName.replace(/\.[^.]+$/, "")}.${extension}`;
 
-  // On Android production builds, asset.uri may be a content:// URI;
-  // React Native's FormData handles content:// and file:// URIs natively,
-  // so we pass the URI as-is. The { uri, type, name } shape is what RN
-  // expects for multipart uploads on all platforms.
-  return {
+  const uploadFile = {
     uri: asset.uri,
     type: mimeType,
-    name: `${baseName}.${extension}`,
-  } as any;
+    name: finalName,
+  };
+
+  console.log("[ProductRequest] makeUploadFile:", {
+    originalUri: asset.uri?.substring(0, 80),
+    originalFileName: asset.fileName,
+    originalMimeType: asset.mimeType,
+    resolvedExtension: extension,
+    uploadFile,
+  });
+
+  return uploadFile as any;
 }
 
 export default function ProductRequestScreen() {
@@ -129,10 +139,23 @@ export default function ProductRequestScreen() {
   /* ── Mutation ── */
   const createMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const { data } = await apiClient.post("/give-product-request", formData, {
-        timeout: IMAGE_UPLOAD_TIMEOUT_MS,
-      });
-      return data;
+      console.log("[ProductRequest] Submitting form data...");
+      try {
+        const { data } = await apiClient.post("/give-product-request", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: IMAGE_UPLOAD_TIMEOUT_MS,
+        });
+        console.log("[ProductRequest] Upload success:", data?.status, data?.message);
+        return data;
+      } catch (error: any) {
+        console.error("[ProductRequest] Upload failed:", {
+          status: error?.response?.status,
+          message: error?.response?.data?.message,
+          errors: error?.response?.data?.errors,
+          code: error?.code,
+        });
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Product request submitted!");
@@ -143,7 +166,12 @@ export default function ProductRequestScreen() {
       queryClient.invalidateQueries({ queryKey: ["product-request-list"] });
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? "Failed to submit request.");
+      const serverMsg = err?.response?.data?.message;
+      const validationErrors = err?.response?.data?.errors;
+      const firstError = validationErrors
+        ? Object.values(validationErrors).flat().find(Boolean) as string | undefined
+        : undefined;
+      toast.error(firstError || serverMsg || "Failed to submit request.");
     },
   });
 

@@ -39,7 +39,11 @@ const apiClient: AxiosInstance = axios.create({
 // Attach auth token to every request
 apiClient.interceptors.request.use(async (config) => {
   if (isFormDataPayload(config.data)) {
-    removeContentTypeHeader(config.headers);
+    // On React Native, we must explicitly set Content-Type to multipart/form-data.
+    // RN's XMLHttpRequest will automatically append the correct boundary.
+    // Simply removing the header (as done for web) causes Axios on RN to
+    // fall back to JSON serialization in production builds.
+    config.headers["Content-Type"] = "multipart/form-data";
   }
 
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
