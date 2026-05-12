@@ -1,19 +1,47 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
+import axios, { type AxiosInstance } from "axios";
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_KEY = "selfshop_auth_token";
+const DEFAULT_API_URL = "https://api-v1.selfshop.com.bd/api";
+
+function isFormDataPayload(value: unknown): value is FormData {
+  if (typeof FormData !== "undefined" && value instanceof FormData) return true;
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof (value as { append?: unknown }).append === "function" &&
+      typeof (value as { getParts?: unknown }).getParts === "function",
+  );
+}
+
+function removeContentTypeHeader(headers: unknown) {
+  if (!headers || typeof headers !== "object") return;
+
+  const maybeAxiosHeaders = headers as { delete?: (name: string) => void };
+  if (typeof maybeAxiosHeaders.delete === "function") {
+    maybeAxiosHeaders.delete("Content-Type");
+    return;
+  }
+
+  const headerMap = headers as Record<string, unknown>;
+  delete headerMap["Content-Type"];
+  delete headerMap["content-type"];
+}
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL,
   headers: {
     Accept: "application/json",
-    "Content-Type": "application/json",
   },
   timeout: 15000,
 });
 
 // Attach auth token to every request
 apiClient.interceptors.request.use(async (config) => {
+  if (isFormDataPayload(config.data)) {
+    removeContentTypeHeader(config.headers);
+  }
+
   const token = await SecureStore.getItemAsync(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

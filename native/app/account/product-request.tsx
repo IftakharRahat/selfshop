@@ -26,6 +26,7 @@ const ACCENT = "#E5005F";
 
 const QUANTITY_OPTIONS = ["1", "2", "3", "4", "5", "10", "20", "50", "100+"];
 const IMAGE_UPLOAD_TIMEOUT_MS = 60000;
+const SUPPORTED_UPLOAD_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Paid: { bg: "#D1FAE5", text: "#065F46" },
@@ -53,7 +54,8 @@ function getExtensionFromName(value?: string | null): string | null {
   if (!value) return null;
   const clean = value.split("?")[0].split("#")[0];
   const match = clean.match(/\.([a-zA-Z0-9]+)$/);
-  return match ? match[1].toLowerCase() : null;
+  const extension = match ? match[1].toLowerCase() : null;
+  return extension && SUPPORTED_UPLOAD_EXTENSIONS.has(extension) ? extension : null;
 }
 
 function getExtensionFromMime(mimeType?: string | null): string | null {
@@ -88,19 +90,19 @@ function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
   }
 
   const extension =
-    getExtensionFromMime(asset.mimeType) ??
-    getExtensionFromName(asset.fileName) ??
     getExtensionFromName(asset.uri) ??
+    getExtensionFromName(asset.fileName) ??
+    getExtensionFromMime(asset.mimeType) ??
     "jpg";
-  const mimeType = asset.mimeType?.startsWith("image/")
-    ? asset.mimeType
-    : getMimeFromExtension(extension);
-  const baseName = asset.fileName?.replace(/[^\w.-]/g, "_") || `product_request_${Date.now()}.${extension}`;
+  const mimeType = getMimeFromExtension(extension);
+  const fallbackName = `product_request_${Date.now()}.${extension}`;
+  const sourceName = asset.fileName?.replace(/[^\w.-]/g, "_") || fallbackName;
+  const baseName = sourceName.replace(/\.[^.]+$/, "");
 
   return {
     uri: asset.uri,
     type: mimeType,
-    name: baseName.includes(".") ? baseName : `${baseName}.${extension}`,
+    name: `${baseName}.${extension}`,
   };
 }
 
@@ -128,7 +130,6 @@ export default function ProductRequestScreen() {
   const createMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const { data } = await apiClient.post("/give-product-request", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
         timeout: IMAGE_UPLOAD_TIMEOUT_MS,
       });
       return data;
