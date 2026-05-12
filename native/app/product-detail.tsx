@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
-  TextInput, Alert, StatusBar, Platform, Keyboard, Share,
+  TextInput, StatusBar, Platform, Keyboard, Share,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProductDetailSkeleton } from "@/components/skeleton";
@@ -16,6 +16,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import * as Clipboard from "expo-clipboard";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 import { ProductCard } from "@/components/product-card";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
@@ -264,6 +265,7 @@ function ProductDescriptionBlocks({ blocks }: { blocks: DescriptionBlock[] }) {
 }
 
 export default function ProductDetailScreen() {
+  const { dialog, showDialog, closeDialog } = useAppDialog();
   const params = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
@@ -511,7 +513,7 @@ export default function ProductDetailScreen() {
       setDownloading(true);
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permission needed", "Please allow access to save images to your gallery.");
+        showDialog({ tone: "warning", title: "Permission needed", message: "Please allow access to save images to your gallery." });
         return;
       }
       const filename = imageUri.split("/").pop()?.split("?")[0] || `product-${Date.now()}.jpg`;
@@ -525,7 +527,7 @@ export default function ProductDetailScreen() {
     } finally {
       setDownloading(false);
     }
-  }, [downloading]);
+  }, [downloading, showDialog]);
 
   if (isLoading) return <ProductDetailSkeleton />;
   if (isError || !data) return (
@@ -2088,6 +2090,7 @@ export default function ProductDetailScreen() {
           </View>
         </View>
       </Modal>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </View>
   );
 }

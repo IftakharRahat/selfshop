@@ -1,24 +1,28 @@
 import { useState, useEffect } from "react";
 import {
   View,
-  ScrollView,
   TextInput,
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
   Switch,
+  Platform,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 export default function AddressFormScreen() {
   const { addressId } = useLocalSearchParams<{ addressId?: string }>();
   const isEditing = !!addressId;
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   const [label, setLabel] = useState("");
   const [recipientName, setRecipientName] = useState("");
@@ -78,7 +82,7 @@ export default function AddressFormScreen() {
       router.back();
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to save address");
+      showDialog({ tone: "error", title: "Could not save address", message: err?.response?.data?.message || "Failed to save address" });
     },
   });
 
@@ -88,6 +92,7 @@ export default function AddressFormScreen() {
     phone.trim().length >= 10 &&
     addressText.trim().length >= 5 &&
     city.trim().length >= 2;
+  const bottomInset = Math.max(insets.bottom, 16);
 
   return (
     <>
@@ -99,12 +104,14 @@ export default function AddressFormScreen() {
           headerStyle: { backgroundColor: "#fff" },
         }}
       />
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
+        contentContainerStyle={[styles.form, { paddingBottom: bottomInset + 48 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        bottomOffset={bottomInset + 24}
       >
-        <View style={styles.form}>
           {/* Label */}
           <View style={styles.labelPicker}>
             {["Home", "Office", "Other"].map((l) => (
@@ -203,10 +210,8 @@ export default function AddressFormScreen() {
               </Text>
             )}
           </Pressable>
-        </View>
-
-        <View style={{ height: 30 }} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

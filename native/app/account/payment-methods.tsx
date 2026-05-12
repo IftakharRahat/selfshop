@@ -7,7 +7,6 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
@@ -17,6 +16,7 @@ import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
@@ -85,6 +85,7 @@ interface SavedAccount {
 
 export default function PaymentMethodsScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
 
   /* ── State ── */
   const [editingMethodId, setEditingMethodId] = useState<number | null>(null);
@@ -118,13 +119,13 @@ export default function PaymentMethodsScreen() {
       return data;
     },
     onSuccess: () => {
-      Alert.alert("Success", "Bank information updated successfully.");
+      showDialog({ tone: "success", title: "Bank info updated", message: "Your bank information has been updated successfully." });
       queryClient.invalidateQueries({ queryKey: ["bank-info"] });
       setEditingMethodId(null);
       setAccountNumber("");
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message ?? "Failed to update bank info.");
+      showDialog({ tone: "error", title: "Could not update bank info", message: err?.response?.data?.message ?? "Failed to update bank info." });
     },
   });
 
@@ -287,11 +288,11 @@ export default function PaymentMethodsScreen() {
                         ]}
                         onPress={() => {
                           if (isBank) {
-                            // Navigate to withdraw with bank pre-selected
-                            Alert.alert(
-                              "Bank Withdrawal",
-                              "Use the Withdraw screen to make a bank withdrawal. This method will appear in your withdrawal options."
-                            );
+                            showDialog({
+                              tone: "info",
+                              title: "Bank withdrawal",
+                              message: "Use the Withdraw screen to make a bank withdrawal. This method will appear in your withdrawal options.",
+                            });
                           }
                         }}
                       >
@@ -317,6 +318,7 @@ export default function PaymentMethodsScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

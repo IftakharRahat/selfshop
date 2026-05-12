@@ -7,7 +7,6 @@ import {
   StyleSheet,
 
   RefreshControl,
-  Alert,
 } from "react-native";
 import { Text } from "tamagui";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { toast } from "sonner-native";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 import { CartSkeleton } from "@/components/skeleton";
@@ -50,6 +50,7 @@ function formatBDT(num: number, decimals = 2): string {
 export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
   const { isActive: isResellerActive, isLoggedIn, isLoading: isAuthLoading } = useIsActiveReseller();
 
   // Fetch cart items
@@ -164,29 +165,23 @@ export default function CartScreen() {
   const handleDelete = (cartId: number, itemName: string) => {
     if (deletingCartIds[Number(cartId)] || confirmingDeleteIds[Number(cartId)]) return;
     setCartIdFlag(setConfirmingDeleteIds, cartId, true);
-    Alert.alert(
-      "Remove Item",
-      `Remove "${itemName}" from your cart?`,
-      [
+    showDialog({
+      tone: "danger",
+      title: "Remove item",
+      message: `Remove "${itemName}" from your cart?`,
+      onClose: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+      actions: [
+        { label: "Cancel", tone: "neutral" },
         {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
-        },
-        {
-          text: "Remove",
-          style: "destructive",
+          label: "Remove",
+          tone: "danger",
           onPress: () => {
             setCartIdFlag(setConfirmingDeleteIds, cartId, false);
             deleteMutation.mutate(cartId);
           },
         },
       ],
-      {
-        cancelable: true,
-        onDismiss: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
-      },
-    );
+    });
   };
 
   // Calculate totals
@@ -464,6 +459,7 @@ export default function CartScreen() {
           )}
         </View>
       </ScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </View>
   );
 }

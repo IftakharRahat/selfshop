@@ -1,13 +1,15 @@
-import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 export default function AddressesScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
   const addressesQuery = useQuery({
     queryKey: ["addresses"],
     queryFn: async () => {
@@ -23,7 +25,7 @@ export default function AddressesScreen() {
       queryClient.invalidateQueries({ queryKey: ["addresses"] });
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to delete address");
+      showDialog({ tone: "error", title: "Could not delete address", message: err?.response?.data?.message || "Failed to delete address" });
     },
   });
 
@@ -35,14 +37,15 @@ export default function AddressesScreen() {
   });
 
   function handleDelete(id: number) {
-    Alert.alert("Delete Address", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => deleteMutation.mutate(id),
-      },
-    ]);
+    showDialog({
+      tone: "danger",
+      title: "Delete address",
+      message: "Are you sure you want to delete this delivery address?",
+      actions: [
+        { label: "Cancel", tone: "neutral" },
+        { label: "Delete", tone: "danger", onPress: () => deleteMutation.mutate(id) },
+      ],
+    });
   }
 
   if (addressesQuery.isLoading) {
@@ -157,6 +160,7 @@ export default function AddressesScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </Pressable>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }
