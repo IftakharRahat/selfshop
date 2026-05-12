@@ -134,8 +134,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('view-active/user', [UserController::class, 'activeuser']);
     Route::get('executive', [AdminController::class, 'hrexe']);
     Route::get('executive/create', [AdminController::class, 'hrexecreate']);
-    Route::get('executive/store', [AdminController::class, 'hrexestore']);
-    Route::get('executive/update', [AdminController::class, 'hrexeupdate']);
+    Route::post('executive/store', [AdminController::class, 'hrexestore'])->name('admin.executive.store');
+    Route::get('executive/{id}/edit', [AdminController::class, 'hrexeedit'])->name('admin.executive.edit');
+    Route::put('executive/{id}', [AdminController::class, 'hrexeupdate'])->name('admin.executive.update');
+    Route::get('executive/role-permissions/{id}', [AdminController::class, 'rolePermissions'])->name('admin.executive.role-permissions');
 
     // supporttickets
     Route::get('supporttikits', [TikitController::class, 'admindex']);
@@ -176,23 +178,29 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::put('menu/status', [MenuController::class, 'statusupdate']);
 
     //Sliders
-    Route::resource('sliders', SliderController::class, ['names' => 'admin.sliders']);
-    Route::get('slider/get/data', [SliderController::class, 'sliderdata'])->name('admin.slider.data');
-    Route::post('slider/{id}', [SliderController::class, 'update']);
-    Route::put('slider/status', [SliderController::class, 'statusupdate']);
+    Route::get('sliders', [SliderController::class, 'index'])->name('admin.sliders.index')->middleware('admin.permission:banner.view');
+    Route::get('sliders/create', [SliderController::class, 'create'])->name('admin.sliders.create')->middleware('admin.permission:banner.create');
+    Route::post('sliders', [SliderController::class, 'store'])->name('admin.sliders.store')->middleware('admin.permission:banner.create');
+    Route::get('sliders/{slider}', [SliderController::class, 'show'])->name('admin.sliders.show')->middleware('admin.permission:banner.view');
+    Route::get('sliders/{slider}/edit', [SliderController::class, 'edit'])->name('admin.sliders.edit')->middleware('admin.permission:banner.edit');
+    Route::put('sliders/{slider}', [SliderController::class, 'update'])->name('admin.sliders.update')->middleware('admin.permission:banner.edit');
+    Route::delete('sliders/{slider}', [SliderController::class, 'destroy'])->name('admin.sliders.destroy')->middleware('admin.permission:banner.delete');
+    Route::get('slider/get/data', [SliderController::class, 'sliderdata'])->name('admin.slider.data')->middleware('admin.permission:banner.view');
+    Route::post('slider/{id}', [SliderController::class, 'update'])->middleware('admin.permission:banner.edit');
+    Route::put('slider/status', [SliderController::class, 'statusupdate'])->middleware('admin.permission:banner.edit');
 
     //Flash Sales
     Route::resource('flashsales', FlashSaleController::class, ['names' => 'admin.flashsales']);
-    Route::get('flashsale/get/data', [FlashSaleController::class, 'flashsaledata'])->name('admin.flashsale.data');
-    Route::put('flashsale/status', [FlashSaleController::class, 'statusupdate']);
-    Route::put('flashsale/vendor-registration', [FlashSaleController::class, 'vendorRegistrationUpdate']);
-    Route::post('flashsale/add-product', [FlashSaleController::class, 'addProduct'])->name('admin.flashsale.addproduct');
-    Route::delete('flashsale/remove-product/{id}', [FlashSaleController::class, 'removeProduct'])->name('admin.flashsale.removeproduct');
-    Route::get('flashsale/products/{id}', [FlashSaleController::class, 'getProducts'])->name('admin.flashsale.products');
-    Route::get('flashsale/vendor-submissions/{id}', [FlashSaleController::class, 'getVendorSubmissions'])->name('admin.flashsale.vendor-submissions');
-    Route::get('flashsale/search-products', [FlashSaleController::class, 'searchProducts'])->name('admin.flashsale.searchproducts');
+    Route::get('flashsale/get/data', [FlashSaleController::class, 'flashsaledata'])->name('admin.flashsale.data')->middleware('admin.permission:flash-sale.view');
+    Route::put('flashsale/status', [FlashSaleController::class, 'statusupdate'])->middleware('admin.permission:flash-sale.edit');
+    Route::put('flashsale/vendor-registration', [FlashSaleController::class, 'vendorRegistrationUpdate'])->middleware('admin.permission:flash-sale.edit');
+    Route::post('flashsale/add-product', [FlashSaleController::class, 'addProduct'])->name('admin.flashsale.addproduct')->middleware('admin.permission:flash-sale.edit');
+    Route::delete('flashsale/remove-product/{id}', [FlashSaleController::class, 'removeProduct'])->name('admin.flashsale.removeproduct')->middleware('admin.permission:flash-sale.edit');
+    Route::get('flashsale/products/{id}', [FlashSaleController::class, 'getProducts'])->name('admin.flashsale.products')->middleware('admin.permission:flash-sale.view');
+    Route::get('flashsale/vendor-submissions/{id}', [FlashSaleController::class, 'getVendorSubmissions'])->name('admin.flashsale.vendor-submissions')->middleware('admin.permission:flash-sale.view');
+    Route::get('flashsale/search-products', [FlashSaleController::class, 'searchProducts'])->name('admin.flashsale.searchproducts')->middleware('admin.permission:flash-sale.edit');
     // {id} wildcard MUST come after all literal flashsale/* routes
-    Route::post('flashsale/{id}', [FlashSaleController::class, 'update']);
+    Route::post('flashsale/{id}', [FlashSaleController::class, 'update'])->middleware('admin.permission:flash-sale.edit');
 
     // Sales Targets
     Route::get('sales-targets', [SalesTargetController::class, 'index'])->name('admin.sales-targets.index');
@@ -202,9 +210,15 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::delete('sales-targets/{id}', [SalesTargetController::class, 'destroy'])->name('admin.sales-targets.destroy');
 
     //add banners
-    Route::resource('addbanners', AddbannerController::class, ['names' => 'admin.addbanners']);
-    Route::post('addbanner/{id}', [AddbannerController::class, 'update']);
-    Route::put('addbanner/status/{id}', [AddbannerController::class, 'statusupdate']);
+    Route::get('addbanners', [AddbannerController::class, 'index'])->name('admin.addbanners.index')->middleware('admin.permission:banner.view');
+    Route::get('addbanners/create', [AddbannerController::class, 'create'])->name('admin.addbanners.create')->middleware('admin.permission:banner.create');
+    Route::post('addbanners', [AddbannerController::class, 'store'])->name('admin.addbanners.store')->middleware('admin.permission:banner.create');
+    Route::get('addbanners/{addbanner}', [AddbannerController::class, 'show'])->name('admin.addbanners.show')->middleware('admin.permission:banner.view');
+    Route::get('addbanners/{addbanner}/edit', [AddbannerController::class, 'edit'])->name('admin.addbanners.edit')->middleware('admin.permission:banner.edit');
+    Route::put('addbanners/{addbanner}', [AddbannerController::class, 'update'])->name('admin.addbanners.update')->middleware('admin.permission:banner.edit');
+    Route::delete('addbanners/{addbanner}', [AddbannerController::class, 'destroy'])->name('admin.addbanners.destroy')->middleware('admin.permission:banner.delete');
+    Route::post('addbanner/{id}', [AddbannerController::class, 'update'])->middleware('admin.permission:banner.edit');
+    Route::put('addbanner/status/{id}', [AddbannerController::class, 'statusupdate'])->middleware('admin.permission:banner.edit');
 
     // Promotional Sections
     Route::resource('promotional-sections', PromotionalSectionController::class, ['names' => 'admin.promotional-sections']);
@@ -282,10 +296,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::resource('products', ProductController::class, ['names' => 'admin.products']);
     Route::get('product/get/data', [ProductController::class, 'productdata'])->name('admin.product.data');
     Route::post('product/{id}', [ProductController::class, 'update']);
-    Route::put('product/status', [ProductController::class, 'statusupdate']);
-    Route::put('product/rated', [ProductController::class, 'ratedstatusupdate']);
-    Route::put('product/featur', [ProductController::class, 'featurestatusupdate']);
-    Route::put('product/best-selling', [ProductController::class, 'bestsellstatusupdate']);
+    Route::put('product/status', [ProductController::class, 'statusupdate'])->middleware('admin.permission:product.edit');
+    Route::put('product/rated', [ProductController::class, 'ratedstatusupdate'])->middleware('admin.permission:product.edit');
+    Route::put('product/featur', [ProductController::class, 'featurestatusupdate'])->middleware('admin.permission:product.edit');
+    Route::put('product/best-selling', [ProductController::class, 'bestsellstatusupdate'])->middleware('admin.permission:product.edit');
     Route::get('product/add-varient/{id}', [ProductController::class, 'varients']);
 
     // Admin Variant Builder AJAX endpoints (mirrors vendor API)
@@ -320,21 +334,21 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('course/data', [CourseController::class, 'coursedata'])->name('course.data');
 
     // Vendors (supplier portal)
-    Route::get('vendors', [VendorController::class, 'index'])->name('admin.vendors.index');
-    Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('admin.vendors.edit');
-    Route::put('vendors/{vendor}', [VendorController::class, 'update'])->name('admin.vendors.update');
-    Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show');
-    Route::get('vendors/{vendor}/sales-summary', [VendorController::class, 'salesSummary'])->name('admin.vendors.sales-summary');
-    Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve');
-    Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject');
-    Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge');
-    Route::post('vendors/{vendor}/remove-verified-badge', [VendorController::class, 'removeVerifiedBadge'])->name('admin.vendors.remove-verified-badge');
-    Route::post('vendors/{vendor}/approve-branding', [VendorController::class, 'approveBranding'])->name('admin.vendors.approve-branding');
-    Route::post('vendors/{vendor}/reject-branding', [VendorController::class, 'rejectBranding'])->name('admin.vendors.reject-branding');
-    Route::post('vendors/kyc/{document}/approve', [VendorController::class, 'approveKyc'])->name('admin.vendors.approve-kyc');
-    Route::post('vendors/kyc/{document}/reject', [VendorController::class, 'rejectKyc'])->name('admin.vendors.reject-kyc');
-    Route::delete('vendors/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendors.destroy');
-    Route::get('vendor-autologin/{vendor}', [VendorController::class, 'autologin'])->name('admin.vendors.autologin');
+    Route::get('vendors', [VendorController::class, 'index'])->name('admin.vendors.index')->middleware('admin.permission:supplier.view');
+    Route::get('vendors/{vendor}/edit', [VendorController::class, 'edit'])->name('admin.vendors.edit')->middleware('admin.permission:supplier.edit');
+    Route::put('vendors/{vendor}', [VendorController::class, 'update'])->name('admin.vendors.update')->middleware('admin.permission:supplier.edit');
+    Route::get('vendors/{vendor}', [VendorController::class, 'show'])->name('admin.vendors.show')->middleware('admin.permission:supplier.view');
+    Route::get('vendors/{vendor}/sales-summary', [VendorController::class, 'salesSummary'])->name('admin.vendors.sales-summary')->middleware('admin.permission:supplier.view');
+    Route::post('vendors/{vendor}/approve', [VendorController::class, 'approve'])->name('admin.vendors.approve')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/{vendor}/reject', [VendorController::class, 'reject'])->name('admin.vendors.reject')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/{vendor}/verify-badge', [VendorController::class, 'verifyBadge'])->name('admin.vendors.verify-badge')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/{vendor}/remove-verified-badge', [VendorController::class, 'removeVerifiedBadge'])->name('admin.vendors.remove-verified-badge')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/{vendor}/approve-branding', [VendorController::class, 'approveBranding'])->name('admin.vendors.approve-branding')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/{vendor}/reject-branding', [VendorController::class, 'rejectBranding'])->name('admin.vendors.reject-branding')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/kyc/{document}/approve', [VendorController::class, 'approveKyc'])->name('admin.vendors.approve-kyc')->middleware('admin.permission:supplier.edit');
+    Route::post('vendors/kyc/{document}/reject', [VendorController::class, 'rejectKyc'])->name('admin.vendors.reject-kyc')->middleware('admin.permission:supplier.edit');
+    Route::delete('vendors/{vendor}', [VendorController::class, 'destroy'])->name('admin.vendors.destroy')->middleware('admin.permission:supplier.delete');
+    Route::get('vendor-autologin/{vendor}', [VendorController::class, 'autologin'])->name('admin.vendors.autologin')->middleware('admin.permission:supplier.edit');
 
     // Product reviews (admin view & moderate)
     Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
@@ -494,10 +508,16 @@ Route::get('user/view-incomehistory/{id}/orders', [ResellerinvoiceController::cl
     Route::resource('stocks', StockController::class);
     Route::get('admin/stock', [StockController::class, 'stockdata'])->name('stock.info');
     //supplier
-    Route::resource('suppliers', SupplierController::class);
-    Route::post('supplier/{id}', [SupplierController::class, 'update']);
-    Route::put('supplier/status', [SupplierController::class, 'updatestatus']);
-    Route::get('admin/supplier', [SupplierController::class, 'supplierdata'])->name('supplier.info');
+    Route::get('suppliers', [SupplierController::class, 'index'])->name('suppliers.index')->middleware('admin.permission:supplier.view');
+    Route::get('suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create')->middleware('admin.permission:supplier.create');
+    Route::post('suppliers', [SupplierController::class, 'store'])->name('suppliers.store')->middleware('admin.permission:supplier.create');
+    Route::get('suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show')->middleware('admin.permission:supplier.view');
+    Route::get('suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit')->middleware('admin.permission:supplier.edit');
+    Route::put('suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update')->middleware('admin.permission:supplier.edit');
+    Route::delete('suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy')->middleware('admin.permission:supplier.delete');
+    Route::post('supplier/{id}', [SupplierController::class, 'update'])->middleware('admin.permission:supplier.edit');
+    Route::put('supplier/status', [SupplierController::class, 'updatestatus'])->middleware('admin.permission:supplier.edit');
+    Route::get('admin/supplier', [SupplierController::class, 'supplierdata'])->name('supplier.info')->middleware('admin.permission:supplier.view');
     //payment method
     Route::resource('paymenttypes', PaymenttypeController::class);
     Route::post('paymenttype/{id}', [PaymenttypeController::class, 'update']);
