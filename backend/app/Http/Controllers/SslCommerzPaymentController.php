@@ -1563,6 +1563,7 @@ public function success(Request $request)
         
         return redirect($this->frontendUrl('/order-received', [
             'order_id' => $sessionOrderId,
+            'tran_id' => $tran_id,
         ]));
         
     } catch (\Exception $e) {

@@ -19,6 +19,8 @@ const DARK = "#1A1A2E";
 const GREY = "#8E8E93";
 const BG = "#F5F5FA";
 const ORDER_CREATION_TIMEOUT_MS = 60000;
+const ONLINE_ORDER_VERIFY_ATTEMPTS = 12;
+const ONLINE_ORDER_VERIFY_DELAY_MS = 1000;
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -171,6 +173,21 @@ function extractOrders(response: any): any[] {
   const ordersList =
     response?.data?.data ?? response?.data ?? (Array.isArray(response) ? response : []);
   return Array.isArray(ordersList) ? ordersList : [];
+}
+
+function isOrderReceivedUrl(url: string): boolean {
+  const withoutHash = url.split("#")[0] ?? "";
+  const withoutQuery = withoutHash.split("?")[0] ?? "";
+  const schemeIndex = withoutQuery.indexOf("://");
+  const pathStart = schemeIndex >= 0 ? withoutQuery.indexOf("/", schemeIndex + 3) : -1;
+  const rawPath = schemeIndex >= 0
+    ? (pathStart >= 0 ? withoutQuery.slice(pathStart) : "/")
+    : withoutQuery;
+  const path = rawPath.startsWith("/")
+    ? rawPath.toLowerCase()
+    : `/${rawPath.toLowerCase()}`;
+
+  return path === "/order-received" || path.endsWith("/order-received");
 }
 
 function getOrderReferenceForDisplay(response: any): string | undefined {
@@ -642,8 +659,8 @@ export default function OrderConfirmationScreen() {
         return;
       }
 
-      for (let attempt = 0; attempt < 6; attempt += 1) {
-        if (attempt > 0) await delay(1200);
+      for (let attempt = 0; attempt < ONLINE_ORDER_VERIFY_ATTEMPTS; attempt += 1) {
+        if (attempt > 0) await delay(ONLINE_ORDER_VERIFY_DELAY_MS);
 
         const params = new URLSearchParams({ page: "1" });
         if (orderId) {
@@ -655,13 +672,12 @@ export default function OrderConfirmationScreen() {
         const { data } = await apiClient.get(`/order-data/all?${params.toString()}`);
         const orders = extractOrders(data);
         const finalizedOrder = orders.find((order: any) => {
-          const matchesOrder = orderId ? Number(order.id) === Number(orderId) : true;
-          const matchesTransaction = transactionId
-            ? String(order.transaction_id ?? "") === String(transactionId)
-            : true;
           const visibleStatus = String(order.status ?? "").toLowerCase() !== "pending payment";
 
-          return matchesOrder && matchesTransaction && visibleStatus;
+          if (!visibleStatus) return false;
+          if (orderId) return Number(order.id) === Number(orderId);
+          if (transactionId) return String(order.transaction_id ?? "") === String(transactionId);
+          return false;
         });
 
         if (finalizedOrder) {
@@ -690,18 +706,21 @@ export default function OrderConfirmationScreen() {
   // WebView navigation for SSLCommerz
   const handleNavChange = (navState: { url: string }) => {
     const url = navState.url.toLowerCase();
-    const isSuccess = url.includes("payment=success") || url.includes("/payment/success") || url.includes("status=success") || url.includes("/order-received");
+    const isSuccess = isOrderReceivedUrl(navState.url);
     const isFail = url.includes("payment=failed") || url.includes("payment=error") || url.includes("/payment/fail");
     const isCancel = url.includes("payment=canceled") || url.includes("payment=cancelled") || url.includes("/payment/cancel");
 
     if (isSuccess) {
+      webViewRef.current?.stopLoading();
       void verifyOnlineOrderFinalized(navState.url);
     } else if (isFail) {
+      webViewRef.current?.stopLoading();
       toast.error("Payment failed. Please try again.");
       paymentHandledRef.current = false;
       setPaymentVerificationLoading(false);
       setGatewayUrl(null);
     } else if (isCancel) {
+      webViewRef.current?.stopLoading();
       toast.info("Payment cancelled.");
       paymentHandledRef.current = false;
       setPaymentVerificationLoading(false);

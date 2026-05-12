@@ -1749,6 +1749,7 @@ class FrontendApiController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('invoiceID', 'like', '%' . $search . '%')
                     ->orWhere('id', 'like', '%' . $search . '%')
+                    ->orWhere('transaction_id', 'like', '%' . $search . '%')
                     ->orWhereHas('customers', function ($customerQuery) use ($search) {
                         $customerQuery->where('customerName', 'like', '%' . $search . '%')
                             ->orWhere('customerPhone', 'like', '%' . $search . '%');
