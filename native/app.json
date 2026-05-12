@@ -47,7 +47,8 @@
         "@sentry/react-native/expo",
         {
           "organization": "selfshop-limited",
-          "project": "reseller-app"
+          "project": "reseller-app",
+          "uploadSourceMaps": false
         }
       ],
       "expo-router",
