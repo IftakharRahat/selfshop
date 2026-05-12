@@ -1,17 +1,19 @@
 import { useState } from "react";
 import {
   View,
-  ScrollView,
   TextInput,
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
+  Platform,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const DEPARTMENTS = ["Billing", "Parcel Support", "Technical Support"] as const;
@@ -28,10 +30,13 @@ type CreateTicketPayload = {
 
 export default function CreateTicketScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [department, setDepartment] = useState<Department>("Billing");
   const [priority, setPriority] = useState<Priority>("Medium");
+  const bottomInset = Math.max(insets.bottom, 16);
 
   const createMutation = useMutation({
     mutationFn: async (payload: CreateTicketPayload) => {
@@ -55,14 +60,21 @@ export default function CreateTicketScreen() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
-      Alert.alert("Success", "Support ticket created!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      showDialog({
+        tone: "success",
+        title: "Ticket created",
+        message: "Your support ticket has been submitted.",
+        actions: [{ label: "OK", onPress: () => router.back() }],
+      });
     },
     onError: (err: any) => {
       const errors = err?.response?.data?.errors as Record<string, string[]> | undefined;
       const firstValidationError = errors ? Object.values(errors).flat().find(Boolean) : undefined;
-      Alert.alert("Error", firstValidationError || err?.response?.data?.message || "Failed to create ticket");
+      showDialog({
+        tone: "error",
+        title: "Could not create ticket",
+        message: firstValidationError || err?.response?.data?.message || "Failed to create ticket",
+      });
     },
   });
 
@@ -72,12 +84,12 @@ export default function CreateTicketScreen() {
     const trimmedMessage = message.trim();
 
     if (trimmedSubject.length < 3) {
-      Alert.alert("Invalid", "Subject must be at least 3 characters.");
+      showDialog({ tone: "warning", title: "Check subject", message: "Subject must be at least 3 characters." });
       return;
     }
 
     if (trimmedMessage.length < 10) {
-      Alert.alert("Invalid", "Message must be at least 10 characters.");
+      showDialog({ tone: "warning", title: "Check message", message: "Message must be at least 10 characters." });
       return;
     }
 
@@ -99,12 +111,14 @@ export default function CreateTicketScreen() {
           headerStyle: { backgroundColor: "#fff" },
         }}
       />
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
+        contentContainerStyle={[styles.form, { paddingBottom: bottomInset + 48 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        bottomOffset={bottomInset + 24}
       >
-        <View style={styles.form}>
           {/* Department */}
           <View>
             <Text fontSize="$3" fontWeight="600" color="#1A1A2E" mb="$2">
@@ -211,8 +225,8 @@ export default function CreateTicketScreen() {
               </Text>
             )}
           </Pressable>
-        </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

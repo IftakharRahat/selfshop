@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Keyboard,
   Platform,
 } from "react-native";
 import { Text } from "tamagui";
@@ -14,6 +13,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardStickyView } from "react-native-keyboard-controller";
 
 import apiClient from "@/lib/api-client";
 
@@ -29,7 +29,6 @@ export default function TicketDetailScreen() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<ScrollView>(null);
   const [replyText, setReplyText] = useState("");
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [replyBarHeight, setReplyBarHeight] = useState(88);
   const insets = useSafeAreaInsets();
 
@@ -57,23 +56,8 @@ export default function TicketDetailScreen() {
 
   const ticket = ticketQuery.data?.ticket ?? ticketQuery.data;
   const replies = ticketQuery.data?.replays ?? ticket?.replies ?? [];
-  const composerBottom = keyboardHeight > 0 ? keyboardHeight + 8 : Math.max(insets.bottom, 14);
+  const composerBottom = Math.max(insets.bottom, 14);
   const scrollBottomPadding = replyBarHeight + composerBottom + 20;
-
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSub = Keyboard.addListener(showEvent, (event) => {
-      setKeyboardHeight(Math.max(event.endCoordinates.height - insets.bottom, 0));
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-    });
-    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [insets.bottom]);
 
   if (ticketQuery.isLoading) {
     return (
@@ -188,8 +172,9 @@ export default function TicketDetailScreen() {
 
         {/* Reply Input */}
         {canReply && (
-          <View
+          <KeyboardStickyView
             onLayout={(event) => setReplyBarHeight(event.nativeEvent.layout.height)}
+            offset={{ closed: 0, opened: -8 }}
             style={[
               styles.replyBar,
               { bottom: composerBottom },
@@ -220,7 +205,7 @@ export default function TicketDetailScreen() {
                 <Ionicons name="send" size={18} color="#fff" />
               )}
             </Pressable>
-          </View>
+          </KeyboardStickyView>
         )}
       </View>
     </>

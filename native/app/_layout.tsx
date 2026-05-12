@@ -6,6 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { TamaguiProvider } from "tamagui";
 import * as SecureStore from "expo-secure-store";
 import { Toaster } from "sonner-native";
@@ -71,7 +72,8 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <GestureHandlerRootView style={styles.container}>
-          <NotificationProvider>
+          <KeyboardProvider preload={false}>
+            <NotificationProvider>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -133,7 +135,8 @@ export default function RootLayout() {
             />
             <LaunchAnnouncementPopup />
             <ForceUpdateGate />
-          </NotificationProvider>
+            </NotificationProvider>
+          </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
     </TamaguiProvider>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type Dispatch, type SetStateAction } from "react";
 import {
   View, ScrollView, Pressable, StyleSheet, ActivityIndicator,
-  TextInput, Image, Modal, Platform, KeyboardAvoidingView, Alert,
+  TextInput, Image, Modal, Platform, KeyboardAvoidingView,
   Animated, Easing,
 } from "react-native";
 import { Text } from "tamagui";
@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 import { WebView } from "react-native-webview";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
@@ -214,6 +215,7 @@ function getOrderReferenceForDisplay(response: any): string | undefined {
 export default function OrderConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
   const webViewRef = useRef<WebView>(null);
   const onlinePaymentRef = useRef<OnlinePaymentReference>({});
   const paymentHandledRef = useRef(false);
@@ -303,23 +305,22 @@ export default function OrderConfirmationScreen() {
   const handleRemoveItem = (cartId: number, itemName: string) => {
     if (deletingCartIds[Number(cartId)] || confirmingDeleteIds[Number(cartId)]) return;
     setCartIdFlag(setConfirmingDeleteIds, cartId, true);
-    Alert.alert("Remove Item", `Remove "${itemName}" from your order?`, [
-      {
-        text: "Cancel",
-        style: "cancel",
-        onPress: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
-      },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => {
-          setCartIdFlag(setConfirmingDeleteIds, cartId, false);
-          deleteMutation.mutate(cartId);
+    showDialog({
+      tone: "danger",
+      title: "Remove item",
+      message: `Remove "${itemName}" from your order?`,
+      onClose: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+      actions: [
+        { label: "Cancel", tone: "neutral" },
+        {
+          label: "Remove",
+          tone: "danger",
+          onPress: () => {
+            setCartIdFlag(setConfirmingDeleteIds, cartId, false);
+            deleteMutation.mutate(cartId);
+          },
         },
-      },
-    ], {
-      cancelable: true,
-      onDismiss: () => setCartIdFlag(setConfirmingDeleteIds, cartId, false),
+      ],
     });
   };
 
@@ -1301,6 +1302,7 @@ export default function OrderConfirmationScreen() {
           </View>
         </View>
       </Modal>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </View>
   );
 }

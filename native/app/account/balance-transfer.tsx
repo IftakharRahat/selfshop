@@ -1,21 +1,21 @@
 import { useCallback, useState } from "react";
 import {
   View,
-  ScrollView,
   StyleSheet,
   Pressable,
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
@@ -27,6 +27,8 @@ function formatCurrency(value: number | string | undefined): string {
 
 export default function BalanceTransferScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   /* ── State ── */
   const [recipientId, setRecipientId] = useState("");
@@ -57,14 +59,14 @@ export default function BalanceTransferScreen() {
       return data;
     },
     onSuccess: () => {
-      Alert.alert("Success", "Balance transfer submitted successfully.");
+      showDialog({ tone: "success", title: "Transfer submitted", message: "Your balance transfer request has been submitted successfully." });
       setRecipientId("");
       setAmount("");
       queryClient.invalidateQueries({ queryKey: ["balance-transfers"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message ?? "Transfer failed.");
+      showDialog({ tone: "error", title: "Transfer failed", message: err?.response?.data?.message ?? "Transfer failed." });
     },
   });
 
@@ -75,15 +77,15 @@ export default function BalanceTransferScreen() {
   /* ── Submit ── */
   const handleSubmit = () => {
     if (!recipientId.trim()) {
-      Alert.alert("Invalid", "Please enter recipient ID or phone.");
+      showDialog({ tone: "warning", title: "Recipient needed", message: "Please enter recipient ID or phone." });
       return;
     }
     if (!amount.trim() || isNaN(Number(amount)) || Number(amount) <= 0) {
-      Alert.alert("Invalid", "Please enter a valid amount.");
+      showDialog({ tone: "warning", title: "Check amount", message: "Please enter a valid amount." });
       return;
     }
     if (Number(amount) > walletBalance) {
-      Alert.alert("Insufficient Balance", "You don't have enough balance for this transfer.");
+      showDialog({ tone: "warning", title: "Insufficient balance", message: "You don't have enough balance for this transfer." });
       return;
     }
     transferMutation.mutate({ to_user_id: recipientId.trim(), amount: amount.trim() });
@@ -91,6 +93,7 @@ export default function BalanceTransferScreen() {
 
   /* ── Refresh ── */
   const isRefreshing = historyQuery.isRefetching;
+  const bottomInset = Math.max(insets.bottom, 16);
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["balance-transfers"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
@@ -106,17 +109,16 @@ export default function BalanceTransferScreen() {
           headerStyle: { backgroundColor: "#F8F8FA" },
         }}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           style={styles.container}
+          contentContainerStyle={{ paddingBottom: bottomInset + 48 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={ACCENT} />
           }
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          bottomOffset={bottomInset + 24}
         >
           {/* ── Balance Info ── */}
           <View style={styles.balanceCard}>
@@ -216,8 +218,8 @@ export default function BalanceTransferScreen() {
           </View>
 
           <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

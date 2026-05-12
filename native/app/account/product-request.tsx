@@ -2,14 +2,11 @@ import { useCallback, useState } from "react";
 import {
   View,
   ScrollView,
-  FlatList,
   StyleSheet,
   Pressable,
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
   Image,
 } from "react-native";
@@ -19,7 +16,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { toast } from "sonner-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
@@ -50,6 +50,8 @@ function resolveImageUrl(path?: string | null): string | null {
 
 export default function ProductRequestScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   /* ── Form State ── */
   const [productName, setProductName] = useState("");
@@ -88,6 +90,7 @@ export default function ProductRequestScreen() {
   });
 
   const requestList: any[] = Array.isArray(listQuery.data) ? listQuery.data : [];
+  const bottomInset = Math.max(insets.bottom, 16);
 
   /* ── Image Picker ── */
   const pickImage = async () => {
@@ -104,11 +107,11 @@ export default function ProductRequestScreen() {
   /* ── Submit ── */
   const handleSubmit = () => {
     if (!productName.trim()) {
-      Alert.alert("Required", "Please enter a product name.");
+      showDialog({ tone: "warning", title: "Product name required", message: "Please enter a product name." });
       return;
     }
     if (!description.trim()) {
-      Alert.alert("Required", "Please enter a description.");
+      showDialog({ tone: "warning", title: "Description required", message: "Please enter a description." });
       return;
     }
 
@@ -145,12 +148,9 @@ export default function ProductRequestScreen() {
           headerStyle: { backgroundColor: "#F8F8FA" },
         }}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           style={styles.container}
+          contentContainerStyle={{ paddingBottom: bottomInset + 48 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -160,6 +160,8 @@ export default function ProductRequestScreen() {
             />
           }
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          bottomOffset={bottomInset + 24}
         >
           {/* ── Request Form ── */}
           <View style={styles.formCard}>
@@ -327,8 +329,8 @@ export default function ProductRequestScreen() {
           </View>
 
           <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }
