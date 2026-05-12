@@ -229,7 +229,7 @@ class SslCommerzNotification extends AbstractSslCommerz
             return;
         }
 
-        $this->successUrl = rtrim(env('APP_URL'), '/') . $this->config['success_url'];
+        $this->successUrl = rtrim($this->config['callback_base_url'] ?? env('APP_URL'), '/') . $this->config['success_url'];
     }
 
     protected function getSuccessUrl()
@@ -244,7 +244,7 @@ class SslCommerzNotification extends AbstractSslCommerz
             return;
         }
 
-        $this->failedUrl = rtrim(env('APP_URL'), '/') . $this->config['failed_url'];
+        $this->failedUrl = rtrim($this->config['callback_base_url'] ?? env('APP_URL'), '/') . $this->config['failed_url'];
     }
 
     protected function getFailedUrl()
@@ -259,7 +259,7 @@ class SslCommerzNotification extends AbstractSslCommerz
             return;
         }
 
-        $this->cancelUrl = rtrim(env('APP_URL'), '/') . $this->config['cancel_url'];
+        $this->cancelUrl = rtrim($this->config['callback_base_url'] ?? env('APP_URL'), '/') . $this->config['cancel_url'];
     }
 
     protected function getCancelUrl()
@@ -274,7 +274,7 @@ class SslCommerzNotification extends AbstractSslCommerz
             return;
         }
 
-        $this->ipnUrl = rtrim(env('APP_URL'), '/') . $this->config['ipn_url'];
+        $this->ipnUrl = rtrim($this->config['callback_base_url'] ?? env('APP_URL'), '/') . $this->config['ipn_url'];
     }
 
     protected function getIPNUrl()
