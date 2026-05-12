@@ -57,6 +57,12 @@
       "expo-secure-store",
       "expo-web-browser",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SelfShop to access your photos to upload product images."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#E5005F",

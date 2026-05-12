@@ -85,10 +85,6 @@ function getMimeFromExtension(extension?: string | null): string {
 }
 
 function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
-  if (asset.file) {
-    return asset.file;
-  }
-
   const extension =
     getExtensionFromName(asset.uri) ??
     getExtensionFromName(asset.fileName) ??
@@ -99,11 +95,15 @@ function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
   const sourceName = asset.fileName?.replace(/[^\w.-]/g, "_") || fallbackName;
   const baseName = sourceName.replace(/\.[^.]+$/, "");
 
+  // On Android production builds, asset.uri may be a content:// URI;
+  // React Native's FormData handles content:// and file:// URIs natively,
+  // so we pass the URI as-is. The { uri, type, name } shape is what RN
+  // expects for multipart uploads on all platforms.
   return {
     uri: asset.uri,
     type: mimeType,
     name: `${baseName}.${extension}`,
-  };
+  } as any;
 }
 
 export default function ProductRequestScreen() {
