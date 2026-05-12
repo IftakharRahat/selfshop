@@ -1175,7 +1175,11 @@ private function createOrderDetails($orderId, $cartData, $request)
             }
 
             // Decrement product stock for this store order
-            app(\App\Services\StockService::class)->decrementForOrder($storeOrder->id);
+            try {
+                app(\App\Services\StockService::class)->decrementForOrder($storeOrder->id);
+            } catch (\Throwable $e) {
+                Log::warning('Stock decrement failed for store order #' . $storeOrder->id, ['error' => $e->getMessage()]);
+            }
 
             // Send SMS + Email to suppliers
             try {
@@ -1214,34 +1218,7 @@ public function success(Request $request)
         return $this->packagePaymentSuccess($request);
     }
 
-    $result = app(SslCommerzOrderFinalizer::class)->finalizeFromCallback($request, false);
 
-    Session::forget(['sslcommerz_tran_id', 'sslcommerz_order_id', 'cart_data', 'order_data']);
-
-    if ($result['success'] ?? false) {
-        Session::put('last_successful_order_id', $result['order_id'] ?? null);
-        Session::put('payment_completed_at', now()->toDateTimeString());
-
-        if ($request->filled('value_a')) {
-            Session::put('payment_user_id', $request->input('value_a'));
-        }
-
-        return redirect($this->frontendUrl('/order-received', [
-            'payment' => 'success',
-            'order_id' => $result['order_id'] ?? null,
-            'tran_id' => $result['transaction_id'] ?? $tran_id,
-        ]));
-    }
-
-    Log::error('SSLCommerz success callback could not finalize order', $result);
-
-    return redirect()->away($this->frontendUrl('/checkout', [
-        'payment' => 'failed',
-        'tran_id' => $tran_id,
-        'message' => $result['message'] ?? 'Payment finalization failed.',
-    ]));
-
-        
     try {
         Log::info('SSLCommerz Success Callback - Starting:', $request->all());
         
@@ -1528,8 +1505,24 @@ public function success(Request $request)
             // Continue anyway - the main order is created
         }
         
-        // Clear cart
+        // Clear session-based cart (web checkout)
         Cart::destroy();
+
+        // Clear database-based cart (native/mobile checkout)
+        if ($userIdFromPayment && $userIdFromPayment != '0') {
+            try {
+                $cartIdsFromOrder = $originalDataArray['cart_ids'] ?? [];
+                if (!empty($cartIdsFromOrder) && is_array($cartIdsFromOrder)) {
+                    \App\Models\Cart::where('user_id', $userIdFromPayment)
+                        ->whereIn('id', $cartIdsFromOrder)
+                        ->delete();
+                    Log::info('Native cart items cleared', ['user_id' => $userIdFromPayment, 'cart_ids' => $cartIdsFromOrder]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Native cart clear failed: ' . $e->getMessage());
+            }
+        }
+
         Log::info('Cart cleared.');
         
         // Store order ID in session for the order-received page

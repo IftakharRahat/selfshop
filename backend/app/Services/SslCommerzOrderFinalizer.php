@@ -107,7 +107,13 @@ class SslCommerzOrderFinalizer
                 $createdProducts = $this->ensureOrderProducts($lockedOrder->id, $cartData);
 
                 if ($createdProducts) {
-                    app(StockService::class)->decrementForOrder($lockedOrder->id);
+                    try {
+                        app(StockService::class)->decrementForOrder($lockedOrder->id);
+                    } catch (\Throwable $e) {
+                        \Log::warning('Stock decrement failed during finalization for order #' . $lockedOrder->id, [
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
 
                 if ($previousStatus === 'Pending Payment' && ($createdCustomer || $createdProducts)) {
