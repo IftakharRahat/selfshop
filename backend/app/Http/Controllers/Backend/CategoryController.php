@@ -46,12 +46,19 @@ class CategoryController extends Controller
     public function categorydata()
     {
         $categorys = Category::all();
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($categorys)
-            ->addColumn('action', function ($categorys) {
-                return '<a href="#" type="button" id="editCategoryBtn" data-id="' . $categorys->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainCategory" ><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="deleteCategoryBtn" data-id="' . $categorys->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($categorys) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('category.edit')) {
+                    $a .= '<a href="#" type="button" id="editCategoryBtn" data-id="' . $categorys->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainCategory"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('category.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteCategoryBtn" data-id="' . $categorys->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
 

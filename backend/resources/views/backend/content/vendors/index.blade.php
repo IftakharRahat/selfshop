@@ -160,7 +160,9 @@
                             </td>
                             <td>{{ $vendor->created_at->format('Y-m-d H:i') }}</td>
                             <td>
+                                @php $adm = Auth::guard('admin')->user(); $isFull = $adm->isFullAdmin(); @endphp
                                 <a href="{{ route('admin.vendors.show', $vendor->id) }}" class="btn btn-sm btn-outline-primary mb-1">View</a>
+                                @if($isFull || $adm->hasDirectPermission('supplier.edit'))
                                 <a href="{{ route('admin.vendors.edit', $vendor->id) }}" class="btn btn-sm btn-primary mb-1">Edit</a>
                                 @if($vendor->status === 'pending')
                                     <form action="{{ url('admin/vendors/'.$vendor->id.'/approve') }}" method="post" class="d-inline">
@@ -185,11 +187,14 @@
                                         </form>
                                     @endif
                                 @endif
+                                @endif
+                                @if($isFull || $adm->hasDirectPermission('supplier.delete'))
                                 <form action="{{ route('admin.vendors.destroy', $vendor->id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete {{ addslashes($vendor->company_name) }} and all their data? This cannot be undone.');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger mb-1">Delete</button>
                                 </form>
+                                @endif
                             </td>
                         </tr>
                         @empty

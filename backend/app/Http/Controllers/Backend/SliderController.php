@@ -51,12 +51,20 @@ class SliderController extends Controller
     public function sliderdata()
     {
         $sliders = Slider::all();
-        return Datatables::of($sliders)
-            ->addColumn('action', function ($sliders) {
-                return '<a href="#" type="button" id="editSliderBtn" data-id="' . $sliders->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainSlider" ><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="deleteSliderBtn" data-id="' . $sliders->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
-            })
+        $admin = \Auth::guard('admin')->user();
+        $isFullAdmin = $admin && $admin->isFullAdmin();
 
+        return Datatables::of($sliders)
+            ->addColumn('action', function ($sliders) use ($admin, $isFullAdmin) {
+                $actions = '';
+                if ($isFullAdmin || $admin->hasDirectPermission('banner.edit')) {
+                    $actions .= '<a href="#" type="button" id="editSliderBtn" data-id="' . $sliders->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainSlider"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFullAdmin || $admin->hasDirectPermission('banner.delete')) {
+                    $actions .= '<a href="#" type="button" id="deleteSliderBtn" data-id="' . $sliders->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $actions ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
+            })
             ->make(true);
     }
 

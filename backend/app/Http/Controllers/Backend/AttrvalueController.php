@@ -42,12 +42,19 @@ class AttrvalueController extends Controller
      public function attrvaluedata()
     {
         $attrvalue = Attrvalue::all();
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($attrvalue)
-            ->addColumn('action', function ($attrvalue) {
-                return '<a href="#" type="button" id="editAttrvalueBtn" data-id="' . $attrvalue->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainAttrvalue" ><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="deleteAttrvalueBtn" data-id="' . $attrvalue->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($attrvalue) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('attribute.edit')) {
+                    $a .= '<a href="#" type="button" id="editAttrvalueBtn" data-id="' . $attrvalue->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainAttrvalue"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('attribute.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteAttrvalueBtn" data-id="' . $attrvalue->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
 

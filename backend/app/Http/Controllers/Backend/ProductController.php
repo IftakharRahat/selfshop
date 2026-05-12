@@ -312,19 +312,32 @@ class ProductController extends Controller
      */
     public function productdata(Request $request)
     {
-        if (isset($request->search)) {
-            $products = Product::where('shop_id', Auth::guard('admin')->user()->id)->where('ProductName', 'LIKE', '%' . $request->search . '%');
+        $admin = Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
+
+        // Full admins and non-Shop role admins with product.view see ALL products
+        if ($isFull || ($admin->type !== 'Shop' && $admin->hasDirectPermission('product.view'))) {
+            $products = Product::query();
         } else {
-            $products = Product::where('shop_id', Auth::guard('admin')->user()->id);
+            $products = Product::where('shop_id', $admin->id);
+        }
+
+        if (isset($request->search) && $request->search != '') {
+            $products = $products->where('ProductName', 'LIKE', '%' . $request->search . '%');
         }
 
         return Datatables::of($products)
-            ->addColumn('action', function ($products) {
-                return '<a href="product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a>
-                <a href="products/' . $products->id . '/edit" class="btn btn-primary btn-sm" style="margin-bottom:2px;"><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" style="margin-bottom:2px;" id="deleteProductBtn" data-id="' . $products->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($products) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('product.edit')) {
+                    $a .= '<a href="product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a> ';
+                    $a .= '<a href="products/' . $products->id . '/edit" class="btn btn-primary btn-sm" style="margin-bottom:2px;"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('product.delete')) {
+                    $a .= '<a href="#" type="button" style="margin-bottom:2px;" id="deleteProductBtn" data-id="' . $products->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
     public function productshopdata()
@@ -335,13 +348,20 @@ class ProductController extends Controller
                       ->orWhere('vendor_approval_status', 'approved');
             })
             ->get();
+        $admin = Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($products)
-            ->addColumn('action', function ($products) {
-                return '<a href="../product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a>
-                <a href="product-edit/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;"><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" style="margin-bottom:2px;" id="deleteProductBtn" data-id="' . $products->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($products) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('shop-product.edit')) {
+                    $a .= '<a href="../product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a> ';
+                    $a .= '<a href="product-edit/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('shop-product.delete')) {
+                    $a .= '<a href="#" type="button" style="margin-bottom:2px;" id="deleteProductBtn" data-id="' . $products->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
 

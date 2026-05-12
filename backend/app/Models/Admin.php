@@ -84,7 +84,7 @@ class Admin extends Authenticatable
             return false;
         }
         // Match both DB originals (Superadmin, Manager) and lowercase variants (superadmin, admin, manager)
-        $fullRoles = ['Superadmin', 'superadmin', 'admin', 'Admin', 'Manager', 'manager'];
+        $fullRoles = ['Superadmin', 'superadmin', 'admin', 'Admin'];
         foreach ($fullRoles as $role) {
             if ($this->hasRole($role)) {
                 return true;

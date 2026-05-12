@@ -60,6 +60,8 @@
 <script>
     $(document).ready(function() {
         var token = $("input[name='_token']").val();
+        @php $adm = Auth::guard('admin')->user(); @endphp
+        var canEditProduct = {{ ($adm->isFullAdmin() || $adm->hasDirectPermission('product.edit')) ? 'true' : 'false' }};
 
         var productinfo = $('#productinfo').DataTable({
             order: [
@@ -99,7 +101,11 @@
                 {
                     "data": null,
                     render: function(data) {
-
+                        if (!canEditProduct) {
+                            return data.frature == 0
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.frature == 0) {
                             return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="1" id="productfeaturstatusBtn" data-id="' +
                                 data.id + '">Active</button>';
@@ -107,14 +113,16 @@
                             return '<button type="button" class="btn btn-warning btn-sm btn-status" data-status="0" id="productfeaturstatusBtn" data-id="' +
                                 data.id + '" >Inactive</button>';
                         }
-
-
                     }
                 },
                 {
                     "data": null,
                     render: function(data) {
-
+                        if (!canEditProduct) {
+                            return data.top_rated == 1
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.top_rated == 1) {
                             return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="0" id="productratedstatusBtn" data-id="' +
                                 data.id + '">Active</button>';
@@ -122,14 +130,16 @@
                             return '<button type="button" class="btn btn-warning btn-sm btn-status" data-status="1" id="productratedstatusBtn" data-id="' +
                                 data.id + '" >Inactive</button>';
                         }
-
-
                     }
                 },
                 {
                     "data": null,
                     render: function(data) {
-
+                        if (!canEditProduct) {
+                            return data.status == 'Active'
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.status == 'Active') {
                             return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="Inactive" id="productstatusBtn" data-id="' +
                                 data.id + '">Active</button>';
@@ -137,8 +147,6 @@
                             return '<button type="button" class="btn btn-warning btn-sm btn-status" data-status="Active" id="productstatusBtn" data-id="' +
                                 data.id + '" >Inactive</button>';
                         }
-
-
                     }
                 },
                 {

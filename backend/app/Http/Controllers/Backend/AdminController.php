@@ -79,17 +79,88 @@ class AdminController extends Controller
         $admin = new Admin();
         $admin->name = $request->name;
         $admin->email = $request->email;
-        if ($request->roles == 2) {
-            $admin->type = 'Shop';
-        }
+        $admin->type = 'hr';
         $admin->add_by = Auth::guard('admin')->user()->id;
         $admin->password = Hash::make($request->password);
         $admin->phone = $request->phone;
         $admin->save();
+
+        // Assign role (as a label / template)
         if ($request->roles) {
             $admin->assignRole($request->roles);
         }
-        return redirect()->back()->with('message', 'Admin created successfully');
+
+        // Sync direct permissions (granular access)
+        if ($request->has('permission')) {
+            $admin->syncPermissions($request->permission);
+        }
+
+        return redirect('admin/executive')->with('message', 'H.R / Executive created successfully');
+    }
+
+    public function hrexeedit($id)
+    {
+        $admin = Admin::findOrFail($id);
+        $roles = Role::where('guard_name', 'admin')->get();
+        $allpermissions = Permission::where('guard_name', 'admin')->get();
+        $permission_groups = Admin::getPermissionGroups();
+        return view('backend.content.admins.hrexeedit', [
+            'admin' => $admin,
+            'roles' => $roles,
+            'allpermissions' => $allpermissions,
+            'permission_groups' => $permission_groups,
+        ]);
+    }
+
+    public function hrexeupdate(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
+        $admin = Admin::findOrFail($id);
+        $admin->name = $request->name;
+        $admin->email = $request->email;
+        $admin->phone = $request->phone;
+
+        if ($request->filled('password')) {
+            if (strlen($request->password) < 8) {
+                return redirect()->back()->with('error', 'Password must be at least 8 characters.');
+            }
+            if ($request->password !== $request->confirmpassword) {
+                return redirect()->back()->with('error', 'Password and confirmation do not match.');
+            }
+            $admin->password = Hash::make($request->password);
+        }
+
+        if ($request->has('status')) {
+            $admin->status = $request->status;
+        }
+
+        $admin->save();
+
+        // Update role
+        $admin->roles()->detach();
+        if ($request->roles) {
+            $admin->assignRole($request->roles);
+        }
+
+        // Sync direct permissions
+        $admin->syncPermissions($request->permission ?? []);
+
+        return redirect('admin/executive')->with('message', 'H.R / Executive updated successfully');
+    }
+
+    /**
+     * AJAX: Return permission names for a given role (used to auto-fill checkboxes).
+     */
+    public function rolePermissions($id)
+    {
+        $role = Role::findById($id, 'admin');
+        $permissions = $role->permissions->pluck('name');
+        return response()->json($permissions);
     }
 
     /**
@@ -107,7 +178,13 @@ class AdminController extends Controller
     public function hrexecreate()
     {
         $roles = Role::where('guard_name', 'admin')->get();
-        return view('backend.content.admins.hrexecreate', ['roles' => $roles]);
+        $allpermissions = Permission::where('guard_name', 'admin')->get();
+        $permission_groups = Admin::getPermissionGroups();
+        return view('backend.content.admins.hrexecreate', [
+            'roles' => $roles,
+            'allpermissions' => $allpermissions,
+            'permission_groups' => $permission_groups,
+        ]);
     }
 
 

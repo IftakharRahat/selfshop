@@ -16,9 +16,12 @@
                     <h6 class="admin-card-title">Products List</h6>
                     <div class="admin-card-actions d-flex align-items-center gap-2">
                         <input type="text" class="form-control form-control-sm" name="search" id="search" placeholder="Search products..." style="width: 200px;">
+                        @php $adm = Auth::guard('admin')->user(); @endphp
+                        @if($adm->isFullAdmin() || $adm->hasDirectPermission('product.create'))
                         <a href="{{ url('admin/products/create') }}" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-lg"></i> Create New Product
                         </a>
+                        @endif
                     </div>
                 </div>
                 <div class="admin-card-body">
@@ -60,6 +63,7 @@
 <script>
     $(document).ready(function() {
         var token = $("input[name='_token']").val();
+        var canEditProduct = {{ ($adm->isFullAdmin() || $adm->hasDirectPermission('product.edit')) ? 'true' : 'false' }};
 
         var productinfo = $('#productinfo').DataTable({
             order: [
@@ -109,7 +113,11 @@
                 {
                     "data": null,
                     render: function(data) {
-
+                        if (!canEditProduct) {
+                            return data.frature == 0
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.frature == 0) {
                             return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="1" id="productfeaturstatusBtn" data-id="' +
                                 data.id + '">Active</button>';
@@ -117,14 +125,16 @@
                             return '<button type="button" class="btn btn-warning btn-sm btn-status" data-status="0" id="productfeaturstatusBtn" data-id="' +
                                 data.id + '" >Inactive</button>';
                         }
-
-
                     }
                 },
                 {
                     "data": null,
                     render: function(data) {
-
+                        if (!canEditProduct) {
+                            return data.top_rated == 1
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.top_rated == 1) {
                             return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="0" id="productratedstatusBtn" data-id="' +
                                 data.id + '">Active</button>';
@@ -132,14 +142,16 @@
                             return '<button type="button" class="btn btn-warning btn-sm btn-status" data-status="1" id="productratedstatusBtn" data-id="' +
                                 data.id + '" >Inactive</button>';
                         }
-
-
                     }
                 },
                 {
                     "data": null,
                     render: function(data) {
-
+                        if (!canEditProduct) {
+                            return data.status == 'Active'
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.status == 'Active') {
                             return '<button type="button" class="btn btn-success btn-sm btn-status" data-status="Inactive" id="productstatusBtn" data-id="' +
                                 data.id + '">Active</button>';
@@ -147,8 +159,6 @@
                             return '<button type="button" class="btn btn-warning btn-sm btn-status" data-status="Active" id="productstatusBtn" data-id="' +
                                 data.id + '" >Inactive</button>';
                         }
-
-
                     }
                 },
                 {

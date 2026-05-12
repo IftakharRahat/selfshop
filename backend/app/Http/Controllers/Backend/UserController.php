@@ -54,6 +54,9 @@ class UserController extends Controller
             $users->whereRaw("LOWER(COALESCE(users.membership_status, '')) = ?", [strtolower($membershipFilter)]);
         }
 
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
+
         return Datatables::of($users)
 
             ->filter(function ($query) {
@@ -77,9 +80,15 @@ class UserController extends Controller
 
                 return '<span class="badge" style="background:#2d2a5d;color:#fff;">User</span>';
             })
-            ->addColumn('action', function ($users) {
-                return '<a href="../admin/users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="deleteBrandBtn" data-id="' . $users->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($users) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('user.edit')) {
+                    $a .= '<a href="../admin/users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('user.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteBrandBtn" data-id="' . $users->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
             ->addColumn('analytics', function ($users) {
                 $joinDate = optional($users->created_at)->format('Y-m-d h:i a') ?? 'N/A';
@@ -137,7 +146,13 @@ class UserController extends Controller
                 return $u->name . '( <a href="../../resellerinvoice/user/view-dashboard/' . $u->id . '" target="_blank" style="color:#613EEA">' . $u->my_referral_code . '</a> )';
             })
             ->addColumn('action', function ($users) {
-                return '<a href="../users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>';
+                $admin = \Auth::guard('admin')->user();
+                $isFull = $admin && $admin->isFullAdmin();
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('user.edit')) {
+                    $a .= '<a href="../users/' . $users->id . '/edit" type="button" class="mt-2 btn btn-primary btn-sm"><i class="bi bi-pencil-square"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
             ->addColumn('analytics', function ($users) {
                 $joinDate = optional($users->created_at)->format('Y-m-d h:i a') ?? 'N/A';
