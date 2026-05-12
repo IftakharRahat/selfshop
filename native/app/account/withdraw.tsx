@@ -7,13 +7,11 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
   Image,
 } from "react-native";
-import { Text } from "tamagui";
+import { Dialog, Text } from "tamagui";
 import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,8 +19,22 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import apiClient from "@/lib/api-client";
 
-const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
+
+type FeedbackTone = "success" | "error" | "warning";
+
+type FeedbackDialogState = {
+  open: boolean;
+  tone: FeedbackTone;
+  title: string;
+  message: string;
+};
+
+const FEEDBACK_DIALOG_META: Record<FeedbackTone, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
+  success: { icon: "checkmark-circle", color: "#059669", bg: "#ECFDF5" },
+  error: { icon: "alert-circle", color: "#DC2626", bg: "#FEF2F2" },
+  warning: { icon: "information-circle", color: "#D97706", bg: "#FFFBEB" },
+};
 
 /* ── Image URL helper (same as home screen) ── */
 const IMAGE_BASE =
@@ -67,6 +79,20 @@ export default function WithdrawScreen() {
   const [accountNumber, setAccountNumber] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [selectedMethodId, setSelectedMethodId] = useState<number | null>(null);
+  const [feedbackDialog, setFeedbackDialog] = useState<FeedbackDialogState>({
+    open: false,
+    tone: "success",
+    title: "",
+    message: "",
+  });
+
+  const showFeedbackDialog = useCallback((tone: FeedbackTone, title: string, message: string) => {
+    setFeedbackDialog({ open: true, tone, title, message });
+  }, []);
+
+  const closeFeedbackDialog = useCallback(() => {
+    setFeedbackDialog((current) => ({ ...current, open: false }));
+  }, []);
 
   /* ── Queries ── */
   const dashboardQuery = useQuery({
@@ -103,7 +129,7 @@ export default function WithdrawScreen() {
       return data;
     },
     onSuccess: () => {
-      Alert.alert("Success", "Withdrawal request submitted successfully.");
+      showFeedbackDialog("success", "Request submitted", "Your withdrawal request has been sent for review.");
       setAmount("");
       setAccountNumber("");
       setAdditionalInfo("");
@@ -111,7 +137,7 @@ export default function WithdrawScreen() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message ?? "Failed to submit withdrawal request.");
+      showFeedbackDialog("error", "Withdrawal failed", err?.response?.data?.message ?? "Failed to submit withdrawal request.");
     },
   });
 
@@ -153,15 +179,15 @@ export default function WithdrawScreen() {
   /* ── Submit ── */
   const handleSubmit = () => {
     if (!amount.trim() || isNaN(Number(amount)) || Number(amount) <= 0) {
-      Alert.alert("Invalid", "Please enter a valid amount.");
+      showFeedbackDialog("warning", "Check amount", "Please enter a valid withdrawal amount.");
       return;
     }
     if (!selectedMethodId) {
-      Alert.alert("Invalid", "Please select a payment method.");
+      showFeedbackDialog("warning", "Select method", "Please choose where you want to receive the withdrawal.");
       return;
     }
     if (!accountNumber.trim() || accountNumber.trim().length < 6) {
-      Alert.alert("Invalid", "Account number must be at least 6 characters.");
+      showFeedbackDialog("warning", "Check account number", "Account number must be at least 6 characters.");
       return;
     }
 
@@ -396,12 +422,134 @@ export default function WithdrawScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+      <WithdrawFeedbackDialog
+        state={feedbackDialog}
+        onClose={closeFeedbackDialog}
+      />
     </>
+  );
+}
+
+function WithdrawFeedbackDialog({
+  state,
+  onClose,
+}: {
+  state: FeedbackDialogState;
+  onClose: () => void;
+}) {
+  const meta = FEEDBACK_DIALOG_META[state.tone];
+
+  return (
+    <Dialog
+      modal
+      open={state.open}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay style={styles.dialogOverlay} />
+        <View style={styles.dialogCenterer} pointerEvents="box-none">
+          <Dialog.Content style={styles.dialogContent}>
+            <View style={styles.dialogHeader}>
+              <View style={[styles.dialogIcon, { backgroundColor: meta.bg }]}>
+                <Ionicons name={meta.icon} size={24} color={meta.color} />
+              </View>
+              <Dialog.Close asChild>
+                <Pressable style={styles.dialogCloseButton}>
+                  <Ionicons name="close" size={20} color="#6B7280" />
+                </Pressable>
+              </Dialog.Close>
+            </View>
+
+            <Dialog.Title asChild>
+              <Text style={styles.dialogTitle}>{state.title}</Text>
+            </Dialog.Title>
+            <Dialog.Description asChild>
+              <Text style={styles.dialogMessage}>{state.message}</Text>
+            </Dialog.Description>
+
+            <Dialog.Close asChild>
+              <Pressable style={({ pressed }) => [styles.dialogButton, pressed && { opacity: 0.88 }]}>
+                <Text style={styles.dialogButtonText}>Got it</Text>
+              </Pressable>
+            </Dialog.Close>
+          </Dialog.Content>
+        </View>
+      </Dialog.Portal>
+    </Dialog>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F8FA" },
+  dialogOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(17, 24, 39, 0.46)",
+  },
+  dialogCenterer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 22,
+  },
+  dialogContent: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    elevation: 12,
+  },
+  dialogHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  dialogIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dialogCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  dialogTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1A1A2E",
+    marginBottom: 8,
+  },
+  dialogMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B7280",
+  },
+  dialogButton: {
+    marginTop: 20,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dialogButtonText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#fff",
+  },
   balanceCard: {
     flexDirection: "row",
     justifyContent: "space-between",
