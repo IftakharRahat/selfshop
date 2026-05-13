@@ -23,6 +23,7 @@ import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
+const TAKA = "\u09F3";
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -68,9 +69,18 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
   const safeNum = Number.isFinite(num) ? num : 0;
-  return `৳${safeNum.toLocaleString("en-BD", {
+  return `${TAKA}${safeNum.toLocaleString("en-BD", {
     maximumFractionDigits: 0,
   })}`;
+}
+
+function positiveNumber(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(2).replace(/\.?0+$/, "")}%`;
 }
 
 function formatDate(value?: string | null): string {
@@ -134,11 +144,22 @@ export default function DashboardScreen() {
     staleTime: 30 * 1000,
   });
 
+  const basicInfoQuery = useQuery({
+    queryKey: ["basic-info"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/basic-info");
+      return data?.data ?? data;
+    },
+    enabled: isLoggedIn,
+    staleTime: 5 * 60 * 1000,
+  });
+
   /* ── Pull to refresh ── */
-  const isRefreshing = dashboardQuery.isRefetching || profileQuery.isRefetching;
+  const isRefreshing = dashboardQuery.isRefetching || profileQuery.isRefetching || basicInfoQuery.isRefetching;
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    queryClient.invalidateQueries({ queryKey: ["basic-info"] });
     queryClient.invalidateQueries({ queryKey: ["orders", "Pending", 1] });
     queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
   }, [queryClient]);
@@ -156,6 +177,19 @@ export default function DashboardScreen() {
   const walletBalance = Number(
     metrics?.balance ?? metrics?.blance ?? profile?.account_balance ?? 0
   );
+  const referralSettings = metrics?.referral_settings ?? profileQuery.data?.referral_settings ?? {};
+  const basicInfoReferralPercent = positiveNumber(basicInfoQuery.data?.bonus_percent);
+  const personalReferralPercent = positiveNumber(
+    referralSettings?.personal_referrer_bonus_percent ?? profile?.bonus_percent,
+  );
+  const defaultReferralPercent = positiveNumber(referralSettings?.default_referrer_bonus_percent);
+  const configuredReferralPercent = positiveNumber(referralSettings?.referrer_bonus_percent);
+  const referrerBonusPercent =
+    configuredReferralPercent || personalReferralPercent || defaultReferralPercent || basicInfoReferralPercent;
+  const hasReferrerReward = referrerBonusPercent > 0;
+  const referralSubtitle = hasReferrerReward
+    ? `Earn ${formatPercent(referrerBonusPercent)} when your referral subscribes.`
+    : "Share your code and earn bonus when your referral subscribes.";
 
   /* ── Referral data ── */
   const referralCode = profile?.my_referral_code ?? "";
@@ -174,11 +208,14 @@ export default function DashboardScreen() {
   const shareReferralLink = useCallback(async () => {
     if (!referralLink) return;
     try {
+      const rewardLine = hasReferrerReward
+        ? `Earn ${formatPercent(referrerBonusPercent)} referral bonus when someone subscribes with my code.`
+        : "Use my referral code to join SelfShop.";
       await Share.share({
-        message: `Join SelfShop and start your reselling business! Use my referral code: ${referralCode}\n\n${referralLink}`,
+        message: `Join SelfShop and start your reselling business! ${rewardLine}\n\nReferral code: ${referralCode}\n${referralLink}`,
       });
     } catch {}
-  }, [referralLink, referralCode]);
+  }, [hasReferrerReward, referralLink, referralCode, referrerBonusPercent]);
 
   const kpiCards = useMemo(() => [
     { title: "Total Sale", value: formatCurrency(metrics?.total_sales), icon: "trending-up-outline" as const, color: "#059669", bg: "#ECFDF5" },
@@ -337,10 +374,24 @@ export default function DashboardScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.referralTitle}>Invite & Earn</Text>
                   <Text style={styles.referralSubtitle}>
-                    Share your code and earn bonus on each referral!
+                    {referralSubtitle}
                   </Text>
                 </View>
               </View>
+
+              {hasReferrerReward ? (
+                <View style={styles.referralRewardRow}>
+                  <View style={styles.referralRewardCard}>
+                    <Text style={styles.referralRewardLabel}>You earn</Text>
+                    <Text style={styles.referralRewardValue} numberOfLines={1}>
+                      {formatPercent(referrerBonusPercent)}
+                    </Text>
+                    <Text style={styles.referralRewardHint} numberOfLines={1}>
+                      after subscription
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
               {/* Referral Code */}
               <Pressable
@@ -1217,6 +1268,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.8)",
     marginTop: 2,
+  },
+  referralRewardRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  referralRewardCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.24)",
+  },
+  referralRewardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.72)",
+    textTransform: "uppercase",
+  },
+  referralRewardValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#fff",
+    marginTop: 3,
+  },
+  referralRewardHint: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.72)",
+    marginTop: 1,
   },
   referralCodeBox: {
     flexDirection: "row",

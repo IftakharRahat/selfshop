@@ -7,6 +7,15 @@ import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
 
+function positiveNumber(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatPercent(value: number): string {
+  return `${value.toFixed(2).replace(/\.?0+$/, "")}%`;
+}
+
 function MenuItem({
   icon,
   label,
@@ -70,8 +79,32 @@ export default function SettingsScreen() {
     },
   });
 
+  const basicInfoQuery = useQuery({
+    queryKey: ["basic-info"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/basic-info");
+      return data?.data ?? data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const announcements = announcementsQuery.data?.announcements ?? [];
   const referralCode = profileQuery.data?.my_referral_code ?? "";
+  const referralSettings = profileQuery.data?.referral_settings ?? {};
+  const basicInfoReferralPercent = positiveNumber(basicInfoQuery.data?.bonus_percent);
+  const personalReferralPercent = positiveNumber(
+    referralSettings?.personal_referrer_bonus_percent ?? profileQuery.data?.bonus_percent,
+  );
+  const defaultReferralPercent = positiveNumber(referralSettings?.default_referrer_bonus_percent);
+  const configuredReferralPercent = positiveNumber(referralSettings?.referrer_bonus_percent);
+  const referrerBonusPercent =
+    configuredReferralPercent || personalReferralPercent || defaultReferralPercent || basicInfoReferralPercent;
+  const hasReferrerReward = referrerBonusPercent > 0;
+  const inviteSubtitle = hasReferrerReward
+    ? `You earn ${formatPercent(referrerBonusPercent)} when they subscribe`
+    : referralCode
+      ? `Code: ${referralCode}`
+      : "Share your referral link";
 
   const handleInviteFriends = async () => {
     if (!referralCode) {
@@ -80,8 +113,11 @@ export default function SettingsScreen() {
     }
     const referralLink = `https://selfshop.com.bd/register?ref=${referralCode}`;
     try {
+      const rewardLine = hasReferrerReward
+        ? `Earn ${formatPercent(referrerBonusPercent)} referral bonus when someone subscribes with my code.`
+        : `Use my referral code: ${referralCode}`;
       await Share.share({
-        message: `Join SelfShop and start your reselling business! Use my referral code: ${referralCode}\n\nSign up here: ${referralLink}`,
+        message: `Join SelfShop and start your reselling business! ${rewardLine}\n\nReferral code: ${referralCode}\nSign up here: ${referralLink}`,
         url: referralLink,
         title: "Join SelfShop",
       });
@@ -248,7 +284,7 @@ export default function SettingsScreen() {
             <MenuItem
               icon="share-social-outline"
               label="Invite Friends"
-              subtitle={referralCode ? `Code: ${referralCode}` : "Share your referral link"}
+              subtitle={inviteSubtitle}
               onPress={handleInviteFriends}
             />
           </View>
