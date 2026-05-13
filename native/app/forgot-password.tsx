@@ -5,12 +5,11 @@ import {
   StyleSheet,
   View,
   Pressable,
-  ScrollView,
   TextInput,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Text } from "tamagui";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -137,15 +136,14 @@ export default function ForgotPasswordScreen() {
   const buttonLabel = step === "phone" ? "Send OTP" : step === "otp" ? "Verify OTP" : "Reset Password";
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      bottomOffset={24}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
         {/* Back button */}
         <Pressable style={styles.backBtn} onPress={() => {
           if (step === "phone") router.back();
@@ -298,8 +296,7 @@ export default function ForgotPasswordScreen() {
             <Text color="#E5005F" fontWeight="600">Back to Login</Text>
           </Text>
         </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 
