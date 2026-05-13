@@ -7,13 +7,19 @@ import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
 
+const TAKA = "\u09F3";
+
 function positiveNumber(value: unknown): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function formatPercent(value: number): string {
-  return `${value.toFixed(2).replace(/\.?0+$/, "")}%`;
+function formatCurrency(value: number | string | undefined): string {
+  const num = Number(value ?? 0);
+  const safeNum = Number.isFinite(num) ? num : 0;
+  return `${TAKA}${safeNum.toLocaleString("en-BD", {
+    maximumFractionDigits: 0,
+  })}`;
 }
 
 function MenuItem({
@@ -91,17 +97,19 @@ export default function SettingsScreen() {
   const announcements = announcementsQuery.data?.announcements ?? [];
   const referralCode = profileQuery.data?.my_referral_code ?? "";
   const referralSettings = profileQuery.data?.referral_settings ?? {};
-  const basicInfoReferralPercent = positiveNumber(basicInfoQuery.data?.bonus_percent);
-  const personalReferralPercent = positiveNumber(
-    referralSettings?.personal_referrer_bonus_percent ?? profileQuery.data?.bonus_percent,
+  const basicInfoReferralAmount = positiveNumber(
+    basicInfoQuery.data?.referral_bonus_amount ?? basicInfoQuery.data?.bonus_percent,
   );
-  const defaultReferralPercent = positiveNumber(referralSettings?.default_referrer_bonus_percent);
-  const configuredReferralPercent = positiveNumber(referralSettings?.referrer_bonus_percent);
-  const referrerBonusPercent =
-    configuredReferralPercent || personalReferralPercent || defaultReferralPercent || basicInfoReferralPercent;
-  const hasReferrerReward = referrerBonusPercent > 0;
+  const personalReferralAmount = positiveNumber(
+    referralSettings?.personal_referrer_bonus_amount ?? profileQuery.data?.bonus_percent,
+  );
+  const defaultReferralAmount = positiveNumber(referralSettings?.default_referrer_bonus_amount);
+  const configuredReferralAmount = positiveNumber(referralSettings?.referrer_bonus_amount);
+  const referrerBonusAmount =
+    configuredReferralAmount || personalReferralAmount || defaultReferralAmount || basicInfoReferralAmount;
+  const hasReferrerReward = referrerBonusAmount > 0;
   const inviteSubtitle = hasReferrerReward
-    ? `You earn ${formatPercent(referrerBonusPercent)} when they subscribe`
+    ? `You earn ${formatCurrency(referrerBonusAmount)} when they subscribe`
     : referralCode
       ? `Code: ${referralCode}`
       : "Share your referral link";
@@ -114,7 +122,7 @@ export default function SettingsScreen() {
     const referralLink = `https://selfshop.com.bd/register?ref=${referralCode}`;
     try {
       const rewardLine = hasReferrerReward
-        ? `Earn ${formatPercent(referrerBonusPercent)} referral bonus when someone subscribes with my code.`
+        ? `Earn ${formatCurrency(referrerBonusAmount)} referral bonus when someone subscribes with my code.`
         : `Use my referral code: ${referralCode}`;
       await Share.share({
         message: `Join SelfShop and start your reselling business! ${rewardLine}\n\nReferral code: ${referralCode}\nSign up here: ${referralLink}`,

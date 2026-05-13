@@ -82,20 +82,22 @@ class FrontendApiController extends Controller
     private function referralRewardSettings($user = null)
     {
         $basicInfo = Basicinfo::first();
-        $defaultReferrerBonusPercent = $this->numericSetting($basicInfo->bonus_percent ?? null);
-        $personalReferrerBonusPercent = $this->numericSetting($user->bonus_percent ?? null);
-        $referrerBonusPercent = (
-            $personalReferrerBonusPercent !== null
-            && $personalReferrerBonusPercent > 0
+        $defaultReferrerBonusAmount = $this->numericSetting($basicInfo->bonus_percent ?? null);
+        $personalReferrerBonusAmount = $this->numericSetting($user->bonus_percent ?? null);
+        $referrerBonusAmount = (
+            $personalReferrerBonusAmount !== null
+            && $personalReferrerBonusAmount > 0
         )
-            ? $personalReferrerBonusPercent
-            : $defaultReferrerBonusPercent;
+            ? $personalReferrerBonusAmount
+            : $defaultReferrerBonusAmount;
 
         return [
-            'referrer_bonus_percent' => $referrerBonusPercent,
-            'personal_referrer_bonus_percent' => $personalReferrerBonusPercent,
-            'default_referrer_bonus_percent' => $defaultReferrerBonusPercent,
-            'reward_basis' => 'subscription_payment',
+            'referrer_bonus_amount' => $referrerBonusAmount,
+            'personal_referrer_bonus_amount' => $personalReferrerBonusAmount,
+            'default_referrer_bonus_amount' => $defaultReferrerBonusAmount,
+            'reward_type' => 'fixed_amount',
+            'currency' => 'BDT',
+            'reward_basis' => 'subscription_activation',
         ];
     }
 
@@ -361,6 +363,7 @@ class FrontendApiController extends Controller
 
 
         if ($basicInfo) {
+            $basicInfo->referral_bonus_amount = $this->numericSetting($basicInfo->bonus_percent ?? null);
             return response()->json([
                 'status' => true,
                 'message' => 'Basic Information',

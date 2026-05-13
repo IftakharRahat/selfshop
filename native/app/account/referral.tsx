@@ -23,13 +23,6 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
 }
 
-function formatPercent(value: number): string {
-  const normalized = Number.isInteger(value)
-    ? value.toString()
-    : value.toFixed(2).replace(/\.?0+$/, "");
-  return `${normalized}%`;
-}
-
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
   return `${TAKA}${num.toLocaleString("en-BD")}`;
@@ -66,15 +59,17 @@ export default function ReferralScreen() {
   const stats = referralQuery.data ?? {};
   const history: any[] = stats?.history?.data ?? [];
   const referralSettings = stats?.referral_settings ?? {};
-  const basicInfoReferralPercent = positiveNumber(basicInfoQuery.data?.bonus_percent);
-  const personalReferralPercent = positiveNumber(
-    referralSettings?.personal_referrer_bonus_percent ?? stats?.bonus_percent,
+  const basicInfoReferralAmount = positiveNumber(
+    basicInfoQuery.data?.referral_bonus_amount ?? basicInfoQuery.data?.bonus_percent,
   );
-  const defaultReferralPercent = positiveNumber(referralSettings?.default_referrer_bonus_percent);
-  const configuredReferralPercent = positiveNumber(referralSettings?.referrer_bonus_percent);
-  const referrerBonusPercent =
-    configuredReferralPercent || personalReferralPercent || defaultReferralPercent || basicInfoReferralPercent;
-  const hasReferrerReward = referrerBonusPercent > 0;
+  const personalReferralAmount = positiveNumber(
+    referralSettings?.personal_referrer_bonus_amount ?? stats?.bonus_percent,
+  );
+  const defaultReferralAmount = positiveNumber(referralSettings?.default_referrer_bonus_amount);
+  const configuredReferralAmount = positiveNumber(referralSettings?.referrer_bonus_amount);
+  const referrerBonusAmount =
+    configuredReferralAmount || personalReferralAmount || defaultReferralAmount || basicInfoReferralAmount;
+  const hasReferrerReward = referrerBonusAmount > 0;
 
   const isRefreshing = referralQuery.isRefetching || basicInfoQuery.isRefetching;
   const onRefresh = useCallback(() => {
@@ -117,7 +112,7 @@ export default function ReferralScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.earningTitle}>
-                You earn {formatPercent(referrerBonusPercent)}
+                You earn {formatCurrency(referrerBonusAmount)}
               </Text>
               <Text style={styles.earningSubtitle}>
                 When your invited user subscribes

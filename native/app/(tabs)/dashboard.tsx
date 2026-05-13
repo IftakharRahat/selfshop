@@ -79,10 +79,6 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-function formatPercent(value: number): string {
-  return `${value.toFixed(2).replace(/\.?0+$/, "")}%`;
-}
-
 function formatDate(value?: string | null): string {
   if (!value) return "Not set";
   const date = new Date(value);
@@ -178,17 +174,19 @@ export default function DashboardScreen() {
     metrics?.balance ?? metrics?.blance ?? profile?.account_balance ?? 0
   );
   const referralSettings = metrics?.referral_settings ?? profileQuery.data?.referral_settings ?? {};
-  const basicInfoReferralPercent = positiveNumber(basicInfoQuery.data?.bonus_percent);
-  const personalReferralPercent = positiveNumber(
-    referralSettings?.personal_referrer_bonus_percent ?? profile?.bonus_percent,
+  const basicInfoReferralAmount = positiveNumber(
+    basicInfoQuery.data?.referral_bonus_amount ?? basicInfoQuery.data?.bonus_percent,
   );
-  const defaultReferralPercent = positiveNumber(referralSettings?.default_referrer_bonus_percent);
-  const configuredReferralPercent = positiveNumber(referralSettings?.referrer_bonus_percent);
-  const referrerBonusPercent =
-    configuredReferralPercent || personalReferralPercent || defaultReferralPercent || basicInfoReferralPercent;
-  const hasReferrerReward = referrerBonusPercent > 0;
+  const personalReferralAmount = positiveNumber(
+    referralSettings?.personal_referrer_bonus_amount ?? profile?.bonus_percent,
+  );
+  const defaultReferralAmount = positiveNumber(referralSettings?.default_referrer_bonus_amount);
+  const configuredReferralAmount = positiveNumber(referralSettings?.referrer_bonus_amount);
+  const referrerBonusAmount =
+    configuredReferralAmount || personalReferralAmount || defaultReferralAmount || basicInfoReferralAmount;
+  const hasReferrerReward = referrerBonusAmount > 0;
   const referralSubtitle = hasReferrerReward
-    ? `Earn ${formatPercent(referrerBonusPercent)} when your referral subscribes.`
+    ? `Earn ${formatCurrency(referrerBonusAmount)} when your referral subscribes.`
     : "Share your code and earn bonus when your referral subscribes.";
 
   /* ── Referral data ── */
@@ -209,13 +207,13 @@ export default function DashboardScreen() {
     if (!referralLink) return;
     try {
       const rewardLine = hasReferrerReward
-        ? `Earn ${formatPercent(referrerBonusPercent)} referral bonus when someone subscribes with my code.`
+        ? `Earn ${formatCurrency(referrerBonusAmount)} referral bonus when someone subscribes with my code.`
         : "Use my referral code to join SelfShop.";
       await Share.share({
         message: `Join SelfShop and start your reselling business! ${rewardLine}\n\nReferral code: ${referralCode}\n${referralLink}`,
       });
     } catch {}
-  }, [hasReferrerReward, referralLink, referralCode, referrerBonusPercent]);
+  }, [hasReferrerReward, referralLink, referralCode, referrerBonusAmount]);
 
   const kpiCards = useMemo(() => [
     { title: "Total Sale", value: formatCurrency(metrics?.total_sales), icon: "trending-up-outline" as const, color: "#059669", bg: "#ECFDF5" },
@@ -384,7 +382,7 @@ export default function DashboardScreen() {
                   <View style={styles.referralRewardCard}>
                     <Text style={styles.referralRewardLabel}>You earn</Text>
                     <Text style={styles.referralRewardValue} numberOfLines={1}>
-                      {formatPercent(referrerBonusPercent)}
+                      {formatCurrency(referrerBonusAmount)}
                     </Text>
                     <Text style={styles.referralRewardHint} numberOfLines={1}>
                       after subscription

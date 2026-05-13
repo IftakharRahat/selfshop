@@ -269,18 +269,20 @@ public function incomeHistoryOrders(Request $request, $id)
 
                 $referuser = User::where('my_referral_code', $user->refer_by)->first();
                 if ($referuser) {
-                    $refbonus = $invoice->payable_amount * ($referuser->bonus_percent / 100);
-                    $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
-                    $referuser->account_balance = $referuser->account_balance + $refbonus;
-                    $referuser->update();
+                    $refbonus = round((float) $referuser->bonus_percent, 2);
+                    if ($refbonus > 0) {
+                        $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
+                        $referuser->account_balance = $referuser->account_balance + $refbonus;
+                        $referuser->update();
 
-                    $message = new Message();
-                    $message->user_id = $referuser->id;
-                    $message->message_for = 'Referral Bonus';
-                    $message->message = 'You Get ' . $refbonus . ' TK As Your Referral Bonus';
-                    $message->amount = $refbonus;
-                    $message->date = date('Y-m-d');
-                    $message->save();
+                        $message = new Message();
+                        $message->user_id = $referuser->id;
+                        $message->message_for = 'Referral Bonus';
+                        $message->message = 'You Get ' . $refbonus . ' TK As Your Referral Bonus';
+                        $message->amount = $refbonus;
+                        $message->date = date('Y-m-d');
+                        $message->save();
+                    }
                 }
 
                 $user->status = 'Active';
@@ -299,17 +301,19 @@ public function incomeHistoryOrders(Request $request, $id)
 
                     $referuser = User::where('my_referral_code', $user->refer_by)->first();
                     if ($referuser) {
-                        $refbonus = $invoice->payable_amount * ($referuser->bonus_percent / 100);
-                        $referuser->referal_bonus = $referuser->referal_bonus - $refbonus;
-                        $referuser->account_balance = $referuser->account_balance - $refbonus;
-                        $referuser->update();
-                        $message = new Message();
-                        $message->user_id = $referuser->id;
-                        $message->message_for = 'Referral Bonus';
-                        $message->message = 'We Remove ' . $refbonus . ' TK From Your Referral Bonus';
-                        $message->amount = -$refbonus;
-                        $message->date = date('Y-m-d');
-                        $message->save();
+                        $refbonus = round((float) $referuser->bonus_percent, 2);
+                        if ($refbonus > 0) {
+                            $referuser->referal_bonus = $referuser->referal_bonus - $refbonus;
+                            $referuser->account_balance = $referuser->account_balance - $refbonus;
+                            $referuser->update();
+                            $message = new Message();
+                            $message->user_id = $referuser->id;
+                            $message->message_for = 'Referral Bonus';
+                            $message->message = 'We Remove ' . $refbonus . ' TK From Your Referral Bonus';
+                            $message->amount = -$refbonus;
+                            $message->date = date('Y-m-d');
+                            $message->save();
+                        }
                     }
 
                     $user->status = 'Inactive';
@@ -346,8 +350,9 @@ public function incomeHistoryOrders(Request $request, $id)
 
         if ($request->bonus_percent) {
             $userss = User::where('id', $invoice->user_id)->first();
-            $userss->bonus_percent = $request->bonus_percent;
-            $invoice->bonus_percent = $request->bonus_percent;
+            $bonusAmount = max(0, round((float) $request->bonus_percent, 2));
+            $userss->bonus_percent = $bonusAmount;
+            $invoice->bonus_percent = $bonusAmount;
             $userss->update();
         } else {
             $userss = User::where('id', $invoice->user_id)->first();

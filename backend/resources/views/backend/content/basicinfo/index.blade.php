@@ -152,9 +152,9 @@
                                 <textarea class="form-control" name="address" rows="2" placeholder="Office address">{{ $webinfo->address }}</textarea>
                             </div>
                             <div class="form-group">
-                                <label>Referral Bonus (%) <span class="text-muted" style="font-weight:400; font-size:12px;">— bonus given to referrer when referred user subscribes</span></label>
-                                <input type="text" class="form-control" name="bonus_percent"
-                                    value="{{ $webinfo->bonus_percent }}" placeholder="e.g. 10">
+                                <label>Referral Bonus Amount (Tk) <span class="text-muted" style="font-weight:400; font-size:12px;">— fixed amount given to referrer when referred user subscribes</span></label>
+                                <input type="number" min="0" step="0.01" class="form-control" name="bonus_percent"
+                                    value="{{ $webinfo->bonus_percent }}" placeholder="e.g. 100">
                             </div>
 
                             <div class="row">
