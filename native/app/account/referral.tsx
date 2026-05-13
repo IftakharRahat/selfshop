@@ -16,10 +16,16 @@ import apiClient from "@/lib/api-client";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
+const TAKA = "\u09F3";
+
+function positiveNumber(value: unknown): number {
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
+}
 
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
-  return `৳${num.toLocaleString("en-BD")}`;
+  return `${TAKA}${num.toLocaleString("en-BD")}`;
 }
 
 const STAT_CONFIG = [
@@ -41,12 +47,34 @@ export default function ReferralScreen() {
     staleTime: 2 * 60 * 1000,
   });
 
+  const basicInfoQuery = useQuery({
+    queryKey: ["basic-info"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/basic-info");
+      return data?.data ?? data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const stats = referralQuery.data ?? {};
   const history: any[] = stats?.history?.data ?? [];
+  const referralSettings = stats?.referral_settings ?? {};
+  const basicInfoReferralAmount = positiveNumber(
+    basicInfoQuery.data?.referral_bonus_amount ?? basicInfoQuery.data?.bonus_percent,
+  );
+  const personalReferralAmount = positiveNumber(
+    referralSettings?.personal_referrer_bonus_amount ?? stats?.bonus_percent,
+  );
+  const defaultReferralAmount = positiveNumber(referralSettings?.default_referrer_bonus_amount);
+  const configuredReferralAmount = positiveNumber(referralSettings?.referrer_bonus_amount);
+  const referrerBonusAmount =
+    configuredReferralAmount || personalReferralAmount || defaultReferralAmount || basicInfoReferralAmount;
+  const hasReferrerReward = referrerBonusAmount > 0;
 
-  const isRefreshing = referralQuery.isRefetching;
+  const isRefreshing = referralQuery.isRefetching || basicInfoQuery.isRefetching;
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["referral-data"] });
+    queryClient.invalidateQueries({ queryKey: ["basic-info"] });
   }, [queryClient]);
 
   if (referralQuery.isLoading) {
@@ -77,6 +105,22 @@ export default function ReferralScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={ACCENT} />
         }
       >
+        {hasReferrerReward ? (
+          <View style={styles.earningBanner}>
+            <View style={styles.earningIcon}>
+              <Ionicons name="gift-outline" size={22} color={ACCENT} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.earningTitle}>
+                You earn {formatCurrency(referrerBonusAmount)}
+              </Text>
+              <Text style={styles.earningSubtitle}>
+                When your invited user subscribes
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* ── Stats Grid ── */}
         <View style={styles.statsGrid}>
           {STAT_CONFIG.map((stat) => (
@@ -143,6 +187,37 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F8F8FA",
+  },
+  earningBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    margin: 16,
+    marginBottom: 0,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: "#FDF2F8",
+    borderWidth: 1,
+    borderColor: "#FBCFE8",
+  },
+  earningIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  earningTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1A1A2E",
+  },
+  earningSubtitle: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+    lineHeight: 17,
   },
   statsGrid: {
     flexDirection: "row",

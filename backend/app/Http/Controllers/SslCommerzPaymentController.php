@@ -493,8 +493,7 @@ public function packagePaymentSuccess(Request $request)
             $referuser = \App\Models\User::where('my_referral_code', $user->refer_by)->first();
             
             if ($referuser && $referuser->bonus_percent > 0) {
-                $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
-                $refbonus = $amount * ($referuser->bonus_percent / 100);
+                $refbonus = round((float) $referuser->bonus_percent, 2);
                 $referuser->referal_bonus += $refbonus;
                 $referuser->account_balance += $refbonus;
                 $referuser->save();
@@ -691,8 +690,7 @@ public function packagePaymentIPN(Request $request)
                     // Give referral bonus
                     $referuser = \App\Models\User::where('my_referral_code', $user->refer_by)->first();
                     if ($referuser && $referuser->bonus_percent > 0) {
-                        $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
-                        $refbonus = $amount * ($referuser->bonus_percent / 100);
+                        $refbonus = round((float) $referuser->bonus_percent, 2);
                         $referuser->referal_bonus += $refbonus;
                         $referuser->account_balance += $refbonus;
                         $referuser->save();

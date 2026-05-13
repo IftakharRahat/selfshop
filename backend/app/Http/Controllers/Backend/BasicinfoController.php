@@ -32,7 +32,7 @@ class BasicinfoController extends Controller
     {
         $webinfo =Basicinfo::where('id',$id)->first();
         $webinfo->email=$request->email;
-        $webinfo->bonus_percent=$request->bonus_percent;
+        $webinfo->bonus_percent=max(0, (float) ($request->bonus_percent ?? 0));
         $webinfo->wp_number=$request-> wp_number;
         $webinfo->phone_one=$request-> phone_one;
         $webinfo->phone_two=$request-> phone_two;

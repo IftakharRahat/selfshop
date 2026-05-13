@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Image,
   Modal,
@@ -12,12 +12,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "tamagui";
-import * as SecureStore from "expo-secure-store";
 
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
-const DISMISSED_ANNOUNCEMENTS_KEY = "dismissed_launch_announcements_v1";
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -53,30 +51,11 @@ function getAnnouncementKey(announcement: any): string {
   return String(rawKey);
 }
 
-async function readDismissedAnnouncementKeys(): Promise<string[]> {
-  try {
-    const stored = await SecureStore.getItemAsync(DISMISSED_ANNOUNCEMENTS_KEY);
-    if (!stored) return [];
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeDismissedAnnouncementKeys(keys: string[]) {
-  try {
-    await SecureStore.setItemAsync(
-      DISMISSED_ANNOUNCEMENTS_KEY,
-      JSON.stringify(Array.from(new Set(keys)).slice(-100)),
-    );
-  } catch {}
-}
-
 export function LaunchAnnouncementPopup() {
   const insets = useSafeAreaInsets();
+
+  // Session-only dismissal state — resets every time the app opens
   const [dismissedKeys, setDismissedKeys] = useState<string[]>([]);
-  const [dismissalsLoaded, setDismissalsLoaded] = useState(false);
 
   const announcementsQuery = useQuery({
     queryKey: ["announcements"],
@@ -91,25 +70,13 @@ export function LaunchAnnouncementPopup() {
     staleTime: 2 * 60 * 1000,
   });
 
-  useEffect(() => {
-    let isMounted = true;
-
-    readDismissedAnnouncementKeys().then((keys) => {
-      if (!isMounted) return;
-      setDismissedKeys(keys);
-      setDismissalsLoaded(true);
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
   const activeAnnouncements = useMemo(() => {
     const announcements = announcementsQuery.data?.announcements;
     if (!Array.isArray(announcements) || announcements.length === 0) {
       return [];
     }
+    // The API already filters by status='Active', so all returned
+    // announcements are valid. No further date filtering needed.
     return announcements;
   }, [announcementsQuery.data]);
 
@@ -124,19 +91,18 @@ export function LaunchAnnouncementPopup() {
   const currentAnnouncement = pendingAnnouncements[0] ?? null;
   const currentAnnouncementKey = currentAnnouncement ? getAnnouncementKey(currentAnnouncement) : "";
   const remainingCount = pendingAnnouncements.length;
-  const visible = dismissalsLoaded && Boolean(currentAnnouncement);
+  const visible = Boolean(currentAnnouncement);
   const imageUrl = resolveImageUrl(currentAnnouncement?.image ?? currentAnnouncement?.banner);
   const publishedDate = formatDate(
     currentAnnouncement?.published_at ?? currentAnnouncement?.created_at,
   );
 
+  // Dismiss only for this session — next app open will show it again
   const dismissCurrentAnnouncement = useCallback(() => {
     if (!currentAnnouncementKey) return;
     setDismissedKeys((prev) => {
       if (prev.includes(currentAnnouncementKey)) return prev;
-      const next = [...prev, currentAnnouncementKey];
-      writeDismissedAnnouncementKeys(next);
-      return next;
+      return [...prev, currentAnnouncementKey];
     });
   }, [currentAnnouncementKey]);
 

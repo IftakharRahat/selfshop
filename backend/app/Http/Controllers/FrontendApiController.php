@@ -66,6 +66,40 @@ use Str;
 
 class FrontendApiController extends Controller
 {
+    private function numericSetting($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        return round((float) $value, 2);
+    }
+
+    private function referralRewardSettings($user = null)
+    {
+        $basicInfo = Basicinfo::first();
+        $defaultReferrerBonusAmount = $this->numericSetting($basicInfo->bonus_percent ?? null);
+        $personalReferrerBonusAmount = $this->numericSetting($user->bonus_percent ?? null);
+        $referrerBonusAmount = (
+            $personalReferrerBonusAmount !== null
+            && $personalReferrerBonusAmount > 0
+        )
+            ? $personalReferrerBonusAmount
+            : $defaultReferrerBonusAmount;
+
+        return [
+            'referrer_bonus_amount' => $referrerBonusAmount,
+            'personal_referrer_bonus_amount' => $personalReferrerBonusAmount,
+            'default_referrer_bonus_amount' => $defaultReferrerBonusAmount,
+            'reward_type' => 'fixed_amount',
+            'currency' => 'BDT',
+            'reward_basis' => 'subscription_activation',
+        ];
+    }
 
     public function contactInfo()
     {
@@ -329,6 +363,7 @@ class FrontendApiController extends Controller
 
 
         if ($basicInfo) {
+            $basicInfo->referral_bonus_amount = $this->numericSetting($basicInfo->bonus_percent ?? null);
             return response()->json([
                 'status' => true,
                 'message' => 'Basic Information',
@@ -1579,6 +1614,7 @@ class FrontendApiController extends Controller
                     'totalorders' => Order::where('user_id', $id)->get()->count(),
                     'soldamount' => $amount,
                     'walletbalance' => Auth::user()->account_balance,
+                    'referral_settings' => $this->referralRewardSettings($userprofile),
                 ],
             ], 200);
         }
@@ -2746,6 +2782,7 @@ class FrontendApiController extends Controller
                 'active_member' => User::where('refer_by', $user->my_referral_code)->where('status', 'Active')->get()->count(),
                 'paid_member' => User::where('refer_by', $user->my_referral_code)->where('status', 'Active')->where('membership_status', 'Paid')->get()->count(),
                 'history' => $messages,
+                'referral_settings' => $this->referralRewardSettings($user),
             ],
         ], 200);
     }
@@ -2993,6 +3030,7 @@ class FrontendApiController extends Controller
                 'total_orders' => Order::where('user_id', $id)->get()->count(),
                 'sales' => $sales,
                 'active_sales_targets' => $salesTargetsData,
+                'referral_settings' => $this->referralRewardSettings(Auth::user()),
             ],
         ], 200);
     }

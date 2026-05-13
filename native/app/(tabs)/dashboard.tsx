@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+﻿import { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   ScrollView,
@@ -23,6 +23,7 @@ import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
 
 const { width } = Dimensions.get("window");
+const TAKA = "\u09F3";
 
 const IMAGE_BASE =
   (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/api\/?$/, "") ||
@@ -38,7 +39,7 @@ function resolveImageUrl(path?: string | null): string | null {
   return `${IMAGE_BASE}/storage/${clean}`;
 }
 
-/* ── Quick Action items ── */
+/* â”€â”€ Quick Action items â”€â”€ */
 const QUICK_ACTIONS = [
   { icon: "cube-outline" as const, label: "Orders", route: "/account/orders", color: "#E5005F" },
   { icon: "storefront-outline" as const, label: "My Shop", route: "/account/my-shop", color: "#7C3AED" },
@@ -51,7 +52,7 @@ const QUICK_ACTIONS = [
   { icon: "add-circle-outline" as const, label: "Request", route: "/account/product-request", color: "#EA580C" },
 ] as const;
 
-/* ── Status pill colors ── */
+/* â”€â”€ Status pill colors â”€â”€ */
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   Pending: { bg: "#FEF3C7", text: "#92400E" },
   Accepted: { bg: "#D1FAE5", text: "#065F46" },
@@ -68,9 +69,14 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 function formatCurrency(value: number | string | undefined): string {
   const num = Number(value ?? 0);
   const safeNum = Number.isFinite(num) ? num : 0;
-  return `৳${safeNum.toLocaleString("en-BD", {
+  return `${TAKA}${safeNum.toLocaleString("en-BD", {
     maximumFractionDigits: 0,
   })}`;
+}
+
+function positiveNumber(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
 function formatDate(value?: string | null): string {
@@ -93,7 +99,21 @@ export default function DashboardScreen() {
   const { data: session, signOut, isLoading: isSessionLoading } = useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
-  /* ── Data Queries ── */
+  /* â”€â”€ Data Queries â”€â”€ */
+  const announcementsQuery = useQuery({
+    queryKey: ["announcements"],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get("/announcements");
+        return data?.data ?? data ?? { announcements: [] };
+      } catch {
+        return { announcements: [] };
+      }
+    },
+    enabled: isLoggedIn,
+    staleTime: 2 * 60 * 1000,
+  });
+
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-data"],
     queryFn: async () => {
@@ -134,16 +154,28 @@ export default function DashboardScreen() {
     staleTime: 30 * 1000,
   });
 
-  /* ── Pull to refresh ── */
-  const isRefreshing = dashboardQuery.isRefetching || profileQuery.isRefetching;
+  const basicInfoQuery = useQuery({
+    queryKey: ["basic-info"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/basic-info");
+      return data?.data ?? data;
+    },
+    enabled: isLoggedIn,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  /* â”€â”€ Pull to refresh â”€â”€ */
+  const isRefreshing = dashboardQuery.isRefetching || profileQuery.isRefetching || basicInfoQuery.isRefetching;
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    queryClient.invalidateQueries({ queryKey: ["basic-info"] });
     queryClient.invalidateQueries({ queryKey: ["orders", "Pending", 1] });
     queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
+    queryClient.invalidateQueries({ queryKey: ["announcements"] });
   }, [queryClient]);
 
-  /* ── Derived data ── */
+  /* â”€â”€ Derived data â”€â”€ */
   const profile = profileQuery.data?.profile ?? profileQuery.data;
   const metrics = dashboardQuery.data;
   const recentOrdersRaw = recentOrdersQuery.data;
@@ -156,8 +188,23 @@ export default function DashboardScreen() {
   const walletBalance = Number(
     metrics?.balance ?? metrics?.blance ?? profile?.account_balance ?? 0
   );
+  const referralSettings = metrics?.referral_settings ?? profileQuery.data?.referral_settings ?? {};
+  const basicInfoReferralAmount = positiveNumber(
+    basicInfoQuery.data?.referral_bonus_amount ?? basicInfoQuery.data?.bonus_percent,
+  );
+  const personalReferralAmount = positiveNumber(
+    referralSettings?.personal_referrer_bonus_amount ?? profile?.bonus_percent,
+  );
+  const defaultReferralAmount = positiveNumber(referralSettings?.default_referrer_bonus_amount);
+  const configuredReferralAmount = positiveNumber(referralSettings?.referrer_bonus_amount);
+  const referrerBonusAmount =
+    configuredReferralAmount || personalReferralAmount || defaultReferralAmount || basicInfoReferralAmount;
+  const hasReferrerReward = referrerBonusAmount > 0;
+  const referralSubtitle = hasReferrerReward
+    ? `Earn ${formatCurrency(referrerBonusAmount)} when your referral subscribes.`
+    : "Share your code and earn bonus when your referral subscribes.";
 
-  /* ── Referral data ── */
+  /* â”€â”€ Referral data â”€â”€ */
   const referralCode = profile?.my_referral_code ?? "";
   const referralLink = referralCode
     ? `https://selfshop.com.bd/register?refer=${referralCode}`
@@ -174,11 +221,14 @@ export default function DashboardScreen() {
   const shareReferralLink = useCallback(async () => {
     if (!referralLink) return;
     try {
+      const rewardLine = hasReferrerReward
+        ? `Earn ${formatCurrency(referrerBonusAmount)} referral bonus when someone subscribes with my code.`
+        : "Use my referral code to join SelfShop.";
       await Share.share({
-        message: `Join SelfShop and start your reselling business! Use my referral code: ${referralCode}\n\n${referralLink}`,
+        message: `Join SelfShop and start your reselling business! ${rewardLine}\n\nReferral code: ${referralCode}\n${referralLink}`,
       });
     } catch {}
-  }, [referralLink, referralCode]);
+  }, [hasReferrerReward, referralLink, referralCode, referrerBonusAmount]);
 
   const kpiCards = useMemo(() => [
     { title: "Total Sale", value: formatCurrency(metrics?.total_sales), icon: "trending-up-outline" as const, color: "#059669", bg: "#ECFDF5" },
@@ -207,7 +257,7 @@ export default function DashboardScreen() {
     return <DashboardSkeleton />;
   }
 
-  /* ── Guest View ── */
+  /* â”€â”€ Guest View â”€â”€ */
   if (!isLoggedIn) {
     return (
       <View style={styles.container}>
@@ -232,7 +282,7 @@ export default function DashboardScreen() {
     );
   }
 
-  /* ── Loading State ── */
+  /* â”€â”€ Loading State â”€â”€ */
   if (dashboardQuery.isLoading && profileQuery.isLoading) {
     return <DashboardSkeleton />;
   }
@@ -245,7 +295,7 @@ export default function DashboardScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#E5005F" />
         }
       >
-        {/* ─── Gradient Header ─── */}
+        {/* â”€â”€â”€ Gradient Header â”€â”€â”€ */}
         <LinearGradient
           colors={["#E5005F", "#B8004C", "#8C003A"]}
           start={{ x: 0, y: 0 }}
@@ -291,7 +341,7 @@ export default function DashboardScreen() {
                 {formatCurrency(walletBalance)}
               </Text>
               <Text fontSize="$1" color="rgba(255,255,255,0.5)" mt="$0.5">
-                ID: #{profile?.id ?? "—"}
+                ID: #{profile?.id ?? "â€”"}
               </Text>
             </View>
             <View style={styles.walletIcon}>
@@ -300,7 +350,7 @@ export default function DashboardScreen() {
           </View>
         </LinearGradient>
 
-        {/* ─── KPI Cards ─── */}
+        {/* â”€â”€â”€ KPI Cards â”€â”€â”€ */}
         <View style={styles.kpiSection}>
           <View style={styles.kpiGrid}>
             {kpiCards.map((card, i) => (
@@ -317,7 +367,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ─── Referral Invite Banner ─── */}
+        {/* â”€â”€â”€ Referral Invite Banner â”€â”€â”€ */}
         {referralCode ? (
           <View style={styles.sectionContainer}>
             <LinearGradient
@@ -337,10 +387,24 @@ export default function DashboardScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.referralTitle}>Invite & Earn</Text>
                   <Text style={styles.referralSubtitle}>
-                    Share your code and earn bonus on each referral!
+                    {referralSubtitle}
                   </Text>
                 </View>
               </View>
+
+              {hasReferrerReward ? (
+                <View style={styles.referralRewardRow}>
+                  <View style={styles.referralRewardCard}>
+                    <Text style={styles.referralRewardLabel}>You earn</Text>
+                    <Text style={styles.referralRewardValue} numberOfLines={1}>
+                      {formatCurrency(referrerBonusAmount)}
+                    </Text>
+                    <Text style={styles.referralRewardHint} numberOfLines={1}>
+                      after subscription
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
               {/* Referral Code */}
               <Pressable
@@ -381,7 +445,7 @@ export default function DashboardScreen() {
           </View>
         ) : null}
 
-        {/* ─── Quick Actions ─── */}
+        {/* â”€â”€â”€ Quick Actions â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
@@ -407,7 +471,7 @@ export default function DashboardScreen() {
 
         <EventChallengeSlider challenges={eventChallenges} />
 
-        {/* ─── Recent Orders ─── */}
+        {/* â”€â”€â”€ Recent Orders â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recent Orders</Text>
@@ -490,7 +554,7 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        {/* ─── Order Insights ─── */}
+        {/* â”€â”€â”€ Order Insights â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Order Insights</Text>
           <ScrollView
@@ -510,7 +574,10 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        {/* ─── Account Actions ─── */}
+        {/* â”€â”€â”€ Announcements Slider â”€â”€â”€ */}
+        <AnnouncementSlider announcements={announcementsQuery.data?.announcements ?? []} loading={announcementsQuery.isLoading} />
+
+        {/* â”€â”€â”€ Account Actions â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.menuCard}>
@@ -539,12 +606,6 @@ export default function DashboardScreen() {
               onPress={() => router.push("/account/live-chat")}
             />
             <MenuItem
-              icon="notifications-outline"
-              label="Push Notification Test"
-              subtitle="Send local test and copy FCM token"
-              onPress={() => router.push("/account/push-test" as any)}
-            />
-            <MenuItem
               icon="settings-outline"
               label="Settings"
               subtitle="Password, legal, and more"
@@ -553,7 +614,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ─── Sign Out ─── */}
+        {/* â”€â”€â”€ Sign Out â”€â”€â”€ */}
         <View style={[styles.sectionContainer, { marginBottom: 0 }]}>
           <Pressable
             style={({ pressed }) => [
@@ -695,7 +756,102 @@ function DashboardChallengeCard({ item }: { item: any }) {
   );
 }
 
-/* ── Menu Item component ── */
+/* â”€â”€ Announcement Slider component â”€â”€ */
+function AnnouncementSlider({ announcements, loading }: { announcements: any[]; loading: boolean }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const CARD_WIDTH = width - 40;
+  const CARD_GAP = 12;
+
+  const onScroll = useCallback((e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (CARD_WIDTH + CARD_GAP));
+    setActiveIndex(Math.max(0, Math.min(index, announcements.length - 1)));
+  }, [announcements.length, CARD_WIDTH, CARD_GAP]);
+
+  if (loading || announcements.length === 0) return null;
+
+  return (
+    <View style={styles.sectionContainer}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.announcementHeaderLeft}>
+          <Ionicons name="megaphone" size={18} color="#E5005F" />
+          <Text style={styles.sectionTitle}>Announcements</Text>
+        </View>
+        <Pressable onPress={() => router.push("/account/announcements" as any)}>
+          <Text fontSize="$3" color="#E5005F" fontWeight="600">
+            View All
+          </Text>
+        </Pressable>
+      </View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled={false}
+        decelerationRate="fast"
+        snapToInterval={CARD_WIDTH + CARD_GAP}
+        snapToAlignment="start"
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.announcementSlider}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
+        {announcements.map((item: any, index: number) => {
+          const imgUrl = resolveImageUrl(item.image ?? item.banner);
+
+          return (
+            <Pressable
+              key={item.id ?? index}
+              style={({ pressed }) => [
+                styles.announcementCard,
+                { width: CARD_WIDTH },
+                pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/account/announcement-detail",
+                  params: { id: String(item.id) },
+                } as any)
+              }
+            >
+              {imgUrl ? (
+                <Image
+                  source={{ uri: imgUrl }}
+                  style={styles.announcementCardImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.announcementCardImagePlaceholder}>
+                  <Ionicons name="megaphone" size={32} color="#E5005F" />
+                  <Text style={styles.announcementPlaceholderText} numberOfLines={1}>
+                    {item.title || "New Announcement"}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Pagination dots */}
+      {announcements.length > 1 && (
+        <View style={styles.announcementDots}>
+          {announcements.map((_: any, i: number) => (
+            <View
+              key={i}
+              style={[
+                styles.announcementDot,
+                i === activeIndex && styles.announcementDotActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+/* â”€â”€ Menu Item component â”€â”€ */
 function MenuItem({
   icon,
   label,
@@ -731,7 +887,7 @@ function MenuItem({
   );
 }
 
-/* ─── Styles ─── */
+/* â”€â”€â”€ Styles â”€â”€â”€ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -760,7 +916,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  /* ── Header ── */
+  /* â”€â”€ Header â”€â”€ */
   headerGradient: {
     paddingBottom: 24,
     paddingHorizontal: 20,
@@ -865,7 +1021,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  /* ── Quick Actions ── */
+  /* â”€â”€ Quick Actions â”€â”€ */
   sectionContainer: {
     paddingHorizontal: 20,
     marginTop: 24,
@@ -910,7 +1066,7 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
 
-  /* ── Event Challenge ── */
+  /* â”€â”€ Event Challenge â”€â”€ */
   challengeSlider: {
     gap: 12,
   },
@@ -1026,7 +1182,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* ── Order Insights ── */
+  /* â”€â”€ Order Insights â”€â”€ */
   insightsScroll: {
     gap: 12,
   },
@@ -1061,7 +1217,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /* ── Recent Orders ── */
+  /* â”€â”€ Recent Orders â”€â”€ */
   loadingSmall: {
     paddingVertical: 24,
     alignItems: "center",
@@ -1139,7 +1295,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* ── Account Menu ── */
+  /* â”€â”€ Account Menu â”€â”€ */
   menuCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -1169,7 +1325,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
 
-  /* ── Referral Banner ── */
+  /* â”€â”€ Referral Banner â”€â”€ */
   referralBanner: {
     borderRadius: 20,
     padding: 20,
@@ -1217,6 +1373,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "rgba(255,255,255,0.8)",
     marginTop: 2,
+  },
+  referralRewardRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  referralRewardCard: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.24)",
+  },
+  referralRewardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.72)",
+    textTransform: "uppercase",
+  },
+  referralRewardValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#fff",
+    marginTop: 3,
+  },
+  referralRewardHint: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.72)",
+    marginTop: 1,
   },
   referralCodeBox: {
     flexDirection: "row",
@@ -1274,7 +1461,58 @@ const styles = StyleSheet.create({
     color: "#E5005F",
   },
 
-  /* ── Sign Out ── */
+  /* â”€â”€ Announcement Slider â”€â”€ */
+  announcementHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  announcementSlider: {
+    gap: 12,
+  },
+  announcementCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  announcementCardImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 16,
+  },
+  announcementCardImagePlaceholder: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#FDF2F8",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    gap: 8,
+  },
+  announcementPlaceholderText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#E5005F",
+  },
+  announcementDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+  },
+  announcementDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#D1D5DB",
+  },
+  announcementDotActive: {
+    width: 20,
+    backgroundColor: "#E5005F",
+    borderRadius: 3,
+  },
+
+  /* â”€â”€ Sign Out â”€â”€ */
   signOutButton: {
     flexDirection: "row",
     alignItems: "center",
