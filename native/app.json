@@ -35,7 +35,8 @@
         "android.permission.ACCESS_MEDIA_LOCATION",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_MEDIA_AUDIO"
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -85,9 +86,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "55e5a403-6d5d-4cb9-b2f0-5e955e7bd50d"
+        "projectId": "bd3b513b-d1ee-4ab0-b802-95c40060c100"
       }
     },
-    "owner": "shorno"
+    "owner": "mrshorno"
   }
 }
