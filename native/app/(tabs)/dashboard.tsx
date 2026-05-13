@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   ScrollView,
@@ -100,6 +100,20 @@ export default function DashboardScreen() {
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
   /* ── Data Queries ── */
+  const announcementsQuery = useQuery({
+    queryKey: ["announcements"],
+    queryFn: async () => {
+      try {
+        const { data } = await apiClient.get("/announcements");
+        return data?.data ?? data ?? { announcements: [] };
+      } catch {
+        return { announcements: [] };
+      }
+    },
+    enabled: isLoggedIn,
+    staleTime: 2 * 60 * 1000,
+  });
+
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-data"],
     queryFn: async () => {
@@ -158,6 +172,7 @@ export default function DashboardScreen() {
     queryClient.invalidateQueries({ queryKey: ["basic-info"] });
     queryClient.invalidateQueries({ queryKey: ["orders", "Pending", 1] });
     queryClient.invalidateQueries({ queryKey: ["notifications-count"] });
+    queryClient.invalidateQueries({ queryKey: ["announcements"] });
   }, [queryClient]);
 
   /* ── Derived data ── */
@@ -559,6 +574,9 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
+        {/* ─── Announcements Slider ─── */}
+        <AnnouncementSlider announcements={announcementsQuery.data?.announcements ?? []} loading={announcementsQuery.isLoading} />
+
         {/* ─── Account Actions ─── */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account</Text>
@@ -741,6 +759,101 @@ function DashboardChallengeCard({ item }: { item: any }) {
         )}
       </LinearGradient>
     </Pressable>
+  );
+}
+
+/* ── Announcement Slider component ── */
+function AnnouncementSlider({ announcements, loading }: { announcements: any[]; loading: boolean }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const CARD_WIDTH = width - 40;
+  const CARD_GAP = 12;
+
+  const onScroll = useCallback((e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (CARD_WIDTH + CARD_GAP));
+    setActiveIndex(Math.max(0, Math.min(index, announcements.length - 1)));
+  }, [announcements.length, CARD_WIDTH, CARD_GAP]);
+
+  if (loading || announcements.length === 0) return null;
+
+  return (
+    <View style={styles.sectionContainer}>
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.announcementHeaderLeft}>
+          <Ionicons name="megaphone" size={18} color="#E5005F" />
+          <Text style={styles.sectionTitle}>Announcements</Text>
+        </View>
+        <Pressable onPress={() => router.push("/account/announcements" as any)}>
+          <Text fontSize="$3" color="#E5005F" fontWeight="600">
+            View All
+          </Text>
+        </Pressable>
+      </View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled={false}
+        decelerationRate="fast"
+        snapToInterval={CARD_WIDTH + CARD_GAP}
+        snapToAlignment="start"
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.announcementSlider}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
+        {announcements.map((item: any, index: number) => {
+          const imgUrl = resolveImageUrl(item.image ?? item.banner);
+
+          return (
+            <Pressable
+              key={item.id ?? index}
+              style={({ pressed }) => [
+                styles.announcementCard,
+                { width: CARD_WIDTH },
+                pressed && { opacity: 0.92, transform: [{ scale: 0.98 }] },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/account/announcement-detail",
+                  params: { id: String(item.id) },
+                } as any)
+              }
+            >
+              {imgUrl ? (
+                <Image
+                  source={{ uri: imgUrl }}
+                  style={styles.announcementCardImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.announcementCardImagePlaceholder}>
+                  <Ionicons name="megaphone" size={32} color="#E5005F" />
+                  <Text style={styles.announcementPlaceholderText} numberOfLines={1}>
+                    {item.title || "New Announcement"}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Pagination dots */}
+      {announcements.length > 1 && (
+        <View style={styles.announcementDots}>
+          {announcements.map((_: any, i: number) => (
+            <View
+              key={i}
+              style={[
+                styles.announcementDot,
+                i === activeIndex && styles.announcementDotActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -1352,6 +1465,57 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#E5005F",
+  },
+
+  /* ── Announcement Slider ── */
+  announcementHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  announcementSlider: {
+    gap: 12,
+  },
+  announcementCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  announcementCardImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 16,
+  },
+  announcementCardImagePlaceholder: {
+    width: "100%",
+    height: 160,
+    backgroundColor: "#FDF2F8",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    gap: 8,
+  },
+  announcementPlaceholderText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#E5005F",
+  },
+  announcementDots: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+  },
+  announcementDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#D1D5DB",
+  },
+  announcementDotActive: {
+    width: 20,
+    backgroundColor: "#E5005F",
+    borderRadius: 3,
   },
 
   /* ── Sign Out ── */
