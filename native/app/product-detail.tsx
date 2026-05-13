@@ -809,6 +809,21 @@ export default function ProductDetailScreen() {
     });
   };
 
+  const handleDirectQtyInput = (variantId: number, size: string, value: string, stock?: number) => {
+    const cleaned = value.replace(/[^0-9]/g, "");
+    const parsed = cleaned === "" ? 0 : parseInt(cleaned, 10);
+    let clamped = Math.max(0, parsed);
+    if (stock !== undefined && clamped > stock) {
+      clamped = stock;
+      toast.error(`Only ${stock} items in stock for size ${size}`);
+    }
+    setVariantQuantities((prev) => {
+      const varSizes = { ...(prev[variantId] || {}) };
+      varSizes[size] = clamped;
+      return { ...prev, [variantId]: varSizes };
+    });
+  };
+
   const handleSellingPriceChange = (variantId: number, size: string, value: string) => {
     setVariantSellingPrices((prev) => {
       const varSizes = { ...(prev[variantId] || {}) };
@@ -1344,13 +1359,18 @@ export default function ProductDetailScreen() {
                     >
                       <Ionicons name="remove" size={18} color={qty <= 0 ? "#bbb" : DARK} />
                     </Pressable>
-                    <Text
-                      fontSize={20} fontWeight="800"
-                      color={qty > 0 ? ACCENT : DARK}
-                      style={{ minWidth: 50, textAlign: "center" }}
-                    >
-                      {qty}
-                    </Text>
+                    <TextInput
+                      style={{
+                        minWidth: 50, textAlign: "center",
+                        fontSize: 20, fontWeight: "800" as any,
+                        color: qty > 0 ? ACCENT : DARK,
+                        paddingVertical: 4,
+                      }}
+                      keyboardType="number-pad"
+                      value={String(qty)}
+                      onChangeText={(v) => handleDirectQtyInput(currentVarId, size, v, sz.qty)}
+                      selectTextOnFocus
+                    />
                     <Pressable
                       onPress={() => handleQtyChange(currentVarId, size, "increase", sz.qty)}
                       disabled={qty >= sz.qty || sz.qty <= 0}
@@ -1992,7 +2012,20 @@ export default function ProductDetailScreen() {
                           <Ionicons name="remove" size={15} color={qty <= 0 ? "#ccc" : DARK} />
                         </Pressable>
                         <View style={s.sheetStepVal}>
-                          <Text fontSize={14} fontWeight="800" color={qty > 0 ? ACCENT : DARK}>{qty}</Text>
+                          <TextInput
+                            style={{
+                              fontSize: 14, fontWeight: "800" as any,
+                              color: qty > 0 ? ACCENT : DARK,
+                              textAlign: "center",
+                              minWidth: 34,
+                              paddingVertical: 2,
+                              paddingHorizontal: 0,
+                            }}
+                            keyboardType="number-pad"
+                            value={String(qty)}
+                            onChangeText={(v) => handleDirectQtyInput(selectedVariant.variantId, size, v, sizeItem.sizeStock)}
+                            selectTextOnFocus
+                          />
                         </View>
                         <Pressable
                           style={[s.sheetStepBtn, (qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) && s.miniStepBtnDisabled]}
