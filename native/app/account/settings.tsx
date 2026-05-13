@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, Pressable, Share } from "react-native";
+﻿import { View, ScrollView, StyleSheet, Pressable, Share } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -156,12 +156,6 @@ export default function SettingsScreen() {
               label="Change Password"
               subtitle="Update your account password"
               onPress={() => router.push("/account/change-password")}
-            />
-            <MenuItem
-              icon="card-outline"
-              label="Payment Methods"
-              subtitle="Add or remove payment cards"
-              onPress={() => router.push("/account/payment-methods" as any)}
             />
           </View>
         </View>

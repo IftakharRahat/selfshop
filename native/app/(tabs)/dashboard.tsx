@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   ScrollView,
@@ -39,7 +39,7 @@ function resolveImageUrl(path?: string | null): string | null {
   return `${IMAGE_BASE}/storage/${clean}`;
 }
 
-/* ── Quick Action items ── */
+/* â”€â”€ Quick Action items â”€â”€ */
 const QUICK_ACTIONS = [
   { icon: "cube-outline" as const, label: "Orders", route: "/account/orders", color: "#E5005F" },
   { icon: "storefront-outline" as const, label: "My Shop", route: "/account/my-shop", color: "#7C3AED" },
@@ -52,7 +52,7 @@ const QUICK_ACTIONS = [
   { icon: "add-circle-outline" as const, label: "Request", route: "/account/product-request", color: "#EA580C" },
 ] as const;
 
-/* ── Status pill colors ── */
+/* â”€â”€ Status pill colors â”€â”€ */
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   Pending: { bg: "#FEF3C7", text: "#92400E" },
   Accepted: { bg: "#D1FAE5", text: "#065F46" },
@@ -99,7 +99,7 @@ export default function DashboardScreen() {
   const { data: session, signOut, isLoading: isSessionLoading } = useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
-  /* ── Data Queries ── */
+  /* â”€â”€ Data Queries â”€â”€ */
   const announcementsQuery = useQuery({
     queryKey: ["announcements"],
     queryFn: async () => {
@@ -164,7 +164,7 @@ export default function DashboardScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  /* ── Pull to refresh ── */
+  /* â”€â”€ Pull to refresh â”€â”€ */
   const isRefreshing = dashboardQuery.isRefetching || profileQuery.isRefetching || basicInfoQuery.isRefetching;
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
@@ -175,7 +175,7 @@ export default function DashboardScreen() {
     queryClient.invalidateQueries({ queryKey: ["announcements"] });
   }, [queryClient]);
 
-  /* ── Derived data ── */
+  /* â”€â”€ Derived data â”€â”€ */
   const profile = profileQuery.data?.profile ?? profileQuery.data;
   const metrics = dashboardQuery.data;
   const recentOrdersRaw = recentOrdersQuery.data;
@@ -204,7 +204,7 @@ export default function DashboardScreen() {
     ? `Earn ${formatCurrency(referrerBonusAmount)} when your referral subscribes.`
     : "Share your code and earn bonus when your referral subscribes.";
 
-  /* ── Referral data ── */
+  /* â”€â”€ Referral data â”€â”€ */
   const referralCode = profile?.my_referral_code ?? "";
   const referralLink = referralCode
     ? `https://selfshop.com.bd/register?refer=${referralCode}`
@@ -257,7 +257,7 @@ export default function DashboardScreen() {
     return <DashboardSkeleton />;
   }
 
-  /* ── Guest View ── */
+  /* â”€â”€ Guest View â”€â”€ */
   if (!isLoggedIn) {
     return (
       <View style={styles.container}>
@@ -282,7 +282,7 @@ export default function DashboardScreen() {
     );
   }
 
-  /* ── Loading State ── */
+  /* â”€â”€ Loading State â”€â”€ */
   if (dashboardQuery.isLoading && profileQuery.isLoading) {
     return <DashboardSkeleton />;
   }
@@ -295,7 +295,7 @@ export default function DashboardScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#E5005F" />
         }
       >
-        {/* ─── Gradient Header ─── */}
+        {/* â”€â”€â”€ Gradient Header â”€â”€â”€ */}
         <LinearGradient
           colors={["#E5005F", "#B8004C", "#8C003A"]}
           start={{ x: 0, y: 0 }}
@@ -341,7 +341,7 @@ export default function DashboardScreen() {
                 {formatCurrency(walletBalance)}
               </Text>
               <Text fontSize="$1" color="rgba(255,255,255,0.5)" mt="$0.5">
-                ID: #{profile?.id ?? "—"}
+                ID: #{profile?.id ?? "â€”"}
               </Text>
             </View>
             <View style={styles.walletIcon}>
@@ -350,7 +350,7 @@ export default function DashboardScreen() {
           </View>
         </LinearGradient>
 
-        {/* ─── KPI Cards ─── */}
+        {/* â”€â”€â”€ KPI Cards â”€â”€â”€ */}
         <View style={styles.kpiSection}>
           <View style={styles.kpiGrid}>
             {kpiCards.map((card, i) => (
@@ -367,7 +367,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ─── Referral Invite Banner ─── */}
+        {/* â”€â”€â”€ Referral Invite Banner â”€â”€â”€ */}
         {referralCode ? (
           <View style={styles.sectionContainer}>
             <LinearGradient
@@ -445,7 +445,7 @@ export default function DashboardScreen() {
           </View>
         ) : null}
 
-        {/* ─── Quick Actions ─── */}
+        {/* â”€â”€â”€ Quick Actions â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
@@ -471,7 +471,7 @@ export default function DashboardScreen() {
 
         <EventChallengeSlider challenges={eventChallenges} />
 
-        {/* ─── Recent Orders ─── */}
+        {/* â”€â”€â”€ Recent Orders â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Recent Orders</Text>
@@ -554,7 +554,7 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        {/* ─── Order Insights ─── */}
+        {/* â”€â”€â”€ Order Insights â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Order Insights</Text>
           <ScrollView
@@ -574,10 +574,10 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        {/* ─── Announcements Slider ─── */}
+        {/* â”€â”€â”€ Announcements Slider â”€â”€â”€ */}
         <AnnouncementSlider announcements={announcementsQuery.data?.announcements ?? []} loading={announcementsQuery.isLoading} />
 
-        {/* ─── Account Actions ─── */}
+        {/* â”€â”€â”€ Account Actions â”€â”€â”€ */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.menuCard}>
@@ -606,12 +606,6 @@ export default function DashboardScreen() {
               onPress={() => router.push("/account/live-chat")}
             />
             <MenuItem
-              icon="notifications-outline"
-              label="Push Notification Test"
-              subtitle="Send local test and copy FCM token"
-              onPress={() => router.push("/account/push-test" as any)}
-            />
-            <MenuItem
               icon="settings-outline"
               label="Settings"
               subtitle="Password, legal, and more"
@@ -620,7 +614,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* ─── Sign Out ─── */}
+        {/* â”€â”€â”€ Sign Out â”€â”€â”€ */}
         <View style={[styles.sectionContainer, { marginBottom: 0 }]}>
           <Pressable
             style={({ pressed }) => [
@@ -762,7 +756,7 @@ function DashboardChallengeCard({ item }: { item: any }) {
   );
 }
 
-/* ── Announcement Slider component ── */
+/* â”€â”€ Announcement Slider component â”€â”€ */
 function AnnouncementSlider({ announcements, loading }: { announcements: any[]; loading: boolean }) {
   const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -857,7 +851,7 @@ function AnnouncementSlider({ announcements, loading }: { announcements: any[]; 
   );
 }
 
-/* ── Menu Item component ── */
+/* â”€â”€ Menu Item component â”€â”€ */
 function MenuItem({
   icon,
   label,
@@ -893,7 +887,7 @@ function MenuItem({
   );
 }
 
-/* ─── Styles ─── */
+/* â”€â”€â”€ Styles â”€â”€â”€ */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -922,7 +916,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  /* ── Header ── */
+  /* â”€â”€ Header â”€â”€ */
   headerGradient: {
     paddingBottom: 24,
     paddingHorizontal: 20,
@@ -1027,7 +1021,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  /* ── Quick Actions ── */
+  /* â”€â”€ Quick Actions â”€â”€ */
   sectionContainer: {
     paddingHorizontal: 20,
     marginTop: 24,
@@ -1072,7 +1066,7 @@ const styles = StyleSheet.create({
     color: "#374151",
   },
 
-  /* ── Event Challenge ── */
+  /* â”€â”€ Event Challenge â”€â”€ */
   challengeSlider: {
     gap: 12,
   },
@@ -1188,7 +1182,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* ── Order Insights ── */
+  /* â”€â”€ Order Insights â”€â”€ */
   insightsScroll: {
     gap: 12,
   },
@@ -1223,7 +1217,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /* ── Recent Orders ── */
+  /* â”€â”€ Recent Orders â”€â”€ */
   loadingSmall: {
     paddingVertical: 24,
     alignItems: "center",
@@ -1301,7 +1295,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* ── Account Menu ── */
+  /* â”€â”€ Account Menu â”€â”€ */
   menuCard: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -1331,7 +1325,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
 
-  /* ── Referral Banner ── */
+  /* â”€â”€ Referral Banner â”€â”€ */
   referralBanner: {
     borderRadius: 20,
     padding: 20,
@@ -1467,7 +1461,7 @@ const styles = StyleSheet.create({
     color: "#E5005F",
   },
 
-  /* ── Announcement Slider ── */
+  /* â”€â”€ Announcement Slider â”€â”€ */
   announcementHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
@@ -1518,7 +1512,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
 
-  /* ── Sign Out ── */
+  /* â”€â”€ Sign Out â”€â”€ */
   signOutButton: {
     flexDirection: "row",
     alignItems: "center",
