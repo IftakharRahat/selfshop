@@ -2,11 +2,12 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import {
   View, ScrollView, Image, Pressable, StyleSheet, Dimensions,
   ActivityIndicator, FlatList, type ViewToken, Linking, Modal, Animated,
-  TextInput, StatusBar, Platform, Keyboard, Share,
+  TextInput, StatusBar, Platform, Share,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProductDetailSkeleton } from "@/components/skeleton";
-import { Text } from "tamagui";
+import { Text, Sheet } from "tamagui";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -277,10 +278,7 @@ export default function ProductDetailScreen() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
-  const variantSheetScrollRef = useRef<ScrollView>(null);
-  const variantSheetRowOffsets = useRef<Record<string, number>>({});
   const defaultQtySet = useRef(false);
-  const [variantSheetFooterHeight, setVariantSheetFooterHeight] = useState(112);
 
   useEffect(() => {
     setDescExpanded(false);
@@ -299,43 +297,7 @@ export default function ProductDetailScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const HEADER_THRESHOLD = SW - 100; // Start fading in the solid header near end of hero image
 
-  // ── Keyboard-aware bottom padding ──
-  const [kbHeight, setKbHeight] = useState(0);
-  useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSub = Keyboard.addListener(showEvent, (e) => setKbHeight(e.endCoordinates.height));
-    const hideSub = Keyboard.addListener(hideEvent, () => setKbHeight(0));
-    return () => { showSub.remove(); hideSub.remove(); };
-  }, []);
-  const variantKeyboardOffset = selectedVariantId !== null ? Math.max(kbHeight - insets.bottom, 0) : 0;
-  const isVariantKeyboardOpen = variantKeyboardOffset > 0;
-  const variantSheetMaxHeight = isVariantKeyboardOpen
-    ? Math.max(360, SH - variantKeyboardOffset - insets.top - 12)
-    : undefined;
-  const variantSheetScrollBottomPadding = isVariantKeyboardOpen
-    ? variantSheetFooterHeight + 24
-    : 14;
-  const focusVariantPriceRow = (rowKey: string) => {
-    setTimeout(() => {
-      const rowY = variantSheetRowOffsets.current[rowKey] ?? 0;
-      variantSheetScrollRef.current?.scrollTo({
-        y: Math.max(rowY - 8, 0),
-        animated: true,
-      });
-    }, 120);
-  };
-
-  useEffect(() => {
-    if (selectedVariantId === null) {
-      variantSheetRowOffsets.current = {};
-      return;
-    }
-
-    setTimeout(() => {
-      variantSheetScrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, 0);
-  }, [selectedVariantId]);
+  // ── Keyboard-aware (handled by KeyboardAwareScrollView) ──
 
   // Bottom sheet spring animation
   const sheetAnim = useRef(new Animated.Value(400)).current;
@@ -1017,7 +979,7 @@ export default function ProductDetailScreen() {
 
       <Animated.ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 + kbHeight }}
+        contentContainerStyle={{ paddingBottom: 130 }}
         scrollEventThrottle={16}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
@@ -1808,27 +1770,28 @@ export default function ProductDetailScreen() {
       </Modal>
 
       {/* VARIANT SELECTION BOTTOM SHEET */}
-      <Modal
-        visible={selectedVariantId !== null}
-        transparent
-        statusBarTranslucent
-        animationType="slide"
-        onRequestClose={closeVariantSheet}
+      <Sheet
+        modal
+        open={selectedVariantId !== null}
+        onOpenChange={(open: boolean) => { if (!open) closeVariantSheet(); }}
+        snapPoints={[90]}
+        dismissOnSnapToBottom
+        animation="quick"
+        zIndex={100_000}
       >
-        <View style={[s.variantSheetOverlay, { paddingBottom: variantKeyboardOffset }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeVariantSheet} />
-          <View
-            style={[
-              s.variantSheetContainer,
-              {
-                paddingBottom: Math.max(insets.bottom, 16),
-                ...(variantSheetMaxHeight ? { maxHeight: variantSheetMaxHeight } : {}),
-              },
-            ]}
-          >
-            <View style={s.variantSheetHandleWrap}>
-              <View style={s.variantSheetHandle} />
-            </View>
+        <Sheet.Overlay
+          animation="lazy"
+          enterStyle={{ opacity: 0 }}
+          exitStyle={{ opacity: 0 }}
+          backgroundColor="rgba(0,0,0,0.5)"
+        />
+        <Sheet.Handle />
+        <Sheet.Frame
+          paddingBottom={Math.max(insets.bottom, 16)}
+          backgroundColor="#fff"
+          borderTopLeftRadius={24}
+          borderTopRightRadius={24}
+        >
 
             <View style={s.variantSheetHeader}>
               <View style={{ flex: 1 }}>
@@ -1952,13 +1915,13 @@ export default function ProductDetailScreen() {
               <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={13} fontWeight="800" color={DARK}>Quantity</Text>
             </View>
 
-            <ScrollView
-              ref={variantSheetScrollRef}
+            <KeyboardAwareScrollView
               style={{ flexGrow: 1, flexShrink: 1, minHeight: 120 }}
-              contentContainerStyle={{ paddingBottom: variantSheetScrollBottomPadding }}
+              contentContainerStyle={{ paddingBottom: 14 }}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-              nestedScrollEnabled
+              bottomOffset={Math.max(insets.bottom, 16) + 80}
+              keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
             >
               {selectedVariant.sizes.map((sizeItem) => {
                 const size = sizeItem.sizeName;
@@ -1981,9 +1944,6 @@ export default function ProductDetailScreen() {
                 return (
                   <View
                     key={rowKey}
-                    onLayout={(event) => {
-                      variantSheetRowOffsets.current[rowKey] = event.nativeEvent.layout.y;
-                    }}
                     style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}
                   >
                     <View style={s.sheetSizeRow}>
@@ -2054,7 +2014,6 @@ export default function ProductDetailScreen() {
                             keyboardType="numeric"
                             value={rowSPStr}
                             onChangeText={(value) => handleSellingPriceChange(selectedVariant.variantId, size, value)}
-                            onFocus={() => focusVariantPriceRow(rowKey)}
                             placeholder={"Min " + Math.ceil(unitPrice)}
                             placeholderTextColor="#bbb"
                           />
@@ -2077,11 +2036,10 @@ export default function ProductDetailScreen() {
                   </View>
                 );
               })}
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <View
               style={s.variantSheetFooter}
-              onLayout={(event) => setVariantSheetFooterHeight(event.nativeEvent.layout.height)}
             >
               <View style={s.sheetTotalRows}>
                 <View style={s.sheetTotalRow}>
@@ -2120,9 +2078,8 @@ export default function ProductDetailScreen() {
                 </Pressable>
               </View>
             </View>
-          </View>
-        </View>
-      </Modal>
+        </Sheet.Frame>
+      </Sheet>
       <AppDialog state={dialog} onClose={closeDialog} />
     </View>
   );

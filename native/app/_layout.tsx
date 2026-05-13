@@ -7,7 +7,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { TamaguiProvider } from "tamagui";
+import { TamaguiProvider, PortalProvider } from "tamagui";
 import * as SecureStore from "expo-secure-store";
 import { Toaster } from "sonner-native";
 import * as Sentry from "@sentry/react-native";
@@ -79,6 +79,7 @@ function RootLayout() {
 
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
+      <PortalProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <GestureHandlerRootView style={styles.container}>
@@ -149,6 +150,7 @@ function RootLayout() {
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
+      </PortalProvider>
     </TamaguiProvider>
   );
 }

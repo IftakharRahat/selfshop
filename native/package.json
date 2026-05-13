@@ -19,6 +19,7 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@sentry/react-native": "^7.2.0",
+    "@tamagui/animations-react-native": "2.0.0-rc.26",
     "@tamagui/config": "2.0.0-rc.26",
     "@tamagui/core": "2.0.0-rc.26",
     "@tamagui/font-inter": "2.0.0-rc.26",
