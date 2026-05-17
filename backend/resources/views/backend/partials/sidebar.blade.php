@@ -176,35 +176,53 @@
                 @endif
             @endif
 
-            @if($isFullAdmin || $adm->hasDirectPermission('supplier.view'))
+            @if($isFullAdmin || $adm->hasDirectPermission('supplier.all') || $adm->hasDirectPermission('supplier.active') || $adm->hasDirectPermission('supplier.requests') || $adm->hasDirectPermission('supplier.products') || $adm->hasDirectPermission('supplier.reviews') || $adm->hasDirectPermission('supplier.discounts') || $adm->hasDirectPermission('supplier.commissions') || $adm->hasDirectPermission('supplier.payouts'))
             {{-- ═══ SUPPLIERS ═══ --}}
             <small class="nav-section-title">Suppliers</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-truck"></i> Suppliers</a>
                 <div class="bg-transparent border-0 dropdown-menu">
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.all'))
                     <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">All Suppliers</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.active'))
                     <a href="{{ route('admin.vendors.index', ['status' => 'approved']) }}" class="dropdown-item">Active Suppliers</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.requests'))
                     <a href="{{ route('admin.vendors.index', ['status' => 'pending']) }}" class="dropdown-item">Supplier Requests</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.products'))
                     <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Supplier Products</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.reviews'))
                     <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.discounts'))
                     <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Supplier Category Discounts</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.commissions'))
                     <a href="{{ route('admin.vendor-category-commissions.index') }}" class="dropdown-item">Supplier Category Commissions</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.payouts'))
                     <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item" data-also-match="/vendors/,/sales-summary">Supplier Payout Requests</a>
+                    @endif
                 </div>
             </div>
             @endif
 
-            @if($isFullAdmin || $adm->hasDirectPermission('user.view'))
+            @if($isFullAdmin || $adm->hasDirectPermission('user.all') || $adm->hasDirectPermission('user.manage') || $adm->hasDirectPermission('user.active'))
             {{-- ═══ USERS ═══ --}}
             <small class="nav-section-title">Users</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-people"></i> Users</a>
                 <div class="bg-transparent border-0 dropdown-menu">
-                    @if($isFullAdmin)
+                    @if($isFullAdmin || $adm->hasDirectPermission('user.all'))
                     <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
                     @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('user.manage'))
                     <a href="{{ route('admin.manage-users') }}" class="dropdown-item">Manage Users</a>
-                    @if($isFullAdmin)
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('user.active'))
                     <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
                     @endif
                 </div>
