@@ -13,7 +13,7 @@ import {
 	Modal,
 	Tabs,
 } from "antd";
-import { ChevronDown, Loader2, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
+import { ChevronDown, Loader2, Lock, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -44,11 +44,13 @@ import { getImageUrl } from "@/lib/utils";
 import AuthModal from "../AuthModal";
 import CartDrawer from "../CartDrawer/CartDrawer";
 import DropDownBtn from "./DropDownBtn";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 export default function Navbar() {
 	const dispatch = useAppDispatch();
 	const token = useAppSelector((state) => state.auth.access_token);
 	const { data: user } = useGetMeQuery(token, { skip: !token });
+	const { isActive: isResellerActive } = useIsActiveReseller();
 	const [isCartOpen, setIsCartOpen] = useState(false);
 	const { data: cartItems } = useGetAllCartItemsQuery(undefined, {
 		skip: !token,
@@ -164,7 +166,17 @@ export default function Navbar() {
 								</div>
 								<div className="flex-1 min-w-0">
 									<p className="text-sm font-medium text-gray-800 truncate">{product.ProductName}</p>
-									<p className="text-xs text-pink-600 font-semibold">৳ {product.ProductSalePrice || product.ProductRegularPrice}</p>
+									{isResellerActive ? (
+										<p className="text-xs text-pink-600 font-semibold">৳ {product.ProductSalePrice || product.ProductRegularPrice}</p>
+									) : (
+										<div className="flex items-center gap-1 mt-0.5">
+											<span className="text-gray-400 text-xs font-bold">***</span>
+											<span className="text-[9px] text-pink-600 font-bold bg-pink-50 px-1 py-0.5 rounded flex items-center gap-0.5 w-fit">
+												<Lock className="w-2.5 h-2.5 shrink-0" />
+												<span>Active profile required</span>
+											</span>
+										</div>
+									)}
 								</div>
 							</div>
 						))}
