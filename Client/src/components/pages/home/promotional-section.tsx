@@ -39,7 +39,7 @@ function CardSection({ section }: { section: any }) {
 					{section.title.toUpperCase()}
 				</h3>
 				<Link href={`/section/${section.slug}`} scroll>
-					<button className="cursor-pointer bg-[#E5005F] text-white px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium hover:bg-pink-700 transition-colors">
+					<button className="cursor-pointer bg-[#E5005F] px-3 sm:px-5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium hover:bg-pink-700 transition-colors" style={{ color: 'white' }}>
 						Explore
 					</button>
 				</Link>

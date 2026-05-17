@@ -269,20 +269,17 @@ public function incomeHistoryOrders(Request $request, $id)
 
                 $referuser = User::where('my_referral_code', $user->refer_by)->first();
                 if ($referuser) {
-                    $refbonus = round((float) $referuser->bonus_percent, 2);
-                    if ($refbonus > 0) {
-                        $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
-                        $referuser->account_balance = $referuser->account_balance + $refbonus;
-                        $referuser->update();
-
-                        $message = new Message();
-                        $message->user_id = $referuser->id;
-                        $message->message_for = 'Referral Bonus';
-                        $message->message = 'You Get ' . $refbonus . ' TK As Your Referral Bonus';
-                        $message->amount = $refbonus;
-                        $message->date = date('Y-m-d');
-                        $message->save();
-                    }
+                    $refbonus = 200; // Fixed 200 TK referral bonus
+                    $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
+                    $referuser->account_balance = $referuser->account_balance + $refbonus;
+                    $referuser->update();
+                    $message = new Message();
+                    $message->user_id = $referuser->id;
+                    $message->message_for = 'Referral Bonus';
+                    $message->message = 'You Get ' . $refbonus . ' TK As Your Referral Bonus';
+                    $message->amount = $refbonus;
+                    $message->date = date('Y-m-d');
+                    $message->save();
                 }
 
                 $user->status = 'Active';
@@ -301,19 +298,17 @@ public function incomeHistoryOrders(Request $request, $id)
 
                     $referuser = User::where('my_referral_code', $user->refer_by)->first();
                     if ($referuser) {
-                        $refbonus = round((float) $referuser->bonus_percent, 2);
-                        if ($refbonus > 0) {
-                            $referuser->referal_bonus = $referuser->referal_bonus - $refbonus;
-                            $referuser->account_balance = $referuser->account_balance - $refbonus;
-                            $referuser->update();
-                            $message = new Message();
-                            $message->user_id = $referuser->id;
-                            $message->message_for = 'Referral Bonus';
-                            $message->message = 'We Remove ' . $refbonus . ' TK From Your Referral Bonus';
-                            $message->amount = -$refbonus;
-                            $message->date = date('Y-m-d');
-                            $message->save();
-                        }
+                        $refbonus = 200; // Fixed 200 TK referral bonus
+                        $referuser->referal_bonus = $referuser->referal_bonus - $refbonus;
+                        $referuser->account_balance = $referuser->account_balance - $refbonus;
+                        $referuser->update();
+                        $message = new Message();
+                        $message->user_id = $referuser->id;
+                        $message->message_for = 'Referral Bonus';
+                        $message->message = 'We Remove ' . $refbonus . ' TK From Your Referral Bonus';
+                        $message->amount = -$refbonus;
+                        $message->date = date('Y-m-d');
+                        $message->save();
                     }
 
                     $user->status = 'Inactive';

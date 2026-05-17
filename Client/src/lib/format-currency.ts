@@ -18,3 +18,19 @@ export function formatBDT(value: number | string, decimals = 2): string {
 		maximumFractionDigits: decimals,
 	}).format(num);
 }
+
+/**
+ * Format a number using Bangladesh/Indian numbering system,
+ * but without forcing trailing zeros for decimal values.
+ *
+ * Examples:
+ *   formatNumber(124356)    → "1,24,356"
+ *   formatNumber(92.5)      → "92.5"
+ *   formatNumber(5357.33)   → "5,357.33"
+ */
+export function formatNumber(value: number | string, maxDecimals = 2): string {
+	const num = typeof value === "string" ? parseFloat(value) || 0 : value;
+	return new Intl.NumberFormat("en-IN", {
+		maximumFractionDigits: maxDecimals,
+	}).format(num);
+}

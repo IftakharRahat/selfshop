@@ -83,7 +83,8 @@ export default function ProfileDashboard() {
 
 	const handleCopyReferralCode = () => {
 		if (profile?.my_referral_code) {
-			navigator.clipboard.writeText(profile.my_referral_code);
+			const referralLink = `${window.location.origin}/?showAuth=register&campaign=${profile.my_referral_code}`;
+			navigator.clipboard.writeText(referralLink);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
 		}
@@ -208,11 +209,12 @@ export default function ProfileDashboard() {
 
 								<button
 									onClick={handleCopyReferralCode}
-									className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white transition-colors cursor-pointer ${copied ? "bg-green-500" : "bg-[#E5005F] hover:bg-[#c0004d]"
+									className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer ${copied ? "bg-green-500" : "bg-[#E5005F] hover:bg-[#c0004d]"
 										}`}
+									style={{ color: 'white' }}
 								>
 									<Copy className="w-4 h-4" />
-									{copied ? "Copied!" : "Copy Code"}
+									{copied ? "Copied!" : "Copy Link"}
 								</button>
 							</div>
 						</div>

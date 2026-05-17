@@ -87,7 +87,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 							</span>
 						</div>
 						<button
-							className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors shrink-0"
+							className="cursor-pointer w-7 h-7 sm:w-8 sm:h-8 bg-[#E5005F] hover:bg-[#c9004f] rounded-full flex items-center justify-center transition-colors shrink-0"
+						style={{ color: 'white' }}
 							onClick={handleAddToCart}
 						>
 							<ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

@@ -14,8 +14,10 @@ import {
 	useGetWithdrawListQuery,
 } from "@/redux/features/withdrawApi";
 import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
+import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 import { formatBDT } from "@/lib/format-currency";
+import { Building2, CheckCircle } from "lucide-react";
 
 // ✅ Zod Schema
 const transferSchema = z.object({
@@ -35,14 +37,13 @@ const transferSchema = z.object({
 		.optional(),
 });
 
-// ✅ Infer Type from Schema
 type TransferFormValues = z.infer<typeof transferSchema>;
 
-
-
 export function WithdrawIncome() {
-	const [selectedMethod, setSelectedMethod] = useState<string>("");
+	const [selectedMethodId, setSelectedMethodId] = useState<number | null>(null);
+	const [useSavedBank, setUseSavedBank] = useState(false);
 
+	const { data: meData } = useGetMeQuery(undefined);
 	const { data: withdrawMethodsData, isLoading: methodsLoading } =
 		useGetAllWithdrawMethodsQuery(undefined);
 	const { data: withdrawListData, isLoading: listLoading } =
@@ -52,52 +53,8 @@ export function WithdrawIncome() {
 	const [createWithdrawRequest, { isLoading: creatingRequest }] =
 		useCreateWithdrawRequestMutation();
 
-	const {
-		register,
-		handleSubmit,
-		formState: { errors },
-		reset,
-	} = useForm<TransferFormValues>({
-		resolver: zodResolver(transferSchema),
-		defaultValues: {
-			amount: "",
-			accountNumber: "",
-			additionalInfo: "",
-		},
-	});
-
-	const onSubmit = async (data: TransferFormValues) => {
-		if (!selectedMethod) return;
-
-		// Find method to get its ID
-		const method = withdrawMethods.find(
-			(m: any) => m.paymentTypeName === selectedMethod,
-		);
-
-		if (!method) {
-			alert("Please select a valid withdrawal method.");
-			return;
-		}
-
-		// ✅ Build FormData
-		const formData = new FormData();
-		formData.append("withdrew_amount", data.amount);
-		formData.append("paymenttype_id", method.id.toString());
-		formData.append("to_account_number", data.accountNumber);
-		if (data.additionalInfo) {
-			formData.append("to_additional_info", data.additionalInfo);
-		}
-
-		try {
-			await handleAsyncWithToast(async () => {
-				return await createWithdrawRequest(formData);
-			});
-			reset();
-		} catch (error: any) {
-			console.error("Error submitting withdraw request:", error);
-			alert(error?.data?.message || "Failed to submit withdraw request");
-		}
-	};
+	const bankinfo = meData?.data?.bankinfo;
+	const hasSavedBank = !!(bankinfo?.bank_name && bankinfo?.account_number);
 
 	const withdrawMethods = withdrawMethodsData?.data || [];
 	const withdrawList = withdrawListData?.data || [];
@@ -110,12 +67,73 @@ export function WithdrawIncome() {
 			: Number(dashboardData?.data?.withdraw ?? 0);
 	const isBalanceLoading = dashboardLoading || listLoading;
 
+	const selectedMethod = withdrawMethods.find((m: any) => m.id === selectedMethodId);
+
+	const {
+		register,
+		handleSubmit,
+		formState: { errors },
+		reset,
+		setValue,
+	} = useForm<TransferFormValues>({
+		resolver: zodResolver(transferSchema),
+		defaultValues: {
+			amount: "",
+			accountNumber: "",
+			additionalInfo: "",
+		},
+	});
+
+	// Auto-fill saved bank account number when user toggles it
+	useEffect(() => {
+		if (useSavedBank && bankinfo?.account_number) {
+			setValue("accountNumber", bankinfo.account_number);
+			setValue("additionalInfo", `Bank: ${bankinfo.bank_name || ""} | Account: ${bankinfo.account_name || ""} | Routing: ${bankinfo.routing_number || "N/A"}`);
+			// Auto-select Bank method
+			const bankMethod = withdrawMethods.find(
+				(m: any) => (m.paymentTypeName || "").toLowerCase() === "bank"
+			);
+			if (bankMethod) {
+				setSelectedMethodId(bankMethod.id);
+			}
+		} else if (!useSavedBank) {
+			setValue("accountNumber", "");
+			setValue("additionalInfo", "");
+		}
+	}, [useSavedBank, bankinfo, setValue, withdrawMethods]);
+
+	const onSubmit = async (data: TransferFormValues) => {
+		if (!selectedMethod) {
+			alert("Please select a withdrawal method.");
+			return;
+		}
+
+		const formData = new FormData();
+		formData.append("withdrew_amount", data.amount);
+		formData.append("paymenttype_id", selectedMethod.id.toString());
+		formData.append("to_account_number", data.accountNumber);
+		if (data.additionalInfo) {
+			formData.append("to_additional_info", data.additionalInfo);
+		}
+
+		try {
+			await handleAsyncWithToast(async () => {
+				return await createWithdrawRequest(formData);
+			});
+			reset();
+			setUseSavedBank(false);
+		} catch (error: any) {
+			console.error("Error submitting withdraw request:", error);
+			alert(error?.data?.message || "Failed to submit withdraw request");
+		}
+	};
+
 	// Set default selected method after API loads
 	useEffect(() => {
-		if (!selectedMethod && withdrawMethods.length > 0) {
-			setSelectedMethod(withdrawMethods[0].paymentTypeName);
+		if (selectedMethodId === null && withdrawMethods.length > 0) {
+			setSelectedMethodId(withdrawMethods[0].id);
 		}
-	}, [withdrawMethods, selectedMethod]);
+	}, [withdrawMethods, selectedMethodId]);
 
 	return (
 		<>
@@ -177,11 +195,12 @@ export function WithdrawIncome() {
 								withdrawMethods.map((method: any) => (
 									<div
 										key={method.id}
-										className={`flex items-center gap-2 cursor-pointer px-3 py-2.5 rounded-lg border transition-colors h-12 ${selectedMethod === method.paymentTypeName
-											? "border-[#E5005F] bg-[#FDEDF4]"
-											: "border-gray-200 hover:border-gray-300"
-											}`}
-										onClick={() => setSelectedMethod(method.paymentTypeName)}
+										className={`flex items-center gap-2 cursor-pointer px-3 py-2.5 rounded-lg border-2 transition-all h-12 ${
+											selectedMethodId === method.id
+												? "border-[#E5005F] bg-[#FDEDF4]"
+												: "border-gray-200 bg-white hover:border-gray-300"
+										}`}
+										onClick={() => setSelectedMethodId(method.id)}
 									>
 										<img
 											src={getImageUrl(method.icon)}
@@ -197,19 +216,50 @@ export function WithdrawIncome() {
 						</div>
 					</div>
 
+					{/* Saved Bank Info Card */}
+					{hasSavedBank && (
+						<div
+							onClick={() => setUseSavedBank(!useSavedBank)}
+							className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${
+								useSavedBank
+									? "border-[#E5005F] bg-[#FDEDF4]"
+									: "border-gray-200 bg-gray-50 hover:border-gray-300"
+							}`}
+						>
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center gap-2">
+									<Building2 className="w-5 h-5 text-[#E5005F]" />
+									<span className="text-sm font-semibold text-gray-900">
+										Use Saved Bank Account
+									</span>
+								</div>
+								{useSavedBank && (
+									<CheckCircle className="w-5 h-5 text-[#E5005F]" />
+								)}
+							</div>
+							<div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+								<p><span className="font-medium">Bank:</span> {bankinfo?.bank_name}</p>
+								<p><span className="font-medium">Account:</span> {bankinfo?.account_name || "N/A"}</p>
+								<p><span className="font-medium">A/C No:</span> {bankinfo?.account_number}</p>
+								<p><span className="font-medium">Routing:</span> {bankinfo?.routing_number || "N/A"}</p>
+							</div>
+						</div>
+					)}
+
 					{/* Account Info */}
 					<div className="space-y-2">
 						<label className="text-sm font-medium text-gray-900">
-							Please provide your payment information
+							{useSavedBank ? "Account number (auto-filled)" : "Please provide your payment information"}
 						</label>
 						<div className="relative flex items-center gap-2">
 							<div className="bg-gray-200/80 h-12 w-16 flex items-center justify-center rounded-md text-sm">
-								{selectedMethod || "-"}
+								{selectedMethod?.paymentTypeName || "-"}
 							</div>
 							<input
 								type="text"
 								placeholder="Enter the account number"
-								className="pl-4 h-12 border-gray-200 w-full rounded-md border"
+								className={`pl-4 h-12 border-gray-200 w-full rounded-md border ${useSavedBank ? "bg-gray-50" : ""}`}
+								readOnly={useSavedBank}
 								{...register("accountNumber")}
 							/>
 						</div>
@@ -227,7 +277,8 @@ export function WithdrawIncome() {
 						</label>
 						<textarea
 							placeholder="If needed enter additional support"
-							className="min-h-[80px] ps-4 pt-1 border-gray-200 w-full rounded-md border resize-none"
+							className={`min-h-[80px] ps-4 pt-1 border-gray-200 w-full rounded-md border resize-none ${useSavedBank ? "bg-gray-50" : ""}`}
+							readOnly={useSavedBank}
 							{...register("additionalInfo")}
 						/>
 						{errors.additionalInfo && (
@@ -240,7 +291,8 @@ export function WithdrawIncome() {
 					{/* Submit Button */}
 					<button
 						type="submit"
-						className="w-full h-12 bg-[#E5005F] hover:bg-pink-600 !text-white font-medium rounded-md cursor-pointer"
+						className="w-full h-12 bg-[#E5005F] hover:bg-pink-600 font-medium rounded-md cursor-pointer"
+						style={{ color: 'white' }}
 						disabled={creatingRequest}
 					>
 						{creatingRequest ? "Submitting..." : "Request for withdraw"}
@@ -254,7 +306,6 @@ export function WithdrawIncome() {
 					Payment History
 				</h2>
 
-				{/* Loading */}
 				{listLoading && (
 					<div className="py-10 text-center text-gray-500 text-sm">
 						Loading payment history...
@@ -283,9 +334,7 @@ export function WithdrawIncome() {
 											{withdraw.status}
 										</span>
 									</div>
-
 									<p className="text-lg font-bold text-gray-900 mb-1.5">৳ {withdraw.withdrew_amount}</p>
-
 									<div className="flex items-center justify-between text-xs text-gray-400">
 										<span>{withdraw.paymenttype_name}</span>
 										<span>{new Date(withdraw.created_at).toLocaleDateString()}</span>
@@ -323,7 +372,6 @@ export function WithdrawIncome() {
 									</th>
 								</tr>
 							</thead>
-
 							<tbody>
 								{withdrawList.length > 0 ? (
 									withdrawList.map((withdraw: any) => (

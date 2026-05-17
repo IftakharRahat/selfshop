@@ -71,7 +71,8 @@ function RowProductCard({ product, onAddToCart, isActive }: { product: any; onAd
 						{isActive ? (
 							<button
 								onClick={() => onAddToCart(product)}
-								className="cursor-pointer w-7 h-7 bg-[#E5005F] hover:bg-[#c9004f] text-white rounded-full flex items-center justify-center transition-colors"
+								className="cursor-pointer w-7 h-7 bg-[#E5005F] hover:bg-[#c9004f] rounded-full flex items-center justify-center transition-colors"
+								style={{ color: 'white' }}
 							>
 								<ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
 							</button>
@@ -144,7 +145,8 @@ function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddT
 					{isActive && (
 						<button
 							onClick={() => onAddToCart(product)}
-							className="cursor-pointer bg-[#E5005F] hover:bg-[#c9004f] text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium text-sm w-fit"
+							className="cursor-pointer bg-[#E5005F] hover:bg-[#c9004f] px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium text-sm w-fit"
+							style={{ color: 'white' }}
 						>
 							<ShoppingCart className="w-4 h-4" />
 							<span>Add to cart</span>
