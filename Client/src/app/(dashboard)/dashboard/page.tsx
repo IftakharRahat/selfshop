@@ -12,6 +12,7 @@ import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { trackPurchase } from "@/lib/trackingEvents";
+import { formatNumber } from "@/lib/format-currency";
 
 export default function Dashboard() {
 	const { data } = useGetAllDashboardDataQuery(undefined);
@@ -57,21 +58,21 @@ export default function Dashboard() {
 			<div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-5 mb-4 lg:mb-8">
 				<MetricCard
 					title="Total Sale"
-					value={`৳ ${metrics.total_sales ?? 0}`}
+					value={`৳ ${formatNumber(metrics.total_sales ?? 0)}`}
 					icon={money}
 					iconColor="bg-white"
 				/>
 
 				<MetricCard
 					title="Total Profit"
-					value={`৳ ${metrics.total_profit ?? 0}`}
+					value={`৳ ${formatNumber(metrics.total_profit ?? 0)}`}
 					icon={profit}
 					iconColor="bg-pink-500"
 				/>
 
 				<MetricCard
 					title="Pending Amount"
-					value={`৳ ${metrics.pending_amount ?? 0}`}
+					value={`৳ ${formatNumber(metrics.pending_amount ?? 0)}`}
 					subtitle="Awaiting delivery"
 					icon={pendingIcon}
 					iconColor="bg-pink-500"
@@ -79,15 +80,15 @@ export default function Dashboard() {
 
 				<MetricCard
 					title="Balance"
-					value={`৳ ${metrics.balance ?? 0}`}
-					subtitle={`Last withdraw: ৳ ${metrics.withdraw ?? 0}`}
+					value={`৳ ${formatNumber(metrics.balance ?? 0)}`}
+					subtitle={`Last withdraw: ৳ ${formatNumber(metrics.withdraw ?? 0)}`}
 					icon={balance}
 					iconColor="bg-pink-500"
 				/>
 
 				<MetricCard
 					title="Total Withdraw"
-					value={`৳ ${metrics.withdraw ?? 0}`}
+					value={`৳ ${formatNumber(metrics.withdraw ?? 0)}`}
 					icon={withdraw}
 					iconColor="bg-pink-500"
 				/>

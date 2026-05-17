@@ -4,6 +4,7 @@ import shop from "@/assets/images/dashboard/shop.png";
 import pendingIcon from "@/assets/images/dashboard/Group 1321314506 (3).png";
 import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
+import { formatNumber } from "@/lib/format-currency";
 
 export default function OrderInsightCards() {
 	const { data } = useGetMeQuery(undefined);
@@ -12,22 +13,22 @@ export default function OrderInsightCards() {
 	const insights = [
 		{
 			title: "My shop",
-			value: data?.data?.shopproducts,
+			value: data?.data?.shopproducts ? formatNumber(data.data.shopproducts) : 0,
 			icon: shop,
 		},
 		{
 			title: "Total order",
-			value: data?.data?.totalorders,
+			value: data?.data?.totalorders ? formatNumber(data.data.totalorders) : 0,
 			icon: order,
 		},
 		{
 			title: "Your sold amount",
-			value: data?.data?.soldamount,
+			value: data?.data?.soldamount ? formatNumber(data.data.soldamount) : 0,
 			icon: reseller,
 		},
 		{
 			title: "Pending amount",
-			value: `৳ ${dashboardData?.data?.pending_amount ?? 0}`,
+			value: `৳ ${formatNumber(dashboardData?.data?.pending_amount ?? 0)}`,
 			icon: pendingIcon,
 		},
 	];
