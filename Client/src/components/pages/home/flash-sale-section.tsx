@@ -68,56 +68,55 @@ export default function FlashSaleSection() {
                     className="rounded-2xl overflow-hidden"
                     style={{
                         background:
-                            "linear-gradient(135deg, #3257d9 0%, #4a6ae5 40%, #6b83ef 70%, #8b9ff5 100%)",
+                            "linear-gradient(90deg, #b3003b 0%, #E5005F 100%)",
                     }}
                 >
                     {/* Header */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-3">
                         <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-0">
                             <span className="text-xl sm:text-2xl">⚡</span>
-                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight">
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold italic text-white tracking-tight">
                                 {flashSale.title || "Flash Sale"}
                             </h2>
                         </div>
 
                         <div className="flex items-center gap-3 sm:gap-5">
                             {/* Countdown Timer */}
-                            <div className="flex items-center gap-1.5 sm:gap-2">
-                                {[
-                                    { value: timeLeft.days, label: "D" },
-                                    { value: timeLeft.hours, label: "H" },
-                                    { value: timeLeft.minutes, label: "M" },
-                                ].map((unit, i) => (
-                                    <div key={i} className="flex items-center gap-1">
-                                        <div
-                                            className="flex items-center justify-center rounded-lg font-bold text-white text-sm sm:text-lg"
-                                            style={{
-                                                background: "#E5005F",
-                                                minWidth: "32px",
-                                                height: "32px",
-                                                padding: "2px 6px",
-                                            }}
-                                        >
-                                            {pad(unit.value)}
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <span className="text-white font-medium text-xs sm:text-sm hidden sm:inline-block">Ending in</span>
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                    {[
+                                        { value: timeLeft.hours + (timeLeft.days * 24) },
+                                        { value: timeLeft.minutes },
+                                        { value: timeLeft.seconds }
+                                    ].map((unit, i) => (
+                                        <div key={i} className="flex items-center gap-1">
+                                            <div
+                                                className="flex items-center justify-center rounded font-bold text-black text-sm sm:text-base"
+                                                style={{
+                                                    background: "#FFFFFF",
+                                                    minWidth: "32px",
+                                                    height: "32px",
+                                                    padding: "2px 6px",
+                                                }}
+                                            >
+                                                {pad(unit.value)}
+                                            </div>
+                                            {i < 2 && (
+                                                <span className="text-white font-bold mx-0.5">
+                                                    :
+                                                </span>
+                                            )}
                                         </div>
-                                        <span className="text-white/70 text-xs font-medium">
-                                            {unit.label}
-                                        </span>
-                                        {i < 2 && (
-                                            <span className="text-white/50 font-bold mx-0.5">
-                                                :
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
                             <Link
                                 href="/flash-sale"
-                                className="inline-flex items-center gap-1 hover:bg-white/30 backdrop-blur-sm text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-all"
-                                style={{ background: "#E5005F" }}
+                                className="inline-flex items-center gap-1 bg-white text-[#E5005F] hover:bg-gray-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-all ml-2 sm:ml-4 shadow-sm"
                             >
-                                See All →
+                                See More {'>'}
                             </Link>
                         </div>
                     </div>
