@@ -82,9 +82,12 @@
                 <div class="admin-card-header">
                     <h6 class="admin-card-title">Flash Sale List</h6>
                     <div class="admin-card-actions">
+                        @php $adm = Auth::guard('admin')->user(); @endphp
+                        @if($adm->isFullAdmin() || $adm->hasDirectPermission('flash-sale.create'))
                         <a type="button" data-bs-toggle="modal" data-bs-target="#createFlashSaleModal" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-lg"></i> Create Flash Sale
                         </a>
+                        @endif
                     </div>
                 </div>
                 <div class="admin-card-body">
@@ -277,6 +280,8 @@
         var pendingProductId = null;
         var pendingProductName = '';
 
+        var canEditFlashSale = {{ ($adm->isFullAdmin() || $adm->hasDirectPermission('flash-sale.edit')) ? 'true' : 'false' }};
+
         var flashsaleinfo = $('#flashsaleinfo').DataTable({
             order: [[0, 'desc']],
             processing: true,
@@ -294,6 +299,11 @@
                 {
                     data: null,
                     render: function(data) {
+                        if (!canEditFlashSale) {
+                            return data.status === 'Active'
+                                ? '<span class="badge bg-success">Active</span>'
+                                : '<span class="badge bg-warning text-dark">Inactive</span>';
+                        }
                         if (data.status === 'Active') {
                             return '<button type="button" class="btn btn-success btn-sm" id="flashsaleStatusBtn" data-status="Inactive" data-id="' + data.id + '">Active</button>';
                         } else {

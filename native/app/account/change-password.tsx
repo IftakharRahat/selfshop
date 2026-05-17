@@ -1,20 +1,24 @@
 import { useState } from "react";
 import {
   View,
-  ScrollView,
   TextInput,
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
+  Platform,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 export default function ChangePasswordScreen() {
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -28,6 +32,7 @@ export default function ChangePasswordScreen() {
     newPassword.length >= 8 &&
     confirmPassword.length >= 1 &&
     passwordsMatch;
+  const bottomInset = Math.max(insets.bottom, 16);
 
   async function handleChangePassword() {
     if (!isFormValid) return;
@@ -38,14 +43,18 @@ export default function ChangePasswordScreen() {
         password: newPassword,
         password_confirmation: confirmPassword,
       });
-      Alert.alert("Success", "Password changed successfully!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      showDialog({
+        tone: "success",
+        title: "Password updated",
+        message: "Your password has been changed successfully.",
+        actions: [{ label: "OK", onPress: () => router.back() }],
+      });
     } catch (err: any) {
-      Alert.alert(
-        "Error",
-        err?.response?.data?.message || err?.message || "Something went wrong",
-      );
+      showDialog({
+        tone: "error",
+        title: "Could not update password",
+        message: err?.response?.data?.message || err?.message || "Something went wrong",
+      });
     } finally {
       setLoading(false);
     }
@@ -61,12 +70,14 @@ export default function ChangePasswordScreen() {
           headerStyle: { backgroundColor: "#fff" },
         }}
       />
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
+        contentContainerStyle={[styles.form, { paddingBottom: bottomInset + 48 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        bottomOffset={bottomInset + 24}
       >
-        <View style={styles.form}>
           {/* Current Password */}
           <View style={styles.inputGroup}>
             <Text fontSize="$3" fontWeight="600" color="#1A1A2E" mb="$1">
@@ -164,8 +175,8 @@ export default function ChangePasswordScreen() {
               </Text>
             )}
           </Pressable>
-        </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

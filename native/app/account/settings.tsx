@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet, Pressable, Share } from "react-native";
+﻿import { View, ScrollView, StyleSheet, Pressable, Share } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -6,6 +6,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
+
+const TAKA = "\u09F3";
+
+function positiveNumber(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+function formatCurrency(value: number | string | undefined): string {
+  const num = Number(value ?? 0);
+  const safeNum = Number.isFinite(num) ? num : 0;
+  return `${TAKA}${safeNum.toLocaleString("en-BD", {
+    maximumFractionDigits: 0,
+  })}`;
+}
 
 function MenuItem({
   icon,
@@ -70,8 +85,34 @@ export default function SettingsScreen() {
     },
   });
 
+  const basicInfoQuery = useQuery({
+    queryKey: ["basic-info"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/basic-info");
+      return data?.data ?? data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const announcements = announcementsQuery.data?.announcements ?? [];
   const referralCode = profileQuery.data?.my_referral_code ?? "";
+  const referralSettings = profileQuery.data?.referral_settings ?? {};
+  const basicInfoReferralAmount = positiveNumber(
+    basicInfoQuery.data?.referral_bonus_amount ?? basicInfoQuery.data?.bonus_percent,
+  );
+  const personalReferralAmount = positiveNumber(
+    referralSettings?.personal_referrer_bonus_amount ?? profileQuery.data?.bonus_percent,
+  );
+  const defaultReferralAmount = positiveNumber(referralSettings?.default_referrer_bonus_amount);
+  const configuredReferralAmount = positiveNumber(referralSettings?.referrer_bonus_amount);
+  const referrerBonusAmount =
+    configuredReferralAmount || personalReferralAmount || defaultReferralAmount || basicInfoReferralAmount;
+  const hasReferrerReward = referrerBonusAmount > 0;
+  const inviteSubtitle = hasReferrerReward
+    ? `You earn ${formatCurrency(referrerBonusAmount)} when they subscribe`
+    : referralCode
+      ? `Code: ${referralCode}`
+      : "Share your referral link";
 
   const handleInviteFriends = async () => {
     if (!referralCode) {
@@ -80,8 +121,11 @@ export default function SettingsScreen() {
     }
     const referralLink = `https://selfshop.com.bd/register?ref=${referralCode}`;
     try {
+      const rewardLine = hasReferrerReward
+        ? `Earn ${formatCurrency(referrerBonusAmount)} referral bonus when someone subscribes with my code.`
+        : `Use my referral code: ${referralCode}`;
       await Share.share({
-        message: `Join SelfShop and start your reselling business! Use my referral code: ${referralCode}\n\nSign up here: ${referralLink}`,
+        message: `Join SelfShop and start your reselling business! ${rewardLine}\n\nReferral code: ${referralCode}\nSign up here: ${referralLink}`,
         url: referralLink,
         title: "Join SelfShop",
       });
@@ -112,12 +156,6 @@ export default function SettingsScreen() {
               label="Change Password"
               subtitle="Update your account password"
               onPress={() => router.push("/account/change-password")}
-            />
-            <MenuItem
-              icon="card-outline"
-              label="Payment Methods"
-              subtitle="Add or remove payment cards"
-              onPress={() => router.push("/account/payment-methods" as any)}
             />
           </View>
         </View>
@@ -248,7 +286,7 @@ export default function SettingsScreen() {
             <MenuItem
               icon="share-social-outline"
               label="Invite Friends"
-              subtitle={referralCode ? `Code: ${referralCode}` : "Share your referral link"}
+              subtitle={inviteSubtitle}
               onPress={handleInviteFriends}
             />
           </View>

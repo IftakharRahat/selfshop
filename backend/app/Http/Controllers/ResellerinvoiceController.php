@@ -273,7 +273,6 @@ public function incomeHistoryOrders(Request $request, $id)
                     $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
                     $referuser->account_balance = $referuser->account_balance + $refbonus;
                     $referuser->update();
-
                     $message = new Message();
                     $message->user_id = $referuser->id;
                     $message->message_for = 'Referral Bonus';
@@ -346,8 +345,9 @@ public function incomeHistoryOrders(Request $request, $id)
 
         if ($request->bonus_percent) {
             $userss = User::where('id', $invoice->user_id)->first();
-            $userss->bonus_percent = $request->bonus_percent;
-            $invoice->bonus_percent = $request->bonus_percent;
+            $bonusAmount = max(0, round((float) $request->bonus_percent, 2));
+            $userss->bonus_percent = $bonusAmount;
+            $invoice->bonus_percent = $bonusAmount;
             $userss->update();
         } else {
             $userss = User::where('id', $invoice->user_id)->first();

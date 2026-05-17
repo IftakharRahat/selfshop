@@ -6,7 +6,6 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
-  Alert,
   Image,
   Share,
   Dimensions,
@@ -17,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const { width } = Dimensions.get("window");
@@ -45,6 +45,7 @@ function formatCurrency(value: number | string | undefined): string {
 
 export default function MyShopScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
 
   /* ── Queries ── */
   const shopQuery = useQuery({
@@ -77,7 +78,7 @@ export default function MyShopScreen() {
       queryClient.invalidateQueries({ queryKey: ["shop-products"] });
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message ?? "Failed to remove product.");
+      showDialog({ tone: "error", title: "Could not remove product", message: err?.response?.data?.message ?? "Failed to remove product." });
     },
   });
 
@@ -99,18 +100,15 @@ export default function MyShopScreen() {
   };
 
   const handleRemove = (productId: number, productName: string) => {
-    Alert.alert(
-      "Remove Product",
-      `Remove "${productName}" from your shop?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => removeMutation.mutate(productId),
-        },
+    showDialog({
+      tone: "danger",
+      title: "Remove product",
+      message: `Remove "${productName}" from your shop?`,
+      actions: [
+        { label: "Cancel", tone: "neutral" },
+        { label: "Remove", tone: "danger", onPress: () => removeMutation.mutate(productId) },
       ],
-    );
+    });
   };
 
   const onRefresh = useCallback(() => {
@@ -281,6 +279,7 @@ export default function MyShopScreen() {
           }
         />
       </View>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

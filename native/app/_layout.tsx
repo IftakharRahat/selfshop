@@ -6,9 +6,11 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { TamaguiProvider } from "tamagui";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { TamaguiProvider, PortalProvider } from "tamagui";
 import * as SecureStore from "expo-secure-store";
 import { Toaster } from "sonner-native";
+import * as Sentry from "@sentry/react-native";
 
 import { queryClient } from "@/lib/query-client";
 import { tamaguiConfig } from "../tamagui.config";
@@ -16,6 +18,15 @@ import { useForceUpdate } from "@/hooks/useForceUpdate";
 import { ForceUpdateModal } from "@/components/force-update-modal";
 import NotificationProvider from "@/components/NotificationProvider";
 import { LaunchAnnouncementPopup } from "@/components/launch-announcement-popup";
+
+// ── Sentry initialization ──
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 1.0,
+  sendDefaultPii: true,
+  enableAutoSessionTracking: true,
+  debug: __DEV__,
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,7 +46,7 @@ function ForceUpdateGate() {
   return <ForceUpdateModal visible={updateRequired} storeUrl={storeUrl} />;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -68,10 +79,12 @@ export default function RootLayout() {
 
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
+      <PortalProvider>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="dark" />
         <GestureHandlerRootView style={styles.container}>
-          <NotificationProvider>
+          <KeyboardProvider preload={false}>
+            <NotificationProvider>
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -133,9 +146,13 @@ export default function RootLayout() {
             />
             <LaunchAnnouncementPopup />
             <ForceUpdateGate />
-          </NotificationProvider>
+            </NotificationProvider>
+          </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
+      </PortalProvider>
     </TamaguiProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

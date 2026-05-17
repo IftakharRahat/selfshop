@@ -32,6 +32,7 @@
             <a href="{{ url('admin/dashboard') }}" class="nav-item nav-link {{ request()->is('admin/dashboard') ? 'active-nav' : '' }}">
                 <i class="bi bi-grid-1x2"></i> Dashboard
             </a>
+            @if($isFullAdmin || $adm->hasDirectPermission('crm.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle {{ request()->is('admin/crm-dashboard') || request()->is('admin/crm/*') ? 'active-nav' : '' }}" data-bs-toggle="dropdown">
                     <i class="bi bi-bar-chart-line"></i> CRM
@@ -42,13 +43,17 @@
                     <a href="{{ route('admin.crm.suppliers') }}" class="dropdown-item">Suppliers</a>
                 </div>
             </div>
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('notification.view'))
             <a href="{{ route('admin.notifications.index') }}" class="nav-item nav-link {{ request()->is('admin/notifications*') ? 'active-nav' : '' }}">
                 <i class="bi bi-bell"></i> Send Notification
             </a>
+            @endif
 
-            @if($isFullAdmin || $isStaffAdmin)
+            @if($isFullAdmin || $adm->hasDirectPermission('category.view') || $adm->hasDirectPermission('banner.view') || $adm->hasDirectPermission('flash-sale.view') || $adm->hasDirectPermission('attribute.view') || $adm->hasDirectPermission('product.view') || $adm->hasDirectPermission('shop-product.view'))
             {{-- ═══ CATALOG ═══ --}}
             <small class="nav-section-title">Catalog</small>
+            @if($isFullAdmin || $adm->hasDirectPermission('category.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-layers"></i> Category</a>
                 <div class="bg-transparent border-0 dropdown-menu">
@@ -58,16 +63,25 @@
                     <a href="{{ route('admin.brands.index') }}" class="dropdown-item">Brand</a>
                 </div>
             </div>
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('banner.view') || $adm->hasDirectPermission('flash-sale.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-images"></i> Banners</a>
                 <div class="bg-transparent border-0 dropdown-menu">
+                    @if($isFullAdmin || $adm->hasDirectPermission('banner.view'))
                     <a href="{{ route('admin.sliders.index') }}" class="dropdown-item">Banners</a>
                     <a href="{{ route('admin.addbanners.index') }}" class="dropdown-item">Front Banners</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('flash-sale.view'))
                     <a href="{{ route('admin.flashsales.index') }}" class="dropdown-item">Flash Sale</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('banner.view'))
                     <a href="{{ route('admin.promotional-sections.index') }}" class="dropdown-item">Promotional Sections</a>
+                    @endif
                 </div>
             </div>
-            @if($isFullAdmin)
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('attribute.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-palette"></i> Attributes</a>
                 <div class="bg-transparent border-0 dropdown-menu">
@@ -78,16 +92,19 @@
             @endif
             @endif
 
+            @if($isFullAdmin || $adm->hasDirectPermission('product.view'))
             <a href="{{ route('admin.products.index') }}" class="nav-item nav-link {{ request()->is('admin/products*') ? 'active-nav' : '' }}">
                 <i class="bi bi-box-seam"></i> Products
             </a>
-            @if($isFullAdmin || $isStaffAdmin)
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('shop-product.view'))
             <a href="{{ url('admin/shop/products') }}" class="nav-item nav-link {{ request()->is('admin/shop/products*') ? 'active-nav' : '' }}">
                 <i class="bi bi-shop-window"></i> Shops Products
             </a>
             @endif
 
             {{-- ═══ ORDERS ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('order.view'))
             <small class="nav-section-title">Orders</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-bag-check"></i> Orders</a>
@@ -114,6 +131,7 @@
                     <a href="{{ url('admin_order/Return') }}" class="dropdown-item">Return @if($orderCounts->return_count > 0)<span class="badge bg-danger ms-1">{{ $orderCounts->return_count }}</span>@endif</a>
                 </div>
             </div>
+            @endif
 
             @if($adm->isFullAdmin())
             {{-- ═══ MANAGEMENT (Full Admin Only) ═══ --}}
@@ -141,45 +159,78 @@
                     <a href="{{ url('admin/withdraws') }}" class="dropdown-item">Withdraws</a>
                 </div>
             </div>
+            @else
+                {{-- Staff/Executive with setting permission --}}
+                @if($adm->hasDirectPermission('setting.view') || $adm->hasDirectPermission('sales-target.view') || $adm->hasDirectPermission('admin.view'))
+                <small class="nav-section-title">Management</small>
+                @endif
+                @if($adm->hasDirectPermission('setting.view'))
+                <a href="{{ route('admin.basicinfos.index') }}" class="nav-item nav-link {{ request()->is('admin/basicinfos*') ? 'active-nav' : '' }}">
+                    <i class="bi bi-gear"></i> Settings
+                </a>
+                @endif
+                @if($adm->hasDirectPermission('sales-target.view'))
+                <a href="{{ route('admin.sales-targets.index') }}" class="nav-item nav-link {{ request()->is('admin/sales-targets*') ? 'active-nav' : '' }}">
+                    <i class="bi bi-bullseye"></i> Sales Targets
+                </a>
+                @endif
             @endif
 
-            @if($isFullAdmin || $isStaffAdmin)
-            {{-- ═══ SUPPLIERS (Full Admin + Staff) ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('supplier.all') || $adm->hasDirectPermission('supplier.active') || $adm->hasDirectPermission('supplier.requests') || $adm->hasDirectPermission('supplier.products') || $adm->hasDirectPermission('supplier.reviews') || $adm->hasDirectPermission('supplier.discounts') || $adm->hasDirectPermission('supplier.commissions') || $adm->hasDirectPermission('supplier.payouts'))
+            {{-- ═══ SUPPLIERS ═══ --}}
             <small class="nav-section-title">Suppliers</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-truck"></i> Suppliers</a>
                 <div class="bg-transparent border-0 dropdown-menu">
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.all'))
                     <a href="{{ route('admin.vendors.index') }}" class="dropdown-item">All Suppliers</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.active'))
                     <a href="{{ route('admin.vendors.index', ['status' => 'approved']) }}" class="dropdown-item">Active Suppliers</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.requests'))
                     <a href="{{ route('admin.vendors.index', ['status' => 'pending']) }}" class="dropdown-item">Supplier Requests</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.products'))
                     <a href="{{ route('admin.vendor-products.index') }}" class="dropdown-item">Supplier Products</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.reviews'))
                     <a href="{{ route('admin.reviews.index') }}" class="dropdown-item">Product Reviews</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.discounts'))
                     <a href="{{ route('admin.vendor-category-discounts.index') }}" class="dropdown-item">Supplier Category Discounts</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.commissions'))
                     <a href="{{ route('admin.vendor-category-commissions.index') }}" class="dropdown-item">Supplier Category Commissions</a>
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('supplier.payouts'))
                     <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item" data-also-match="/vendors/,/sales-summary">Supplier Payout Requests</a>
+                    @endif
                 </div>
             </div>
             @endif
 
-            @if($isFullAdmin || $isStaffAdmin)
+            @if($isFullAdmin || $adm->hasDirectPermission('user.all') || $adm->hasDirectPermission('user.manage') || $adm->hasDirectPermission('user.active'))
             {{-- ═══ USERS ═══ --}}
             <small class="nav-section-title">Users</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-people"></i> Users</a>
                 <div class="bg-transparent border-0 dropdown-menu">
-                    @if($isFullAdmin)
+                    @if($isFullAdmin || $adm->hasDirectPermission('user.all'))
                     <a href="{{ route('admin.users.index') }}" class="dropdown-item">All Users</a>
                     @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('user.manage'))
                     <a href="{{ route('admin.manage-users') }}" class="dropdown-item">Manage Users</a>
-                    @if($isFullAdmin)
+                    @endif
+                    @if($isFullAdmin || $adm->hasDirectPermission('user.active'))
                     <a href="{{ url('admin/view-active/user') }}" class="dropdown-item">Active Users</a>
                     @endif
                 </div>
             </div>
             @endif
 
-            @if($isFullAdmin)
-            {{-- ═══ CONTENT (Full Admin Only) ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('content.view'))
+            {{-- ═══ CONTENT ═══ --}}
             <small class="nav-section-title">Content</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-file-earmark-text"></i> Pages</a>
@@ -191,12 +242,15 @@
                     <a href="{{ url('admin/information/return-refund-policy') }}" class="dropdown-item">Return & Refund Policy</a>
                 </div>
             </div>
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('announcement.view'))
             <a href="{{ url('admin/announcements') }}" class="nav-item nav-link {{ request()->is('admin/announcements*') ? 'active-nav' : '' }}">
                 <i class="bi bi-megaphone"></i> Announcements
             </a>
             @endif
 
             {{-- ═══ REPORTS ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('report.view'))
             <small class="nav-section-title">Reports & Support</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-bar-chart-line"></i> Reports</a>
@@ -212,14 +266,17 @@
                     @endif
                 </div>
             </div>
+            @endif
 
-            @if($isFullAdmin)
+            @if($isFullAdmin || $adm->hasDirectPermission('ticket.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-ticket-perforated"></i> Tickets</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ url('admin/supporttikits') }}" class="dropdown-item">Ticket</a>
                 </div>
             </div>
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('fraud.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-exclamation-triangle"></i> Frauds</a>
                 <div class="bg-transparent border-0 dropdown-menu">
@@ -237,17 +294,46 @@
                     <a href="{{ url('admin/product-request/Cancel') }}" class="dropdown-item">Cancel</a>
                 </div>
             </div>
+            @endif
 
 
             {{-- ═══ MARKETING ═══ --}}
-            @if($isFullAdmin)
+            @if($isFullAdmin || $adm->hasDirectPermission('marketing.view'))
             <small class="nav-section-title">Marketing</small>
             <a href="{{ url('admin/marketing-campaigns') }}" class="nav-item nav-link {{ request()->is('admin/marketing-campaigns') ? 'active-nav' : '' }}">
                 <i class="bi bi-megaphone"></i> Campaigns
             </a>
             @endif
 
+            {{-- ═══ FINANCE & PAYMENTS ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('payment.view') || $adm->hasDirectPermission('withdraw.view'))
+            <small class="nav-section-title">Finance</small>
+            
+            @if($isFullAdmin || $adm->hasDirectPermission('payment.view'))
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Payments</a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    <a href="{{ route('payments.index') }}" class="dropdown-item">Bank</a>
+                    <a href="{{ route('paymenttypes.index') }}" class="dropdown-item">Accounts</a>
+                    <a href="{{ url('resellerinvoice/Unpaid') }}" class="dropdown-item">Reseller Invoices</a>
+                </div>
+            </div>
+            @endif
+
+            @if($isFullAdmin || $adm->hasDirectPermission('withdraw.view'))
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-cash-coin"></i> Withdraws</a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
+                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier</a>
+                </div>
+            </div>
+            @endif
+            
+            @endif
+
             {{-- ═══ OTHERS ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('others.view'))
             <small class="nav-section-title">Others</small>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i> Others</a>
@@ -255,10 +341,7 @@
                     <a href="{{ route('couriers.index') }}" class="dropdown-item">Courier</a>
                     <a href="{{ route('cities.index') }}" class="dropdown-item">City</a>
                     <a href="{{ route('zones.index') }}" class="dropdown-item">Zone</a>
-                    <a href="{{ route('payments.index') }}" class="dropdown-item">Bank</a>
                     <a href="{{ route('packages.index') }}" class="dropdown-item">Account Package</a>
-                    <a href="{{ url('resellerinvoice/Unpaid') }}" class="dropdown-item">Reseller-Invoices</a>
-                    <a href="{{ route('paymenttypes.index') }}" class="dropdown-item">Accounts</a>
                 </div>
             </div>
             <div class="nav-item dropdown">
@@ -267,13 +350,8 @@
                     <a href="{{ route('faqs.index') }}" class="dropdown-item">Faq</a>
                 </div>
             </div>
-            <div class="nav-item dropdown">
-                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Withdrew</a>
-                <div class="bg-transparent border-0 dropdown-menu">
-                    <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
-                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier</a>
-                </div>
-            </div>
+            @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('course.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-mortarboard"></i> Courses</a>
                 <div class="bg-transparent border-0 dropdown-menu">

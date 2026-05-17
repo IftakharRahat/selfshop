@@ -7,10 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
-  Dimensions,
   Image,
 } from "react-native";
 import { Text } from "tamagui";
@@ -18,10 +15,12 @@ import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
-const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
 
 /* ── Image URL helper (same as home screen) ── */
@@ -61,6 +60,8 @@ function isWalletMethod(method: any): boolean {
 
 export default function WithdrawScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   /* ── State ── */
   const [amount, setAmount] = useState("");
@@ -103,7 +104,7 @@ export default function WithdrawScreen() {
       return data;
     },
     onSuccess: () => {
-      Alert.alert("Success", "Withdrawal request submitted successfully.");
+      showDialog({ tone: "success", title: "Request submitted", message: "Your withdrawal request has been sent for review." });
       setAmount("");
       setAccountNumber("");
       setAdditionalInfo("");
@@ -111,7 +112,7 @@ export default function WithdrawScreen() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message ?? "Failed to submit withdrawal request.");
+      showDialog({ tone: "error", title: "Withdrawal failed", message: err?.response?.data?.message ?? "Failed to submit withdrawal request." });
     },
   });
 
@@ -153,15 +154,15 @@ export default function WithdrawScreen() {
   /* ── Submit ── */
   const handleSubmit = () => {
     if (!amount.trim() || isNaN(Number(amount)) || Number(amount) <= 0) {
-      Alert.alert("Invalid", "Please enter a valid amount.");
+      showDialog({ tone: "warning", title: "Check amount", message: "Please enter a valid withdrawal amount." });
       return;
     }
     if (!selectedMethodId) {
-      Alert.alert("Invalid", "Please select a payment method.");
+      showDialog({ tone: "warning", title: "Select method", message: "Please choose where you want to receive the withdrawal." });
       return;
     }
     if (!accountNumber.trim() || accountNumber.trim().length < 6) {
-      Alert.alert("Invalid", "Account number must be at least 6 characters.");
+      showDialog({ tone: "warning", title: "Check account number", message: "Account number must be at least 6 characters." });
       return;
     }
 
@@ -177,6 +178,7 @@ export default function WithdrawScreen() {
 
   /* ── Refresh ── */
   const isRefreshing = dashboardQuery.isRefetching || historyQuery.isRefetching;
+  const bottomInset = Math.max(insets.bottom, 16);
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["withdraw-list"] });
@@ -193,17 +195,16 @@ export default function WithdrawScreen() {
           headerStyle: { backgroundColor: "#F8F8FA" },
         }}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           style={styles.container}
+          contentContainerStyle={{ paddingBottom: bottomInset + 48 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={ACCENT} />
           }
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          bottomOffset={bottomInset + 24}
         >
           {/* ── Balance Card ── */}
           <LinearGradient
@@ -394,8 +395,8 @@ export default function WithdrawScreen() {
           </View>
 
           <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

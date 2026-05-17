@@ -256,7 +256,7 @@ export default function VendorEditProductPage() {
 		formData.append("Discount", f.discount || "0");
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
-		formData.append("warranty_days", "0");
+		// warranty_days removed — feature not in use
 		formData.append("_method", "PUT");
 
 		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);

@@ -86,39 +86,47 @@ export default function FlashSalePageComponent() {
                 className="w-full py-6 sm:py-8"
                 style={{
                     background:
-                        "linear-gradient(135deg, #3257d9 0%, #4a6ae5 40%, #6b83ef 70%, #8b9ff5 100%)",
+                        "linear-gradient(90deg, #b3003b 0%, #E5005F 100%)",
                 }}
             >
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl sm:text-3xl">⚡</span>
-                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
+                            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold italic text-white tracking-tight">
                                 {flashSale.title || "Flash Sale"}
                             </h1>
                         </div>
 
                         {/* Countdown */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-white/70 text-sm mr-1">Ends in</span>
-                            {[
-                                { value: timeLeft.days, label: "D" },
-                                { value: timeLeft.hours, label: "H" },
-                                { value: timeLeft.minutes, label: "M" },
-                                { value: timeLeft.seconds, label: "S" },
-                            ].map((unit, i) => (
-                                <div key={i} className="flex items-center gap-1">
-                                    <div className="flex items-center justify-center rounded-lg font-bold text-white text-base sm:text-lg bg-[#E5005F] min-w-[36px] h-[36px] px-2">
-                                        {pad(unit.value)}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <span className="text-white font-medium text-xs sm:text-sm mr-1 hidden sm:inline-block">Ending in</span>
+                            <div className="flex items-center gap-1.5 sm:gap-2">
+                                {[
+                                    { value: timeLeft.hours + (timeLeft.days * 24) },
+                                    { value: timeLeft.minutes },
+                                    { value: timeLeft.seconds }
+                                ].map((unit, i) => (
+                                    <div key={i} className="flex items-center gap-1">
+                                        <div
+                                            className="flex items-center justify-center rounded font-bold text-black text-sm sm:text-base"
+                                            style={{
+                                                background: "#FFFFFF",
+                                                minWidth: "32px",
+                                                height: "32px",
+                                                padding: "2px 6px",
+                                            }}
+                                        >
+                                            {pad(unit.value)}
+                                        </div>
+                                        {i < 2 && (
+                                            <span className="text-white font-bold mx-0.5">
+                                                :
+                                            </span>
+                                        )}
                                     </div>
-                                    <span className="text-white/70 text-xs font-medium">
-                                        {unit.label}
-                                    </span>
-                                    {i < 3 && (
-                                        <span className="text-white/50 font-bold mx-0.5">:</span>
-                                    )}
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

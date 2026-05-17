@@ -2,14 +2,11 @@ import { useCallback, useState } from "react";
 import {
   View,
   ScrollView,
-  FlatList,
   StyleSheet,
   Pressable,
   TextInput,
   ActivityIndicator,
   RefreshControl,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
   Image,
 } from "react-native";
@@ -19,12 +16,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { toast } from "sonner-native";
+import * as Sentry from "@sentry/react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
 
 const QUANTITY_OPTIONS = ["1", "2", "3", "4", "5", "10", "20", "50", "100+"];
+const IMAGE_UPLOAD_TIMEOUT_MS = 60000;
+const SUPPORTED_UPLOAD_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   Paid: { bg: "#D1FAE5", text: "#065F46" },
@@ -48,8 +51,82 @@ function resolveImageUrl(path?: string | null): string | null {
   return `${IMAGE_BASE}/storage/${clean}`;
 }
 
+function getExtensionFromName(value?: string | null): string | null {
+  if (!value) return null;
+  const clean = value.split("?")[0].split("#")[0];
+  const match = clean.match(/\.([a-zA-Z0-9]+)$/);
+  const extension = match ? match[1].toLowerCase() : null;
+  return extension && SUPPORTED_UPLOAD_EXTENSIONS.has(extension) ? extension : null;
+}
+
+function getExtensionFromMime(mimeType?: string | null): string | null {
+  if (!mimeType) return null;
+  const normalized = mimeType.toLowerCase();
+  if (normalized === "image/jpeg" || normalized === "image/jpg") return "jpg";
+  if (normalized === "image/png") return "png";
+  if (normalized === "image/webp") return "webp";
+  if (normalized === "image/gif") return "gif";
+  return null;
+}
+
+function getMimeFromExtension(extension?: string | null): string {
+  switch ((extension ?? "").toLowerCase()) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "gif":
+      return "image/gif";
+    default:
+      return "image/jpeg";
+  }
+}
+
+function makeUploadFile(asset: ImagePicker.ImagePickerAsset) {
+  // On Android production, asset.uri is often a content:// URI with no extension.
+  // Prefer mimeType (always reliable from ImagePicker) over URI-based guessing.
+  const extension =
+    getExtensionFromMime(asset.mimeType) ??
+    getExtensionFromName(asset.fileName) ??
+    getExtensionFromName(asset.uri) ??
+    "jpg";
+  const mimeType = asset.mimeType || getMimeFromExtension(extension);
+  const fallbackName = `product_request_${Date.now()}.${extension}`;
+  const sourceName = asset.fileName?.replace(/[^\w.-]/g, "_") || fallbackName;
+  // Ensure the filename always ends with the correct extension
+  const hasCorrectExt = sourceName.toLowerCase().endsWith(`.${extension}`);
+  const finalName = hasCorrectExt ? sourceName : `${sourceName.replace(/\.[^.]+$/, "")}.${extension}`;
+
+  const uploadFile = {
+    uri: asset.uri,
+    type: mimeType,
+    name: finalName,
+  };
+
+  Sentry.addBreadcrumb({
+    category: "product-request",
+    message: "File prepared for upload",
+    level: "info",
+    data: {
+      originalUri: asset.uri?.substring(0, 80),
+      originalFileName: asset.fileName,
+      originalMimeType: asset.mimeType,
+      resolvedExtension: extension,
+      finalName: uploadFile.name,
+      finalType: uploadFile.type,
+    },
+  });
+
+  return uploadFile as any;
+}
+
 export default function ProductRequestScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   /* ── Form State ── */
   const [productName, setProductName] = useState("");
@@ -69,46 +146,114 @@ export default function ProductRequestScreen() {
   /* ── Mutation ── */
   const createMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const { data } = await apiClient.post("/give-product-request", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      Sentry.addBreadcrumb({
+        category: "product-request",
+        message: "Submitting product request",
+        level: "info",
       });
-      return data;
+      try {
+        const { data } = await apiClient.post("/give-product-request", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: IMAGE_UPLOAD_TIMEOUT_MS,
+        });
+        Sentry.addBreadcrumb({
+          category: "product-request",
+          message: "Upload succeeded",
+          level: "info",
+          data: { status: data?.status, serverDebug: data?._debug },
+        });
+        return data;
+      } catch (error: any) {
+        Sentry.captureException(error, {
+          tags: { feature: "product-request-upload" },
+          extra: {
+            httpStatus: error?.response?.status,
+            serverMessage: error?.response?.data?.message,
+            serverErrors: error?.response?.data?.errors,
+            serverDebug: error?.response?.data?._debug,
+            errorCode: error?.code,
+          },
+        });
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_data) => {
       toast.success("Product request submitted!");
       setProductName("");
       setDescription("");
       setQuantity("1");
       setSelectedImage(null);
       queryClient.invalidateQueries({ queryKey: ["product-request-list"] });
+      // Send success event to Sentry with server debug info
+      if (_data?._debug) {
+        Sentry.captureMessage("Product request upload succeeded", {
+          level: "info",
+          tags: { feature: "product-request-upload" },
+          extra: { serverDebug: _data._debug },
+        });
+      }
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? "Failed to submit request.");
+      const serverMsg = err?.response?.data?.message;
+      const validationErrors = err?.response?.data?.errors;
+      const firstError = validationErrors
+        ? Object.values(validationErrors).flat().find(Boolean) as string | undefined
+        : undefined;
+      toast.error(firstError || serverMsg || "Failed to submit request.");
     },
   });
 
   const requestList: any[] = Array.isArray(listQuery.data) ? listQuery.data : [];
+  const bottomInset = Math.max(insets.bottom, 16);
 
   /* ── Image Picker ── */
   const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showDialog({
+        tone: "warning",
+        title: "Photo access needed",
+        message: "Please allow photo library access to upload a product image.",
+      });
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
+      preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
-      setSelectedImage(result.assets[0]);
+      const asset = result.assets[0];
+      if (asset.type && asset.type !== "image") {
+        showDialog({
+          tone: "warning",
+          title: "Choose an image",
+          message: "Only image files can be uploaded for product requests.",
+        });
+        return;
+      }
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        showDialog({
+          tone: "warning",
+          title: "Image is too large",
+          message: "Please choose an image under 5MB.",
+        });
+        return;
+      }
+      setSelectedImage(asset);
     }
   };
 
   /* ── Submit ── */
   const handleSubmit = () => {
     if (!productName.trim()) {
-      Alert.alert("Required", "Please enter a product name.");
+      showDialog({ tone: "warning", title: "Product name required", message: "Please enter a product name." });
       return;
     }
     if (!description.trim()) {
-      Alert.alert("Required", "Please enter a description.");
+      showDialog({ tone: "warning", title: "Description required", message: "Please enter a description." });
       return;
     }
 
@@ -118,13 +263,7 @@ export default function ProductRequestScreen() {
     formData.append("p_description", description.trim());
 
     if (selectedImage) {
-      const uri = selectedImage.uri;
-      const ext = uri.split(".").pop() ?? "jpg";
-      formData.append("attachment", {
-        uri,
-        type: `image/${ext}`,
-        name: `product_request.${ext}`,
-      } as any);
+      formData.append("attachment", makeUploadFile(selectedImage) as any);
     }
 
     createMutation.mutate(formData);
@@ -145,12 +284,9 @@ export default function ProductRequestScreen() {
           headerStyle: { backgroundColor: "#F8F8FA" },
         }}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           style={styles.container}
+          contentContainerStyle={{ paddingBottom: bottomInset + 48 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -160,6 +296,8 @@ export default function ProductRequestScreen() {
             />
           }
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          bottomOffset={bottomInset + 24}
         >
           {/* ── Request Form ── */}
           <View style={styles.formCard}>
@@ -327,8 +465,8 @@ export default function ProductRequestScreen() {
           </View>
 
           <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

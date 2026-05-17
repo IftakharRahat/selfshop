@@ -33,6 +33,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Roles</th>
+                            <th>Permissions</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -51,9 +52,18 @@
                                         <span class="text-muted" style="font-size: 12px;">No roles</span>
                                     @endforelse
                                 </td>
+                                <td style="max-width: 300px; display: flex; flex-wrap: wrap; gap: 4px;">
+                                    @forelse ($admin->getDirectPermissions() as $perm)
+                                        <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 11px; font-weight: 500;">
+                                            {{ $perm->name }}
+                                        </span>
+                                    @empty
+                                        <span class="text-muted" style="font-size: 12px;">No direct permissions</span>
+                                    @endforelse
+                                </td>
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <a href="{{ route('admin.admins.edit', $admin->id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil-square"></i></a>
+                                        <a href="{{ route('admin.executive.edit', $admin->id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil-square"></i></a>
                                         <a href="{{ route('admin.admins.destroy', $admin->id) }}"
                                             onclick="event.preventDefault(); document.getElementById('delete-admin-{{ $admin->id }}').submit(); "
                                             class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>

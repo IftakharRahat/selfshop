@@ -170,7 +170,7 @@ export default function VendorNewProductPage() {
 		if (discount !== undefined && discount !== "") formData.append("Discount", discount);
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
-		formData.append("warranty_days", "0");
+		// warranty_days removed — feature not in use
 		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
 		if (galleryFiles.length > 0) {
 			for (let i = 0; i < galleryFiles.length; i++) {

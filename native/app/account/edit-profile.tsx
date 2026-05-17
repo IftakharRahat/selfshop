@@ -1,21 +1,25 @@
 import { useState, useEffect } from "react";
 import {
   View,
-  ScrollView,
   TextInput,
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
+  Platform,
 } from "react-native";
 import { Text } from "tamagui";
 import { Stack, router } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 export default function EditProfileScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   const profileQuery = useQuery({
     queryKey: ["profile"],
@@ -52,15 +56,20 @@ export default function EditProfileScreen() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
-      Alert.alert("Success", "Profile updated");
-      router.back();
+      showDialog({
+        tone: "success",
+        title: "Profile updated",
+        message: "Your profile changes have been saved.",
+        actions: [{ label: "OK", onPress: () => router.back() }],
+      });
     },
     onError: (err: any) => {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to update profile");
+      showDialog({ tone: "error", title: "Could not update profile", message: err?.response?.data?.message || "Failed to update profile" });
     },
   });
 
   const isFormValid = ownerName.trim().length >= 1;
+  const bottomInset = Math.max(insets.bottom, 16);
 
   if (profileQuery.isLoading) {
     return (
@@ -80,10 +89,13 @@ export default function EditProfileScreen() {
           headerStyle: { backgroundColor: "#fff" },
         }}
       />
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomInset + 48 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        bottomOffset={bottomInset + 24}
       >
         {/* Email (read-only) */}
         <View style={styles.infoCard}>
@@ -154,8 +166,8 @@ export default function EditProfileScreen() {
           </Pressable>
         </View>
 
-        <View style={{ height: 30 }} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }
@@ -196,6 +208,9 @@ function InputField({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
+  scrollContent: {
+    flexGrow: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",

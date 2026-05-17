@@ -1,14 +1,10 @@
 import { useCallback, useState } from "react";
 import {
   View,
-  ScrollView,
   StyleSheet,
   Pressable,
   TextInput,
   ActivityIndicator,
-  RefreshControl,
-  Alert,
-  KeyboardAvoidingView,
   Platform,
   Modal,
 } from "react-native";
@@ -17,13 +13,18 @@ import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
+import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
 
 export default function FraudCheckerScreen() {
   const queryClient = useQueryClient();
+  const { dialog, showDialog, closeDialog } = useAppDialog();
+  const insets = useSafeAreaInsets();
 
   /* ── State ── */
   const [inputValue, setInputValue] = useState("");
@@ -77,11 +78,11 @@ export default function FraudCheckerScreen() {
 
   const handleReport = () => {
     if (!reportPhone.trim() || reportPhone.trim().length < 6) {
-      Alert.alert("Invalid", "Please enter a valid phone number (at least 6 digits).");
+      showDialog({ tone: "warning", title: "Check phone number", message: "Please enter a valid phone number with at least 6 digits." });
       return;
     }
     if (!reportMessage.trim()) {
-      Alert.alert("Invalid", "Please describe the fraud.");
+      showDialog({ tone: "warning", title: "Details needed", message: "Please describe the fraud before submitting." });
       return;
     }
     reportMutation.mutate({ phone: reportPhone.trim(), message: reportMessage.trim() });
@@ -91,6 +92,7 @@ export default function FraudCheckerScreen() {
   const fraudRecords: any[] = Array.isArray(fraudQuery.data) ? fraudQuery.data : [];
   const hasFraudRecords = hasSearched && !fraudQuery.isFetching && !fraudQuery.isError && fraudRecords.length > 0;
   const isClean = hasSearched && !fraudQuery.isFetching && !fraudQuery.isError && !!phoneNumber && fraudRecords.length === 0;
+  const bottomInset = Math.max(insets.bottom, 16);
 
   return (
     <>
@@ -102,14 +104,13 @@ export default function FraudCheckerScreen() {
           headerStyle: { backgroundColor: "#F8F8FA" },
         }}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
+      <KeyboardAwareScrollView
           style={styles.container}
+          contentContainerStyle={{ paddingBottom: bottomInset + 48 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          bottomOffset={bottomInset + 24}
         >
           {/* ── Header Info ── */}
           <View style={styles.headerCard}>
@@ -242,8 +243,7 @@ export default function FraudCheckerScreen() {
           </View>
 
           <View style={{ height: 40 }} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
 
       {/* ── Report Modal ── */}
       <Modal
@@ -256,6 +256,7 @@ export default function FraudCheckerScreen() {
           style={styles.modalOverlay}
           onPress={() => setShowReportModal(false)}
         >
+          <KeyboardStickyView offset={{ closed: 0, opened: -8 }}>
           <Pressable style={styles.modalContent} onPress={() => {}}>
             <View style={styles.modalHandle} />
             <Text fontSize="$5" fontWeight="bold" color="#1A1A2E" mb="$4">
@@ -311,8 +312,10 @@ export default function FraudCheckerScreen() {
               </Text>
             </Pressable>
           </Pressable>
+          </KeyboardStickyView>
         </Pressable>
       </Modal>
+      <AppDialog state={dialog} onClose={closeDialog} />
     </>
   );
 }

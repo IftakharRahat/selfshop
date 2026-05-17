@@ -784,8 +784,16 @@ class OrderController extends Controller
                 }
             })
             ->addColumn('action', function ($orders) {
-                return "<a href='javascript:void(0);' data-id='" . $orders->id . "' class='action-icon btn-editorder'> <i class='fas fa-1x fa-edit'></i></a>
-                <a href='javascript:void(0);' data-id='" . $orders->id . "' class='action-icon btn-delete'> <i class='fas fa-trash-alt'></i></a>";
+                $admin = \Auth::guard('admin')->user();
+                $isFull = $admin && $admin->isFullAdmin();
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('order.edit')) {
+                    $a .= "<a href='javascript:void(0);' data-id='" . $orders->id . "' class='action-icon btn-editorder'> <i class='fas fa-1x fa-edit'></i></a> ";
+                }
+                if ($isFull || $admin->hasDirectPermission('order.delete')) {
+                    $a .= "<a href='javascript:void(0);' data-id='" . $orders->id . "' class='action-icon btn-delete'> <i class='fas fa-trash-alt'></i></a>";
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
             ->escapeColumns([])->make();
     }
@@ -1390,23 +1398,37 @@ class OrderController extends Controller
         </a>";
     }
 
-    return "
-        <a href='{$viewUrl}' class='action-icon me-2' title='View Order'>
-            <i class='fas fa-eye' style='font-size: 20px;'></i>
-        </a>
-        {$notifyBtn}
+    $admin = \Auth::guard('admin')->user();
+    $isFull = $admin && $admin->isFullAdmin();
+
+    $editBtn = '';
+    $deleteBtn = '';
+    if ($isFull || $admin->hasDirectPermission('order.edit')) {
+        $editBtn = "
         <a href='javascript:void(0);'
            data-id='{$orders->id}'
            class='action-icon btn-editorder me-2'
            title='Edit Order'>
             <i class='fas fa-edit' style='font-size: 20px;'></i>
-        </a>
+        </a>";
+    }
+    if ($isFull || $admin->hasDirectPermission('order.delete')) {
+        $deleteBtn = "
         <a href='javascript:void(0);'
            data-id='{$orders->id}'
            class='action-icon btn-delete'
            title='Delete Order'>
             <i class='fas fa-trash-alt' style='font-size: 20px;'></i>
+        </a>";
+    }
+
+    return "
+        <a href='{$viewUrl}' class='action-icon me-2' title='View Order'>
+            <i class='fas fa-eye' style='font-size: 20px;'></i>
         </a>
+        {$notifyBtn}
+        {$editBtn}
+        {$deleteBtn}
     ";
 })
             ->escapeColumns([])->make();

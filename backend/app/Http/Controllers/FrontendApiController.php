@@ -66,6 +66,40 @@ use Str;
 
 class FrontendApiController extends Controller
 {
+    private function numericSetting($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        return round((float) $value, 2);
+    }
+
+    private function referralRewardSettings($user = null)
+    {
+        $basicInfo = Basicinfo::first();
+        $defaultReferrerBonusAmount = $this->numericSetting($basicInfo->bonus_percent ?? null);
+        $personalReferrerBonusAmount = $this->numericSetting($user->bonus_percent ?? null);
+        $referrerBonusAmount = (
+            $personalReferrerBonusAmount !== null
+            && $personalReferrerBonusAmount > 0
+        )
+            ? $personalReferrerBonusAmount
+            : $defaultReferrerBonusAmount;
+
+        return [
+            'referrer_bonus_amount' => $referrerBonusAmount,
+            'personal_referrer_bonus_amount' => $personalReferrerBonusAmount,
+            'default_referrer_bonus_amount' => $defaultReferrerBonusAmount,
+            'reward_type' => 'fixed_amount',
+            'currency' => 'BDT',
+            'reward_basis' => 'subscription_activation',
+        ];
+    }
 
     public function contactInfo()
     {
@@ -251,7 +285,7 @@ class FrontendApiController extends Controller
                 'amount' => $amount,
             ]);
 
-            $appUrl = rtrim((string) config('app.url'), '/');
+            $appUrl = rtrim((string) config('sslcommerz.callback_base_url', config('app.url')), '/');
             if ($appUrl === '') {
                 $appUrl = rtrim(url('/'), '/');
             }
@@ -329,6 +363,7 @@ class FrontendApiController extends Controller
 
 
         if ($basicInfo) {
+            $basicInfo->referral_bonus_amount = $this->numericSetting($basicInfo->bonus_percent ?? null);
             return response()->json([
                 'status' => true,
                 'message' => 'Basic Information',
@@ -1579,6 +1614,7 @@ class FrontendApiController extends Controller
                     'totalorders' => Order::where('user_id', $id)->get()->count(),
                     'soldamount' => $amount,
                     'walletbalance' => Auth::user()->account_balance,
+                    'referral_settings' => $this->referralRewardSettings($userprofile),
                 ],
             ], 200);
         }
@@ -1749,6 +1785,7 @@ class FrontendApiController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('invoiceID', 'like', '%' . $search . '%')
                     ->orWhere('id', 'like', '%' . $search . '%')
+                    ->orWhere('transaction_id', 'like', '%' . $search . '%')
                     ->orWhereHas('customers', function ($customerQuery) use ($search) {
                         $customerQuery->where('customerName', 'like', '%' . $search . '%')
                             ->orWhere('customerPhone', 'like', '%' . $search . '%');
@@ -2165,18 +2202,68 @@ class FrontendApiController extends Controller
 
     public function productrequest(Request $request)
     {
+        // ── Collect diagnostics ──
+        $debug = [
+            'content_type' => $request->header('Content-Type'),
+            'has_file' => $request->hasFile('attachment'),
+            'all_files_keys' => array_keys($request->allFiles()),
+            'all_input_keys' => array_keys($request->all()),
+            'user_agent' => $request->userAgent(),
+        ];
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $debug['file_info'] = [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+                'size_bytes' => $file->getSize(),
+                'is_valid' => $file->isValid(),
+                'error_code' => $file->getError(),
+            ];
+        } else {
+            $debug['file_info'] = null;
+            $debug['raw_attachment_type'] = gettype($request->input('attachment'));
+            $debug['raw_attachment_preview'] = is_string($request->input('attachment'))
+                ? substr($request->input('attachment'), 0, 100)
+                : null;
+        }
+
+        // ── Sentry: breadcrumb for incoming request ──
+        \Sentry\addBreadcrumb(new \Sentry\Breadcrumb(
+            \Sentry\Breadcrumb::LEVEL_INFO,
+            \Sentry\Breadcrumb::TYPE_HTTP,
+            'product-request',
+            'Incoming product request',
+            $debug
+        ));
+
+        Log::info('[ProductRequest] Incoming request', $debug);
+
         $validator = Validator::make($request->all(), [
             'p_name' => ['required', 'string', 'max:255'],
             'p_quantity' => ['nullable', 'string', 'max:50'],
             'p_description' => ['nullable', 'string', 'max:2000'],
-            'attachment' => ['nullable', 'image', 'max:5120'],
+            'attachment' => ['nullable', 'file', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
         ]);
 
         if ($validator->fails()) {
+            // ── Sentry: capture validation failure as a message ──
+            \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($validator, $debug) {
+                $scope->setTag('feature', 'product-request-upload');
+                $scope->setContext('request_debug', $debug);
+                $scope->setContext('validation_errors', $validator->errors()->toArray());
+                \Sentry\captureMessage(
+                    'Product request validation failed: ' . $validator->errors()->first(),
+                    \Sentry\Severity::warning()
+                );
+            });
+
             return response()->json([
                 'status' => false,
                 'message' => $validator->errors()->first(),
                 'errors' => $validator->errors(),
+                '_debug' => $debug,
             ], 422);
         }
 
@@ -2189,6 +2276,16 @@ class FrontendApiController extends Controller
                     . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
                 $path = $productImg->storeAs('products/images', $safeName, 'r2');
                 $product->attachment = $r2BaseUrl . '/' . $path;
+                $debug['uploaded_path'] = $path;
+
+                // ── Sentry: breadcrumb for successful R2 upload ──
+                \Sentry\addBreadcrumb(new \Sentry\Breadcrumb(
+                    \Sentry\Breadcrumb::LEVEL_INFO,
+                    \Sentry\Breadcrumb::TYPE_DEFAULT,
+                    'product-request',
+                    'File uploaded to R2',
+                    ['path' => $path, 'url' => $product->attachment]
+                ));
             }
             $id = Auth::user()->id;
             $product->from_id = $id;
@@ -2206,12 +2303,23 @@ class FrontendApiController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Product request give successfully',
-                'data' => $product
+                'data' => $product,
+                '_debug' => $debug,
             ], 200);
         } catch (\Throwable $e) {
+            $debug['exception'] = $e->getMessage();
+
+            // ── Sentry: capture the exception with full context ──
+            \Sentry\withScope(function (\Sentry\State\Scope $scope) use ($e, $debug) {
+                $scope->setTag('feature', 'product-request-upload');
+                $scope->setContext('request_debug', $debug);
+                \Sentry\captureException($e);
+            });
+
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to submit product request: ' . $e->getMessage(),
+                '_debug' => $debug,
             ], 500);
         }
     }
@@ -2674,6 +2782,7 @@ class FrontendApiController extends Controller
                 'active_member' => User::where('refer_by', $user->my_referral_code)->where('status', 'Active')->get()->count(),
                 'paid_member' => User::where('refer_by', $user->my_referral_code)->where('status', 'Active')->where('membership_status', 'Paid')->get()->count(),
                 'history' => $messages,
+                'referral_settings' => $this->referralRewardSettings($user),
             ],
         ], 200);
     }
@@ -2921,6 +3030,7 @@ class FrontendApiController extends Controller
                 'total_orders' => Order::where('user_id', $id)->get()->count(),
                 'sales' => $sales,
                 'active_sales_targets' => $salesTargetsData,
+                'referral_settings' => $this->referralRewardSettings(Auth::user()),
             ],
         ], 200);
     }

@@ -66,5 +66,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'resellact' => \App\Http\Middleware\ResellerActivation::class,
         'verified.wholesaler' => \App\Http\Middleware\EnsureVerifiedWholesaler::class,
+        'admin.permission' => \App\Http\Middleware\CheckAdminPermission::class,
     ];
 }

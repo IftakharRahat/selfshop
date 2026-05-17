@@ -12,9 +12,12 @@
                 <div class="admin-card-header">
                     <h6 class="admin-card-title">Slider List</h6>
                     <div class="admin-card-actions">
+                        @php $adm = Auth::guard('admin')->user(); @endphp
+                        @if($adm->isFullAdmin() || $adm->hasDirectPermission('banner.create'))
                         <a type="button" data-bs-toggle="modal" data-bs-target="#mainSlider" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-lg"></i> Create Slider
                         </a>
+                        @endif
                     </div>
                 </div>
                 <div class="admin-card-body">

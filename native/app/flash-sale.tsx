@@ -236,9 +236,9 @@ export default function FlashSaleScreen() {
       <View style={styles.container}>
         {/* ── Gradient Header with Countdown ── */}
         <LinearGradient
-          colors={["#3257D9", "#4A6AE5", "#6B83EF"]}
+          colors={["#b3003b", "#E5005F"]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 1, y: 0 }}
           style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
         >
           {/* Back button */}
@@ -252,7 +252,7 @@ export default function FlashSaleScreen() {
           <View style={styles.headerContent}>
             <View style={styles.headerTitleRow}>
               <Text style={styles.flashIcon}>⚡</Text>
-              <Text style={styles.headerTitle}>
+              <Text style={[styles.headerTitle, { fontStyle: "italic" }]}>
                 {flashSale.title || "Flash Sale"}
               </Text>
             </View>
@@ -260,15 +260,18 @@ export default function FlashSaleScreen() {
             {/* Countdown */}
             <View style={styles.countdownRow}>
               <Text style={styles.endsIn}>Ends in</Text>
-              {COUNTDOWN_UNITS.map((unit, i) => (
+              {[
+                { value: timeLeft.hours + (timeLeft.days * 24) },
+                { value: timeLeft.minutes },
+                { value: timeLeft.seconds },
+              ].map((unit, i) => (
                 <View key={i} style={styles.countdownUnit}>
-                  <View style={styles.countdownBox}>
-                    <Text style={styles.countdownValue}>
+                  <View style={[styles.countdownBox, { backgroundColor: "#fff" }]}>
+                    <Text style={[styles.countdownValue, { color: "#000" }]}>
                       {pad(unit.value)}
                     </Text>
                   </View>
-                  <Text style={styles.countdownLabel}>{unit.label}</Text>
-                  {i < 3 && (
+                  {i < 2 && (
                     <Text style={styles.countdownColon}>:</Text>
                   )}
                 </View>

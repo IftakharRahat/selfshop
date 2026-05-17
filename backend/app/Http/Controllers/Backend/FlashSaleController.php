@@ -48,6 +48,8 @@ class FlashSaleController extends Controller
     public function flashsaledata()
     {
         $flashSales = FlashSale::withCount('products')->get();
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($flashSales)
             ->addColumn('product_count', function ($sale) {
                 return $sale->products_count;
@@ -61,16 +63,25 @@ class FlashSaleController extends Controller
             ->addColumn('reg_deadline', function ($sale) {
                 return $sale->registration_deadline ? $sale->registration_deadline->format('d M Y, h:i A') : '—';
             })
-            ->addColumn('vendor_reg', function ($sale) {
-                if ($sale->vendor_registration) {
-                    return '<button type="button" class="btn btn-success btn-sm vendorRegBtn" data-id="' . $sale->id . '" data-val="0">Open</button>';
+            ->addColumn('vendor_reg', function ($sale) use ($admin, $isFull) {
+                if ($isFull || $admin->hasDirectPermission('flash-sale.edit')) {
+                    if ($sale->vendor_registration) {
+                        return '<button type="button" class="btn btn-success btn-sm vendorRegBtn" data-id="' . $sale->id . '" data-val="0">Open</button>';
+                    }
+                    return '<button type="button" class="btn btn-secondary btn-sm vendorRegBtn" data-id="' . $sale->id . '" data-val="1">Closed</button>';
                 }
-                return '<button type="button" class="btn btn-secondary btn-sm vendorRegBtn" data-id="' . $sale->id . '" data-val="1">Closed</button>';
+                return $sale->vendor_registration ? '<span class="badge bg-success">Open</span>' : '<span class="badge bg-secondary">Closed</span>';
             })
-            ->addColumn('action', function ($sale) {
-                return '<a href="#" type="button" id="editFlashSaleBtn" data-id="' . $sale->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editFlashSaleModal"><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="manageProductsBtn" data-id="' . $sale->id . '" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#manageProductsModal"><i class="bi bi-box-seam"></i></a>
-                <a href="#" type="button" id="deleteFlashSaleBtn" data-id="' . $sale->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+            ->addColumn('action', function ($sale) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('flash-sale.edit')) {
+                    $a .= '<a href="#" type="button" id="editFlashSaleBtn" data-id="' . $sale->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editFlashSaleModal"><i class="bi bi-pencil-square"></i></a> ';
+                    $a .= '<a href="#" type="button" id="manageProductsBtn" data-id="' . $sale->id . '" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#manageProductsModal"><i class="bi bi-box-seam"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('flash-sale.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteFlashSaleBtn" data-id="' . $sale->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
             ->rawColumns(['action', 'banner_preview', 'vendor_reg'])
             ->make(true);

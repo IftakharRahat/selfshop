@@ -43,12 +43,19 @@ class SubcategoryController extends Controller
     public function subcategorydata()
     {
         $subcategorys = Subcategory::with('categories')->get();
+        $admin = \Auth::guard('admin')->user();
+        $isFull = $admin && $admin->isFullAdmin();
         return Datatables::of($subcategorys)
-            ->addColumn('action', function ($subcategorys) {
-                return '<a href="#" type="button" id="editSubcategoryBtn" data-id="' . $subcategorys->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainSubcategory" ><i class="bi bi-pencil-square"></i></a>
-                <a href="#" type="button" id="deleteSubcategoryBtn" data-id="' . $subcategorys->id . '" class="btn btn-danger btn-sm" ><i class="bi bi-archive" ></i></a>';
+            ->addColumn('action', function ($subcategorys) use ($admin, $isFull) {
+                $a = '';
+                if ($isFull || $admin->hasDirectPermission('category.edit')) {
+                    $a .= '<a href="#" type="button" id="editSubcategoryBtn" data-id="' . $subcategorys->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainSubcategory"><i class="bi bi-pencil-square"></i></a> ';
+                }
+                if ($isFull || $admin->hasDirectPermission('category.delete')) {
+                    $a .= '<a href="#" type="button" id="deleteSubcategoryBtn" data-id="' . $subcategorys->id . '" class="btn btn-danger btn-sm"><i class="bi bi-archive"></i></a>';
+                }
+                return $a ?: '<span class="text-muted" style="font-size:12px;">View only</span>';
             })
-
             ->make(true);
     }
 
