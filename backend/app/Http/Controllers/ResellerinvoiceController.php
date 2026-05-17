@@ -269,7 +269,7 @@ public function incomeHistoryOrders(Request $request, $id)
 
                 $referuser = User::where('my_referral_code', $user->refer_by)->first();
                 if ($referuser) {
-                    $refbonus = $invoice->payable_amount * ($referuser->bonus_percent / 100);
+                    $refbonus = 200; // Fixed 200 TK referral bonus
                     $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
                     $referuser->account_balance = $referuser->account_balance + $refbonus;
                     $referuser->update();
@@ -299,7 +299,7 @@ public function incomeHistoryOrders(Request $request, $id)
 
                     $referuser = User::where('my_referral_code', $user->refer_by)->first();
                     if ($referuser) {
-                        $refbonus = $invoice->payable_amount * ($referuser->bonus_percent / 100);
+                        $refbonus = 200; // Fixed 200 TK referral bonus
                         $referuser->referal_bonus = $referuser->referal_bonus - $refbonus;
                         $referuser->account_balance = $referuser->account_balance - $refbonus;
                         $referuser->update();

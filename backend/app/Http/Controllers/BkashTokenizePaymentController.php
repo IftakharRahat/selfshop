@@ -89,9 +89,8 @@ class BkashTokenizePaymentController extends Controller
                         } else {
                             $user = User::where('id', $invoice->user_id)->first();
                             $referuser = User::where('my_referral_code', $user->refer_by)->first();
-                            if ($referuser && $referuser->bonus_percent > 0) {
-                                $amount = (float) ($invoice->payable_amount ?: $invoice->amount);
-                                $refbonus = $amount * ($referuser->bonus_percent / 100);
+                            if ($referuser) {
+                                $refbonus = 200; // Fixed 200 TK referral bonus
                                 $referuser->referal_bonus = $referuser->referal_bonus + $refbonus;
                                 $referuser->account_balance = $referuser->account_balance + $refbonus;
                                 $referuser->update();
