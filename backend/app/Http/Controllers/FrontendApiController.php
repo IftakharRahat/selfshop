@@ -2420,29 +2420,29 @@ class FrontendApiController extends Controller
         $id = Auth::id();
         $amount = (float) $request->withdrew_amount;
 
-        // Pending check temporarily disabled for testing
-        // $pendingCount = Withdrew::where('user_id', $id)
-        //     ->where('status', 'Pending')
-        //     ->count();
+        // Pending check
+        $pendingCount = Withdrew::where('user_id', $id)
+            ->where('status', 'Pending')
+            ->count();
 
-        // if ($pendingCount > 0) {
-        //     return response()->json([
-        //         'status' => false,
-        //         'message' => 'You already have a pending withdrawal request. Please wait for it to be processed.',
-        //     ], 422);
-        // }
+        if ($pendingCount > 0) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You already have a pending withdrawal request. Please wait for it to be processed.',
+            ], 422);
+        }
 
-        // Rate limit temporarily disabled for testing
-        // $todayCount = Withdrew::where('user_id', $id)
-        //     ->whereDate('created_at', now()->toDateString())
-        //     ->count();
+        // Rate limit
+        $todayCount = Withdrew::where('user_id', $id)
+            ->whereDate('created_at', now()->toDateString())
+            ->count();
 
-        // if ($todayCount >= 3) {
-        //     return response()->json([
-        //         'status' => false,
-        //         'message' => 'You have exceeded the maximum withdrawal requests for today. Please try again tomorrow.',
-        //     ], 429);
-        // }
+        if ($todayCount >= 3) {
+            return response()->json([
+                'status' => false,
+                'message' => 'You have exceeded the maximum withdrawal requests for today. Please try again tomorrow.',
+            ], 429);
+        }
 
         try {
             DB::beginTransaction();
