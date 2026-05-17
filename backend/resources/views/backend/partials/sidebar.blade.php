@@ -305,6 +305,33 @@
             </a>
             @endif
 
+            {{-- ═══ FINANCE & PAYMENTS ═══ --}}
+            @if($isFullAdmin || $adm->hasDirectPermission('payment.view') || $adm->hasDirectPermission('withdraw.view'))
+            <small class="nav-section-title">Finance</small>
+            
+            @if($isFullAdmin || $adm->hasDirectPermission('payment.view'))
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Payments</a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    <a href="{{ route('payments.index') }}" class="dropdown-item">Bank</a>
+                    <a href="{{ route('paymenttypes.index') }}" class="dropdown-item">Accounts</a>
+                    <a href="{{ url('resellerinvoice/Unpaid') }}" class="dropdown-item">Reseller Invoices</a>
+                </div>
+            </div>
+            @endif
+
+            @if($isFullAdmin || $adm->hasDirectPermission('withdraw.view'))
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-cash-coin"></i> Withdraws</a>
+                <div class="bg-transparent border-0 dropdown-menu">
+                    <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
+                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier</a>
+                </div>
+            </div>
+            @endif
+            
+            @endif
+
             {{-- ═══ OTHERS ═══ --}}
             @if($isFullAdmin || $adm->hasDirectPermission('others.view'))
             <small class="nav-section-title">Others</small>
@@ -314,23 +341,13 @@
                     <a href="{{ route('couriers.index') }}" class="dropdown-item">Courier</a>
                     <a href="{{ route('cities.index') }}" class="dropdown-item">City</a>
                     <a href="{{ route('zones.index') }}" class="dropdown-item">Zone</a>
-                    <a href="{{ route('payments.index') }}" class="dropdown-item">Bank</a>
                     <a href="{{ route('packages.index') }}" class="dropdown-item">Account Package</a>
-                    <a href="{{ url('resellerinvoice/Unpaid') }}" class="dropdown-item">Reseller-Invoices</a>
-                    <a href="{{ route('paymenttypes.index') }}" class="dropdown-item">Accounts</a>
                 </div>
             </div>
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-question-circle"></i> Faq</a>
                 <div class="bg-transparent border-0 dropdown-menu">
                     <a href="{{ route('faqs.index') }}" class="dropdown-item">Faq</a>
-                </div>
-            </div>
-            <div class="nav-item dropdown">
-                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-wallet2"></i> Withdrew</a>
-                <div class="bg-transparent border-0 dropdown-menu">
-                    <a href="{{ url('withdrew/Pending') }}" class="dropdown-item">Reseller</a>
-                    <a href="{{ url('admin/view-vendor-payout-requests/pending') }}" class="dropdown-item">Supplier</a>
                 </div>
             </div>
             @endif
