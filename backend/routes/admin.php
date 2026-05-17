@@ -125,13 +125,13 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::resource('roles', RolesController::class, ['names' => 'admin.roles']);
     Route::resource('userroles', UserRolesController::class, ['names' => 'admin.userroles']);
     Route::resource('admins', AdminController::class, ['names' => 'admin.admins']);
-    Route::resource('users', UserController::class, ['names' => 'admin.users']);
-    Route::get('user/get/data', [UserController::class, 'userdata'])->name('admin.user.data');
-    Route::get('activeuser/get/data', [UserController::class, 'activeuserdata'])->name('admin.activeuser.data');
-    Route::get('manage-users', [UserController::class, 'manageUsers'])->name('admin.manage-users');
-    Route::get('manage-user/get/data', [UserController::class, 'manageUserData'])->name('admin.manage-user.data');
+    Route::resource('users', UserController::class, ['names' => 'admin.users'])->middleware('admin.permission:user.all');
+    Route::get('user/get/data', [UserController::class, 'userdata'])->name('admin.user.data')->middleware('admin.permission:user.all');
+    Route::get('activeuser/get/data', [UserController::class, 'activeuserdata'])->name('admin.activeuser.data')->middleware('admin.permission:user.active');
+    Route::get('manage-users', [UserController::class, 'manageUsers'])->name('admin.manage-users')->middleware('admin.permission:user.manage');
+    Route::get('manage-user/get/data', [UserController::class, 'manageUserData'])->name('admin.manage-user.data')->middleware('admin.permission:user.manage');
 
-    Route::get('view-active/user', [UserController::class, 'activeuser']);
+    Route::get('view-active/user', [UserController::class, 'activeuser'])->middleware('admin.permission:user.active');
     Route::get('executive', [AdminController::class, 'hrexe']);
     Route::get('executive/create', [AdminController::class, 'hrexecreate']);
     Route::post('executive/store', [AdminController::class, 'hrexestore'])->name('admin.executive.store');
@@ -351,27 +351,27 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('vendor-autologin/{vendor}', [VendorController::class, 'autologin'])->name('admin.vendors.autologin')->middleware('admin.permission:supplier.edit');
 
     // Product reviews (admin view & moderate)
-    Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
-    Route::post('reviews/{id}/status', [AdminReviewController::class, 'updateStatus'])->name('admin.reviews.status');
+    Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index')->middleware('admin.permission:supplier.reviews');
+    Route::post('reviews/{id}/status', [AdminReviewController::class, 'updateStatus'])->name('admin.reviews.status')->middleware('admin.permission:supplier.reviews');
 
     // Vendor category discounts (admin view)
-    Route::get('vendor-category-discounts', [AdminVendorCategoryDiscountController::class, 'index'])->name('admin.vendor-category-discounts.index');
+    Route::get('vendor-category-discounts', [AdminVendorCategoryDiscountController::class, 'index'])->name('admin.vendor-category-discounts.index')->middleware('admin.permission:supplier.discounts');
 
     // Vendor category commission (admin manage)
-    Route::get('vendor-category-commissions', [AdminVendorCommissionController::class, 'index'])->name('admin.vendor-category-commissions.index');
-    Route::post('vendor-category-commissions/{category}', [AdminVendorCommissionController::class, 'update'])->name('admin.vendor-category-commissions.update');
+    Route::get('vendor-category-commissions', [AdminVendorCommissionController::class, 'index'])->name('admin.vendor-category-commissions.index')->middleware('admin.permission:supplier.commissions');
+    Route::post('vendor-category-commissions/{category}', [AdminVendorCommissionController::class, 'update'])->name('admin.vendor-category-commissions.update')->middleware('admin.permission:supplier.commissions');
 
     // Vendor products (verify, approve/reject, edit)
-    Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index');
-    Route::post('vendor-products/{id}/approve', [AdminVendorProductController::class, 'approve'])->name('admin.vendor-products.approve');
-    Route::post('vendor-products/{id}/reject', [AdminVendorProductController::class, 'reject'])->name('admin.vendor-products.reject');
+    Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index')->middleware('admin.permission:supplier.products');
+    Route::post('vendor-products/{id}/approve', [AdminVendorProductController::class, 'approve'])->name('admin.vendor-products.approve')->middleware('admin.permission:supplier.products');
+    Route::post('vendor-products/{id}/reject', [AdminVendorProductController::class, 'reject'])->name('admin.vendor-products.reject')->middleware('admin.permission:supplier.products');
 
     // Vendor payout requests (Phase 6.3 – admin processing)
-    Route::get('view-vendor-payout-requests', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests');
-    Route::get('view-vendor-payout-requests/{status}', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests.status');
-    Route::get('vendor-payout-requests', [AdminVendorPayoutController::class, 'index'])->name('admin.vendor-payout-requests.index');
-    Route::post('vendor-payout-requests/{id}/approve', [AdminVendorPayoutController::class, 'approve'])->name('admin.vendor-payout-requests.approve');
-    Route::post('vendor-payout-requests/{id}/reject', [AdminVendorPayoutController::class, 'reject'])->name('admin.vendor-payout-requests.reject');
+    Route::get('view-vendor-payout-requests', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests')->middleware('admin.permission:supplier.payouts');
+    Route::get('view-vendor-payout-requests/{status}', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests.status')->middleware('admin.permission:supplier.payouts');
+    Route::get('vendor-payout-requests', [AdminVendorPayoutController::class, 'index'])->name('admin.vendor-payout-requests.index')->middleware('admin.permission:supplier.payouts');
+    Route::post('vendor-payout-requests/{id}/approve', [AdminVendorPayoutController::class, 'approve'])->name('admin.vendor-payout-requests.approve')->middleware('admin.permission:supplier.payouts');
+    Route::post('vendor-payout-requests/{id}/reject', [AdminVendorPayoutController::class, 'reject'])->name('admin.vendor-payout-requests.reject')->middleware('admin.permission:supplier.payouts');
 
     // Vendor reports (Phase 7.2)
     Route::get('vendor-reports/profit-commission', [AdminVendorReportController::class, 'profitCommission'])->name('admin.vendor-reports.profit-commission');
