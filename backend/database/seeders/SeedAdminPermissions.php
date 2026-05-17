@@ -54,11 +54,11 @@ class SeedAdminPermissions extends Seeder
             ],
             [
                 'group_name' => 'supplier',
-                'permissions' => ['supplier.create', 'supplier.view', 'supplier.edit', 'supplier.delete'],
+                'permissions' => ['supplier.create', 'supplier.view', 'supplier.edit', 'supplier.delete', 'supplier.all', 'supplier.active', 'supplier.requests', 'supplier.products', 'supplier.reviews', 'supplier.discounts', 'supplier.commissions', 'supplier.payouts'],
             ],
             [
                 'group_name' => 'user',
-                'permissions' => ['user.create', 'user.view', 'user.edit', 'user.delete'],
+                'permissions' => ['user.create', 'user.view', 'user.edit', 'user.delete', 'user.all', 'user.manage', 'user.active'],
             ],
             [
                 'group_name' => 'banner',
