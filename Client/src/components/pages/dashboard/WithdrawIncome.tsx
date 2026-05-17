@@ -14,8 +14,10 @@ import {
 	useGetWithdrawListQuery,
 } from "@/redux/features/withdrawApi";
 import { useGetAllDashboardDataQuery } from "@/redux/features/dashboardApi";
+import { useGetMeQuery } from "@/redux/features/auth/authApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 import { formatBDT } from "@/lib/format-currency";
+import { Building2, CheckCircle } from "lucide-react";
 
 // ✅ Zod Schema
 const transferSchema = z.object({
@@ -42,7 +44,9 @@ type TransferFormValues = z.infer<typeof transferSchema>;
 
 export function WithdrawIncome() {
 	const [selectedMethod, setSelectedMethod] = useState<string>("");
+	const [useSavedBank, setUseSavedBank] = useState(false);
 
+	const { data: meData } = useGetMeQuery(undefined);
 	const { data: withdrawMethodsData, isLoading: methodsLoading } =
 		useGetAllWithdrawMethodsQuery(undefined);
 	const { data: withdrawListData, isLoading: listLoading } =
@@ -52,11 +56,26 @@ export function WithdrawIncome() {
 	const [createWithdrawRequest, { isLoading: creatingRequest }] =
 		useCreateWithdrawRequestMutation();
 
+	const bankinfo = meData?.data?.bankinfo;
+	const hasSavedBank = !!(bankinfo?.bank_name && bankinfo?.account_number);
+
+	const withdrawMethods = withdrawMethodsData?.data || [];
+	const withdrawList = withdrawListData?.data || [];
+	const walletBalance = Number(
+		dashboardData?.data?.balance ?? dashboardData?.data?.blance ?? 0,
+	);
+	const lastWithdrawAmount =
+		withdrawList.length > 0
+			? Number(withdrawList[0]?.withdrew_amount ?? 0)
+			: Number(dashboardData?.data?.withdraw ?? 0);
+	const isBalanceLoading = dashboardLoading || listLoading;
+
 	const {
 		register,
 		handleSubmit,
 		formState: { errors },
 		reset,
+		setValue,
 	} = useForm<TransferFormValues>({
 		resolver: zodResolver(transferSchema),
 		defaultValues: {
@@ -65,6 +84,17 @@ export function WithdrawIncome() {
 			additionalInfo: "",
 		},
 	});
+
+	// Auto-fill saved bank account number when user toggles it
+	useEffect(() => {
+		if (useSavedBank && bankinfo?.account_number) {
+			setValue("accountNumber", bankinfo.account_number);
+			setValue("additionalInfo", `Bank: ${bankinfo.bank_name || ""} | Account: ${bankinfo.account_name || ""} | Routing: ${bankinfo.routing_number || "N/A"}`);
+		} else if (!useSavedBank) {
+			setValue("accountNumber", "");
+			setValue("additionalInfo", "");
+		}
+	}, [useSavedBank, bankinfo, setValue]);
 
 	const onSubmit = async (data: TransferFormValues) => {
 		if (!selectedMethod) return;
@@ -93,22 +123,13 @@ export function WithdrawIncome() {
 				return await createWithdrawRequest(formData);
 			});
 			reset();
+			setUseSavedBank(false);
 		} catch (error: any) {
 			console.error("Error submitting withdraw request:", error);
 			alert(error?.data?.message || "Failed to submit withdraw request");
 		}
 	};
 
-	const withdrawMethods = withdrawMethodsData?.data || [];
-	const withdrawList = withdrawListData?.data || [];
-	const walletBalance = Number(
-		dashboardData?.data?.balance ?? dashboardData?.data?.blance ?? 0,
-	);
-	const lastWithdrawAmount =
-		withdrawList.length > 0
-			? Number(withdrawList[0]?.withdrew_amount ?? 0)
-			: Number(dashboardData?.data?.withdraw ?? 0);
-	const isBalanceLoading = dashboardLoading || listLoading;
 
 	// Set default selected method after API loads
 	useEffect(() => {
@@ -197,10 +218,39 @@ export function WithdrawIncome() {
 						</div>
 					</div>
 
+					{/* Saved Bank Info Card */}
+					{hasSavedBank && (
+						<div
+							onClick={() => setUseSavedBank(!useSavedBank)}
+							className={`cursor-pointer rounded-xl border-2 p-4 transition-all ${useSavedBank
+								? "border-[#E5005F] bg-[#FDEDF4]"
+								: "border-gray-200 bg-gray-50 hover:border-gray-300"
+								}`}
+						>
+							<div className="flex items-center justify-between mb-2">
+								<div className="flex items-center gap-2">
+									<Building2 className="w-5 h-5 text-[#E5005F]" />
+									<span className="text-sm font-semibold text-gray-900">
+										Use Saved Bank Account
+									</span>
+								</div>
+								{useSavedBank && (
+									<CheckCircle className="w-5 h-5 text-[#E5005F]" />
+								)}
+							</div>
+							<div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+								<p><span className="font-medium">Bank:</span> {bankinfo?.bank_name}</p>
+								<p><span className="font-medium">Account:</span> {bankinfo?.account_name || "N/A"}</p>
+								<p><span className="font-medium">A/C No:</span> {bankinfo?.account_number}</p>
+								<p><span className="font-medium">Routing:</span> {bankinfo?.routing_number || "N/A"}</p>
+							</div>
+						</div>
+					)}
+
 					{/* Account Info */}
 					<div className="space-y-2">
 						<label className="text-sm font-medium text-gray-900">
-							Please provide your payment information
+							{useSavedBank ? "Account number (auto-filled)" : "Please provide your payment information"}
 						</label>
 						<div className="relative flex items-center gap-2">
 							<div className="bg-gray-200/80 h-12 w-16 flex items-center justify-center rounded-md text-sm">
@@ -209,7 +259,8 @@ export function WithdrawIncome() {
 							<input
 								type="text"
 								placeholder="Enter the account number"
-								className="pl-4 h-12 border-gray-200 w-full rounded-md border"
+								className={`pl-4 h-12 border-gray-200 w-full rounded-md border ${useSavedBank ? "bg-gray-50" : ""}`}
+								readOnly={useSavedBank}
 								{...register("accountNumber")}
 							/>
 						</div>
@@ -227,7 +278,8 @@ export function WithdrawIncome() {
 						</label>
 						<textarea
 							placeholder="If needed enter additional support"
-							className="min-h-[80px] ps-4 pt-1 border-gray-200 w-full rounded-md border resize-none"
+							className={`min-h-[80px] ps-4 pt-1 border-gray-200 w-full rounded-md border resize-none ${useSavedBank ? "bg-gray-50" : ""}`}
+							readOnly={useSavedBank}
 							{...register("additionalInfo")}
 						/>
 						{errors.additionalInfo && (

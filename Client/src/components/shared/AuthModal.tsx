@@ -67,6 +67,14 @@ export default function AuthModal({
 		}
 	}, [viewMode]);
 
+	// Auto-fill referral code from URL campaign parameter
+	useEffect(() => {
+		if (campaignCode && open && viewMode === "register") {
+			setShowCoupon(true);
+			form.setFieldsValue({ refer_by: campaignCode });
+		}
+	}, [campaignCode, open, viewMode, form]);
+
 	const [login] = useLoginMutation();
 	const [register] = useRegisterMutation();
 	const [forgotPassword, { isLoading: isSendingOtp }] = useForgotPasswordMutation();
@@ -124,7 +132,7 @@ export default function AuthModal({
 
 	const handleRegistration = async (values: any) => {
 		const response = await handleAsyncWithToast(async () => {
-			return register({ ...values, campaign_code: campaignCode || undefined });
+			return register({ ...values, refer_by: values.refer_by || campaignCode || undefined, campaign_code: campaignCode || undefined });
 		});
 		if (response?.data?.status) {
 			await dispatch(
@@ -412,7 +420,7 @@ export default function AuthModal({
 										/>
 									</Form.Item>
 
-									{!showCoupon ? (
+									{!showCoupon && !campaignCode ? (
 										<p
 											className="text-[#e91e63] cursor-pointer text-sm mb-4 hover:underline"
 											onClick={() => setShowCoupon(true)}
