@@ -291,7 +291,8 @@ export function WithdrawIncome() {
 					{/* Submit Button */}
 					<button
 						type="submit"
-						className="w-full h-12 bg-[#E5005F] hover:bg-pink-600 !text-white font-medium rounded-md cursor-pointer"
+						className="w-full h-12 bg-[#E5005F] hover:bg-pink-600 font-medium rounded-md cursor-pointer"
+						style={{ color: 'white' }}
 						disabled={creatingRequest}
 					>
 						{creatingRequest ? "Submitting..." : "Request for withdraw"}

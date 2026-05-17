@@ -105,7 +105,7 @@ export default function NewArrivalSection() {
 										</span>
 									</div>
 									{/* Add to Cart Button */}
-									<button className="p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-full cursor-pointer flex items-center justify-center transition-colors">
+									<button className="p-2 bg-pink-600 hover:bg-pink-700 rounded-full cursor-pointer flex items-center justify-center transition-colors" style={{ color: 'white' }}>
 										<ShoppingCart className="w-4 h-4" />
 									</button>
 								</div>
