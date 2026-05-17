@@ -168,9 +168,34 @@
                                         $j = 1;
                                     @endphp
                                     @forelse ($permissions as $permission)
+                                        @php
+                                            $permLabels = [
+                                                // User granular
+                                                'user.all'      => ['All Users', 'View the All Users list'],
+                                                'user.manage'   => ['Manage Users', 'View the Manage Users page'],
+                                                'user.active'   => ['Active Users', 'View the Active Users list'],
+                                                // Supplier granular
+                                                'supplier.all'         => ['All Suppliers', 'View the All Suppliers list'],
+                                                'supplier.active'      => ['Active Suppliers', 'View Active Suppliers'],
+                                                'supplier.requests'    => ['Supplier Requests', 'View pending supplier requests'],
+                                                'supplier.products'    => ['Supplier Products', 'View & manage supplier products'],
+                                                'supplier.reviews'     => ['Product Reviews', 'View & moderate product reviews'],
+                                                'supplier.discounts'   => ['Category Discounts', 'View supplier category discounts'],
+                                                'supplier.commissions' => ['Category Commissions', 'View & manage category commissions'],
+                                                'supplier.payouts'     => ['Payout Requests', 'View & process supplier payouts'],
+                                            ];
+                                            $label = $permLabels[$permission->name] ?? null;
+                                        @endphp
                                         <div class="perm-item">
                                             <input class="form-check-input m-0 perm-checkbox" type="checkbox" name="permission[]" id="permission{{ $permission->id }}" value="{{ $permission->name }}">
-                                            <span>{{ $permission->name }}</span>
+                                            @if($label)
+                                                <div>
+                                                    <span style="font-weight:600;">{{ $label[0] }}</span>
+                                                    <div style="font-size:11px; color:#64748b; margin-top:1px;">{{ $label[1] }}</div>
+                                                </div>
+                                            @else
+                                                <span>{{ $permission->name }}</span>
+                                            @endif
                                         </div>
                                         @php $j++; @endphp
                                     @empty

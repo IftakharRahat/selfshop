@@ -1064,15 +1064,20 @@ export default function ProductDetailScreen() {
         <View style={s.mainCard}>
           {/* Flash Sale Banner */}
           {flashSale && (
-            <View style={s.flashBanner}>
+            <LinearGradient
+              colors={["#b3003b", "#E5005F"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={s.flashBanner}
+            >
               <View style={s.flashLeft}>
                 <Text fontSize={16}>⚡</Text>
                 <View>
-                  <Text fontSize={10} fontWeight="800" color="rgba(255,255,255,0.8)" style={{ textTransform: "uppercase", letterSpacing: 1 }}>Flash Sale</Text>
-                  <Text fontSize="$3" fontWeight="bold" color="#fff">{flashSale.flash_sale_title ?? "Limited Time Offer"}</Text>
+                  <Text fontSize={10} fontWeight="800" color="rgba(255,255,255,0.8)" style={{ textTransform: "uppercase", letterSpacing: 1, fontStyle: "italic" }}>Flash Sale</Text>
+                  <Text fontSize="$3" fontWeight="bold" color="#fff" fontStyle="italic">{flashSale.flash_sale_title ?? "Limited Time Offer"}</Text>
                 </View>
               </View>
-            </View>
+            </LinearGradient>
           )}
 
           {/* Selling Type Badge */}

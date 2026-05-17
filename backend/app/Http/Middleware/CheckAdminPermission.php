@@ -9,9 +9,10 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Middleware to enforce granular admin permissions.
  * Superadmins bypass all checks. Other admins must have
- * the specified direct permission to access the route.
+ * at least one of the specified direct permissions to access the route.
  *
  * Usage: ->middleware('admin.permission:banner.edit')
+ *        ->middleware('admin.permission:supplier.view|supplier.all')  // OR logic
  */
 class CheckAdminPermission
 {
@@ -28,9 +29,12 @@ class CheckAdminPermission
             return $next($request);
         }
 
-        // Check direct permission only (not role-inherited)
-        if ($admin->hasDirectPermission($permission)) {
-            return $next($request);
+        // Support pipe-delimited OR permissions (e.g. 'supplier.view|supplier.all')
+        $permissions = explode('|', $permission);
+        foreach ($permissions as $perm) {
+            if ($admin->hasDirectPermission(trim($perm))) {
+                return $next($request);
+            }
         }
 
         // Denied — redirect back with error

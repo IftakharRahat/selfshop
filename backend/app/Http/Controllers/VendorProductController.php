@@ -84,7 +84,7 @@ class VendorProductController extends Controller
             'PostImage.*' => 'file|mimes:jpeg,jpg,png,gif,bmp,svg,webp,heic,heif,avif|max:5120',
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
-            'warranty_days' => 'nullable|integer|min:1|max:3650',
+            'warranty_days' => 'nullable|integer|min:0|max:3650',
         ]);
 
         if ($validator->fails()) {

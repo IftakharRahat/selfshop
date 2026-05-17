@@ -93,14 +93,14 @@ Route::group(['prefix' => 'admin',], function () {
 
 Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], function () {
 
-    Route::get('accounts', [VencommentController::class, 'accounts']);
-    Route::get('withdraws', [VencommentController::class, 'withdraws']);
-    Route::post('withdrew-store', [VencommentController::class, 'withdrawstore']);
+    Route::get('accounts', [VencommentController::class, 'accounts'])->middleware('admin.permission:payment.view');
+    Route::get('withdraws', [VencommentController::class, 'withdraws'])->middleware('admin.permission:withdraw.view');
+    Route::post('withdrew-store', [VencommentController::class, 'withdrawstore'])->middleware('admin.permission:withdraw.edit');
 
-    Route::get('view-withdraws', [VencommentController::class, 'withdrawview']);
-    Route::get('view-withdraws/{slug}', [VencommentController::class, 'withdrawviewslug']);
-    Route::get('withdraw-edit/{id}', [VencommentController::class, 'withdrawedit']);
-    Route::post('withdraw-update/{id}', [VencommentController::class, 'withdrawupdate']);
+    Route::get('view-withdraws', [VencommentController::class, 'withdrawview'])->middleware('admin.permission:withdraw.view');
+    Route::get('view-withdraws/{slug}', [VencommentController::class, 'withdrawviewslug'])->middleware('admin.permission:withdraw.view');
+    Route::get('withdraw-edit/{id}', [VencommentController::class, 'withdrawedit'])->middleware('admin.permission:withdraw.edit');
+    Route::post('withdraw-update/{id}', [VencommentController::class, 'withdrawupdate'])->middleware('admin.permission:withdraw.edit');
 
 
     Route::get('/dashboard', [AuthenticatedSessionController::class, 'dashboard'])->name('admin.dashboard');
@@ -125,13 +125,13 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::resource('roles', RolesController::class, ['names' => 'admin.roles']);
     Route::resource('userroles', UserRolesController::class, ['names' => 'admin.userroles']);
     Route::resource('admins', AdminController::class, ['names' => 'admin.admins']);
-    Route::resource('users', UserController::class, ['names' => 'admin.users']);
-    Route::get('user/get/data', [UserController::class, 'userdata'])->name('admin.user.data');
-    Route::get('activeuser/get/data', [UserController::class, 'activeuserdata'])->name('admin.activeuser.data');
-    Route::get('manage-users', [UserController::class, 'manageUsers'])->name('admin.manage-users');
-    Route::get('manage-user/get/data', [UserController::class, 'manageUserData'])->name('admin.manage-user.data');
+    Route::resource('users', UserController::class, ['names' => 'admin.users'])->middleware('admin.permission:user.all');
+    Route::get('user/get/data', [UserController::class, 'userdata'])->name('admin.user.data')->middleware('admin.permission:user.all');
+    Route::get('activeuser/get/data', [UserController::class, 'activeuserdata'])->name('admin.activeuser.data')->middleware('admin.permission:user.active');
+    Route::get('manage-users', [UserController::class, 'manageUsers'])->name('admin.manage-users')->middleware('admin.permission:user.manage');
+    Route::get('manage-user/get/data', [UserController::class, 'manageUserData'])->name('admin.manage-user.data')->middleware('admin.permission:user.manage');
 
-    Route::get('view-active/user', [UserController::class, 'activeuser']);
+    Route::get('view-active/user', [UserController::class, 'activeuser'])->middleware('admin.permission:user.active');
     Route::get('executive', [AdminController::class, 'hrexe']);
     Route::get('executive/create', [AdminController::class, 'hrexecreate']);
     Route::post('executive/store', [AdminController::class, 'hrexestore'])->name('admin.executive.store');
@@ -351,27 +351,27 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('vendor-autologin/{vendor}', [VendorController::class, 'autologin'])->name('admin.vendors.autologin')->middleware('admin.permission:supplier.edit');
 
     // Product reviews (admin view & moderate)
-    Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index');
-    Route::post('reviews/{id}/status', [AdminReviewController::class, 'updateStatus'])->name('admin.reviews.status');
+    Route::get('reviews', [AdminReviewController::class, 'index'])->name('admin.reviews.index')->middleware('admin.permission:supplier.reviews');
+    Route::post('reviews/{id}/status', [AdminReviewController::class, 'updateStatus'])->name('admin.reviews.status')->middleware('admin.permission:supplier.reviews');
 
     // Vendor category discounts (admin view)
-    Route::get('vendor-category-discounts', [AdminVendorCategoryDiscountController::class, 'index'])->name('admin.vendor-category-discounts.index');
+    Route::get('vendor-category-discounts', [AdminVendorCategoryDiscountController::class, 'index'])->name('admin.vendor-category-discounts.index')->middleware('admin.permission:supplier.discounts');
 
     // Vendor category commission (admin manage)
-    Route::get('vendor-category-commissions', [AdminVendorCommissionController::class, 'index'])->name('admin.vendor-category-commissions.index');
-    Route::post('vendor-category-commissions/{category}', [AdminVendorCommissionController::class, 'update'])->name('admin.vendor-category-commissions.update');
+    Route::get('vendor-category-commissions', [AdminVendorCommissionController::class, 'index'])->name('admin.vendor-category-commissions.index')->middleware('admin.permission:supplier.commissions');
+    Route::post('vendor-category-commissions/{category}', [AdminVendorCommissionController::class, 'update'])->name('admin.vendor-category-commissions.update')->middleware('admin.permission:supplier.commissions');
 
     // Vendor products (verify, approve/reject, edit)
-    Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index');
-    Route::post('vendor-products/{id}/approve', [AdminVendorProductController::class, 'approve'])->name('admin.vendor-products.approve');
-    Route::post('vendor-products/{id}/reject', [AdminVendorProductController::class, 'reject'])->name('admin.vendor-products.reject');
+    Route::get('vendor-products', [AdminVendorProductController::class, 'index'])->name('admin.vendor-products.index')->middleware('admin.permission:supplier.products');
+    Route::post('vendor-products/{id}/approve', [AdminVendorProductController::class, 'approve'])->name('admin.vendor-products.approve')->middleware('admin.permission:supplier.products');
+    Route::post('vendor-products/{id}/reject', [AdminVendorProductController::class, 'reject'])->name('admin.vendor-products.reject')->middleware('admin.permission:supplier.products');
 
     // Vendor payout requests (Phase 6.3 – admin processing)
-    Route::get('view-vendor-payout-requests', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests');
-    Route::get('view-vendor-payout-requests/{status}', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests.status');
-    Route::get('vendor-payout-requests', [AdminVendorPayoutController::class, 'index'])->name('admin.vendor-payout-requests.index');
-    Route::post('vendor-payout-requests/{id}/approve', [AdminVendorPayoutController::class, 'approve'])->name('admin.vendor-payout-requests.approve');
-    Route::post('vendor-payout-requests/{id}/reject', [AdminVendorPayoutController::class, 'reject'])->name('admin.vendor-payout-requests.reject');
+    Route::get('view-vendor-payout-requests', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests')->middleware('admin.permission:supplier.payouts');
+    Route::get('view-vendor-payout-requests/{status}', [AdminVendorPayoutController::class, 'showPage'])->name('admin.view-vendor-payout-requests.status')->middleware('admin.permission:supplier.payouts');
+    Route::get('vendor-payout-requests', [AdminVendorPayoutController::class, 'index'])->name('admin.vendor-payout-requests.index')->middleware('admin.permission:supplier.payouts');
+    Route::post('vendor-payout-requests/{id}/approve', [AdminVendorPayoutController::class, 'approve'])->name('admin.vendor-payout-requests.approve')->middleware('admin.permission:supplier.payouts');
+    Route::post('vendor-payout-requests/{id}/reject', [AdminVendorPayoutController::class, 'reject'])->name('admin.vendor-payout-requests.reject')->middleware('admin.permission:supplier.payouts');
 
     // Vendor reports (Phase 7.2)
     Route::get('vendor-reports/profit-commission', [AdminVendorReportController::class, 'profitCommission'])->name('admin.vendor-reports.profit-commission');
@@ -390,18 +390,18 @@ Route::group(['middleware' => ['auth.admin:admin']], function () {
     Route::get('admin/fraud-check-data', [OrderController::class, 'fraudcheck']);
     Route::get('admin_order/assign_courier', [OrderController::class, 'assigncourier']);
     //withdrew
-    Route::get('withdrew/{status}', [WithdrewController::class, 'index']);
-    Route::get('withdrew/data/{status}', [WithdrewController::class, 'withdrewdatas'])->name('withdrewdata.info');
-    Route::get('withdrew/{id}/edit', [WithdrewController::class, 'edit']);
-    Route::post('withdrew/update/{id}', [WithdrewController::class, 'update']);
+    Route::get('withdrew/{status}', [WithdrewController::class, 'index'])->middleware('admin.permission:withdraw.view');
+    Route::get('withdrew/data/{status}', [WithdrewController::class, 'withdrewdatas'])->name('withdrewdata.info')->middleware('admin.permission:withdraw.view');
+    Route::get('withdrew/{id}/edit', [WithdrewController::class, 'edit'])->middleware('admin.permission:withdraw.edit');
+    Route::post('withdrew/update/{id}', [WithdrewController::class, 'update'])->middleware('admin.permission:withdraw.edit');
 
     // invoices receller
-    Route::get('resellerinvoice/{status}', [ResellerinvoiceController::class, 'index']);
-    Route::get('resellerinvoice/data/{status}', [ResellerinvoiceController::class, 'invoicedata'])->name('invoicedata.info');
-    Route::get('resellerinvoice/{id}/edit', [ResellerinvoiceController::class, 'edit']);
-    Route::post('resellerinvoice/update/{id}', [ResellerinvoiceController::class, 'update']);
-    Route::get('resellerinvoice/user/view-dashboard/{id}', [ResellerinvoiceController::class, 'autologin']);
-    Route::get('user/view-incomehistory/{id}', [ResellerinvoiceController::class, 'incomehistory']);
+    Route::get('resellerinvoice/{status}', [ResellerinvoiceController::class, 'index'])->middleware('admin.permission:payment.view');
+    Route::get('resellerinvoice/data/{status}', [ResellerinvoiceController::class, 'invoicedata'])->name('invoicedata.info')->middleware('admin.permission:payment.view');
+    Route::get('resellerinvoice/{id}/edit', [ResellerinvoiceController::class, 'edit'])->middleware('admin.permission:payment.edit');
+    Route::post('resellerinvoice/update/{id}', [ResellerinvoiceController::class, 'update'])->middleware('admin.permission:payment.edit');
+    Route::get('resellerinvoice/user/view-dashboard/{id}', [ResellerinvoiceController::class, 'autologin'])->middleware('admin.permission:payment.view');
+    Route::get('user/view-incomehistory/{id}', [ResellerinvoiceController::class, 'incomehistory'])->middleware('admin.permission:payment.view');
 Route::get('user/view-incomehistory/{id}', [ResellerinvoiceController::class, 'incomehistory'])
      ->name('admin.user.incomehistory');
 
@@ -519,16 +519,16 @@ Route::get('user/view-incomehistory/{id}/orders', [ResellerinvoiceController::cl
     Route::put('supplier/status', [SupplierController::class, 'updatestatus'])->middleware('admin.permission:supplier.edit');
     Route::get('admin/supplier', [SupplierController::class, 'supplierdata'])->name('supplier.info')->middleware('admin.permission:supplier.view');
     //payment method
-    Route::resource('paymenttypes', PaymenttypeController::class);
-    Route::post('paymenttype/{id}', [PaymenttypeController::class, 'update']);
-    Route::put('paymenttype/status', [PaymenttypeController::class, 'updatestatus']);
-    Route::get('admin/paymenttype', [PaymenttypeController::class, 'paymenttypedata'])->name('paymenttype.info');
+    Route::resource('paymenttypes', PaymenttypeController::class)->middleware('admin.permission:payment.view');
+    Route::post('paymenttype/{id}', [PaymenttypeController::class, 'update'])->middleware('admin.permission:payment.edit');
+    Route::put('paymenttype/status', [PaymenttypeController::class, 'updatestatus'])->middleware('admin.permission:payment.edit');
+    Route::get('admin/paymenttype', [PaymenttypeController::class, 'paymenttypedata'])->name('paymenttype.info')->middleware('admin.permission:payment.view');
     //payment method
-    Route::resource('payments', PaymentController::class);
-    Route::post('payment/{id}', [PaymentController::class, 'update']);
-    Route::put('payment/status', [PaymentController::class, 'updatestatus']);
-    Route::put('payment/restatus', [PaymentController::class, 'updaterestatus']);
-    Route::get('admin/payment', [PaymentController::class, 'paymentdata'])->name('payment.info');
+    Route::resource('payments', PaymentController::class)->middleware('admin.permission:payment.view');
+    Route::post('payment/{id}', [PaymentController::class, 'update'])->middleware('admin.permission:payment.edit');
+    Route::put('payment/status', [PaymentController::class, 'updatestatus'])->middleware('admin.permission:payment.edit');
+    Route::put('payment/restatus', [PaymentController::class, 'updaterestatus'])->middleware('admin.permission:payment.edit');
+    Route::get('admin/payment', [PaymentController::class, 'paymentdata'])->name('payment.info')->middleware('admin.permission:payment.view');
 
     //account packages
     Route::resource('packages', PackageController::class);

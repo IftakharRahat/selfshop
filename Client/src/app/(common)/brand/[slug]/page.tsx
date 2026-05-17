@@ -16,7 +16,8 @@ export default function BrandProductsPage() {
         skip: !slug,
     });
 
-    const products = data?.data || [];
+    const raw = data?.data;
+    const products = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : [];
 
     return (
         <div className="bg-white min-h-screen">

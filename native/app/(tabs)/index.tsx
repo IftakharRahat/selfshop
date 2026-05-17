@@ -374,33 +374,45 @@ export default function HomeScreen() {
             marginBottom: 24,
             borderRadius: 16,
             overflow: "hidden",
-            backgroundColor: "#3257D9",
-            padding: 16,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+            elevation: 4,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
           }}
           onPress={() => router.push("/flash-sale" as any)}
         >
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={{ fontSize: 18 }}>⚡</Text>
-              <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff" }}>
-                Flash Sale
+          <LinearGradient
+            colors={["#b3003b", "#E5005F"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              padding: 16,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={{ fontSize: 18 }}>⚡</Text>
+                <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff", fontStyle: "italic" }}>
+                  Flash Sale
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
+                {flashSale.data.products.length} products on sale
               </Text>
             </View>
-            <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
-              {flashSale.data.products.length} products on sale
-            </Text>
-          </View>
-          <View style={{
-            backgroundColor: "#E5005F",
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 10,
-          }}>
-            <Text style={{ fontSize: 12, fontWeight: "700", color: "#fff" }}>Shop Now</Text>
-          </View>
+            <View style={{
+              backgroundColor: "#fff",
+              paddingHorizontal: 14,
+              paddingVertical: 8,
+              borderRadius: 20,
+            }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: "#E5005F" }}>Shop Now</Text>
+            </View>
+          </LinearGradient>
         </Pressable>
       )}
 
