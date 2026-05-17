@@ -53,6 +53,14 @@ class SeedAdminPermissions extends Seeder
                 'permissions' => ['order.create', 'order.view', 'order.edit', 'order.delete'],
             ],
             [
+                'group_name' => 'payment',
+                'permissions' => ['payment.create', 'payment.view', 'payment.edit', 'payment.delete'],
+            ],
+            [
+                'group_name' => 'withdraw',
+                'permissions' => ['withdraw.create', 'withdraw.view', 'withdraw.edit', 'withdraw.delete'],
+            ],
+            [
                 'group_name' => 'supplier',
                 'permissions' => ['supplier.create', 'supplier.view', 'supplier.edit', 'supplier.delete', 'supplier.all', 'supplier.active', 'supplier.requests', 'supplier.products', 'supplier.reviews', 'supplier.discounts', 'supplier.commissions', 'supplier.payouts'],
             ],
