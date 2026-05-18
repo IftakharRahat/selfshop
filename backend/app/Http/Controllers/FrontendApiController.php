@@ -2271,11 +2271,18 @@ class FrontendApiController extends Controller
             $product = new Productrequest();
             $productImg = $request->file('attachment');
             if ($productImg) {
-                $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
                 $safeName = Str::slug(pathinfo($productImg->getClientOriginalName(), PATHINFO_FILENAME))
                     . '_' . Str::random(8) . '.' . $productImg->getClientOriginalExtension();
-                $path = $productImg->storeAs('products/images', $safeName, 'r2');
-                $product->attachment = $r2BaseUrl . '/' . $path;
+
+                // Use R2 if configured, otherwise fall back to local public disk
+                if (config('filesystems.disks.r2.bucket')) {
+                    $r2BaseUrl = rtrim(config('filesystems.disks.r2.url'), '/');
+                    $path = $productImg->storeAs('products/images', $safeName, 'r2');
+                    $product->attachment = $r2BaseUrl . '/' . $path;
+                } else {
+                    $path = $productImg->storeAs('products/requests', $safeName, 'public');
+                    $product->attachment = url('storage/' . $path);
+                }
                 $debug['uploaded_path'] = $path;
 
                 // ── Sentry: breadcrumb for successful R2 upload ──

@@ -556,24 +556,39 @@
                  </table>
              </div>
 
-             {{-- Product Images --}}
+             {{-- Product Images (variant-specific) --}}
              @php
-                 $hasImages = false;
+                 $orderImages = [];
                  foreach ($order->products as $product) {
                      $pm = App\Models\Product::find($product->product_id);
-                     if (optional($pm)->ProductImage) { $hasImages = true; break; }
+                     if (!$pm) continue;
+
+                     $imgUrl = null;
+                     // Try to find the variant image matching this order item's color
+                     if (!empty($product->color)) {
+                         $variant = App\Models\Varient::where('product_id', $pm->id)
+                             ->where(function ($q) use ($product) {
+                                 $q->where('color_name', $product->color)
+                                   ->orWhere('title', $product->color);
+                             })
+                             ->first();
+                         if ($variant && $variant->image) {
+                             $imgUrl = $variant->image;
+                         }
+                     }
+                     // Fallback to main product image
+                     if (!$imgUrl) {
+                         $imgUrl = $pm->ProductImage;
+                     }
+                     if ($imgUrl) {
+                         $orderImages[] = $imgUrl;
+                     }
                  }
              @endphp
-             @if($hasImages)
+             @if(count($orderImages) > 0)
              <div class="product-images-strip">
-                 @foreach ($order->products as $product)
-                     @php
-                         $productModel = App\Models\Product::find($product->product_id);
-                         $imgUrl = optional($productModel)->ProductImage;
-                     @endphp
-                     @if($imgUrl)
-                         <img src="{{ str_starts_with($imgUrl, 'http') ? $imgUrl : asset($imgUrl) }}" alt="Product">
-                     @endif
+                 @foreach ($orderImages as $imgUrl)
+                     <img src="{{ str_starts_with($imgUrl, 'http') ? $imgUrl : asset($imgUrl) }}" alt="Product">
                  @endforeach
              </div>
              @endif

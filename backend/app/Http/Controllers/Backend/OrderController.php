@@ -733,19 +733,32 @@ class OrderController extends Controller
                 return '<a href="https://localhost/resellbd/admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . $orders->web_ID . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
-                $orderProducts = '';
+                // Group order items by product name
+                $grouped = [];
                 foreach ($orders->orderproducts as $product) {
-                    if (isset($product->color) && isset($product->size)) {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Colour: ' . $product->color . ' , Size: ' . $product->size . '</span>';
-                    } elseif (isset($product->size)) {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Size: ' . $product->size . '</span>';
-                    } else if ($product->color) {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Colour: ' . $product->color . '<span>';
-                    } else {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName;
+                    $name = $product->productName;
+                    if (!isset($grouped[$name])) {
+                        $grouped[$name] = [];
                     }
+                    $grouped[$name][] = $product;
                 }
-                return rtrim($orderProducts, '<br>');
+                $blocks = [];
+                foreach ($grouped as $name => $items) {
+                    $block = '<span style="font-size:12px;font-weight:600;">' . e($name) . '</span>';
+                    foreach ($items as $item) {
+                        $parts = [];
+                        $parts[] = $item->quantity . ' pc';
+                        if (!empty($item->color)) {
+                            $parts[] = '<span style="display:inline-block;background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:3px;font-size:10px;">' . $item->color . '</span>';
+                        }
+                        if (!empty($item->size)) {
+                            $parts[] = '<span style="display:inline-block;background:#f0fdf4;color:#15803d;padding:1px 6px;border-radius:3px;font-size:10px;">' . $item->size . '</span>';
+                        }
+                        $block .= '<br><span style="font-size:11px;color:#64748b;padding-left:8px;">└ ' . implode(' ', $parts) . '</span>';
+                    }
+                    $blocks[] = $block;
+                }
+                return implode('<hr style="margin:5px 0;border-color:#e2e8f0;">', $blocks);
             })
             ->editColumn('user', function ($orders) {
                 if ($orders->users) {
@@ -1286,45 +1299,41 @@ class OrderController extends Controller
                 return '<a href="' . env('APP_URL') . 'admin_order/invoice-view/' . $orders->invoiceID . '" target="_blank"> ' . $orders->invoiceID . '<a><br>' . ($orders->web_ID ?? '') . '<br>' . $ago;
             })
             ->editColumn('products', function ($orders) {
-                $orderProducts = '';
+                // Group order items by product name
+                $grouped = [];
+                $vendorNames = [];
                 foreach ($orders->orderproducts as $product) {
-                    // Product name + qty line
-                    if (isset($product->color) && isset($product->size)) {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Colour: ' . $product->color . ' , Size: ' . $product->size . '</span>';
-                    } elseif (isset($product->size)) {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Size: ' . $product->size . '</span>';
-                    } else if ($product->color) {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName . '<br><span style="color:blue;"> Colour: ' . $product->color . '<span>';
-                    } else {
-                        $orderProducts = $orderProducts . $product->quantity . ' x ' . $product->productName;
+                    $name = $product->productName;
+                    if (!isset($grouped[$name])) {
+                        $grouped[$name] = [];
                     }
-
-                    // Vendor badge
-                    $vendorName = $product->product && $product->product->vendor ? $product->product->vendor->company_name : null;
-                    if ($vendorName) {
-                        $orderProducts .= ' <span style="background:#7c3aed;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;">' . $vendorName . '</span>';
+                    $grouped[$name][] = $product;
+                    // Track vendor per product
+                    if (!isset($vendorNames[$name])) {
+                        $vn = $product->product && $product->product->vendor ? $product->product->vendor->company_name : null;
+                        if ($vn) $vendorNames[$name] = $vn;
                     }
-
-                    // Fulfillment status badge
-                    $fs = $product->fulfillment_status ?? 'pending';
-                    if ($vendorName) {
-                        $badgeColors = [
-                            'pending' => 'background:#6b7280;color:#fff;',
-                            'awaiting_shipment' => 'background:#f59e0b;color:#fff;',
-                            'shipped' => 'background:#10b981;color:#fff;',
-                        ];
-                        $style = $badgeColors[$fs] ?? $badgeColors['pending'];
-                        $label = str_replace('_', ' ', ucfirst($fs));
-                        $orderProducts .= ' <span style="' . $style . 'padding:1px 6px;border-radius:4px;font-size:10px;">' . $label . '</span>';
-
-                        if ($product->tracking_number) {
-                            $orderProducts .= '<br><span style="color:#059669;font-size:11px;">📦 ' . $product->tracking_number . '</span>';
-                        }
-                    }
-
-                    $orderProducts .= '<br>';
                 }
-                return rtrim($orderProducts, '<br>');
+                $blocks = [];
+                foreach ($grouped as $name => $items) {
+                    $block = '<span style="font-size:12px;font-weight:600;">' . e($name) . '</span>';
+                    if (!empty($vendorNames[$name])) {
+                        $block .= ' <span style="display:inline-block;background:#f5f3ff;color:#7c3aed;padding:1px 6px;border-radius:3px;font-size:10px;">' . $vendorNames[$name] . '</span>';
+                    }
+                    foreach ($items as $item) {
+                        $parts = [];
+                        $parts[] = $item->quantity . ' pc';
+                        if (!empty($item->color)) {
+                            $parts[] = '<span style="display:inline-block;background:#eef2ff;color:#4338ca;padding:1px 6px;border-radius:3px;font-size:10px;">' . $item->color . '</span>';
+                        }
+                        if (!empty($item->size)) {
+                            $parts[] = '<span style="display:inline-block;background:#f0fdf4;color:#15803d;padding:1px 6px;border-radius:3px;font-size:10px;">' . $item->size . '</span>';
+                        }
+                        $block .= '<br><span style="font-size:11px;color:#64748b;padding-left:8px;">└ ' . implode(' ', $parts) . '</span>';
+                    }
+                    $blocks[] = $block;
+                }
+                return implode('<hr style="margin:5px 0;border-color:#e2e8f0;">', $blocks);
             })
             ->editColumn('user', function ($orders) {
                 if ($orders->users) {
