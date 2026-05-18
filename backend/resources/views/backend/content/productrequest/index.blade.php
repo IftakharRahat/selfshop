@@ -137,7 +137,7 @@
                 { data: 'id' },
                 { data: 'user' },
                 { data: 'p_name' },
-                { data: 'attachment', name: 'attachment', render: function(data, type, full, meta) { return "<img src=../../" + data + " height=\"40\" alt='No Image'/>"; } },
+                { data: 'attachment', name: 'attachment', render: function(data, type, full, meta) { if (!data) return '<span class="text-muted">No Image</span>'; var src = (data.startsWith('http')) ? data : '../../' + data; return '<img src="' + src + '" height="40" alt="Product" style="border-radius:4px;" onerror="this.alt=\'No Image\';this.style.display=\'none\'"/>'; } },
                 { "data": null, render: function(data) {
                     if (data.status === 'Pending') return '<button type="button" class="btn btn-primary btn-sm">Pending</button>';
                     else if (data.status === 'Accepted') return '<button type="button" class="btn btn-info btn-sm">Accepted</button>';
@@ -159,7 +159,8 @@
                     $('#EditMenu').find('#status').val(data.status);
                     $('#EditMenu').find('#prq_id').val(data.id);
                     $('#previmg').html('');
-                    $('#previmg').append(`<img src="../../` + data.attachment + `" alt="" style="height: 80px" />`);
+                    var imgSrc = (data.attachment && data.attachment.startsWith('http')) ? data.attachment : '../../' + data.attachment;
+                    $('#previmg').append(`<img src="${imgSrc}" alt="" style="height: 80px; border-radius: 6px;" onerror="this.alt='No Image';this.style.display='none'" />`);
                     $('#EditMenu').attr('data-id', data.id);
                 },
                 error: function(error) { console.log('error'); }
