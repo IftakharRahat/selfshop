@@ -129,6 +129,7 @@ function RootLayout() {
               <Stack.Screen name="account/reseller-shop" />
               <Stack.Screen name="account/notifications" />
               <Stack.Screen name="account/balance-transfer" />
+              <Stack.Screen name="account/payment-methods" />
               <Stack.Screen name="account/income-history" />
               <Stack.Screen name="account/team-members" />
               <Stack.Screen name="account/referral" />

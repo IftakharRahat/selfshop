@@ -157,6 +157,12 @@ export default function SettingsScreen() {
               subtitle="Update your profile details"
               onPress={() => router.push("/account/edit-profile" as any)}
             />
+            <MenuItem
+              icon="card-outline"
+              label="Payment Methods"
+              subtitle="Manage withdrawal payment methods"
+              onPress={() => router.push("/account/payment-methods" as any)}
+            />
           </View>
         </View>
 
