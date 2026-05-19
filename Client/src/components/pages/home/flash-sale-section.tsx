@@ -37,6 +37,7 @@ function useCountdown(endTime: string | null): TimeLeft {
     const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft);
 
     useEffect(() => {
+        setTimeLeft(calculateTimeLeft());
         const timer = setInterval(() => {
             setTimeLeft(calculateTimeLeft());
         }, 1000);
@@ -86,11 +87,12 @@ export default function FlashSaleSection() {
                                 <span className="text-white font-medium text-xs sm:text-sm hidden sm:inline-block">Ending in</span>
                                 <div className="flex items-center gap-1.5 sm:gap-2">
                                     {[
-                                        { value: timeLeft.hours + (timeLeft.days * 24) },
-                                        { value: timeLeft.minutes },
-                                        { value: timeLeft.seconds }
-                                    ].map((unit, i) => (
-                                        <div key={i} className="flex items-center gap-1">
+                                        { value: timeLeft.days, label: "Days" },
+                                        { value: timeLeft.hours, label: "Hours" },
+                                        { value: timeLeft.minutes, label: "Min" },
+                                        { value: timeLeft.seconds, label: "Sec" },
+                                    ].map((unit) => (
+                                        <div key={unit.label} className="flex flex-col items-center gap-1">
                                             <div
                                                 className="flex items-center justify-center rounded font-bold text-black text-sm sm:text-base"
                                                 style={{
@@ -102,11 +104,9 @@ export default function FlashSaleSection() {
                                             >
                                                 {pad(unit.value)}
                                             </div>
-                                            {i < 2 && (
-                                                <span className="text-white font-bold mx-0.5">
-                                                    :
-                                                </span>
-                                            )}
+                                            <span className="text-[9px] sm:text-[10px] font-bold text-white/80 leading-none">
+                                                {unit.label}
+                                            </span>
                                         </div>
                                     ))}
                                 </div>

@@ -19,7 +19,9 @@ import apiClient from "@/lib/api-client";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
-const CARD_WIDTH = (width - 48) / 2;
+const TAKA = "\u09F3";
+const CARD_GAP = 12;
+const CARD_WIDTH = (width - 32 - CARD_GAP) / 2;
 
 /* ── Image URL helper ── */
 const IMAGE_BASE =
@@ -37,7 +39,10 @@ function resolveImageUrl(path?: string | null): string | null {
 }
 
 function formatBDT(num: number): string {
-  return num.toLocaleString("en-BD");
+  const value = Number(num ?? 0);
+  return (Number.isFinite(value) ? value : 0).toLocaleString("en-BD", {
+    maximumFractionDigits: 0,
+  });
 }
 
 function pad(n: number): string {
@@ -67,6 +72,7 @@ function useCountdown(endTime: string | null): TimeLeft {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculate);
 
   useEffect(() => {
+    setTimeLeft(calculate());
     const timer = setInterval(() => setTimeLeft(calculate()), 1000);
     return () => clearInterval(timer);
   }, [calculate]);
@@ -123,7 +129,7 @@ export default function FlashSaleScreen() {
         {hasDiscount && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>
-              -{Math.round(product.discount_percentage)}%
+              {Math.round(product.discount_percentage)}% OFF
             </Text>
           </View>
         )}
@@ -150,23 +156,24 @@ export default function FlashSaleScreen() {
           </Text>
 
           <View style={styles.priceRow}>
-            <Text style={styles.flashPrice}>
-              ৳{formatBDT(product.FlashPrice)}
-            </Text>
-            {hasDiscount && (
-              <Text style={styles.originalPrice}>
-                ৳{formatBDT(product.SalePrice)}
+            <View style={styles.priceStack}>
+              <Text style={styles.flashPrice}>
+                {TAKA}{formatBDT(product.FlashPrice)}
               </Text>
+              {hasDiscount && (
+                <Text style={styles.originalPrice}>
+                  {TAKA}{formatBDT(product.SalePrice)}
+                </Text>
+              )}
+            </View>
+            {hasDiscount && (
+              <View style={styles.saveBadge}>
+                <Text style={styles.saveText}>
+                  SAVE {Math.round(product.discount_percentage)}%
+                </Text>
+              </View>
             )}
           </View>
-
-          {hasDiscount && (
-            <View style={styles.saveBadge}>
-              <Text style={styles.saveText}>
-                SAVE {Math.round(product.discount_percentage)}%
-              </Text>
-            </View>
-          )}
         </View>
       </Pressable>
     );
@@ -209,8 +216,8 @@ export default function FlashSaleScreen() {
             ]}
             onPress={() => router.back()}
           >
-            <Text fontSize="$3" fontWeight="600" color={ACCENT}>
-              ← Back to Home
+            <Text fontSize="$3" fontWeight="700" color={ACCENT}>
+              Back to Home
             </Text>
           </Pressable>
         </View>
@@ -218,12 +225,11 @@ export default function FlashSaleScreen() {
     );
   }
 
-  /* ── Active Flash Sale ── */
-  const COUNTDOWN_UNITS = [
-    { value: timeLeft.days, label: "D" },
-    { value: timeLeft.hours, label: "H" },
-    { value: timeLeft.minutes, label: "M" },
-    { value: timeLeft.seconds, label: "S" },
+  const countdownUnits = [
+    { value: timeLeft.days, label: "Days" },
+    { value: timeLeft.hours, label: "Hours" },
+    { value: timeLeft.minutes, label: "Min" },
+    { value: timeLeft.seconds, label: "Sec" },
   ];
 
   return (
@@ -234,14 +240,12 @@ export default function FlashSaleScreen() {
         }}
       />
       <View style={styles.container}>
-        {/* ── Gradient Header with Countdown ── */}
         <LinearGradient
           colors={["#b3003b", "#E5005F"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
         >
-          {/* Back button */}
           <Pressable
             style={styles.backArrow}
             onPress={() => router.back()}
@@ -251,36 +255,37 @@ export default function FlashSaleScreen() {
 
           <View style={styles.headerContent}>
             <View style={styles.headerTitleRow}>
-              <Text style={styles.flashIcon}>⚡</Text>
-              <Text style={[styles.headerTitle, { fontStyle: "italic" }]}>
-                {flashSale.title || "Flash Sale"}
-              </Text>
+              <View style={styles.headerIcon}>
+                <Ionicons name="flash" size={22} color={ACCENT} />
+              </View>
+              <View style={styles.headerTextBlock}>
+                <Text style={styles.headerTitle}>
+                  {flashSale.title || "Flash Sale"}
+                </Text>
+                <Text style={styles.headerSubtitle}>
+                  {products.length} products on sale
+                </Text>
+              </View>
             </View>
 
-            {/* Countdown */}
-            <View style={styles.countdownRow}>
-              <Text style={styles.endsIn}>Ends in</Text>
-              {[
-                { value: timeLeft.hours + (timeLeft.days * 24) },
-                { value: timeLeft.minutes },
-                { value: timeLeft.seconds },
-              ].map((unit, i) => (
-                <View key={i} style={styles.countdownUnit}>
-                  <View style={[styles.countdownBox, { backgroundColor: "#fff" }]}>
-                    <Text style={[styles.countdownValue, { color: "#000" }]}>
-                      {pad(unit.value)}
-                    </Text>
+            <View style={styles.countdownPanel}>
+              <Text style={styles.endsIn}>Ending in</Text>
+              <View style={styles.countdownRow}>
+                {countdownUnits.map((unit) => (
+                  <View key={unit.label} style={styles.countdownUnit}>
+                    <View style={styles.countdownBox}>
+                      <Text style={styles.countdownValue}>
+                        {pad(unit.value)}
+                      </Text>
+                    </View>
+                    <Text style={styles.countdownLabel}>{unit.label}</Text>
                   </View>
-                  {i < 2 && (
-                    <Text style={styles.countdownColon}>:</Text>
-                  )}
-                </View>
-              ))}
+                ))}
+              </View>
             </View>
           </View>
         </LinearGradient>
 
-        {/* ── Products Grid ── */}
         <FlatList
           data={products}
           renderItem={renderProduct}
@@ -348,8 +353,8 @@ const styles = StyleSheet.create({
 
   /* ── Header ── */
   headerGradient: {
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingBottom: 22,
+    paddingHorizontal: 18,
   },
   backArrow: {
     width: 36,
@@ -364,41 +369,59 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 14,
+    gap: 12,
+    marginBottom: 18,
   },
-  flashIcon: {
-    fontSize: 24,
+  headerIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTextBlock: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "800",
     color: "#fff",
-    letterSpacing: -0.5,
+    fontStyle: "italic",
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.78)",
+    fontWeight: "600",
+    marginTop: 3,
   },
 
   /* ── Countdown ── */
+  countdownPanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
   countdownRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 8,
   },
   endsIn: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.7)",
-    marginRight: 6,
-    fontWeight: "500",
+    color: "#fff",
+    fontWeight: "700",
   },
   countdownUnit: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    minWidth: 42,
   },
   countdownBox: {
-    backgroundColor: ACCENT,
+    backgroundColor: "#fff",
     borderRadius: 8,
-    minWidth: 36,
-    height: 36,
+    minWidth: 38,
+    height: 34,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 6,
@@ -406,18 +429,13 @@ const styles = StyleSheet.create({
   countdownValue: {
     fontSize: 16,
     fontWeight: "800",
-    color: "#fff",
+    color: "#111827",
   },
   countdownLabel: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.7)",
-    fontWeight: "600",
-  },
-  countdownColon: {
-    fontSize: 16,
+    fontSize: 9,
+    color: "rgba(255,255,255,0.82)",
     fontWeight: "700",
-    color: "rgba(255,255,255,0.5)",
-    marginHorizontal: 1,
+    marginTop: 3,
   },
 
   /* ── Grid ── */
@@ -440,7 +458,7 @@ const styles = StyleSheet.create({
   productCard: {
     width: CARD_WIDTH,
     backgroundColor: "#fff",
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#F0F0F5",
@@ -452,11 +470,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: ACCENT,
     borderRadius: 6,
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
   },
   discountText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "800",
     color: "#fff",
   },
@@ -476,19 +494,24 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     padding: 10,
+    gap: 6,
+    flex: 1,
   },
   productName: {
     fontSize: 13,
     fontWeight: "600",
     color: "#1A1A2E",
     lineHeight: 18,
-    marginBottom: 6,
     minHeight: 36,
   },
   priceRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  priceStack: {
+    flexShrink: 1,
   },
   flashPrice: {
     fontSize: 15,
@@ -505,8 +528,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    alignSelf: "flex-start",
-    marginTop: 6,
+    alignSelf: "flex-end",
   },
   saveText: {
     fontSize: 10,
