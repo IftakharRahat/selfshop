@@ -3,7 +3,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
 	MapPin,
 	Package,
@@ -37,7 +38,10 @@ export default function SupplierDetailsComponent({
 	const [selectedCategory, setSelectedCategory] = useState<
 		number | undefined
 	>(undefined);
-	const [currentPage, setCurrentPage] = useState(1);
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
+	const currentPage = Number(searchParams.get("page")) || 1;
 	const [searchQuery, setSearchQuery] = useState("");
 	const [bannerError, setBannerError] = useState(false);
 	const [logoError, setLogoError] = useState(false);
@@ -111,10 +115,17 @@ export default function SupplierDetailsComponent({
 	const totalProducts = data.data.products?.total || 0;
 	const lastPage = data.data.products?.last_page || 1;
 
-	const handlePageChange = (page: number) => {
-		setCurrentPage(page);
+	const handlePageChange = useCallback((page: number) => {
+		const params = new URLSearchParams(searchParams.toString());
+		if (page <= 1) {
+			params.delete("page");
+		} else {
+			params.set("page", String(page));
+		}
+		const qs = params.toString();
+		router.push(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
 		window.scrollTo({ top: 0, behavior: "smooth" });
-	};
+	}, [searchParams, router, pathname]);
 	const initials = vendor.company_name
 		.split(" ")
 		.map((w: string) => w[0])
@@ -318,7 +329,7 @@ export default function SupplierDetailsComponent({
 
 								{/* Category pills */}
 								<button
-									onClick={() => { setSelectedCategory(undefined); setCurrentPage(1); }}
+									onClick={() => { setSelectedCategory(undefined); handlePageChange(1); }}
 									className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${!selectedCategory
 										? "bg-[#E5005F] text-white border-[#E5005F]"
 										: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"
@@ -329,7 +340,7 @@ export default function SupplierDetailsComponent({
 								{categories.map((cat: any) => (
 									<button
 										key={cat.id}
-										onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); }}
+										onClick={() => { setSelectedCategory(cat.id); handlePageChange(1); }}
 										className={`px-3.5 py-1.5 text-sm font-medium rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${selectedCategory === cat.id
 											? "bg-[#E5005F] text-white border-[#E5005F]"
 											: "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:text-gray-800"

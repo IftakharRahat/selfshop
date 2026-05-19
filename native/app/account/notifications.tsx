@@ -2,13 +2,13 @@ import { useCallback, useState } from "react";
 import {
   View,
   FlatList,
+  ScrollView,
   StyleSheet,
   Pressable,
   ActivityIndicator,
   RefreshControl,
-  Modal,
 } from "react-native";
-import { Text } from "tamagui";
+import { Dialog, Text } from "tamagui";
 import { Stack } from "expo-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +16,16 @@ import { Ionicons } from "@expo/vector-icons";
 import apiClient from "@/lib/api-client";
 
 const ACCENT = "#E5005F";
+
+function getNotificationTitle(item: any): string {
+  return item?.title || "Notification";
+}
+
+function getNotificationBody(item: any): string {
+  const title = getNotificationTitle(item).trim();
+  const body = String(item?.message || item?.description || "").trim();
+  return body && body !== title ? body : "";
+}
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
@@ -177,55 +187,61 @@ export default function NotificationsScreen() {
         }
       />
 
-      {/* ── Detail Modal ── */}
-      <Modal
-        visible={!!selectedItem}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedItem(null)}
+      {/* Notification detail dialog */}
+      <Dialog
+        modal
+        open={!!selectedItem}
+        onOpenChange={(open) => {
+          if (!open) setSelectedItem(null);
+        }}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setSelectedItem(null)}
-        >
-          <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Notification</Text>
-              <Pressable onPress={() => setSelectedItem(null)}>
-                <Ionicons name="close" size={22} color="#6B7280" />
-              </Pressable>
-            </View>
+        <Dialog.Portal>
+          <Dialog.Overlay style={styles.dialogOverlay} />
+          <View style={styles.dialogCenterer} pointerEvents="box-none">
+            <Dialog.Content style={styles.dialogCard}>
+              <View style={styles.dialogHeader}>
+                <View style={styles.dialogIcon}>
+                  <Ionicons name="notifications" size={22} color={ACCENT} />
+                </View>
+                <Pressable style={styles.dialogCloseButton} onPress={() => setSelectedItem(null)}>
+                  <Ionicons name="close" size={20} color="#6B7280" />
+                </Pressable>
+              </View>
 
-            <View style={styles.modalBody}>
-              <Text style={styles.modalItemTitle}>{selectedItem?.title}</Text>
-              {(selectedItem?.message || selectedItem?.description) && (
-                <Text style={styles.modalBodyText}>
-                  {selectedItem?.message || selectedItem?.description}
-                </Text>
-              )}
-              {selectedItem?.created_at && (
-                <Text style={styles.modalTime}>
-                  {new Date(selectedItem.created_at).toLocaleString()}
-                </Text>
-              )}
-            </View>
+              <Dialog.Title asChild>
+                <Text style={styles.dialogTitle}>{getNotificationTitle(selectedItem)}</Text>
+              </Dialog.Title>
 
-            <View style={styles.modalFooter}>
+              <ScrollView style={styles.dialogBody} showsVerticalScrollIndicator={false}>
+                {getNotificationBody(selectedItem) ? (
+                  <Dialog.Description asChild>
+                    <Text style={styles.dialogBodyText}>
+                      {getNotificationBody(selectedItem)}
+                    </Text>
+                  </Dialog.Description>
+                ) : null}
+                {selectedItem?.created_at ? (
+                  <Text style={styles.dialogTime}>
+                    {new Date(selectedItem.created_at).toLocaleString()}
+                  </Text>
+                ) : null}
+              </ScrollView>
+
               <Pressable
                 style={({ pressed }) => [
-                  styles.modalDoneButton,
-                  pressed && { opacity: 0.85 },
+                  styles.dialogDoneButton,
+                  pressed && { opacity: 0.88 },
                 ]}
                 onPress={() => setSelectedItem(null)}
               >
-                <Text fontSize="$3" fontWeight="600" color="#fff">
+                <Text fontSize="$3" fontWeight="800" color="#fff">
                   Done
                 </Text>
               </Pressable>
-            </View>
+            </Dialog.Content>
           </View>
-        </Pressable>
-      </Modal>
+        </Dialog.Portal>
+      </Dialog>
     </>
   );
 }
@@ -291,66 +307,75 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
 
-  /* Modal */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+  dialogOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(17, 24, 39, 0.46)",
+  },
+  dialogCenterer: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    padding: 24,
+    paddingHorizontal: 22,
   },
-  modalCard: {
+  dialogCard: {
     width: "100%",
     maxWidth: 380,
     backgroundColor: "#fff",
-    borderRadius: 20,
-    overflow: "hidden",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#111827",
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    elevation: 12,
   },
-  modalHeader: {
+  dialogHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F5",
+    justifyContent: "space-between",
+    marginBottom: 14,
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+  dialogIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FDF2F8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dialogCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  dialogTitle: {
+    fontSize: 20,
+    fontWeight: "800",
     color: "#1A1A2E",
+    marginBottom: 12,
   },
-  modalBody: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    gap: 8,
+  dialogBody: {
+    maxHeight: 300,
   },
-  modalItemTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1A1A2E",
-  },
-  modalBodyText: {
+  dialogBodyText: {
     fontSize: 14,
-    color: "#4B5563",
+    color: "#6B7280",
     lineHeight: 20,
   },
-  modalTime: {
+  dialogTime: {
     fontSize: 12,
     color: "#9CA3AF",
-    marginTop: 4,
+    marginTop: 12,
   },
-  modalFooter: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F5",
-    alignItems: "flex-end",
-  },
-  modalDoneButton: {
-    backgroundColor: "#1A1A2E",
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 12,
+  dialogDoneButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
   },
 });

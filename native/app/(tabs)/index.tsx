@@ -24,6 +24,8 @@ import apiClient from "@/lib/api-client";
 import { useSession } from "@/lib/auth-client";
 
 const { width } = Dimensions.get("window");
+const TAKA = "\u09F3";
+const FLASH_TILE_WIDTH = Math.max(58, Math.floor((width - 84) / 4));
 
 /* ── Image URL helper (mirrors web getImageUrl logic) ── */
 const IMAGE_BASE =
@@ -38,6 +40,48 @@ function resolveImageUrl(path?: string | null): string | null {
   if (clean.startsWith("public/")) return `${IMAGE_BASE}/${clean.replace(/^public\/?/, "")}`;
   if (clean.startsWith("storage/") || clean.startsWith("images/")) return `${IMAGE_BASE}/${clean}`;
   return `${IMAGE_BASE}/storage/${clean}`;
+}
+
+function formatBDT(value: number | string | undefined): string {
+  const parsed = Number(value ?? 0);
+  return (Number.isFinite(parsed) ? parsed : 0).toLocaleString("en-BD", {
+    maximumFractionDigits: 0,
+  });
+}
+
+function pad(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
+interface TimeLeft {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+function useCountdown(endTime?: string | null): TimeLeft {
+  const calculate = useCallback((): TimeLeft => {
+    if (!endTime) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    const diff = new Date(endTime).getTime() - Date.now();
+    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return {
+      days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / (1000 * 60)) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    };
+  }, [endTime]);
+
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculate);
+
+  useEffect(() => {
+    setTimeLeft(calculate());
+    const timer = setInterval(() => setTimeLeft(calculate()), 1000);
+    return () => clearInterval(timer);
+  }, [calculate]);
+
+  return timeLeft;
 }
 
 function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
@@ -180,6 +224,14 @@ export default function HomeScreen() {
   const brandList: any[] = brands.data ?? [];
   const promoSections: any[] = promotionalSections.data ?? [];
   const supplierList: any[] = popularSuppliers.data ?? [];
+  const flashSaleData = flashSale.data;
+  const flashProducts: any[] = flashSaleData?.products ?? [];
+  const flashCountdown = useCountdown(flashSaleData?.end_time ?? null);
+  const flashBannerCountdown = [
+    flashCountdown.days,
+    flashCountdown.hours,
+    flashCountdown.minutes,
+  ];
 
   /* ── Notification badge count ── */
   const { data: session } = useSession();
@@ -366,54 +418,94 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Flash Sale Banner */}
-      {flashSale.data?.products?.length > 0 && (
-        <Pressable
-          style={{
-            marginHorizontal: 20,
-            marginBottom: 24,
-            borderRadius: 16,
-            overflow: "hidden",
-            elevation: 4,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-          }}
-          onPress={() => router.push("/flash-sale" as any)}
-        >
+      {flashProducts.length > 0 && (
+        <View style={styles.flashSaleSection}>
           <LinearGradient
-            colors={["#b3003b", "#E5005F"]}
+            colors={["#E5005F", "#B00049", "#7A123D"]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{
-              padding: 16,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+            end={{ x: 1, y: 1 }}
+            style={styles.flashSaleGradient}
           >
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Text style={{ fontSize: 18 }}>⚡</Text>
-                <Text style={{ fontSize: 18, fontWeight: "800", color: "#fff", fontStyle: "italic" }}>
-                  Flash Sale
-                </Text>
+            <View style={styles.flashSaleHeader}>
+              <View style={styles.flashTitleRow}>
+                <Text style={styles.flashTitle}>Flash Sale</Text>
               </View>
-              <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
-                {flashSale.data.products.length} products on sale
-              </Text>
+
+              <View style={styles.flashCountdownRow}>
+                {flashBannerCountdown.map((value, index) => (
+                  <View key={index} style={styles.flashCountdownUnit}>
+                    <View style={styles.flashCountdownBox}>
+                      <Text style={styles.flashCountdownValue}>{pad(value)}</Text>
+                    </View>
+                    {index < flashBannerCountdown.length - 1 ? (
+                      <Text style={styles.flashCountdownSeparator}>:</Text>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.flashSeeMore,
+                  pressed && { opacity: 0.86 },
+                ]}
+                onPress={() => router.push("/flash-sale" as any)}
+              >
+                <Ionicons name="chevron-forward" size={18} color="#fff" />
+              </Pressable>
             </View>
-            <View style={{
-              backgroundColor: "#fff",
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 20,
-            }}>
-              <Text style={{ fontSize: 12, fontWeight: "700", color: "#E5005F" }}>Shop Now</Text>
+
+            <View style={styles.flashProductList}>
+              {flashProducts.slice(0, 4).map((item: any) => {
+                const imageUri = resolveImageUrl(item.ViewProductImage);
+                const hasDiscount =
+                  Number(item.discount_percentage ?? 0) > 0 &&
+                  Number(item.FlashPrice ?? 0) < Number(item.SalePrice ?? 0);
+
+                return (
+                  <Pressable
+                    key={String(item.id)}
+                    style={({ pressed }) => [
+                      styles.flashProductCard,
+                      pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                    ]}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/product-detail",
+                        params: { slug: item.ProductSlug },
+                      } as any)
+                    }
+                  >
+                    <View style={styles.flashProductImageWrap}>
+                      {imageUri ? (
+                        <Image source={{ uri: imageUri }} style={styles.flashProductImage} resizeMode="cover" />
+                      ) : (
+                        <View style={styles.flashProductPlaceholder}>
+                          <Ionicons name="image-outline" size={22} color="#C7C7CC" />
+                        </View>
+                      )}
+                      {hasDiscount ? (
+                        <View style={styles.flashDiscountBadge}>
+                          <Text style={styles.flashDiscountText}>
+                            {Math.round(Number(item.discount_percentage))}% off
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <View style={styles.flashProductInfo}>
+                      <View style={styles.flashPriceRow}>
+                        <Text numberOfLines={1} style={styles.flashPrice}>{TAKA}{formatBDT(item.FlashPrice)}</Text>
+                        {hasDiscount ? (
+                          <Text numberOfLines={1} style={styles.flashOriginalPrice}>{TAKA}{formatBDT(item.SalePrice)}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           </LinearGradient>
-        </Pressable>
+        </View>
       )}
 
       {/* ── Promotional Sections (Offer Banners) ── */}
@@ -732,6 +824,145 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: 20,
     gap: 12,
+  },
+  flashSaleSection: {
+    marginHorizontal: 18,
+    marginBottom: 24,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#E5005F",
+    shadowColor: "#E5005F",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 7,
+  },
+  flashSaleGradient: {
+    paddingTop: 14,
+    paddingHorizontal: 12,
+    paddingBottom: 13,
+  },
+  flashSaleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  flashTitleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  flashTitle: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#FFF7FB",
+  },
+  flashSeeMore: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+  flashCountdownRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  flashCountdownUnit: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  flashCountdownBox: {
+    minWidth: 27,
+    height: 25,
+    paddingHorizontal: 6,
+    borderRadius: 7,
+    backgroundColor: "#FFF7FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  flashCountdownValue: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#B00049",
+  },
+  flashCountdownSeparator: {
+    width: 9,
+    textAlign: "center",
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#FFF7FB",
+  },
+  flashProductList: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  flashProductCard: {
+    width: FLASH_TILE_WIDTH,
+    flexShrink: 0,
+  },
+  flashProductImageWrap: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#FFF7FB",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.52)",
+  },
+  flashProductImage: {
+    width: "100%",
+    height: "100%",
+  },
+  flashProductPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F5F7",
+  },
+  flashDiscountBadge: {
+    position: "absolute",
+    left: 5,
+    top: 5,
+    minHeight: 15,
+    paddingHorizontal: 5,
+    borderRadius: 5,
+    backgroundColor: "#E5005F",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  flashDiscountText: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#FFF7FB",
+  },
+  flashProductInfo: {
+    paddingTop: 7,
+  },
+  flashPriceRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+  },
+  flashPrice: {
+    flexShrink: 0,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFF7FB",
+  },
+  flashOriginalPrice: {
+    flexShrink: 1,
+    fontSize: 10,
+    color: "#FFB8CE",
+    textDecorationLine: "line-through",
   },
   /* ── Brands ── */
   brandsTitle: {

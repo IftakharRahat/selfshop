@@ -207,7 +207,7 @@ export default function DashboardScreen() {
   /* â”€â”€ Referral data â”€â”€ */
   const referralCode = profile?.my_referral_code ?? "";
   const referralLink = referralCode
-    ? `https://selfshop.com.bd/register?refer=${referralCode}`
+    ? `https://selfshop.com.bd/register/${encodeURIComponent(referralCode)}`
     : "";
   const [codeCopied, setCodeCopied] = useState(false);
 
@@ -608,7 +608,7 @@ export default function DashboardScreen() {
             <MenuItem
               icon="settings-outline"
               label="Settings"
-              subtitle="Password, legal, and more"
+              subtitle="Legal, support, and more"
               onPress={() => router.push("/account/settings")}
             />
           </View>

@@ -525,6 +525,9 @@ export default function ProductDetailScreen() {
   // Pricing
   const basePrice = Number(product.ProductResellerPrice || product.ProductRegularPrice || 0);
   const regularPrice = Number(product.ProductRegularPrice ?? 0);
+  const flashPrice = Number(flashSale?.flash_price ?? 0);
+  const flashOriginalPrice = Number(flashSale?.original_price ?? 0);
+  const flashDiscountPercentage = Number(flashSale?.discount_percentage ?? 0);
   const priceTiers: any[] = product.price_tiers || [];
   const hasTiers = priceTiers.length > 0;
 
@@ -719,8 +722,8 @@ export default function ProductDetailScreen() {
   };
 
   // Display price (for hero section)
-  const salePrice = flashSale && flashSale.flash_price > 0
-    ? parseFloat(flashSale.flash_price)
+  const salePrice = flashPrice > 0
+    ? flashPrice
     : activeTier
       ? getTierPrice(activeTier)
       : Math.round(
@@ -729,8 +732,15 @@ export default function ProductDetailScreen() {
             100
         ) / 100;
 
-  const hasDiscount = regularPrice > salePrice && regularPrice > 0;
-  const discountPercent = hasDiscount ? Math.round(((regularPrice - salePrice) / regularPrice) * 100) : 0;
+  const originalPrice = flashPrice > 0 && flashOriginalPrice > 0
+    ? flashOriginalPrice
+    : regularPrice;
+  const hasDiscount = originalPrice > salePrice && originalPrice > 0;
+  const discountPercent = hasDiscount
+    ? Math.round(flashPrice > 0 && flashDiscountPercentage > 0
+      ? flashDiscountPercentage
+      : ((originalPrice - salePrice) / originalPrice) * 100)
+    : 0;
 
   const getBulkTierSizeForVariant = (variant?: NormalizedVariant | null): NormalizedVariantSize | null => {
     if (!variant) return null;
@@ -1109,7 +1119,7 @@ export default function ProductDetailScreen() {
                 {hasDiscount && (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
                     <Text fontSize="$3" color={GREY} textDecorationLine="line-through">
-                      ৳{regularPrice.toLocaleString()}
+                      ৳{originalPrice.toLocaleString()}
                     </Text>
                     <View style={s.discountBadge}>
                       <Text fontSize={11} fontWeight="800" color="#fff">-{discountPercent}%</Text>
