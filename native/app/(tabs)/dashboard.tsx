@@ -608,7 +608,7 @@ export default function DashboardScreen() {
             <MenuItem
               icon="settings-outline"
               label="Settings"
-              subtitle="Password, legal, and more"
+              subtitle="Legal, support, and more"
               onPress={() => router.push("/account/settings")}
             />
           </View>

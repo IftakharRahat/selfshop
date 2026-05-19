@@ -31,8 +31,18 @@ const IMAGE_BASE =
 
 type UploadKind = "profile" | "nid";
 
-function resolveImageUrl(path?: string | null): string | null {
-  if (!path || path.trim().length < 2) return null;
+function profileFromPayload(payload: any) {
+  return payload?.profile ?? payload?.data?.profile ?? payload?.data?.data?.profile ?? payload;
+}
+
+function textValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return typeof value === "string" ? value : String(value);
+}
+
+function resolveImageUrl(path?: unknown): string | null {
+  if (typeof path !== "string") return null;
+  if (path.trim().length < 2) return null;
   const p = path.trim();
   if (p.startsWith("http")) return p;
 
@@ -134,10 +144,10 @@ export default function EditProfileScreen() {
     queryKey: ["user-profile"],
     queryFn: async () => {
       const { data } = await apiClient.get("/user-profile");
-      return data?.data?.profile ?? data?.profile ?? data?.data ?? data;
+      return data?.data ?? data;
     },
   });
-  const profile = profileQuery.data;
+  const profile = profileFromPayload(profileQuery.data);
 
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
@@ -149,10 +159,10 @@ export default function EditProfileScreen() {
   useEffect(() => {
     if (!profile) return;
 
-    setName(profile.name ?? "");
+    setName(textValue(profile.name ?? profile.ownerName ?? profile.owner_name));
     setDob(normalizeDob(profile.dob));
-    setAddress(profile.address ?? "");
-    setShopName(profile.shop_name ?? "");
+    setAddress(textValue(profile.address));
+    setShopName(textValue(profile.shop_name ?? profile.shopName));
     setProfileImage(null);
     setNidImage(null);
   }, [profile]);
