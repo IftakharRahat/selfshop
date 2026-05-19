@@ -83,7 +83,7 @@ export default function ProfileDashboard() {
 
 	const handleCopyReferralCode = () => {
 		if (profile?.my_referral_code) {
-			const referralLink = `${window.location.origin}/?showAuth=register&campaign=${profile.my_referral_code}`;
+			const referralLink = `${window.location.origin}/register/${encodeURIComponent(profile.my_referral_code)}`;
 			navigator.clipboard.writeText(referralLink);
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);

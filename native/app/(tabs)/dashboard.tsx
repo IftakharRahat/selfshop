@@ -207,7 +207,7 @@ export default function DashboardScreen() {
   /* â”€â”€ Referral data â”€â”€ */
   const referralCode = profile?.my_referral_code ?? "";
   const referralLink = referralCode
-    ? `https://selfshop.com.bd/register?refer=${referralCode}`
+    ? `https://selfshop.com.bd/register/${encodeURIComponent(referralCode)}`
     : "";
   const [codeCopied, setCodeCopied] = useState(false);
 
