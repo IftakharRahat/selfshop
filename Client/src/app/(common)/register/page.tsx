@@ -3,7 +3,7 @@ import { getReferralCodeFromSearchParams } from "@/lib/registration-redirect";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export default async function RegistrationPage({
+export default async function RegisterPage({
 	searchParams,
 }: {
 	searchParams: SearchParams;

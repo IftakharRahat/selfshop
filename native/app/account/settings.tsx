@@ -119,7 +119,7 @@ export default function SettingsScreen() {
       toast.error("Referral code not available");
       return;
     }
-    const referralLink = `https://selfshop.com.bd/register?ref=${referralCode}`;
+    const referralLink = `https://selfshop.com.bd/register/${encodeURIComponent(referralCode)}`;
     try {
       const rewardLine = hasReferrerReward
         ? `Earn ${formatCurrency(referrerBonusAmount)} referral bonus when someone subscribes with my code.`

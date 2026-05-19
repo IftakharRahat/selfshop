@@ -16,7 +16,7 @@ import {
 import { ChevronDown, Loader2, Lock, Menu as MenuIcon, Search, ShoppingCart, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FaApple } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
@@ -195,30 +195,48 @@ export default function Navbar() {
 	};
 
 	const router = useRouter();
+	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// Auto-open auth modal when redirected with ?showAuth=true or ?showAuth=register
+	// Auto-open auth modal when redirected with auth or referral query params.
 	useEffect(() => {
+		const isRegistrationRoute =
+			pathname === "/register" ||
+			pathname.startsWith("/register/") ||
+			pathname === "/registration" ||
+			pathname.startsWith("/registration/");
+
+		if (isRegistrationRoute) return;
+
 		const showAuth = searchParams.get("showAuth");
-		if (showAuth && !token) {
-			if (showAuth === "register") {
+		const referralCode =
+			searchParams.get("campaign") ||
+			searchParams.get("refer") ||
+			searchParams.get("ref") ||
+			searchParams.get("refer_by") ||
+			searchParams.get("code");
+
+		if ((showAuth || referralCode) && !token) {
+			if (showAuth === "register" || referralCode) {
 				setAuthInitialMode("register");
 			} else {
 				setAuthInitialMode("login");
 			}
-			// Capture campaign code if present
-			const campaign = searchParams.get("campaign");
-			if (campaign) {
-				setCampaignCode(campaign);
+			if (referralCode) {
+				setCampaignCode(referralCode);
 			}
 			setIsLoginModalOpen(true);
 			// Clean up the URL by removing params
 			const url = new URL(window.location.href);
 			url.searchParams.delete("showAuth");
 			url.searchParams.delete("campaign");
+			url.searchParams.delete("refer");
+			url.searchParams.delete("ref");
+			url.searchParams.delete("refer_by");
+			url.searchParams.delete("code");
 			window.history.replaceState({}, "", url.pathname + url.search);
 		}
-	}, [searchParams, token]);
+	}, [pathname, searchParams, token]);
 
 	const handleLogout = async () => {
 		const result = await Swal.fire({
