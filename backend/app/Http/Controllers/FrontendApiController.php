@@ -39,6 +39,7 @@ use App\Models\Slider;
 use App\Models\Subcategory;
 use App\Models\Tikit;
 use App\Models\User;
+use App\Models\UserPayoutAccount;
 use App\Models\Varient;
 use App\Models\VariantSize;
 use App\Models\Vendor;
@@ -1968,6 +1969,214 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
+    private function payoutChannelType(string $paymentTypeName): string
+    {
+        $name = strtolower(trim($paymentTypeName));
+        if (strpos($name, 'bank') !== false) {
+            return 'bank';
+        }
+        if (
+            strpos($name, 'bkash') !== false ||
+            strpos($name, 'bikash') !== false ||
+            strpos($name, 'nagad') !== false ||
+            strpos($name, 'rocket') !== false ||
+            strpos($name, 'upay') !== false
+        ) {
+            return 'mobile_wallet';
+        }
+        return 'other';
+    }
+
+    private function activeWithdrawPaymentType($paymenttypeId): ?Paymenttype
+    {
+        return Paymenttype::where('id', (int) $paymenttypeId)
+            ->where('status', 'Active')
+            ->whereRaw('LOWER(paymentTypeName) NOT LIKE ?', ['%wallet%'])
+            ->first();
+    }
+
+    private function payoutAccountRules(string $channelType): array
+    {
+        if ($channelType === 'bank') {
+            return [
+                'account_name' => ['required', 'string', 'max:255'],
+                'account_number' => ['required', 'string', 'max:255'],
+                'bank_name' => ['required', 'string', 'max:255'],
+                'branch_name' => ['required', 'string', 'max:255'],
+                'routing_number' => ['required', 'string', 'max:100'],
+            ];
+        }
+
+        return [
+            'account_name' => ['nullable', 'string', 'max:255'],
+            'account_number' => ['required', 'string', 'max:255'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'branch_name' => ['nullable', 'string', 'max:255'],
+            'routing_number' => ['nullable', 'string', 'max:100'],
+        ];
+    }
+
+    private function payoutAdditionalInfo(UserPayoutAccount $account): ?string
+    {
+        if ($account->channel_type === 'bank') {
+            return trim(implode(' | ', array_filter([
+                $account->bank_name ? 'Bank: ' . $account->bank_name : null,
+                $account->branch_name ? 'Branch: ' . $account->branch_name : null,
+                $account->account_name ? 'Account: ' . $account->account_name : null,
+                $account->routing_number ? 'Routing: ' . $account->routing_number : null,
+            ]))) ?: null;
+        }
+
+        return $account->account_name ? 'Account: ' . $account->account_name : null;
+    }
+
+    private function syncLegacyBankPayoutAccount(int $userId): void
+    {
+        $legacyBank = Bank::where('user_id', $userId)->first();
+        if (!$legacyBank || !$legacyBank->account_number) {
+            return;
+        }
+
+        $bankPaymentType = Paymenttype::where('status', 'Active')
+            ->whereRaw('LOWER(paymentTypeName) LIKE ?', ['%bank%'])
+            ->first();
+
+        if (!$bankPaymentType) {
+            return;
+        }
+
+        UserPayoutAccount::updateOrCreate(
+            [
+                'user_id' => $userId,
+                'paymenttype_id' => $bankPaymentType->id,
+            ],
+            [
+                'channel_type' => 'bank',
+                'provider_name' => $bankPaymentType->paymentTypeName,
+                'account_name' => $legacyBank->account_name,
+                'account_number' => $legacyBank->account_number,
+                'bank_name' => $legacyBank->bank_name,
+                'branch_name' => $legacyBank->branch_name ?? null,
+                'routing_number' => $legacyBank->routing_number,
+                'is_active' => true,
+            ]
+        );
+    }
+
+    public function userPayoutAccounts()
+    {
+        $id = Auth::id();
+        $this->syncLegacyBankPayoutAccount($id);
+
+        $accounts = UserPayoutAccount::with('paymenttype:id,paymentTypeName,status')
+            ->where('user_id', $id)
+            ->where('is_active', true)
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Payout accounts',
+            'data' => [
+                'payout_accounts' => $accounts,
+            ],
+        ], 200);
+    }
+
+    public function storeUserPayoutAccount(Request $request)
+    {
+        $paymenttype = $this->activeWithdrawPaymentType($request->paymenttype_id);
+        if (!$paymenttype) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid payment method',
+            ], 422);
+        }
+
+        $channelType = $this->payoutChannelType($paymenttype->paymentTypeName);
+        $validator = Validator::make($request->all(), array_merge([
+            'paymenttype_id' => ['required', 'integer'],
+        ], $this->payoutAccountRules($channelType)));
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $values = $validator->validated();
+        $account = UserPayoutAccount::updateOrCreate(
+            [
+                'user_id' => Auth::id(),
+                'paymenttype_id' => $paymenttype->id,
+            ],
+            [
+                'channel_type' => $channelType,
+                'provider_name' => $paymenttype->paymentTypeName,
+                'account_name' => $values['account_name'] ?? null,
+                'account_number' => $values['account_number'],
+                'bank_name' => $channelType === 'bank' ? ($values['bank_name'] ?? null) : null,
+                'branch_name' => $channelType === 'bank' ? ($values['branch_name'] ?? null) : null,
+                'routing_number' => $channelType === 'bank' ? ($values['routing_number'] ?? null) : null,
+                'is_active' => true,
+            ]
+        );
+
+        return response()->json([
+            'status' => true,
+            'message' => $account->wasRecentlyCreated ? 'Payout account added' : 'Payout account updated',
+            'data' => [
+                'payout_account' => $account->fresh('paymenttype:id,paymentTypeName,status'),
+            ],
+        ], $account->wasRecentlyCreated ? 201 : 200);
+    }
+
+    public function updateUserPayoutAccount(Request $request, $id)
+    {
+        $account = UserPayoutAccount::where('user_id', Auth::id())
+            ->where('is_active', true)
+            ->findOrFail($id);
+        $paymenttype = $this->activeWithdrawPaymentType($account->paymenttype_id);
+        if (!$paymenttype) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid payment method',
+            ], 422);
+        }
+
+        $channelType = $this->payoutChannelType($paymenttype->paymentTypeName);
+        $validator = Validator::make($request->all(), $this->payoutAccountRules($channelType));
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $values = $validator->validated();
+        $account->update([
+            'channel_type' => $channelType,
+            'provider_name' => $paymenttype->paymentTypeName,
+            'account_name' => $values['account_name'] ?? null,
+            'account_number' => $values['account_number'],
+            'bank_name' => $channelType === 'bank' ? ($values['bank_name'] ?? null) : null,
+            'branch_name' => $channelType === 'bank' ? ($values['branch_name'] ?? null) : null,
+            'routing_number' => $channelType === 'bank' ? ($values['routing_number'] ?? null) : null,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Payout account updated',
+            'data' => [
+                'payout_account' => $account->fresh('paymenttype:id,paymentTypeName,status'),
+            ],
+        ], 200);
+    }
+
     public function supportticket()
     {
         $id = Auth::user()->id;
@@ -2346,9 +2555,22 @@ class FrontendApiController extends Controller
 
     public function paymenttypes()
     {
+        $userId = Auth::id();
+        $this->syncLegacyBankPayoutAccount($userId);
+
+        $savedAccounts = UserPayoutAccount::where('user_id', $userId)
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('paymenttype_id');
+
         $paymenttypes = Paymenttype::where('status', 'Active')
             ->whereRaw('LOWER(paymentTypeName) NOT LIKE ?', ['%wallet%'])
-            ->get();
+            ->get()
+            ->map(function ($paymenttype) use ($savedAccounts) {
+                $paymenttype->saved_account = $savedAccounts->get($paymenttype->id);
+                return $paymenttype;
+            });
+
         return response()->json([
             'status' => true,
             'message' => 'Payment types',
@@ -2410,10 +2632,12 @@ class FrontendApiController extends Controller
         $validator = Validator::make($request->all(), [
             'withdrew_amount' => ['required', 'numeric', 'min:50'],
             'paymenttype_id' => ['required', 'integer'],
-            'to_account_number' => ['required', 'string', 'max:255'],
+            'user_payout_account_id' => ['nullable', 'integer'],
+            'to_account_number' => ['required_without:user_payout_account_id', 'nullable', 'string', 'max:255'],
             'to_additional_info' => ['nullable', 'string', 'max:1000'],
         ], [
             'withdrew_amount.min' => 'Minimum withdrawal amount is ৳50.',
+            'to_account_number.required_without' => 'Please add or select a payment account before withdrawing.',
         ]);
 
         if ($validator->fails()) {
@@ -2484,13 +2708,52 @@ class FrontendApiController extends Controller
                 ], 422);
             }
 
+            $payoutAccount = null;
+            $toAccountNumber = trim((string) $request->to_account_number);
+            $toAdditionalInfo = $request->to_additional_info;
+
+            if ($request->filled('user_payout_account_id')) {
+                $payoutAccount = UserPayoutAccount::where('user_id', $id)
+                    ->where('is_active', true)
+                    ->where('id', (int) $request->user_payout_account_id)
+                    ->first();
+
+                if (!$payoutAccount) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Saved payment account not found',
+                    ], 422);
+                }
+
+                if ((int) $payoutAccount->paymenttype_id !== (int) $paymenttypes->id) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Saved payment account does not match the selected method',
+                    ], 422);
+                }
+
+                $toAccountNumber = trim((string) $payoutAccount->account_number);
+                $toAdditionalInfo = $this->payoutAdditionalInfo($payoutAccount);
+            }
+
+            if ($toAccountNumber === '') {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Please add a payment account before withdrawing.',
+                ], 422);
+            }
+
             $withdrew = new Withdrew();
             $withdrew->user_id = $id;
             $withdrew->type = 'Withdrew';
             $withdrew->paymenttype_id = $paymenttypes->id;
+            $withdrew->user_payout_account_id = $payoutAccount?->id;
             $withdrew->paymenttype_name = $paymenttypes->paymentTypeName;
-            $withdrew->to_account_number = $request->to_account_number;
-            $withdrew->to_additional_info = $request->to_additional_info;
+            $withdrew->to_account_number = $toAccountNumber;
+            $withdrew->to_additional_info = $toAdditionalInfo;
             $withdrew->withdrew_amount = $amount;
             $withdrew->status = 'Pending';
             $withdrew->save();

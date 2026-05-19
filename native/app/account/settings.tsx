@@ -145,17 +145,23 @@ export default function SettingsScreen() {
         }}
       />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Account */}
+        {/* Actions */}
         <View style={styles.menuGroup}>
           <Text fontSize="$3" fontWeight="bold" color="#8E8E93" mb="$2" ml="$1">
-            Account
+            Actions
           </Text>
           <View style={styles.menuCard}>
             <MenuItem
-              icon="lock-closed-outline"
-              label="Change Password"
-              subtitle="Update your account password"
-              onPress={() => router.push("/account/change-password")}
+              icon="person-outline"
+              label="Edit Profile"
+              subtitle="Update your profile details"
+              onPress={() => router.push("/account/edit-profile" as any)}
+            />
+            <MenuItem
+              icon="card-outline"
+              label="Payment Methods"
+              subtitle="Manage withdrawal payment methods"
+              onPress={() => router.push("/account/payment-methods" as any)}
             />
           </View>
         </View>
