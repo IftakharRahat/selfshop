@@ -22,6 +22,7 @@ import { CategoryChip } from "@/components/category-chip";
 import { ProductCard } from "@/components/product-card";
 import apiClient from "@/lib/api-client";
 import { useSession } from "@/lib/auth-client";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const TAKA = "\u09F3";
@@ -235,13 +236,14 @@ export default function HomeScreen() {
 
   /* ── Notification badge count ── */
   const { data: session } = useSession();
+  const { isActive: isResellerActive } = useIsActiveReseller();
   const notificationsQuery = useQuery({
     queryKey: ["notifications-count"],
     queryFn: async () => {
       const { data } = await apiClient.get("/user-notification?unread_only=true&per_page=1");
       return data?.unread_count ?? 0;
     },
-    enabled: !!session?.user,
+    enabled: !!session?.user && isResellerActive,
     staleTime: 30 * 1000,
   });
   const unreadCount = notificationsQuery.data ?? 0;

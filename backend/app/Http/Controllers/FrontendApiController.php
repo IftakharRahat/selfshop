@@ -84,8 +84,12 @@ class FrontendApiController extends Controller
         'storefront_price',
         'min_sell_price',
         'reseller_price',
+        'reseller_bonus',
         'regular_price',
         'sale_price',
+        'campaign_price',
+        'commission_amount',
+        'delivery_charge',
         'sizePrice',
         'size_price',
         'unit_price',
@@ -181,6 +185,9 @@ class FrontendApiController extends Controller
         }
 
         if (is_array($payload)) {
+            $isList = function_exists('array_is_list')
+                ? array_is_list($payload)
+                : ($payload === [] || array_keys($payload) === range(0, count($payload) - 1));
             foreach ($payload as $key => $value) {
                 if ($pricingLocked && in_array((string) $key, self::PRODUCT_PRICE_FIELDS, true)) {
                     $payload[$key] = null;
@@ -188,7 +195,9 @@ class FrontendApiController extends Controller
                 }
                 $payload[$key] = $this->transformProductPricingPayload($value, $pricingLocked);
             }
-            $payload['pricing_locked'] = $pricingLocked;
+            if (!$isList) {
+                $payload['pricing_locked'] = $pricingLocked;
+            }
             return $payload;
         }
 

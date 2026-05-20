@@ -139,6 +139,8 @@ export default function InvoiceScreen() {
   // (e.g. ?payment=success, ?payment=canceled, ?payment=failed, ?payment=error).
   // We also keep legacy checks for /payment/… paths and status= params.
   const handleNavigationChange = (navState: { url: string }) => {
+    if (paymentHandledRef.current) return;
+
     const url = navState.url.toLowerCase();
 
     const isSuccess =
@@ -164,9 +166,11 @@ export default function InvoiceScreen() {
       handleCloseWebView();
       void handlePaymentSuccess();
     } else if (isFail) {
+      paymentHandledRef.current = true;
       toast.error("Payment failed. Please try again.");
       handleCloseWebView();
     } else if (isCancel) {
+      paymentHandledRef.current = true;
       toast.info("Payment cancelled.");
       handleCloseWebView();
     }
