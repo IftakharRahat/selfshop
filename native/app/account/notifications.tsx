@@ -14,6 +14,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -29,6 +31,7 @@ function getNotificationBody(item: any): string {
 
 export default function NotificationsScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const [page, setPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
@@ -39,6 +42,7 @@ export default function NotificationsScreen() {
       const { data } = await apiClient.get(`/user-notification?per_page=20&page=${page}`);
       return data;
     },
+    enabled: isResellerActive,
   });
 
   /* ── Mutations ── */
@@ -87,6 +91,29 @@ export default function NotificationsScreen() {
       setPage((p) => p + 1);
     }
   };
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Notifications", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Notifications", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to View Notifications"
+          message="Activate your subscription to view reseller notifications and updates."
+        />
+      </>
+    );
+  }
 
   /* ── Render Item ── */
   const renderItem = ({ item }: { item: any }) => {

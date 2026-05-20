@@ -13,6 +13,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -37,6 +39,7 @@ const STAT_CONFIG = [
 
 export default function ReferralScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const referralQuery = useQuery({
     queryKey: ["referral-data"],
@@ -44,6 +47,7 @@ export default function ReferralScreen() {
       const { data } = await apiClient.get("/referral/data");
       return data?.data ?? data;
     },
+    enabled: isResellerActive,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -53,6 +57,7 @@ export default function ReferralScreen() {
       const { data } = await apiClient.get("/basic-info");
       return data?.data ?? data;
     },
+    enabled: isResellerActive,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -77,13 +82,25 @@ export default function ReferralScreen() {
     queryClient.invalidateQueries({ queryKey: ["basic-info"] });
   }, [queryClient]);
 
-  if (referralQuery.isLoading) {
+  if (isSubscriptionLoading || referralQuery.isLoading) {
     return (
       <>
         <Stack.Screen options={{ headerShown: true, title: "Referral Income", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={ACCENT} />
         </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Referral Income", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Use Referral"
+          message="Activate your subscription to view referral stats, teams, and bonuses."
+        />
       </>
     );
   }

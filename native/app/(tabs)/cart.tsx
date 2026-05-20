@@ -19,6 +19,7 @@ import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 import { CartSkeleton } from "@/components/skeleton";
+import { SubscriptionRequired } from "@/components/subscription-required";
 
 const ACCENT = "#E5005F";
 const DARK = "#1A1A2E";
@@ -64,7 +65,7 @@ export default function CartScreen() {
       const { data } = await apiClient.get("/user-cart-content");
       return data?.data ?? [];
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 30 * 1000,
   });
 
@@ -221,6 +222,21 @@ export default function CartScreen() {
             <Text fontSize="$3" fontWeight="700" color="#fff">Log In</Text>
           </Pressable>
         </View>
+      </View>
+    );
+  }
+
+  if (!isAuthLoading && isLoggedIn && !isResellerActive) {
+    return (
+      <View style={s.container}>
+        <View style={[s.header, { paddingTop: insets.top + 12 }]}>
+          <Text fontSize="$7" fontWeight="bold" color={DARK}>Cart</Text>
+        </View>
+        <SubscriptionRequired
+          title="Activate to Use Cart"
+          message="Activate your subscription to view cart prices, update items, and checkout."
+          compact
+        />
       </View>
     );
   }

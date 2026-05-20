@@ -13,6 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
 import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -23,6 +25,7 @@ function formatCurrency(value: number | string | undefined): string {
 
 export default function IncomeHistoryScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const incomeQuery = useQuery({
     queryKey: ["income-history"],
@@ -30,6 +33,7 @@ export default function IncomeHistoryScreen() {
       const { data } = await apiClient.get("/income-history");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const [dateFilter, setDateFilter] = useState<DateFilterKey>("all");
@@ -44,6 +48,29 @@ export default function IncomeHistoryScreen() {
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["income-history"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Income History", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Income History", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to View Income"
+          message="Activate your subscription to view reseller income history."
+        />
+      </>
+    );
+  }
 
   const renderItem = ({ item, index }: { item: any; index: number }) => (
     <View style={styles.card}>

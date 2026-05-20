@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 const TAKA = "\u09F3";
@@ -56,6 +58,7 @@ export default function BalanceTransferScreen() {
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
   const insets = useSafeAreaInsets();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const [accountNumber, setAccountNumber] = useState("");
   const [amount, setAmount] = useState("");
@@ -67,6 +70,7 @@ export default function BalanceTransferScreen() {
       const { data } = await apiClient.get("/dashboard-data");
       return data?.data ?? data;
     },
+    enabled: isResellerActive,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -76,6 +80,7 @@ export default function BalanceTransferScreen() {
       const { data } = await apiClient.get("/balance-transferlists");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const transferMutation = useMutation({
@@ -151,6 +156,29 @@ export default function BalanceTransferScreen() {
     queryClient.invalidateQueries({ queryKey: ["balance-transfers"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Balance Transfer", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Balance Transfer", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Transfer Balance"
+          message="Activate your subscription to access balance transfers."
+        />
+      </>
+    );
+  }
 
   return (
     <>

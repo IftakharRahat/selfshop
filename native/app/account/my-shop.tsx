@@ -18,6 +18,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -46,6 +48,7 @@ function formatCurrency(value: number | string | undefined): string {
 export default function MyShopScreen() {
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   /* ── Queries ── */
   const shopQuery = useQuery({
@@ -54,6 +57,7 @@ export default function MyShopScreen() {
       const { data } = await apiClient.get("/shop-products");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const meQuery = useQuery({
@@ -83,6 +87,43 @@ export default function MyShopScreen() {
   });
 
   const shopProducts: any[] = Array.isArray(shopQuery.data) ? shopQuery.data : [];
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: "My Shop",
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: "#F8F8FA" },
+          }}
+        />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: "My Shop",
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: "#F8F8FA" },
+          }}
+        />
+        <SubscriptionRequired
+          title="Activate to Manage Shop"
+          message="Activate your subscription to add products, manage your shop, and share your reseller storefront."
+        />
+      </>
+    );
+  }
 
   /* ── Handlers ── */
   const handleCopyLink = async () => {
