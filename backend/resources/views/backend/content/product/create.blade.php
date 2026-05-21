@@ -113,6 +113,10 @@ body{background:#f3f4f6}
                         <label class="d-inline-flex align-items-center gap-1"><input type="radio" name="stock_visibility" value="hide"> Hide stock</label>
                     </div>
                 </div>
+                <div class="sp-card">
+                    <label class="sp-label">Extra Delivery Per Item ৳ <small class="text-muted">(optional, charged for each additional unit beyond the first)</small></label>
+                    <input type="number" name="extra_delivery_per_qty" class="sp-input" value="0" min="0" step="0.01">
+                </div>
                 {{-- Hidden admin-only price fields (auto-synced from base price) --}}
                 <input type="hidden" name="ProductSalePrice" value="0">
                 <input type="hidden" name="ProductWholesalePrice" value="0">
@@ -195,9 +199,6 @@ body{background:#f3f4f6}
                     <div class="row g-2 mb-2">
                         <div class="col-6"><label class="sp-label">Extra Packing ৳</label><input type="number" name="ex_pack" class="sp-input" value="0"></div>
                         <div class="col-6"><label class="sp-label">Extra Delivery ৳</label><input type="number" name="ex_dvc" class="sp-input" value="0"></div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-12"><label class="sp-label">Extra Delivery Per Item ৳ <small class="text-muted">(charged for each additional unit beyond the first)</small></label><input type="number" name="extra_delivery_per_qty" class="sp-input" value="0" min="0" step="0.01"></div>
                     </div>
                     <div class="row g-2">
                         <div class="col-6"><label class="sp-label">Reseller Bonus ৳</label><input type="number" name="reseller_bonus" class="sp-input" value="0"></div>

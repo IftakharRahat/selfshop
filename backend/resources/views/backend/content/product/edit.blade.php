@@ -117,6 +117,10 @@ body{background:#f3f4f6}
                         <label class="d-inline-flex align-items-center gap-1"><input type="radio" name="stock_visibility" value="hide" {{ $product->show_stock!='On'&&$product->show_stock_text!='On'?'checked':'' }}> Hide stock</label>
                     </div>
                 </div>
+                <div class="sp-card">
+                    <label class="sp-label">Extra Delivery Per Item ৳ <small class="text-muted">(optional, charged for each additional unit beyond the first)</small></label>
+                    <input type="number" name="extra_delivery_per_qty" class="sp-input" value="{{ $product->extra_delivery_per_qty ?? 0 }}" min="0" step="0.01">
+                </div>
                 <input type="hidden" name="ProductSalePrice" value="{{ $product->ProductSalePrice }}">
                 <input type="hidden" name="ProductWholesalePrice" value="{{ $product->ProductWholesalePrice }}">
                 <input type="hidden" name="min_sell_price" value="{{ $product->min_sell_price }}">
@@ -234,9 +238,6 @@ body{background:#f3f4f6}
                     <div class="row g-2 mb-2">
                         <div class="col-6"><label class="sp-label">Extra Packing ৳</label><input type="number" name="ex_pack" class="sp-input" value="{{ $product->ex_pack }}"></div>
                         <div class="col-6"><label class="sp-label">Extra Delivery ৳</label><input type="number" name="ex_dvc" class="sp-input" value="{{ $product->ex_dvc }}"></div>
-                    </div>
-                    <div class="row g-2 mb-2">
-                        <div class="col-12"><label class="sp-label">Extra Delivery Per Item ৳ <small class="text-muted">(charged for each additional unit beyond the first)</small></label><input type="number" name="extra_delivery_per_qty" class="sp-input" value="{{ $product->extra_delivery_per_qty ?? 0 }}" min="0" step="0.01"></div>
                     </div>
                     <div class="row g-2">
                         <div class="col-6"><label class="sp-label">Reseller Bonus ৳</label><input type="number" name="reseller_bonus" class="sp-input" value="{{ $product->reseller_bonus }}"></div>
