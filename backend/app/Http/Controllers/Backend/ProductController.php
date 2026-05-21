@@ -239,6 +239,7 @@ class ProductController extends Controller
 
         $product->ex_pack = $request->ex_pack ?? 0;
         $product->ex_dvc = $request->ex_dvc ?? 0;
+        $product->extra_delivery_per_qty = $request->extra_delivery_per_qty ?? 0;
 
         if (isset($request->mart_status)) {
             $product->mart_status = 'On';
@@ -551,6 +552,7 @@ class ProductController extends Controller
 
         $product->ex_pack = $request->ex_pack;
         $product->ex_dvc = $request->ex_dvc;
+        $product->extra_delivery_per_qty = $request->extra_delivery_per_qty ?? 0;
 
         if (isset($request->mart_status)) {
             $product->mart_status = 'On';

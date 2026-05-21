@@ -3986,6 +3986,12 @@ class FrontendApiController extends Controller
                 }
             } else {
             }
+
+            // Per-item extra delivery charge (for qty > 1)
+            $totalQtyForProduct = Cart::where('user_id', $userId)->where('product_id', $product_id)->sum('qty');
+            if ($totalQtyForProduct > 1 && ($product->extra_delivery_per_qty ?? 0) > 0) {
+                $extdv += ((float) $product->extra_delivery_per_qty * ((int) $totalQtyForProduct - 1));
+            }
         }
 
         if ($carts->isEmpty()) {
