@@ -545,7 +545,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 					{/* Product Images */}
 					<div className="space-y-4">
 						{/* Main Image Swiper */}
-						<div className="aspect-[4/4] bg-gradient-to-br from-purple-300 to-purple-400 rounded-lg overflow-hidden">
+						<div className="aspect-[3/4] bg-white rounded-lg overflow-hidden border border-gray-100">
 							<Swiper
 								modules={[Navigation, Pagination, Thumbs]}
 								thumbs={{
@@ -575,7 +575,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 												alt={`${productData.name} - View ${index + 1}`}
 												width={500}
 												height={600}
-												className="w-full h-full object-cover"
+												className="w-full h-full object-contain"
 												priority={index === 0}
 											/>
 										</div>
