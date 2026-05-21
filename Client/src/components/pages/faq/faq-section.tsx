@@ -16,42 +16,11 @@ interface FAQSectionProps {
 	faqs?: FAQItem[];
 }
 
-const defaultFAQs: FAQItem[] = [
-	{
-		id: 1,
-		question: "Is the package mandatory?",
-		answer:
-			"Lorem ipsum dolor sit amet consectetur. Odio vestibulum a netus accumsan euismod venenatis sed pellentesque. Lectus vitae diam ante sem pharetra aliquam.",
-	},
-	{
-		id: 2,
-		question: "How to open an account?",
-		answer:
-			"Lorem ipsum dolor sit amet consectetur. Odio vestibulum a netus accumsan euismod venenatis sed pellentesque. Lectus vitae diam ante sem pharetra aliquam.",
-	},
-	{
-		id: 3,
-		question: "How to open an account?",
-		answer:
-			"Lorem ipsum dolor sit amet consectetur. Odio vestibulum a netus accumsan euismod venenatis sed pellentesque. Lectus vitae diam ante sem pharetra aliquam.",
-	},
-	{
-		id: 4,
-		question: "How to open an account?",
-		answer:
-			"Lorem ipsum dolor sit amet consectetur. Odio vestibulum a netus accumsan euismod venenatis sed pellentesque. Lectus vitae diam ante sem pharetra aliquam.",
-	},
-	{
-		id: 5,
-		question: "How to open an account?",
-		answer:
-			"Lorem ipsum dolor sit amet consectetur. Odio vestibulum a netus accumsan euismod venenatis sed pellentesque. Lectus vitae diam ante sem pharetra aliquam.",
-	},
-];
+const defaultFAQs: FAQItem[] = [];
 
 export default function FAQSection({
 	title = "Frequently Asked Questions",
-	description = "Lorem ipsum dolor sit amet consectetur. Dignissim erat odio dictum curabitur donec at consequat arcu cursus. Eget quis cum amet iaculis orci non.",
+	description = "",
 	faqs = defaultFAQs,
 }: FAQSectionProps) {
 	const [openItems, setOpenItems] = useState<Set<number>>(new Set([1])); // First item open by default
@@ -108,15 +77,22 @@ export default function FAQSection({
 					<h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
 						{title}
 					</h2>
-					<p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-6xl mx-auto leading-relaxed">
-						{description}
-					</p>
+					{description ? (
+						<p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-6xl mx-auto leading-relaxed">
+							{description}
+						</p>
+					) : null}
 				</div>
 
 				{/* FAQ Items */}
 				<div className=" mx-auto">
-					<div className="space-y-4">
-						{items.map((faq) => {
+					{items.length === 0 ? (
+						<div className="border border-gray-200 rounded-lg p-6 text-center text-gray-500">
+							No FAQs available right now.
+						</div>
+					) : (
+						<div className="space-y-4">
+							{items.map((faq) => {
 							const isOpen = openItems.has(faq.id);
 
 							return (
@@ -153,8 +129,9 @@ export default function FAQSection({
 									)}
 								</div>
 							);
-						})}
-					</div>
+							})}
+						</div>
+					)}
 				</div>
 			</div>
 		</div>
