@@ -235,6 +235,9 @@ body{background:#f3f4f6}
                         <div class="col-6"><label class="sp-label">Extra Packing ৳</label><input type="number" name="ex_pack" class="sp-input" value="{{ $product->ex_pack }}"></div>
                         <div class="col-6"><label class="sp-label">Extra Delivery ৳</label><input type="number" name="ex_dvc" class="sp-input" value="{{ $product->ex_dvc }}"></div>
                     </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-12"><label class="sp-label">Extra Delivery Per Item ৳ <small class="text-muted">(charged for each additional unit beyond the first)</small></label><input type="number" name="extra_delivery_per_qty" class="sp-input" value="{{ $product->extra_delivery_per_qty ?? 0 }}" min="0" step="0.01"></div>
+                    </div>
                     <div class="row g-2">
                         <div class="col-6"><label class="sp-label">Reseller Bonus ৳</label><input type="number" name="reseller_bonus" class="sp-input" value="{{ $product->reseller_bonus }}"></div>
                         <div class="col-6"><label class="sp-label">Shipping Days</label><input type="text" name="shipping_days" class="sp-input" value="{{ $product->shipping_days }}"></div>
