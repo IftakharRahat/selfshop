@@ -1,7 +1,8 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getApiBaseUrl } from "@/lib/utils";
 
 interface FAQItem {
 	id: number;
@@ -54,6 +55,40 @@ export default function FAQSection({
 	faqs = defaultFAQs,
 }: FAQSectionProps) {
 	const [openItems, setOpenItems] = useState<Set<number>>(new Set([1])); // First item open by default
+	const [items, setItems] = useState<FAQItem[]>(faqs);
+
+	useEffect(() => {
+		// If parent explicitly passes FAQ data, prefer it and skip remote fetch.
+		if (faqs !== defaultFAQs) {
+			setItems(faqs);
+			return;
+		}
+
+		const fetchFaqs = async () => {
+			try {
+				const res = await fetch(`${getApiBaseUrl()}/faqs`);
+				if (!res.ok) return;
+
+				const json = await res.json();
+				const remoteFaqs = Array.isArray(json?.data)
+					? json.data.map((faq: { id: number; question: string; answer: string }) => ({
+							id: faq.id,
+							question: faq.question,
+							answer: faq.answer,
+					  }))
+					: [];
+
+				if (remoteFaqs.length > 0) {
+					setItems(remoteFaqs);
+					setOpenItems(new Set([remoteFaqs[0].id]));
+				}
+			} catch {
+				// Keep local fallback FAQs when API is unavailable.
+			}
+		};
+
+		fetchFaqs();
+	}, [faqs]);
 
 	const toggleItem = (id: number) => {
 		const newOpenItems = new Set(openItems);
@@ -81,7 +116,7 @@ export default function FAQSection({
 				{/* FAQ Items */}
 				<div className=" mx-auto">
 					<div className="space-y-4">
-						{faqs.map((faq) => {
+						{items.map((faq) => {
 							const isOpen = openItems.has(faq.id);
 
 							return (
