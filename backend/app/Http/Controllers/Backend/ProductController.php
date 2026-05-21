@@ -239,6 +239,7 @@ class ProductController extends Controller
 
         $product->ex_pack = $request->ex_pack ?? 0;
         $product->ex_dvc = $request->ex_dvc ?? 0;
+        $product->extra_delivery_per_qty = $request->extra_delivery_per_qty ?? 0;
 
         if (isset($request->mart_status)) {
             $product->mart_status = 'On';
@@ -315,11 +316,11 @@ class ProductController extends Controller
         $admin = Auth::guard('admin')->user();
         $isFull = $admin && $admin->isFullAdmin();
 
-        // Full admins and non-Shop role admins with product.view see ALL products
+        // Admin products page should show only admin-created products (exclude vendor products).
         if ($isFull || ($admin->type !== 'Shop' && $admin->hasDirectPermission('product.view'))) {
-            $products = Product::query();
+            $products = Product::query()->whereNull('vendor_id');
         } else {
-            $products = Product::where('shop_id', $admin->id);
+            $products = Product::where('shop_id', $admin->id)->whereNull('vendor_id');
         }
 
         if (isset($request->search) && $request->search != '') {
@@ -330,7 +331,6 @@ class ProductController extends Controller
             ->addColumn('action', function ($products) use ($admin, $isFull) {
                 $a = '';
                 if ($isFull || $admin->hasDirectPermission('product.edit')) {
-                    $a .= '<a href="product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a> ';
                     $a .= '<a href="products/' . $products->id . '/edit" class="btn btn-primary btn-sm" style="margin-bottom:2px;"><i class="bi bi-pencil-square"></i></a> ';
                 }
                 if ($isFull || $admin->hasDirectPermission('product.delete')) {
@@ -354,7 +354,6 @@ class ProductController extends Controller
             ->addColumn('action', function ($products) use ($admin, $isFull) {
                 $a = '';
                 if ($isFull || $admin->hasDirectPermission('shop-product.edit')) {
-                    $a .= '<a href="../product/add-varient/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;">Varient</a> ';
                     $a .= '<a href="product-edit/' . $products->id . '" class="btn btn-primary btn-sm" style="margin-bottom:2px;"><i class="bi bi-pencil-square"></i></a> ';
                 }
                 if ($isFull || $admin->hasDirectPermission('shop-product.delete')) {
@@ -551,6 +550,7 @@ class ProductController extends Controller
 
         $product->ex_pack = $request->ex_pack;
         $product->ex_dvc = $request->ex_dvc;
+        $product->extra_delivery_per_qty = $request->extra_delivery_per_qty ?? 0;
 
         if (isset($request->mart_status)) {
             $product->mart_status = 'On';

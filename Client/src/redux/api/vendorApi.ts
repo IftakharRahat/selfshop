@@ -111,6 +111,7 @@ export interface VendorProduct {
 	weight?: string | null;
 	MetaKey?: string | null;
 	Discount?: number | string;
+	extra_delivery_per_qty?: number | string;
 	vendor_approval_status?: "pending" | "approved" | "rejected" | null;
 	selling_type?: "wholesale" | "dropshipping" | "both";
 	PostImage?: string | null;

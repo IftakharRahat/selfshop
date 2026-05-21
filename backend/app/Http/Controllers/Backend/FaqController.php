@@ -45,7 +45,7 @@ class FaqController extends Controller
      */
     public function faqdata()
     {
-        $faq = Faq::all();
+        $faq = Faq::orderBy('id', 'asc')->get();
         return Datatables::of($faq)
             ->addColumn('action', function ($faq) {
                 return '<a href="#" type="button" id="editFaqBtn" data-id="' . $faq->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainFaq" ><i class="bi bi-pencil-square"></i></a>

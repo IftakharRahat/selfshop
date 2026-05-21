@@ -19,6 +19,7 @@ use App\Models\Faq;
 use App\Models\FlashSale;
 use App\Models\FlashSaleProduct;
 use App\Models\Fraud;
+use App\Models\Information;
 use App\Models\Income;
 use App\Models\Message;
 use App\Models\Minicategory;
@@ -119,6 +120,27 @@ class FrontendApiController extends Controller
                 'instagram'      => $info->linkedin ?? null,  // stored as linkedin in DB
                 'youtube'        => $info->youtube ?? null,
                 'tiktok'         => $info->rss ?? null,       // stored as rss in DB
+            ],
+        ], 200);
+    }
+
+    public function informationPage(string $key)
+    {
+        $value = Information::where('key', $key)->first();
+
+        if (!$value) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Information not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'key' => $value->key,
+                'value' => $value->value,
+                'updated_at' => $value->updated_at,
             ],
         ], 200);
     }
@@ -1221,8 +1243,23 @@ class FrontendApiController extends Controller
         }
 
 
+        $isCampaignCode = false;
         if ($referralCode !== '') {
             $validity = User::where('my_referral_code', $referralCode)->first();
+            // If no user has this referral code, check if it's a valid marketing campaign code.
+            if (!$validity) {
+                $campaign = \App\Models\MarketingCampaign::where('status', 'active')
+                    ->where(function ($q) use ($referralCode) {
+                        $q->where('code', $referralCode)
+                          ->orWhere('code', strtolower($referralCode));
+                    })
+                    ->first();
+                if ($campaign) {
+                    $isCampaignCode = true;
+                    // Use the first admin/user as fallback so validation passes.
+                    $validity = User::first();
+                }
+            }
         } else {
             $validity = User::first();
         }
@@ -1243,10 +1280,14 @@ class FrontendApiController extends Controller
                 $code = substr($string, 0, 3);
 
                 $user->my_referral_code = strtoupper($code) . $this->uniqueID();
-                if ($referralCode !== '') {
+                if ($referralCode !== '' && !$isCampaignCode) {
                     $user->refer_by = $referralCode;
                 } else {
-                    $user->refer_by = $validity->my_referral_code;;
+                    $user->refer_by = $validity->my_referral_code;
+                }
+                // When it's a campaign code, also ensure campaign_code is stored.
+                if ($isCampaignCode) {
+                    $user->campaign_code = strtolower($referralCode);
                 }
                 $otp = random_int(100000, 999999);
                 $user->otp = $otp;
@@ -1255,7 +1296,7 @@ class FrontendApiController extends Controller
                 $success = $user->save();
 
                 if ($success) {
-                    if ($referralCode !== '') {
+                    if ($referralCode !== '' && !$isCampaignCode) {
                         $createreferral = User::where('my_referral_code', $referralCode)->first();
                         if (isset($createreferral)) {
                             $createreferral->my_referral = $createreferral->my_referral + 1;
@@ -1767,18 +1808,23 @@ class FrontendApiController extends Controller
     {
         $id = Auth::user()->id;
         $query = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
-            ->where('user_id', $id)
-            ->where('status', '!=', 'Pending Payment');
+            ->where('user_id', $id);
 
         $slugLower = strtolower((string) $slug);
         if (!in_array($slugLower, ['all', ''], true)) {
             if ($slugLower === 'accepted') {
                 $query->where('status', 'Confirmed');
             } elseif ($slugLower === 'rejected') {
-                $query->whereIn('status', ['Canceled', 'Cancelled', 'Rejected']);
+                // Rejected is a business rejection by supplier/admin, not gateway cancel/fail.
+                $query->where('status', 'Rejected');
+            } elseif ($slugLower === 'payment-issues') {
+                $query->whereIn('status', ['Pending Payment', 'Failed', 'Canceled', 'Cancelled']);
             } else {
                 $query->where('status', $slug);
             }
+        } else {
+            // Keep "All" focused on actual order lifecycle statuses.
+            $query->where('status', '!=', 'Pending Payment');
         }
 
         $search = trim((string) request()->query('search', ''));
@@ -1828,7 +1874,8 @@ class FrontendApiController extends Controller
                 'canceled' => Order::where('user_id', $id)->where('status', 'Canceled')->get()->count(),
                 'confirmed' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
                 'accepted' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
-                'rejected' => Order::where('user_id', $id)->whereIn('status', ['Canceled', 'Cancelled', 'Rejected'])->get()->count(),
+                'rejected' => Order::where('user_id', $id)->where('status', 'Rejected')->get()->count(),
+                'payment_issues' => Order::where('user_id', $id)->whereIn('status', ['Pending Payment', 'Failed', 'Canceled', 'Cancelled'])->get()->count(),
                 'packageing' => Order::where('user_id', $id)->where('status', 'Packageing')->get()->count(),
                 'ontheway' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
                 'shipped_to_warehouse' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
@@ -3966,6 +4013,12 @@ class FrontendApiController extends Controller
                     $extdv += ((float) ($variant->extra_delivery_charge ?? 0) * (int) $qtycrtgrp);
                 }
             } else {
+            }
+
+            // Per-item extra delivery charge (for qty > 1)
+            $totalQtyForProduct = Cart::where('user_id', $userId)->where('product_id', $product_id)->sum('qty');
+            if ($totalQtyForProduct > 1 && ($product->extra_delivery_per_qty ?? 0) > 0) {
+                $extdv += ((float) $product->extra_delivery_per_qty * ((int) $totalQtyForProduct - 1));
             }
         }
 

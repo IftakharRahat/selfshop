@@ -300,6 +300,7 @@ class AdminVariantController extends Controller
         $product->reseller_bonus = $request->input('reseller_bonus', 0);
         $product->ex_pack = $request->input('ex_pack', 0);
         $product->ex_dvc = $request->input('ex_dvc', 0);
+        $product->extra_delivery_per_qty = $request->extra_delivery_per_qty ?? 0;
         $product->shipping_days = $request->input('shipping_days');
 
         $product->save();

@@ -448,6 +448,7 @@
 <body>
     @php
         $basicinfo=App\Models\Basicinfo::first();
+        $webUser = Auth::guard('web')->user();
     @endphp
 
 
@@ -462,12 +463,12 @@
                                     <img src="{{ asset($basicinfo->logo) }}" style="width: 100%;margin-top: 4px;padding-left: 7px;">
                                 </div>
                                 <div class="card-body">
-                                    <h4 class="p-0 m-0" style="height: 20px;overflow: hidden;font-size: 16px;margin-left: 10px !important;font-weight: bold;">{{ Auth::guard('web')->user()->name }}</h4>
-                                    <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">{{ Auth::guard('web')->user()->email }}</p>
-                                    <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">SHOP : {{ Auth::guard('web')->user()->shop_name }}</p>
-                                    <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">ID : {{ Auth::guard('web')->user()->my_referral_code }}</p>
+                                    <h4 class="p-0 m-0" style="height: 20px;overflow: hidden;font-size: 16px;margin-left: 10px !important;font-weight: bold;">{{ optional($webUser)->name ?? 'Guest' }}</h4>
+                                    <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">{{ optional($webUser)->email ?? '' }}</p>
+                                    <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">SHOP : {{ optional($webUser)->shop_name ?? '-' }}</p>
+                                    <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">ID : {{ optional($webUser)->my_referral_code ?? '-' }}</p>
                                     <div id="income" style="background: none;">
-                                    Your Income {{Auth::guard('web')->user()->account_balance}} TK
+                                    Your Income {{ optional($webUser)->account_balance ?? 0 }} TK
                                     </div>
                                 </div>
                                </div>
@@ -491,7 +492,7 @@
                         <a href="{{ route('user.notifications') }}" class="nav-item nav-link @if(Request::url() == env('APP_URL').'/user/notifications') activebtn @endif" style="color: black;font-size:16px;font-weight: 500;">
                             <i class="fa fa-bell" style="width: 20px;"></i> Notifications
                             @php
-                                $sidebarUnreadCount = Auth::guard('web')->user()->unreadNotifications()->count();
+                                $sidebarUnreadCount = $webUser ? $webUser->unreadNotifications()->count() : 0;
                             @endphp
                             @if ($sidebarUnreadCount > 0)
                                 <span class="badge bg-danger ms-1">{{ $sidebarUnreadCount }}</span>
@@ -597,15 +598,15 @@
                     <div class="pb-2 card card-body" style="border: none">
                         <div class="d-flex" style="justify-content: space-between">
                             <div class="dataone">
-                                <h4 class="welcome-title">Welcome Back, <span class="text-primary">{{Auth::user()->name}}!</span></h4>
+                                <h4 class="welcome-title">Welcome Back, <span class="text-primary">{{ optional($webUser)->name ?? 'Guest' }}!</span></h4>
                                 <p class="mb-0 welcome-sub">Here what happening with your store today</p>
                             </div>
                             <div class="header-actions">
                                 <!-- Avatar with online dot -->
                                 <div class="avatar" title="Ashik" style="margin-top: 8px;">
                                     <!-- replace src with your avatar image -->
-                                    @if(Auth::user()->profile)
-                                        <img src="{{asset(Auth::user()->profile)}}" onclick="openprofile()" alt="User avatar" style="width: 40px;height: 40px;border-radius: 50%;">
+                                    @if(optional($webUser)->profile)
+                                        <img src="{{asset($webUser->profile)}}" onclick="openprofile()" alt="User avatar" style="width: 40px;height: 40px;border-radius: 50%;">
                                     @else
                                         <img src="https://avatars.dicebear.com/api/identicon/ashik.svg"  onclick="openprofile()" alt="User avatar">
                                     @endif
@@ -637,12 +638,12 @@
                         <img src="{{ asset($basicinfo->logo) }}" style="width: 100%;margin-top: 4px;padding-left: 7px;">
                     </div>
                     <div class="card-body">
-                        <h4 class="p-0 m-0" style="height: 20px;overflow: hidden;font-size: 16px;margin-left: 10px !important;font-weight: bold;">{{ Auth::guard('web')->user()->name }}</h4>
-                        <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">{{ Auth::guard('web')->user()->email }}</p>
-                        <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">SHOP : {{ Auth::guard('web')->user()->shop_name }}</p>
-                        <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">ID : {{ Auth::guard('web')->user()->my_referral_code }}</p>
+                        <h4 class="p-0 m-0" style="height: 20px;overflow: hidden;font-size: 16px;margin-left: 10px !important;font-weight: bold;">{{ optional($webUser)->name ?? 'Guest' }}</h4>
+                        <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">{{ optional($webUser)->email ?? '' }}</p>
+                        <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">SHOP : {{ optional($webUser)->shop_name ?? '-' }}</p>
+                        <p class="p-0 m-0" style="margin-left: 10px !important;font-size:12px;">ID : {{ optional($webUser)->my_referral_code ?? '-' }}</p>
                         <div id="income" style="background: none;">
-                        Your Income {{Auth::guard('web')->user()->account_balance}} TK
+                        Your Income {{ optional($webUser)->account_balance ?? 0 }} TK
                         </div>
                     </div>
                     </div>

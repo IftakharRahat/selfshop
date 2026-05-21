@@ -87,6 +87,8 @@ Route::get('/app-version-check', function (Request $request) {
 
 // Contact info — public, no auth required
 Route::get('/contact-info', [FrontendApiController::class, 'contactInfo'])->name('api.contact-info');
+Route::get('/information/{key}', [FrontendApiController::class, 'informationPage'])->name('api.information-page');
+Route::get('/faqs', [FrontendApiController::class, 'faqs'])->name('api.faqs');
 
 Route::middleware('guest')->group(function () {
     Route::get('/basic-info', [FrontendApiController::class, 'basicInfo'])->name('api.user.basic-info');
@@ -163,7 +165,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('developers-api', [FrontendApiController::class, 'developersapi']);
     Route::get('generate-developers-api', [FrontendApiController::class, 'generatedevelopersapi']);
     Route::get('/api/test', [FrontendApiController::class, 'test']);
-    Route::get('faqs', [FrontendApiController::class, 'faqs']);
     Route::get('track-order', [FrontendApiController::class, 'trackorder']);
     Route::post('update-bank-info', [FrontendApiController::class, 'bankinfo']);
     Route::get('bank-info', [FrontendApiController::class, 'getBankInfo']);
