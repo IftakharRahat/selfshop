@@ -1808,18 +1808,23 @@ class FrontendApiController extends Controller
     {
         $id = Auth::user()->id;
         $query = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
-            ->where('user_id', $id)
-            ->where('status', '!=', 'Pending Payment');
+            ->where('user_id', $id);
 
         $slugLower = strtolower((string) $slug);
         if (!in_array($slugLower, ['all', ''], true)) {
             if ($slugLower === 'accepted') {
                 $query->where('status', 'Confirmed');
             } elseif ($slugLower === 'rejected') {
-                $query->whereIn('status', ['Canceled', 'Cancelled', 'Rejected']);
+                // Rejected is a business rejection by supplier/admin, not gateway cancel/fail.
+                $query->where('status', 'Rejected');
+            } elseif ($slugLower === 'payment-issues') {
+                $query->whereIn('status', ['Pending Payment', 'Failed', 'Canceled', 'Cancelled']);
             } else {
                 $query->where('status', $slug);
             }
+        } else {
+            // Keep "All" focused on actual order lifecycle statuses.
+            $query->where('status', '!=', 'Pending Payment');
         }
 
         $search = trim((string) request()->query('search', ''));
@@ -1869,7 +1874,8 @@ class FrontendApiController extends Controller
                 'canceled' => Order::where('user_id', $id)->where('status', 'Canceled')->get()->count(),
                 'confirmed' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
                 'accepted' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
-                'rejected' => Order::where('user_id', $id)->whereIn('status', ['Canceled', 'Cancelled', 'Rejected'])->get()->count(),
+                'rejected' => Order::where('user_id', $id)->where('status', 'Rejected')->get()->count(),
+                'payment_issues' => Order::where('user_id', $id)->whereIn('status', ['Pending Payment', 'Failed', 'Canceled', 'Cancelled'])->get()->count(),
                 'packageing' => Order::where('user_id', $id)->where('status', 'Packageing')->get()->count(),
                 'ontheway' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
                 'shipped_to_warehouse' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
