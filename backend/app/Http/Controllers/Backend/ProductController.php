@@ -316,11 +316,11 @@ class ProductController extends Controller
         $admin = Auth::guard('admin')->user();
         $isFull = $admin && $admin->isFullAdmin();
 
-        // Full admins and non-Shop role admins with product.view see ALL products
+        // Admin products page should show only admin-created products (exclude vendor products).
         if ($isFull || ($admin->type !== 'Shop' && $admin->hasDirectPermission('product.view'))) {
-            $products = Product::query();
+            $products = Product::query()->whereNull('vendor_id');
         } else {
-            $products = Product::where('shop_id', $admin->id);
+            $products = Product::where('shop_id', $admin->id)->whereNull('vendor_id');
         }
 
         if (isset($request->search) && $request->search != '') {
