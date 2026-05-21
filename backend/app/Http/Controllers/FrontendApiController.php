@@ -19,6 +19,7 @@ use App\Models\Faq;
 use App\Models\FlashSale;
 use App\Models\FlashSaleProduct;
 use App\Models\Fraud;
+use App\Models\Information;
 use App\Models\Income;
 use App\Models\Message;
 use App\Models\Minicategory;
@@ -119,6 +120,27 @@ class FrontendApiController extends Controller
                 'instagram'      => $info->linkedin ?? null,  // stored as linkedin in DB
                 'youtube'        => $info->youtube ?? null,
                 'tiktok'         => $info->rss ?? null,       // stored as rss in DB
+            ],
+        ], 200);
+    }
+
+    public function informationPage(string $key)
+    {
+        $value = Information::where('key', $key)->first();
+
+        if (!$value) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Information not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'key' => $value->key,
+                'value' => $value->value,
+                'updated_at' => $value->updated_at,
             ],
         ], 200);
     }

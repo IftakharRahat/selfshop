@@ -1,11 +1,46 @@
+"use client";
+
 import Image from "next/image";
 import React from "react";
+import { useEffect, useMemo, useState } from "react";
 import bgImage from "@/assets/images/about/image (14).png";
 import mission from "@/assets/images/about/Union.png";
 import MostPopularBrands from "../home/most-popular-brands";
 import WhatWeOfferSection from "./what-we-offer-section";
 
 const AboutUsComponent = () => {
+	const [aboutHtml, setAboutHtml] = useState<string>("");
+
+	useEffect(() => {
+		const base = process.env.NEXT_PUBLIC_BASE_URL;
+		if (!base) return;
+
+		fetch(`${base}/information/about_us`)
+			.then((res) => res.json())
+			.then((data) => {
+				const value = data?.data?.value;
+				if (typeof value === "string" && value.trim().length > 0) {
+					setAboutHtml(value);
+				}
+			})
+			.catch(() => {
+				// Keep fallback text when API is unavailable.
+			});
+	}, []);
+
+	const aboutSummary = useMemo(() => {
+		if (!aboutHtml) return "";
+
+		const firstParagraph = aboutHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1] ?? "";
+		const cleaned = firstParagraph
+			.replace(/<[^>]*>/g, " ")
+			.replace(/&nbsp;/gi, " ")
+			.replace(/\s+/g, " ")
+			.trim();
+
+		return cleaned;
+	}, [aboutHtml]);
+
 	return (
 		<>
 			<div className="relative py-16 lg:py-28 px-4 text-white">
@@ -26,13 +61,9 @@ const AboutUsComponent = () => {
 					<h1 className="text-3xl sm:text-4xl font-bold mb-4">
 						About SelfShop
 					</h1>
-					<p className="mb-4">
-						SelfShop is an innovative online platform dedicated to empowering
-						entrepreneurs, dropshippers, and resellers with high-quality
-						products and an exceptional shopping experience. Established with
-						the vision of transforming the eCommerce landscape, SelfShop has
-						rapidly grown to a community of over 32,000 users who leverage our
-						platform to build and expand their businesses.
+					<p className="mb-4 max-w-5xl">
+						{aboutSummary ||
+							"SelfShop is an innovative online platform dedicated to empowering entrepreneurs, dropshippers, and resellers with high-quality products and an exceptional shopping experience. Established with the vision of transforming the eCommerce landscape, SelfShop has rapidly grown to a community of over 32,000 users who leverage our platform to build and expand their businesses."}
 					</p>
 				</div>
 			</div>
