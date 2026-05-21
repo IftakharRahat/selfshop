@@ -1221,8 +1221,23 @@ class FrontendApiController extends Controller
         }
 
 
+        $isCampaignCode = false;
         if ($referralCode !== '') {
             $validity = User::where('my_referral_code', $referralCode)->first();
+            // If no user has this referral code, check if it's a valid marketing campaign code.
+            if (!$validity) {
+                $campaign = \App\Models\MarketingCampaign::where('status', 'active')
+                    ->where(function ($q) use ($referralCode) {
+                        $q->where('code', $referralCode)
+                          ->orWhere('code', strtolower($referralCode));
+                    })
+                    ->first();
+                if ($campaign) {
+                    $isCampaignCode = true;
+                    // Use the first admin/user as fallback so validation passes.
+                    $validity = User::first();
+                }
+            }
         } else {
             $validity = User::first();
         }
@@ -1243,10 +1258,14 @@ class FrontendApiController extends Controller
                 $code = substr($string, 0, 3);
 
                 $user->my_referral_code = strtoupper($code) . $this->uniqueID();
-                if ($referralCode !== '') {
+                if ($referralCode !== '' && !$isCampaignCode) {
                     $user->refer_by = $referralCode;
                 } else {
-                    $user->refer_by = $validity->my_referral_code;;
+                    $user->refer_by = $validity->my_referral_code;
+                }
+                // When it's a campaign code, also ensure campaign_code is stored.
+                if ($isCampaignCode) {
+                    $user->campaign_code = strtolower($referralCode);
                 }
                 $otp = random_int(100000, 999999);
                 $user->otp = $otp;
@@ -1255,7 +1274,7 @@ class FrontendApiController extends Controller
                 $success = $user->save();
 
                 if ($success) {
-                    if ($referralCode !== '') {
+                    if ($referralCode !== '' && !$isCampaignCode) {
                         $createreferral = User::where('my_referral_code', $referralCode)->first();
                         if (isset($createreferral)) {
                             $createreferral->my_referral = $createreferral->my_referral + 1;
