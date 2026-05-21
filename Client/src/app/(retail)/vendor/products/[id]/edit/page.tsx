@@ -66,6 +66,7 @@ export default function VendorEditProductPage() {
 		low_stock: "",
 		sku: "",
 		discount: "",
+		extra_delivery_per_qty: "",
 		unit: "",
 		product_weight: "",
 		minimum_qty: "",
@@ -128,6 +129,7 @@ export default function VendorEditProductPage() {
 				low_stock: String(p.low_stock ?? ""),
 				sku: String(p.ProductSku ?? ""),
 				discount: String(p.Discount ?? "0"),
+				extra_delivery_per_qty: String(p.extra_delivery_per_qty ?? ""),
 				unit: String(p.weight ?? ""),
 				product_weight: String(p.product_weight ?? "0"),
 				minimum_qty: String(p.minimum_qty ?? "1"),
@@ -254,6 +256,7 @@ export default function VendorEditProductPage() {
 		if (f.unit) formData.append("unit", f.unit);
 		if (f.tags) formData.append("MetaKey", f.tags);
 		formData.append("Discount", f.discount || "0");
+		if (f.extra_delivery_per_qty) formData.append("extra_delivery_per_qty", f.extra_delivery_per_qty);
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
 		// warranty_days removed — feature not in use
@@ -420,6 +423,23 @@ export default function VendorEditProductPage() {
 											Discount
 											<input type="number" min={0} step="0.01" value={f.discount} onChange={set("discount")} className={inputCls} />
 										</label>
+									</div>
+									<div className="grid grid-cols-2 gap-4">
+										<div>
+											<label className="mb-1 block text-sm font-medium text-gray-700">Extra delivery per item ৳</label>
+											<input
+												type="number"
+												min="0"
+												step="0.01"
+												placeholder="0"
+												value={f.extra_delivery_per_qty}
+												onChange={(e) => setF(prev => ({ ...prev, extra_delivery_per_qty: e.target.value }))}
+												className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+											/>
+											<p className="mt-1 text-xs text-gray-400">Charged for each additional unit beyond the first</p>
+										</div>
+									</div>
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 										<label className="flex flex-col text-sm font-medium text-gray-700">
 											Unit (e.g. Pc)
 											<input value={f.unit} onChange={set("unit")} placeholder="Pc" className={inputCls} />
