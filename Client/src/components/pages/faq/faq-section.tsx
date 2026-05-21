@@ -44,7 +44,7 @@ export default function FAQSection({
 							id: faq.id,
 							question: faq.question,
 							answer: faq.answer,
-					  }))
+					  })).sort((a: FAQItem, b: FAQItem) => a.id - b.id)
 					: [];
 
 				if (remoteFaqs.length > 0) {
@@ -92,7 +92,7 @@ export default function FAQSection({
 						</div>
 					) : (
 						<div className="space-y-4">
-							{items.map((faq) => {
+							{items.map((faq, index) => {
 							const isOpen = openItems.has(faq.id);
 
 							return (
@@ -106,7 +106,7 @@ export default function FAQSection({
 										className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors duration-200"
 									>
 										<span className="text-gray-900 font-medium text-sm sm:text-base lg:text-lg pr-4">
-											{faq.id}. {faq.question}
+											{index + 1}. {faq.question}
 										</span>
 										<div className="flex-shrink-0">
 											{isOpen ? (

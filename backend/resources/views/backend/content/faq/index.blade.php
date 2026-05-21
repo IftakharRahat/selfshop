@@ -116,12 +116,17 @@
         var token = $("input[name='_token']").val();
 
         var faqinfo = $('#faqinfo').DataTable({
-            order: [[0, 'desc']],
+            order: [[0, 'asc']],
             processing: true,
             serverSide: true,
             ajax: '{!! route('faq.data') !!}',
             columns: [
-                { data: 'id' },
+                {
+                    data: 'id',
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
                 { data: 'question' },
                 { data: 'answer' },
                 { "data": null, render: function(data) {
