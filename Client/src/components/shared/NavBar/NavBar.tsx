@@ -341,14 +341,17 @@ export default function Navbar() {
 							/>
 							<p>Track your order</p>
 						</Link>
-						<div className="flex items-center">
+						<Link
+							href="/register?showAuth=register"
+							className="flex items-center hover:opacity-80 transition-opacity"
+						>
 							<img
 								src={BecomeADropshiiper.src}
 								alt="Become a Dropshipper"
 								className="w-6 h-6 mr-2"
 							/>
 							<p>Become a dropshipper</p>
-						</div>
+						</Link>
 					</div>
 				</div>
 			</div>
