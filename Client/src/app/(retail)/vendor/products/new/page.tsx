@@ -367,6 +367,21 @@ export default function VendorNewProductPage() {
 										<input name="tags" placeholder="tag1, tag2" className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 									</label>
 								</div>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div>
+										<label className="mb-1 block text-sm font-medium text-gray-700">Extra delivery per item ৳</label>
+										<input
+											type="number"
+											min="0"
+											step="0.01"
+											placeholder="0"
+											value={extraDeliveryPerQty}
+											onChange={(e) => setExtraDeliveryPerQty(e.target.value)}
+											className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+										/>
+										<p className="mt-1 text-xs text-gray-400">Optional. Charged for each additional unit beyond the first</p>
+									</div>
+								</div>
 							</div>
 
 							{(sellingType === 'dropshipping' || sellingType === 'both') && (
@@ -435,21 +450,6 @@ export default function VendorNewProductPage() {
 											Discount
 											<input type="number" min={0} step="0.01" name="discount" defaultValue={0} className="mt-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
 										</label>
-									</div>
-									<div className="grid grid-cols-2 gap-4">
-										<div>
-											<label className="mb-1 block text-sm font-medium text-gray-700">Extra delivery per item ৳</label>
-											<input
-												type="number"
-												min="0"
-												step="0.01"
-												placeholder="0"
-												value={extraDeliveryPerQty}
-												onChange={(e) => setExtraDeliveryPerQty(e.target.value)}
-												className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-											/>
-											<p className="mt-1 text-xs text-gray-400">Charged for each additional unit beyond the first</p>
-										</div>
 									</div>
 									<p className="text-xs text-gray-600 font-medium mt-1">Stock visibility</p>
 									<div className="flex flex-wrap gap-4 text-sm text-gray-700">
