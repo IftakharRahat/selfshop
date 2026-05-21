@@ -16,7 +16,8 @@ const statusTabs = [
 	{ label: "Processing", value: "Processing" },
 	{ label: "Shipped to warehouse", value: "Ontheway" },
 	{ label: "Delivered", value: "Delivered" },
-	{ label: "Rejected", value: "Canceled" },
+	{ label: "Rejected", value: "rejected" },
+	{ label: "Payment Issues", value: "payment-issues" },
 	{ label: "Returned", value: "Return" },
 ];
 
@@ -26,7 +27,8 @@ const OrderPage = () => {
 
 	const stats = [
 		{ title: "New order", value: data?.data?.pending ?? 0, icon: order, status: "Pending" },
-		{ title: "Rejected", value: data?.data?.canceled ?? 0, icon: cancelled, status: "Canceled" },
+		{ title: "Rejected", value: data?.data?.rejected ?? 0, icon: cancelled, status: "rejected" },
+		{ title: "Payment Issues", value: data?.data?.payment_issues ?? 0, icon: cancelled, status: "payment-issues" },
 		{ title: "Returned", value: data?.data?.return ?? 0, icon: returnIcon, status: "Return" },
 		{ title: "Shipped", value: data?.data?.ontheway ?? 0, icon: delivery, status: "Ontheway" },
 		{ title: "Delivered", value: data?.data?.delivered ?? 0, icon: delivered, status: "Delivered" },
@@ -48,7 +50,7 @@ const OrderPage = () => {
 
 			{/* Order Statistics */}
 			{!isLoading && !error && (
-				<div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-5 lg:border-b lg:pb-4 lg:mb-4 border-gray-100">
+				<div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6 lg:border-b lg:pb-4 lg:mb-4 border-gray-100">
 					{stats.map((stat, index) => (
 						<button
 							key={index}
