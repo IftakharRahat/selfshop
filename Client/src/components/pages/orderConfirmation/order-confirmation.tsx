@@ -57,10 +57,18 @@ export default function OrderConfirmation() {
 		isSuccess: isCartSuccess,
 	} = useGetAllCartItemsQuery(undefined);
 
+	// Avoid redirecting on initial render — give RTK Query time to refetch after addToCart invalidation
+	const [ready, setReady] = useState(false);
+	useEffect(() => {
+		const timer = setTimeout(() => setReady(true), 1500);
+		return () => clearTimeout(timer);
+	}, []);
+
 	// Redirect only when cart fetch succeeds and is truly empty.
 	// Avoid redirecting on transient API/auth/network errors.
 	useEffect(() => {
 		if (
+			ready &&
 			!isLoading &&
 			isCartSuccess &&
 			!isCartError &&
@@ -68,7 +76,7 @@ export default function OrderConfirmation() {
 		) {
 			router.replace("/");
 		}
-	}, [cartItems, isLoading, isCartSuccess, isCartError, router]);
+	}, [cartItems, isLoading, isCartSuccess, isCartError, router, ready]);
 	const [updateCartItem] = useUpdateCartItemMutation();
 	const [deleteCartItem] = useDeleteCartItemMutation();
 	const [createOrder] = useCreateOrderMutation();
@@ -90,7 +98,8 @@ export default function OrderConfirmation() {
 		const uniqueSuppliers = new Set(cartItems.data.map((item: any) => item.vendor_id || item.shop_id));
 		return Math.max(1, uniqueSuppliers.size);
 	})();
-	const totalDeliveryCharge: number = deliveryCharge * shopCount;
+	const extraDeliveryCharge: number = Number(cartItems?.extra_delivery_charge) || 0;
+	const totalDeliveryCharge: number = deliveryCharge * shopCount + extraDeliveryCharge;
 	const [customerData, setCustomerData] = useState({
 		name: "",
 		address: "",
