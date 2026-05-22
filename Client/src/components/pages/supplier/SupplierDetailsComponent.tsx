@@ -85,6 +85,18 @@ export default function SupplierDetailsComponent({
 		}
 	};
 
+	const handlePageChange = useCallback((page: number) => {
+		const params = new URLSearchParams(searchParams.toString());
+		if (page <= 1) {
+			params.delete("page");
+		} else {
+			params.set("page", String(page));
+		}
+		const qs = params.toString();
+		router.push(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
+		window.scrollTo({ top: 0, behavior: "smooth" });
+	}, [searchParams, router, pathname]);
+
 	if (isLoading) {
 		return (
 			<div className="min-h-[60vh] flex flex-col items-center justify-center">
@@ -115,17 +127,6 @@ export default function SupplierDetailsComponent({
 	const totalProducts = data.data.products?.total || 0;
 	const lastPage = data.data.products?.last_page || 1;
 
-	const handlePageChange = useCallback((page: number) => {
-		const params = new URLSearchParams(searchParams.toString());
-		if (page <= 1) {
-			params.delete("page");
-		} else {
-			params.set("page", String(page));
-		}
-		const qs = params.toString();
-		router.push(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
-		window.scrollTo({ top: 0, behavior: "smooth" });
-	}, [searchParams, router, pathname]);
 	const initials = vendor.company_name
 		.split(" ")
 		.map((w: string) => w[0])
