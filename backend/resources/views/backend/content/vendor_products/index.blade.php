@@ -64,8 +64,17 @@
                         <tr>
                             <td>{{ $p->id }}</td>
                             <td>
-                                @if($p->ViewProductImage)
-                                    <img src="../{{ $p->ViewProductImage }}" alt="" height="40" style="object-fit:cover; border-radius: 6px;">
+                                @if($p->ViewProductImage || $p->ProductImage)
+                                    @php
+                                        $rawImage = trim((string) ($p->ViewProductImage ?: $p->ProductImage));
+                                        $isPlaceholderPath = $rawImage === '' || str_contains($rawImage, 'public/images/product/default.jpg');
+                                        $imageSrc = \Illuminate\Support\Str::startsWith($rawImage, ['http://', 'https://'])
+                                            ? $rawImage
+                                            : asset(preg_replace('#^public/#', '', ltrim($rawImage, '/')));
+                                        $fallbackSrc = "data:image/svg+xml;utf8," . rawurlencode("<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40'><rect width='100%' height='100%' fill='#eef2f7'/><text x='50%' y='52%' dominant-baseline='middle' text-anchor='middle' font-size='9' fill='#64748b'>No Img</text></svg>");
+                                        $finalSrc = $isPlaceholderPath ? $fallbackSrc : $imageSrc;
+                                    @endphp
+                                    <img src="{{ $finalSrc }}" alt="" width="40" height="40" style="object-fit:cover; border-radius: 6px; border: 1px solid #e2e8f0;" onerror="this.onerror=null;this.src='{{ $fallbackSrc }}';">
                                 @else
                                     -
                                 @endif
