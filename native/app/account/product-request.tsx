@@ -22,6 +22,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -127,6 +129,7 @@ export default function ProductRequestScreen() {
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
   const insets = useSafeAreaInsets();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   /* ── Form State ── */
   const [productName, setProductName] = useState("");
@@ -141,6 +144,7 @@ export default function ProductRequestScreen() {
       const { data } = await apiClient.get("/request-product-list");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   /* ── Mutation ── */
@@ -273,6 +277,29 @@ export default function ProductRequestScreen() {
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["product-request-list"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Product Request", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Product Request", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Request Products"
+          message="Activate your subscription to request products from the SelfShop team."
+        />
+      </>
+    );
+  }
 
   return (
     <>

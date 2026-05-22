@@ -14,6 +14,8 @@ import { WebView } from "react-native-webview";
 
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 const DARK = "#1A1A2E";
@@ -216,6 +218,7 @@ export default function OrderConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const webViewRef = useRef<WebView>(null);
   const onlinePaymentRef = useRef<OnlinePaymentReference>({});
   const paymentHandledRef = useRef(false);
@@ -237,6 +240,7 @@ export default function OrderConfirmationScreen() {
       const { data } = await apiClient.get("/user-cart-content");
       return data?.data ?? [];
     },
+    enabled: isResellerActive,
   });
   const allCartItems: any[] = cartData ?? [];
   const cartItems: any[] = checkoutCartIds.length > 0
@@ -730,13 +734,32 @@ export default function OrderConfirmationScreen() {
   };
 
   // ── Loading ──
-  if (cartLoading) {
+  if (isSubscriptionLoading || cartLoading) {
     return (
       <View style={[st.center, { paddingTop: insets.top }]}>
         <PulseLoader
           icon="cart-outline"
           title="Preparing your order"
           subtitle="Loading cart items and delivery options…"
+        />
+      </View>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <View style={[st.root, { paddingTop: insets.top }]}>
+        <View style={st.header}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="arrow-back" size={22} color={DARK} />
+          </Pressable>
+          <Text fontSize="$5" fontWeight="bold" color={DARK}>Confirm Order</Text>
+          <View style={{ width: 22 }} />
+        </View>
+        <SubscriptionRequired
+          title="Activate to Checkout"
+          message="Activate your subscription to view cart pricing and place orders."
+          compact
         />
       </View>
     );

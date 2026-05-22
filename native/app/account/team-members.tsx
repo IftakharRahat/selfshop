@@ -12,11 +12,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
 export default function TeamMembersScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const teamQuery = useQuery({
     queryKey: ["team-members"],
@@ -24,6 +27,7 @@ export default function TeamMembersScreen() {
       const { data } = await apiClient.get("/teams");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const members: any[] = Array.isArray(teamQuery.data) ? teamQuery.data : [];
@@ -31,6 +35,29 @@ export default function TeamMembersScreen() {
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["team-members"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Team Members", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Team Members", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to View Team"
+          message="Activate your subscription to view team members and referral activity."
+        />
+      </>
+    );
+  }
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={styles.card}>

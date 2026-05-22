@@ -21,6 +21,8 @@ import { Text } from "tamagui";
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 import { formatPaymentMethodName, rawPaymentMethodName } from "@/lib/payment-method-name";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 const TAKA = "\u09F3";
@@ -78,6 +80,7 @@ export default function WithdrawScreen() {
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
   const insets = useSafeAreaInsets();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const [amount, setAmount] = useState("");
   const [selectedMethodId, setSelectedMethodId] = useState<number | null>(null);
@@ -88,6 +91,7 @@ export default function WithdrawScreen() {
       const { data } = await apiClient.get("/dashboard-data");
       return data?.data ?? data;
     },
+    enabled: isResellerActive,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -97,6 +101,7 @@ export default function WithdrawScreen() {
       const { data } = await apiClient.get("/get-payment-types");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const accountsQuery = useQuery({
@@ -105,6 +110,7 @@ export default function WithdrawScreen() {
       const { data } = await apiClient.get("/user-payout-accounts");
       return data?.data?.payout_accounts ?? data?.data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const historyQuery = useQuery({
@@ -113,6 +119,7 @@ export default function WithdrawScreen() {
       const { data } = await apiClient.get("/withdraw-list");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const rawMethods: any[] = Array.isArray(methodsQuery.data) ? methodsQuery.data : [];
@@ -213,6 +220,29 @@ export default function WithdrawScreen() {
     queryClient.invalidateQueries({ queryKey: ["withdraw-methods"] });
     queryClient.invalidateQueries({ queryKey: ["user-payout-accounts"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Withdraw", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Withdraw", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Withdraw"
+          message="Activate your subscription to access withdrawals and payout history."
+        />
+      </>
+    );
+  }
 
   return (
     <>

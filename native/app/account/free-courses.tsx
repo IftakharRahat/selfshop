@@ -16,6 +16,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -36,6 +38,7 @@ function resolveImageUrl(path?: string | null): string | null {
 
 export default function FreeCoursesScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const coursesQuery = useQuery({
     queryKey: ["free-courses"],
@@ -43,6 +46,7 @@ export default function FreeCoursesScreen() {
       const { data } = await apiClient.get("/view-course");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const courses: any[] = Array.isArray(coursesQuery.data) ? coursesQuery.data : [];
@@ -50,6 +54,29 @@ export default function FreeCoursesScreen() {
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["free-courses"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Free Courses", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Free Courses", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to View Courses"
+          message="Activate your subscription to access reseller courses and learning content."
+        />
+      </>
+    );
+  }
 
   const renderCourse = ({ item }: { item: any }) => {
     const imageUri = resolveImageUrl(item.coursecategory_image);

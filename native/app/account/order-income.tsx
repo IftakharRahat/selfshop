@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
 import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -40,6 +42,7 @@ const INSIGHT_CONFIG = [
 
 export default function OrderIncomeScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   /* ── Queries ── */
   const incomeQuery = useQuery({
@@ -48,6 +51,7 @@ export default function OrderIncomeScreen() {
       const { data } = await apiClient.get("/income-history");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const meQuery = useQuery({
@@ -56,6 +60,7 @@ export default function OrderIncomeScreen() {
       const { data } = await apiClient.get("/user-profile");
       return data?.data ?? data;
     },
+    enabled: isResellerActive,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -74,6 +79,29 @@ export default function OrderIncomeScreen() {
     queryClient.invalidateQueries({ queryKey: ["order-income-history"] });
     queryClient.invalidateQueries({ queryKey: ["user-profile"] });
   }, [queryClient]);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Order Income", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Order Income", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to View Income"
+          message="Activate your subscription to view order income and reseller performance."
+        />
+      </>
+    );
+  }
 
   const renderIncomeItem = ({ item, index }: { item: any; index: number }) => {
     const statusKey = item.status ?? "Pending";

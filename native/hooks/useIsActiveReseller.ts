@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
 import apiClient, { TOKEN_KEY } from "@/lib/api-client";
+import { queryClient } from "@/lib/query-client";
+import {
+  getPendingInvoiceFromProfile,
+  getProfileFromProfileResponse,
+  getSubscriptionFromProfile,
+  isSubscriptionActive,
+  isSubscriptionExpired,
+  subscriptionDestinationFromProfile,
+} from "@/lib/subscription-routing";
 
 /**
  * Determines if the current user is an active reseller with a paid membership.
@@ -31,33 +40,69 @@ export function useIsActiveReseller() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const refreshSubscription = async () => {
+    queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+    return profileQuery.refetch();
+  };
+
   if (tokenQuery.isLoading) {
-    return { isActive: false, isLoading: true, isLoggedIn: false, isExpired: false };
+    return {
+      isActive: false,
+      isLoading: true,
+      isLoggedIn: false,
+      isExpired: false,
+      profile: null,
+      subscription: null,
+      pendingInvoice: null,
+      subscriptionDestination: "/login",
+      refreshSubscription,
+    };
   }
 
   if (!isLoggedIn) {
-    return { isActive: false, isLoading: false, isLoggedIn: false, isExpired: false };
+    return {
+      isActive: false,
+      isLoading: false,
+      isLoggedIn: false,
+      isExpired: false,
+      profile: null,
+      subscription: null,
+      pendingInvoice: null,
+      subscriptionDestination: "/login",
+      refreshSubscription,
+    };
   }
 
   if (profileQuery.isLoading) {
-    return { isActive: false, isLoading: true, isLoggedIn: true, isExpired: false };
+    return {
+      isActive: false,
+      isLoading: true,
+      isLoggedIn: true,
+      isExpired: false,
+      profile: null,
+      subscription: null,
+      pendingInvoice: null,
+      subscriptionDestination: "/pricing",
+      refreshSubscription,
+    };
   }
 
-  const profile = profileQuery.data?.profile ?? profileQuery.data;
-  const membershipStatus = String(profile?.membership_status ?? "").toLowerCase();
-  const accountStatus = String(profile?.status ?? "").toLowerCase();
-  const expireDate = profile?.expire_date;
+  const profile = getProfileFromProfileResponse(profileQuery.data);
+  const subscription = getSubscriptionFromProfile(profileQuery.data);
+  const pendingInvoice = getPendingInvoiceFromProfile(profileQuery.data);
+  const isExpired = isSubscriptionExpired(profileQuery.data);
+  const isActive = isSubscriptionActive(profileQuery.data);
+  const subscriptionDestination = subscriptionDestinationFromProfile(profileQuery.data);
 
-  let isExpired = false;
-  if (expireDate) {
-    const parsed = new Date(expireDate);
-    if (!isNaN(parsed.getTime())) {
-      parsed.setHours(23, 59, 59, 999);
-      isExpired = parsed.getTime() < Date.now();
-    }
-  }
-
-  const isActive = !isExpired && (membershipStatus === "paid" || accountStatus === "active");
-
-  return { isActive, isLoading: false, isLoggedIn: true, isExpired };
+  return {
+    isActive,
+    isLoading: false,
+    isLoggedIn: true,
+    isExpired,
+    profile,
+    subscription,
+    pendingInvoice,
+    subscriptionDestination,
+    refreshSubscription,
+  };
 }

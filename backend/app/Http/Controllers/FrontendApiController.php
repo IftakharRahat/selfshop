@@ -48,11 +48,14 @@ use App\Models\VendorFollower;
 use App\Models\Withdrew;
 use App\Models\Review;
 use App\Notifications\AdminBroadcastNotification;
+use App\Services\ResellerSubscriptionService;
 use App\Services\SteadfastOrderStatusService;
 use App\Services\VendorAdminNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use DB;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -68,6 +71,33 @@ use Str;
 
 class FrontendApiController extends Controller
 {
+    private const PRODUCT_PRICE_FIELDS = [
+        'ProductRegularPrice',
+        'ProductSalePrice',
+        'ProductResellerPrice',
+        'ProductWholesalePrice',
+        'ProductPrice',
+        'RegularPrice',
+        'SalePrice',
+        'FlashPrice',
+        'flash_price',
+        'original_price',
+        'storefront_price',
+        'min_sell_price',
+        'reseller_price',
+        'reseller_bonus',
+        'regular_price',
+        'sale_price',
+        'campaign_price',
+        'commission_amount',
+        'delivery_charge',
+        'sizePrice',
+        'size_price',
+        'unit_price',
+        'bulk_price',
+        'price',
+    ];
+
     private function numericSetting($value)
     {
         if ($value === null || $value === '') {
@@ -101,6 +131,78 @@ class FrontendApiController extends Controller
             'currency' => 'BDT',
             'reward_basis' => 'subscription_activation',
         ];
+    }
+
+    private function subscriptionStateForRequest(Request $request): array
+    {
+        return ResellerSubscriptionService::state(
+            ResellerSubscriptionService::userFromRequest($request)
+        );
+    }
+
+    private function canViewProductPricing(Request $request): bool
+    {
+        return (bool) $this->subscriptionStateForRequest($request)['is_active'];
+    }
+
+    private function withProductPricingVisibility(Request $request, $payload)
+    {
+        return $this->transformProductPricingPayload($payload, !$this->canViewProductPricing($request));
+    }
+
+    private function transformProductPricingPayload($payload, bool $pricingLocked)
+    {
+        if ($payload instanceof AbstractPaginator) {
+            $payload->getCollection()->transform(
+                fn ($item) => $this->transformProductPricingPayload($item, $pricingLocked)
+            );
+            return $payload;
+        }
+
+        if ($payload instanceof \Illuminate\Support\Collection) {
+            return $payload->map(
+                fn ($item) => $this->transformProductPricingPayload($item, $pricingLocked)
+            );
+        }
+
+        if ($payload instanceof Model) {
+            foreach (self::PRODUCT_PRICE_FIELDS as $field) {
+                if (array_key_exists($field, $payload->getAttributes()) || $payload->offsetExists($field)) {
+                    $payload->setAttribute($field, $pricingLocked ? null : $payload->getAttribute($field));
+                }
+            }
+            $payload->setAttribute('pricing_locked', $pricingLocked);
+
+            foreach (['varients', 'variants', 'sizes', 'bulkPrices', 'priceTiers', 'products', 'product'] as $relation) {
+                if ($payload->relationLoaded($relation)) {
+                    $payload->setRelation(
+                        $relation,
+                        $this->transformProductPricingPayload($payload->getRelation($relation), $pricingLocked)
+                    );
+                }
+            }
+
+            return $payload;
+        }
+
+        if (is_array($payload)) {
+            $isList = function_exists('array_is_list')
+                ? array_is_list($payload)
+                : ($payload === [] || array_keys($payload) === range(0, count($payload) - 1));
+            foreach ($payload as $key => $value) {
+                if ($pricingLocked && in_array((string) $key, self::PRODUCT_PRICE_FIELDS, true)) {
+                    $payload[$key] = null;
+                    continue;
+                }
+                $payload[$key] = $this->transformProductPricingPayload($value, $pricingLocked);
+            }
+            if (!$isList) {
+                $payload['pricing_locked'] = $pricingLocked;
+            }
+            return $payload;
+        }
+
+        return $payload;
     }
 
     public function contactInfo()
@@ -524,7 +626,7 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
-    public function promotionalSections()
+    public function promotionalSections(Request $request)
     {
         $sections = \App\Models\PromotionalSection::active()
             ->orderBy('sort_order')
@@ -534,7 +636,7 @@ class FrontendApiController extends Controller
                     ->orderByPivot('sort_order');
             }])
             ->get()
-            ->map(function ($section) {
+            ->map(function ($section) use ($request) {
                 return [
                     'id' => $section->id,
                     'title' => $section->title,
@@ -542,7 +644,7 @@ class FrontendApiController extends Controller
                     'banner_image' => $section->banner_image,
                     'layout_type' => $section->layout_type ?? 'card',
                     'bg_color' => $section->bg_color,
-                    'products' => $section->products,
+                    'products' => $this->withProductPricingVisibility($request, $section->products),
                 ];
             });
 
@@ -581,7 +683,7 @@ class FrontendApiController extends Controller
                 'slug' => $section->slug,
                 'banner_image' => $section->banner_image,
             ],
-            'data' => $products,
+            'data' => $this->withProductPricingVisibility($request, $products),
         ], 200);
     }
 
@@ -639,7 +741,7 @@ class FrontendApiController extends Controller
                 'status' => true,
                 'message' => $title,
                 'total' => $total,
-                'data' => $searchcontents ? $searchcontents->items() : []
+                'data' => $searchcontents ? $this->withProductPricingVisibility($request, $searchcontents->items()) : []
             ], 200);
         }
 
@@ -647,7 +749,7 @@ class FrontendApiController extends Controller
             'status' => true,
             'message' => $title . ' Found successfully',
             'total' => $total,
-            'data' => $searchcontents
+            'data' => $this->withProductPricingVisibility($request, $searchcontents)
         ], 200);
     }
 
@@ -675,7 +777,7 @@ class FrontendApiController extends Controller
             'status' => true,
             'total' => $total,
             'message' => 'New arrivels products found successfully',
-            'data' => $searchcontents
+            'data' => $this->withProductPricingVisibility($request, $searchcontents)
         ], 200);
     }
 
@@ -725,7 +827,7 @@ class FrontendApiController extends Controller
             'status' => true,
             'total' => $total,
             'message' => 'New products found successfully',
-            'data' => $searchcontents
+            'data' => $this->withProductPricingVisibility($request, $searchcontents)
         ], 200);
     }
 
@@ -748,7 +850,7 @@ class FrontendApiController extends Controller
             'status' => true,
             'total' => $total,
             'message' => 'Featured products found successfully',
-            'data' => $searchcontents
+            'data' => $this->withProductPricingVisibility($request, $searchcontents)
         ], 200);
     }
 
@@ -764,7 +866,7 @@ class FrontendApiController extends Controller
 
         // Add paginated products and total product count for each category
         foreach ($categories as $category) {
-            $category->products = Product::visibleOnStorefront()
+            $category->products = $this->withProductPricingVisibility($request, Product::visibleOnStorefront()
                 ->where('category_id', $category->id)
                 ->select(
                     'id',
@@ -779,7 +881,7 @@ class FrontendApiController extends Controller
                     'selling_type',
                     'vendor_id'
                 )
-                ->paginate($limit);
+                ->paginate($limit));
 
             // Total visible products in this category
             $category->totalproduct = Product::visibleOnStorefront()
@@ -821,7 +923,7 @@ class FrontendApiController extends Controller
             'status' => true,
             'message' => 'Big selling products found successfully',
             'total' => $total,
-            'data' => $searchcontents
+            'data' => $this->withProductPricingVisibility($request, $searchcontents)
         ], 200);
     }
 
@@ -880,7 +982,7 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Products found with this category successfully',
-            'data' => $paginated
+            'data' => $this->withProductPricingVisibility($request, $paginated)
         ], 200);
     }
 
@@ -942,7 +1044,7 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => empty($slug) ? 'All products' : 'Products found with this sub-category successfully',
-            'data' => $paginated
+            'data' => $this->withProductPricingVisibility($request, $paginated)
         ], 200);
     }
 
@@ -1004,7 +1106,7 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => empty($slug) ? 'All products' : 'Products found with this mini-category successfully',
-            'data' => $paginated
+            'data' => $this->withProductPricingVisibility($request, $paginated)
         ], 200);
     }
 
@@ -1052,7 +1154,7 @@ class FrontendApiController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Products found with this brand successfully',
-            'data' => $brandproducts
+            'data' => $this->withProductPricingVisibility($request, $brandproducts)
         ], 200);
     }
 
@@ -1144,11 +1246,11 @@ class FrontendApiController extends Controller
             'status' => true,
             'message' => 'Products found with this keywords successfully',
             'total' => $products->total(),
-            'data' => $products
+            'data' => $this->withProductPricingVisibility($request, $products)
         ], 200);
     }
 
-    public function productdetails($slug)
+    public function productdetails(Request $request, $slug)
     {
         $product = Product::with([
             'varients.sizes.bulkPrices',
@@ -1199,16 +1301,19 @@ class FrontendApiController extends Controller
             }
         }
 
+        $canViewPricing = $this->canViewProductPricing($request);
         $commissionService = app(\App\Services\VendorCommissionService::class);
-        $commissionPercent = $commissionService->getRateForProduct($product->vendor_id, $product->category_id);
+        $commissionPercent = $canViewPricing
+            ? $commissionService->getRateForProduct($product->vendor_id, $product->category_id)
+            : null;
         
         return response()->json([
             'status' => true,
             'message' => 'Products Details & Related Products',
             'data' => [
-                'product_details' => $product,
-                'relatedproducts' => $relatedproducts,
-                'flash_sale' => $flashSaleData,
+                'product_details' => $this->withProductPricingVisibility($request, $product),
+                'relatedproducts' => $this->withProductPricingVisibility($request, $relatedproducts),
+                'flash_sale' => $this->withProductPricingVisibility($request, $flashSaleData),
                 'commission_percent' => $commissionPercent
             ]
         ], 200);
@@ -1305,11 +1410,16 @@ class FrontendApiController extends Controller
                     }
                     Auth::login($user);
                     $us = User::where('email', $user->email)->first();
+                    $subscription = ResellerSubscriptionService::state($us);
                     return response()->json([
                         'status' => true,
                         'message' => 'Authentication Successful',
                         'token' => $us->createToken('authToken')->plainTextToken,
                         'token_type' => 'Bearer',
+                        'data' => [
+                            'user' => $us,
+                            'subscription' => $subscription,
+                        ],
                     ], 200);
                 }
 
@@ -1361,11 +1471,16 @@ class FrontendApiController extends Controller
                 if ($user->expire_date >= date('Y-m-d')) {
                     if (Auth::guard('web')->attempt(['email' => $user->email, 'password' => $request->password])) {
                         $us = User::where('email', $user->email)->first();
+                        $subscription = ResellerSubscriptionService::state($us);
                         return response()->json([
                             'status' => true,
                             'message' => 'Authentication Successful',
                             'token' => $us->createToken('authToken')->plainTextToken,
                             'token_type' => 'Bearer',
+                            'data' => [
+                                'user' => $us,
+                                'subscription' => $subscription,
+                            ],
                         ], 200);
                     } else {
                         return response()->json([
@@ -1375,30 +1490,61 @@ class FrontendApiController extends Controller
                     }
                 } else {
                     if (isset($user->expire_date)) {
-                        return response()->json([
-                            'status' => false,
-                            'message' => 'Your account is expire please contact support',
-                        ], 200);
-                    } else {
                         if (Auth::guard('web')->attempt(['email' => $user->email, 'password' => $request->password])) {
                             $us = User::where('email', $user->email)->first();
+                            $subscription = ResellerSubscriptionService::state($us);
+                            $us->refresh();
                             return response()->json([
                                 'status' => true,
                                 'message' => 'Authentication Successful',
                                 'token' => $us->createToken('authToken')->plainTextToken,
                                 'token_type' => 'Bearer',
+                                'data' => [
+                                    'user' => $us,
+                                    'subscription' => $subscription,
+                                ],
                             ], 200);
                         }
+
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Password Does not Match',
+                        ], 404);
+                    } else {
+                        if (Auth::guard('web')->attempt(['email' => $user->email, 'password' => $request->password])) {
+                            $us = User::where('email', $user->email)->first();
+                            $subscription = ResellerSubscriptionService::state($us);
+                            return response()->json([
+                                'status' => true,
+                                'message' => 'Authentication Successful',
+                                'token' => $us->createToken('authToken')->plainTextToken,
+                                'token_type' => 'Bearer',
+                                'data' => [
+                                    'user' => $us,
+                                    'subscription' => $subscription,
+                                ],
+                            ], 200);
+                        }
+
+                        return response()->json([
+                            'status' => false,
+                            'message' => 'Password Does not Match',
+                        ], 404);
                     }
                 }
             } else {
                 if (Auth::guard('web')->attempt(['email' => $user->email, 'password' => $request->password])) {
                     $us = User::where('email', $user->email)->first();
+                    $subscription = ResellerSubscriptionService::state($us);
                     return response()->json([
                         'status' => true,
                         'message' => 'Authentication Successful',
                         'token' => $us->createToken('authToken')->plainTextToken,
                         'token_type' => 'Bearer',
+                        'data' => [
+                            'user' => $us,
+                            'subscription' => $subscription,
+                        ],
                     ], 200);
                 } else {
                     return response()->json([
@@ -1629,18 +1775,8 @@ class FrontendApiController extends Controller
     {
         $id = Auth::user()->id;
         $userprofile = User::findOrfail($id);
-
-        // Enforce renewal after expiry: auto-mark expired active users as unpaid/inactive.
-        if (
-            $userprofile->status === 'Active' &&
-            !empty($userprofile->expire_date) &&
-            $userprofile->expire_date < date('Y-m-d')
-        ) {
-            $userprofile->status = 'Inactive';
-            $userprofile->membership_status = 'Unpaid';
-            $userprofile->save();
-            $userprofile->refresh();
-        }
+        $subscription = ResellerSubscriptionService::state($userprofile);
+        $userprofile->refresh();
 
         if ($userprofile) {
             $bank = Bank::where('user_id', $id)->first();
@@ -1657,6 +1793,7 @@ class FrontendApiController extends Controller
                     'soldamount' => $amount,
                     'walletbalance' => Auth::user()->account_balance,
                     'referral_settings' => $this->referralRewardSettings($userprofile),
+                    'subscription' => $subscription,
                 ],
             ], 200);
         }
@@ -3506,7 +3643,7 @@ class FrontendApiController extends Controller
         ], 200);
     }
 
-    public function publicShop($userId)
+    public function publicShop(Request $request, $userId)
     {
         $user = User::find($userId);
         if (!$user) {
@@ -3542,7 +3679,7 @@ class FrontendApiController extends Controller
             'data' => [
                 'shop_name' => $user->shop_name ?? $user->name,
                 'user_id' => (int) $userId,
-                'products' => $products,
+                'products' => $this->withProductPricingVisibility($request, $products),
             ],
         ], 200);
     }
@@ -4926,12 +5063,12 @@ public function popularVendors(Request $request)
             'data'    => [
                 'vendor'     => $vendor,
                 'categories' => $categories,
-                'products'   => $products,
+                'products'   => $this->withProductPricingVisibility($request, $products),
             ],
         ]);
     }
 
-    public function flashSale()
+    public function flashSale(Request $request)
     {
         $flashSale = FlashSale::active()
             ->with(['flashSaleProducts.product'])
@@ -4982,7 +5119,7 @@ public function popularVendors(Request $request)
                 'title' => $flashSale->title,
                 'start_time' => $flashSale->start_time,
                 'end_time' => $flashSale->end_time,
-                'products' => $products,
+                'products' => $this->withProductPricingVisibility($request, $products),
             ],
         ]);
     }

@@ -151,31 +151,32 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('purchese-package', [FrontendApiController::class, 'purchesepackage']);
     Route::post('package-payment/initiate', [FrontendApiController::class, 'initiatePackagePayment']);
     Route::get('/invbkash/create-payment', [App\Http\Controllers\BkashTokenizePaymentController::class, 'invcreatePayment'])->name('invbkash-create-payment');
+    Route::post('logout', [FrontendApiController::class, 'userLogout'])->name('api.user.logout');
+    Route::get('/user-profile', [FrontendApiController::class, 'userProfile'])->name('api.user.profile');
+    Route::get('faqs', [FrontendApiController::class, 'faqs']);
+    Route::get('track-order', [FrontendApiController::class, 'trackorder']);
+    Route::get('get-supporttickets', [FrontendApiController::class, 'supportticket']);
+    Route::post('create-supportticket', [FrontendApiController::class, 'createticket']);
+    Route::get('view-tikit/{id}', [FrontendApiController::class, 'viewticket']);
+    Route::post('replay-tikit/{id}', [FrontendApiController::class, 'replayticket']);
 
+    Route::middleware('reseller.subscription')->group(function () {
     Route::get('dashboard-data', [FrontendApiController::class, 'dashboarddata']);
     Route::post('testing/wallet/top-up', [FrontendApiController::class, 'testingWalletTopUp']);
     Route::post('sales-targets/participate', [FrontendApiController::class, 'participateSalesTarget']);
     Route::post('sales-targets/claim-reward', [FrontendApiController::class, 'claimSalesTargetReward']);
-    Route::post('logout', [FrontendApiController::class, 'userLogout'])->name('api.user.logout');
     Route::post('/confirm-password', [FrontendApiController::class, 'userConfirmPassword'])->name('api.user.confirm-password');
     //Profile
-    Route::get('/user-profile', [FrontendApiController::class, 'userProfile'])->name('api.user.profile');
     Route::post('/update-profile', [FrontendApiController::class, 'updateprofile'])->name('api.update.profile');
     // sidebar
     Route::get('developers-api', [FrontendApiController::class, 'developersapi']);
     Route::get('generate-developers-api', [FrontendApiController::class, 'generatedevelopersapi']);
     Route::get('/api/test', [FrontendApiController::class, 'test']);
-    Route::get('track-order', [FrontendApiController::class, 'trackorder']);
     Route::post('update-bank-info', [FrontendApiController::class, 'bankinfo']);
     Route::get('bank-info', [FrontendApiController::class, 'getBankInfo']);
     Route::get('user-payout-accounts', [FrontendApiController::class, 'userPayoutAccounts']);
     Route::post('user-payout-accounts', [FrontendApiController::class, 'storeUserPayoutAccount']);
     Route::put('user-payout-accounts/{id}', [FrontendApiController::class, 'updateUserPayoutAccount']);
-    // supportticket
-    Route::get('get-supporttickets', [FrontendApiController::class, 'supportticket']);
-    Route::post('create-supportticket', [FrontendApiController::class, 'createticket']);
-    Route::get('view-tikit/{id}', [FrontendApiController::class, 'viewticket']);
-    Route::post('replay-tikit/{id}', [FrontendApiController::class, 'replayticket']);
     // fraudlist
     Route::post('store-fraud-number', [FrontendApiController::class, 'storefraud']);
     Route::get('check-fraud', [FrontendApiController::class, 'checkfraud']);
@@ -275,6 +276,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/warranty/claims', [WarrantyClaimController::class, 'index'])->name('api.warranty.claims.index');
 
     // Vendor (Wholesale / Supplier) – vendor portal APIs
+    });
+
     Route::prefix('vendor')->group(function () {
         // Dashboard
         Route::get('/dashboard', [VendorDashboardController::class, 'index'])->name('api.vendor.dashboard');

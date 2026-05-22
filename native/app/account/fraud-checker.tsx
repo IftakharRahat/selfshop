@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -25,6 +27,7 @@ export default function FraudCheckerScreen() {
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
   const insets = useSafeAreaInsets();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   /* ── State ── */
   const [inputValue, setInputValue] = useState("");
@@ -41,7 +44,7 @@ export default function FraudCheckerScreen() {
       const { data } = await apiClient.get(`/check-fraud?number=${phoneNumber}`);
       return data?.data ?? data ?? [];
     },
-    enabled: !!phoneNumber,
+    enabled: !!phoneNumber && isResellerActive,
   });
 
   /* ── Mutation: report fraud ── */
@@ -93,6 +96,29 @@ export default function FraudCheckerScreen() {
   const hasFraudRecords = hasSearched && !fraudQuery.isFetching && !fraudQuery.isError && fraudRecords.length > 0;
   const isClean = hasSearched && !fraudQuery.isFetching && !fraudQuery.isError && !!phoneNumber && fraudRecords.length === 0;
   const bottomInset = Math.max(insets.bottom, 16);
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Fraud Checker", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Fraud Checker", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Check Fraud"
+          message="Activate your subscription to check and report customer fraud records."
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -322,6 +348,12 @@ export default function FraudCheckerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F8FA" },
+  centerState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8F8FA",
+  },
 
   /* ── Header ── */
   headerCard: {

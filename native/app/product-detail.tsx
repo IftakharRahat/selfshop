@@ -276,7 +276,11 @@ export default function ProductDetailScreen() {
   const [descExpanded, setDescExpanded] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
+  const {
+    isActive: isResellerActive,
+    isLoggedIn,
+    subscriptionDestination,
+  } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
   const defaultQtySet = useRef(false);
 
@@ -354,7 +358,7 @@ export default function ProductDetailScreen() {
       const { data: d } = await apiClient.get(`/check-in-shop/${productId}`);
       return d;
     },
-    enabled: !!productId && isLoggedIn,
+    enabled: !!productId && isLoggedIn && isResellerActive,
     staleTime: 60 * 1000,
   });
   const isInShop = shopCheckQuery.data?.in_shop ?? false;
@@ -387,6 +391,10 @@ export default function ProductDetailScreen() {
   const handleToggleShop = () => {
     if (!isLoggedIn) {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
+      return;
+    }
+    if (!isResellerActive) {
+      setShowActivation(true);
       return;
     }
     if (!productId) {
@@ -846,6 +854,10 @@ export default function ProductDetailScreen() {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
       return;
     }
+    if (!isResellerActive) {
+      setShowActivation(true);
+      return;
+    }
 
     const items = getSelectedItems();
     if (items.length === 0) {
@@ -899,6 +911,10 @@ export default function ProductDetailScreen() {
     if (busyRef.current) return;
     if (!isLoggedIn) {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
+      return;
+    }
+    if (!isResellerActive) {
+      setShowActivation(true);
       return;
     }
 
@@ -962,7 +978,9 @@ export default function ProductDetailScreen() {
     try {
       await Share.share({
         title: productName,
-        message: `${productName} - \u09F3${formatBDT(salePrice, 0)}\n${productUrl}`,
+        message: isResellerActive
+          ? `${productName} - \u09F3${formatBDT(salePrice, 0)}\n${productUrl}`
+          : `${productName}\n${productUrl}`,
         url: productUrl,
       });
     } catch (error) {
@@ -1771,7 +1789,7 @@ export default function ProductDetailScreen() {
               style={({ pressed }) => [s.sheetCta, pressed && { opacity: 0.85 }]}
               onPress={() => {
                 setShowActivation(false);
-                router.push("/pricing");
+                router.push(subscriptionDestination as any);
               }}
             >
               <Ionicons name="rocket" size={18} color="#fff" />

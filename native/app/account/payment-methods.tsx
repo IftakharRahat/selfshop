@@ -20,6 +20,8 @@ import { Sheet, Text } from "tamagui";
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
 import { formatPaymentMethodName, rawPaymentMethodName } from "@/lib/payment-method-name";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -99,6 +101,7 @@ export default function PaymentMethodsScreen() {
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
   const insets = useSafeAreaInsets();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeMethod, setActiveMethod] = useState<PaymentMethod | null>(null);
@@ -114,6 +117,7 @@ export default function PaymentMethodsScreen() {
       const { data } = await apiClient.get("/get-payment-types");
       return data?.data ?? data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const accountsQuery = useQuery({
@@ -122,6 +126,7 @@ export default function PaymentMethodsScreen() {
       const { data } = await apiClient.get("/user-payout-accounts");
       return data?.data?.payout_accounts ?? data?.data ?? [];
     },
+    enabled: isResellerActive,
   });
 
   const rawMethods: PaymentMethod[] = methodsQuery.data ?? [];
@@ -218,6 +223,29 @@ export default function PaymentMethodsScreen() {
   }
 
   const isLoading = methodsQuery.isLoading || accountsQuery.isLoading;
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Payment Methods", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Payment Methods", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Manage Payments"
+          message="Activate your subscription to manage payout accounts and withdrawal methods."
+        />
+      </>
+    );
+  }
 
   return (
     <>

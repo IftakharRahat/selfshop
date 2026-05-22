@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { register } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { fetchUserProfilePayload, invalidateSubscriptionAccessQueries } from "@/lib/subscription-api";
+import { subscriptionDestinationFromProfile } from "@/lib/subscription-routing";
 
 const { width } = Dimensions.get("window");
 
@@ -48,11 +50,22 @@ export default function Register() {
     setError(null);
 
     try {
-      await register(form.name, form.email, form.password, form.c_password);
-      queryClient.invalidateQueries({ queryKey: ["auth-token"] });
-      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      const session = await register(
+        form.name,
+        form.email,
+        form.password,
+        form.c_password,
+        form.refer_by,
+      );
+      invalidateSubscriptionAccessQueries(queryClient);
+      const profilePayload = session.profilePayload?.subscription
+        ? session.profilePayload
+        : await queryClient.fetchQuery({
+            queryKey: ["user-profile"],
+            queryFn: fetchUserProfilePayload,
+          });
       setForm({ name: "", email: "", password: "", c_password: "", refer_by: "" });
-      router.replace("/");
+      router.replace(subscriptionDestinationFromProfile(profilePayload) as any);
     } catch (err: any) {
       const message =
         err?.response?.data?.message || err?.message || "Failed to create account";

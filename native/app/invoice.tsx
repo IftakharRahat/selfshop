@@ -12,6 +12,8 @@ import { toast } from "sonner-native";
 import { WebView } from "react-native-webview";
 
 import apiClient from "@/lib/api-client";
+import { fetchUserProfilePayload, invalidateSubscriptionAccessQueries } from "@/lib/subscription-api";
+import { isSubscriptionActive, subscriptionDestinationFromProfile } from "@/lib/subscription-routing";
 
 /* ── Helpers ── */
 const ACCENT = "#E5005F";
@@ -44,6 +46,7 @@ export default function InvoiceScreen() {
   const [gatewayUrl, setGatewayUrl] = useState<string | null>(null);
   const [webViewLoading, setWebViewLoading] = useState(true);
   const webViewRef = useRef<WebView>(null);
+  const paymentHandledRef = useRef(false);
 
   // Fetch latest invoice data from API
   const { data: pricingData } = useQuery({
@@ -75,6 +78,7 @@ export default function InvoiceScreen() {
     onSuccess: (result) => {
       const url = result?.data?.gateway_url;
       if (url) {
+        paymentHandledRef.current = false;
         setGatewayUrl(url);
         setWebViewLoading(true);
       } else {
@@ -105,8 +109,29 @@ export default function InvoiceScreen() {
     setGatewayUrl(null);
     setWebViewLoading(true);
     // Refresh data — payment might have completed
-    queryClient.invalidateQueries({ queryKey: ["pricing-packages"] });
-    queryClient.invalidateQueries({ queryKey: ["reseller-profile"] });
+    invalidateSubscriptionAccessQueries(queryClient);
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (paymentHandledRef.current) return;
+    paymentHandledRef.current = true;
+
+    handleCloseWebView();
+
+    try {
+      const profilePayload = await queryClient.fetchQuery({
+        queryKey: ["user-profile"],
+        queryFn: fetchUserProfilePayload,
+      });
+
+      if (isSubscriptionActive(profilePayload)) {
+        router.replace("/(tabs)/dashboard" as any);
+      } else {
+        router.replace(subscriptionDestinationFromProfile(profilePayload) as any);
+      }
+    } catch {
+      router.replace("/pricing");
+    }
   };
 
   // Detect SSLCommerz success/fail/cancel URL patterns.
@@ -114,6 +139,8 @@ export default function InvoiceScreen() {
   // (e.g. ?payment=success, ?payment=canceled, ?payment=failed, ?payment=error).
   // We also keep legacy checks for /payment/… paths and status= params.
   const handleNavigationChange = (navState: { url: string }) => {
+    if (paymentHandledRef.current) return;
+
     const url = navState.url.toLowerCase();
 
     const isSuccess =
@@ -137,11 +164,13 @@ export default function InvoiceScreen() {
     if (isSuccess) {
       toast.success("Payment successful! 🎉 Your account is now active.");
       handleCloseWebView();
-      router.replace("/");
+      void handlePaymentSuccess();
     } else if (isFail) {
+      paymentHandledRef.current = true;
       toast.error("Payment failed. Please try again.");
       handleCloseWebView();
     } else if (isCancel) {
+      paymentHandledRef.current = true;
       toast.info("Payment cancelled.");
       handleCloseWebView();
     }

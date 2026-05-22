@@ -13,6 +13,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -84,6 +86,7 @@ function getPaymentStatus(order: any): "Paid" | "Unpaid" | null {
 }
 
 export default function OrderDetailScreen() {
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const params = useLocalSearchParams<{ invoiceID?: string; id?: string }>();
   const invoiceID = (params.invoiceID ?? "").trim().replace(/^[^A-Za-z0-9]+/, "");
   const orderId = params.id ?? "";
@@ -99,16 +102,28 @@ export default function OrderDetailScreen() {
       const apiResponse = res.data;
       return apiResponse?.data ?? apiResponse;
     },
-    enabled: !!invoiceID || !!orderId,
+    enabled: (!!invoiceID || !!orderId) && isResellerActive,
   });
 
   const order = orderQuery.data;
 
-  if (orderQuery.isLoading) {
+  if (isSubscriptionLoading || orderQuery.isLoading) {
     return (
       <>
         <Stack.Screen options={{ headerShown: true, title: "Order Detail", headerShadowVisible: false }} />
         <View style={styles.center}><ActivityIndicator size="large" color={ACCENT} /></View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Order Detail", headerShadowVisible: false }} />
+        <SubscriptionRequired
+          title="Activate to View Order"
+          message="Activate your subscription to view reseller order details."
+        />
       </>
     );
   }
