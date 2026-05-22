@@ -14,6 +14,8 @@ import {
 	useGetMeQuery,
 	useUpdateBankInfoMutation,
 	useUpdateUserMutation,
+	useGetUserPayoutAccountsQuery,
+	useUpsertUserPayoutAccountMutation,
 } from "@/redux/features/auth/authApi";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -28,6 +30,7 @@ type ProfileFormValues = {
 
 type BankFormValues = {
 	bank_name: string;
+	branch_name: string;
 	account_name: string;
 	account_number: string;
 	routing_number: string;
@@ -37,13 +40,29 @@ export default function ProfileDashboard() {
 	const { data } = useGetMeQuery(undefined);
 	const [updateUser] = useUpdateUserMutation();
 	const [updateBankInfo] = useUpdateBankInfoMutation();
+	const [upsertPayoutAccount] = useUpsertUserPayoutAccountMutation();
+	const { data: payoutData } = useGetUserPayoutAccountsQuery(undefined);
 	const [copied, setCopied] = useState(false);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [profilePreview, setProfilePreview] = useState<string | null>(null);
 	const [isBankModalOpen, setIsBankModalOpen] = useState(false);
 
 	const profile = data?.data?.profile;
-	const bankinfo = data?.data?.bankinfo;
+	const legacyBankinfo = data?.data?.bankinfo;
+
+	// Find bank-type payout account from the unified API
+	const payoutAccounts = payoutData?.data?.payout_accounts ?? [];
+	const bankPayoutAccount = payoutAccounts.find((a: any) => a.channel_type === 'bank');
+	// Use payout account if available, otherwise fall back to legacy bankinfo
+	const bankinfo = bankPayoutAccount ? {
+		bank_name: bankPayoutAccount.bank_name,
+		branch_name: bankPayoutAccount.branch_name,
+		account_name: bankPayoutAccount.account_name,
+		account_number: bankPayoutAccount.account_number,
+		routing_number: bankPayoutAccount.routing_number,
+		_paymenttype_id: bankPayoutAccount.paymenttype_id,
+	} : legacyBankinfo;
+
 	const shopproducts = data?.data?.shopproducts || 0;
 	const totalorders = data?.data?.totalorders || 0;
 	const soldamount = data?.data?.soldamount || 0;
@@ -67,6 +86,7 @@ export default function ProfileDashboard() {
 	} = useForm<BankFormValues>({
 		defaultValues: {
 			bank_name: bankinfo?.bank_name || "",
+			branch_name: bankinfo?.branch_name || "",
 			account_name: bankinfo?.account_name || "",
 			account_number: bankinfo?.account_number || "",
 			routing_number: bankinfo?.routing_number || "",
@@ -127,6 +147,7 @@ export default function ProfileDashboard() {
 	const openBankModal = () => {
 		resetBank({
 			bank_name: bankinfo?.bank_name || "",
+			branch_name: bankinfo?.branch_name || "",
 			account_name: bankinfo?.account_name || "",
 			account_number: bankinfo?.account_number || "",
 			routing_number: bankinfo?.routing_number || "",
@@ -136,14 +157,31 @@ export default function ProfileDashboard() {
 
 	const onBankSubmit = async (values: BankFormValues) => {
 		try {
-			const formData = new FormData();
-			formData.append("bank_name", values.bank_name);
-			formData.append("account_name", values.account_name);
-			formData.append("account_number", values.account_number);
-			formData.append("routing_number", values.routing_number);
+			// Use the unified payout accounts API (same as mobile app)
+			const payload: any = {
+				account_name: values.account_name,
+				account_number: values.account_number,
+				bank_name: values.bank_name,
+				branch_name: values.branch_name,
+				routing_number: values.routing_number,
+			};
 
-			await handleAsyncWithToast(async () => updateBankInfo(formData));
+			// If we already have a payout account, use its paymenttype_id
+			if (bankinfo?._paymenttype_id) {
+				payload.paymenttype_id = bankinfo._paymenttype_id;
+			} else {
+				// Fallback: also update legacy bank info directly
+				const formData = new FormData();
+				formData.append("bank_name", values.bank_name);
+				formData.append("account_name", values.account_name);
+				formData.append("account_number", values.account_number);
+				formData.append("routing_number", values.routing_number);
+				await handleAsyncWithToast(async () => updateBankInfo(formData));
+				setIsBankModalOpen(false);
+				return;
+			}
 
+			await handleAsyncWithToast(async () => upsertPayoutAccount(payload));
 			setIsBankModalOpen(false);
 		} catch (err: any) {
 			message.error(err?.data?.message || "Failed to update bank info");
@@ -236,25 +274,29 @@ export default function ProfileDashboard() {
 						</div>
 
 						<div className="px-4 sm:px-6 py-4">
-							<div className="space-y-0 text-sm">
-								<div className="flex items-center justify-between py-3 border-b border-gray-50">
-									<span className="text-gray-500">Bank Name</span>
-									<span className="font-medium text-gray-800">{bankinfo?.bank_name || "Not set"}</span>
-								</div>
-								<div className="flex items-center justify-between py-3 border-b border-gray-50">
-									<span className="text-gray-500">Account Title</span>
-									<span className="font-medium text-gray-800">{bankinfo?.account_name || "Not set"}</span>
-								</div>
-								<div className="flex items-center justify-between py-3 border-b border-gray-50">
-									<span className="text-gray-500">Account Number</span>
-									<span className="font-medium text-gray-800">{bankinfo?.account_number || "Not set"}</span>
-								</div>
-								<div className="flex items-center justify-between py-3">
-									<span className="text-gray-500">Routing Number</span>
-									<span className="font-medium text-gray-800">{bankinfo?.routing_number || "Not set"}</span>
-								</div>
+						<div className="space-y-0 text-sm">
+							<div className="flex items-center justify-between py-3 border-b border-gray-50">
+								<span className="text-gray-500">Bank Name</span>
+								<span className="font-medium text-gray-800">{bankinfo?.bank_name || "Not set"}</span>
+							</div>
+							<div className="flex items-center justify-between py-3 border-b border-gray-50">
+								<span className="text-gray-500">Branch Name</span>
+								<span className="font-medium text-gray-800">{bankinfo?.branch_name || "Not set"}</span>
+							</div>
+							<div className="flex items-center justify-between py-3 border-b border-gray-50">
+								<span className="text-gray-500">Account Holder</span>
+								<span className="font-medium text-gray-800">{bankinfo?.account_name || "Not set"}</span>
+							</div>
+							<div className="flex items-center justify-between py-3 border-b border-gray-50">
+								<span className="text-gray-500">Account Number</span>
+								<span className="font-medium text-gray-800">{bankinfo?.account_number || "Not set"}</span>
+							</div>
+							<div className="flex items-center justify-between py-3">
+								<span className="text-gray-500">Routing Number</span>
+								<span className="font-medium text-gray-800">{bankinfo?.routing_number || "Not set"}</span>
 							</div>
 						</div>
+					</div>
 					</div>
 				</div>
 
@@ -386,7 +428,16 @@ export default function ProfileDashboard() {
 					</div>
 
 					<div className="flex flex-col gap-1">
-						<label className="font-medium text-gray-700">Account Title</label>
+						<label className="font-medium text-gray-700">Branch Name</label>
+						<Controller
+							name="branch_name"
+							control={bankControl}
+							render={({ field }) => <Input {...field} placeholder="e.g. Banani" />}
+						/>
+					</div>
+
+					<div className="flex flex-col gap-1">
+						<label className="font-medium text-gray-700">Account Holder Name</label>
 						<Controller
 							name="account_name"
 							control={bankControl}

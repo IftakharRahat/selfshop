@@ -2214,6 +2214,23 @@ class FrontendApiController extends Controller
         return $account->account_name ? 'Account: ' . $account->account_name : null;
     }
 
+    private function syncPayoutAccountToLegacyBank(int $userId, UserPayoutAccount $account): void
+    {
+        if ($account->channel_type !== 'bank') {
+            return;
+        }
+
+        Bank::updateOrCreate(
+            ['user_id' => $userId],
+            [
+                'bank_name'      => $account->bank_name,
+                'account_name'   => $account->account_name,
+                'account_number' => $account->account_number,
+                'routing_number' => $account->routing_number,
+            ]
+        );
+    }
+
     private function syncLegacyBankPayoutAccount(int $userId): void
     {
         $legacyBank = Bank::where('user_id', $userId)->first();
@@ -2308,6 +2325,9 @@ class FrontendApiController extends Controller
             ]
         );
 
+        // Reverse sync: keep legacy Bank table in sync
+        $this->syncPayoutAccountToLegacyBank(Auth::id(), $account->fresh());
+
         return response()->json([
             'status' => true,
             'message' => $account->wasRecentlyCreated ? 'Payout account added' : 'Payout account updated',
@@ -2351,6 +2371,9 @@ class FrontendApiController extends Controller
             'branch_name' => $channelType === 'bank' ? ($values['branch_name'] ?? null) : null,
             'routing_number' => $channelType === 'bank' ? ($values['routing_number'] ?? null) : null,
         ]);
+
+        // Reverse sync: keep legacy Bank table in sync
+        $this->syncPayoutAccountToLegacyBank(Auth::id(), $account->fresh());
 
         return response()->json([
             'status' => true,

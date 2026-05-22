@@ -101,6 +101,21 @@ const authApi = baseApi.injectEndpoints({
 			}),
 			providesTags: ["user"],
 		}),
+		getUserPayoutAccounts: builder.query({
+			query: () => ({
+				url: "/user-payout-accounts",
+				method: "GET",
+			}),
+			providesTags: ["user"],
+		}),
+		upsertUserPayoutAccount: builder.mutation({
+			query: (data) => ({
+				url: "/user-payout-accounts",
+				method: "POST",
+				body: data,
+			}),
+			invalidatesTags: ["user"],
+		}),
 	}),
 });
 
@@ -115,4 +130,6 @@ export const {
 	useUpdateBankInfoMutation,
 	useOtpMutation,
 	useGetMeQuery,
+	useGetUserPayoutAccountsQuery,
+	useUpsertUserPayoutAccountMutation,
 } = authApi;
