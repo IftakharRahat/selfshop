@@ -1005,12 +1005,13 @@ export default function ProductDetailScreen() {
     <View style={s.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      <Animated.ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 130 }}
         scrollEventThrottle={16}
-        keyboardDismissMode="interactive"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={80}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
@@ -1669,7 +1670,7 @@ export default function ProductDetailScreen() {
             />
           </View>
         )}
-      </Animated.ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* ═══ ANIMATED FIXED HEADER (fades in on scroll) ═══ */}
       <Animated.View
