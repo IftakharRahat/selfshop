@@ -7,9 +7,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import logo from "@/assets/icons/NavLogo.png";
-import { setUser } from "@/redux/features/auth/authSlice";
+import { setUser, useCurrentToken } from "@/redux/features/auth/authSlice";
 import { useRegisterMutation } from "@/redux/features/auth/authApi";
-import { useAppDispatch } from "@/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { trackLead, trackViewRegistration } from "@/lib/trackingEvents";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -35,6 +35,14 @@ export default function ResellerRegisterPage({
 	const [form] = Form.useForm<RegisterFormValues>();
 	const [register, { isLoading }] = useRegisterMutation();
 	const lockedReferralCode = referralCode?.trim() ?? "";
+	const token = useAppSelector(useCurrentToken);
+
+	// Redirect to home if already logged in
+	useEffect(() => {
+		if (token) {
+			router.replace("/");
+		}
+	}, [token, router]);
 
 	useEffect(() => {
 		trackViewRegistration();

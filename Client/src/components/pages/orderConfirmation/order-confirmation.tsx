@@ -589,23 +589,28 @@ export default function OrderConfirmation() {
 									Please select a delivery city first
 								</p>
 							) : advanceDelivery === "yes" ? (
-								<p className="flex items-center gap-2 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
-									<FaCheckCircle size={16} />
-									Customer paid <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> advance delivery
+								<p className="flex flex-wrap items-center gap-1.5 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
+									<FaCheckCircle size={16} className="flex-shrink-0" />
+									<span>Customer paid</span>
+									<span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span>
+									<span>advance delivery</span>
 								</p>
 							) : (
-								<p className="flex items-center gap-2 text-amber-700 text-sm font-medium p-3 rounded-lg mt-3 bg-amber-50">
-									<IoMdInformationCircleOutline size={18} />
-									<span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery charge will be added to total
+								<p className="flex flex-wrap items-center gap-1.5 text-amber-700 text-sm font-medium p-3 rounded-lg mt-3 bg-amber-50">
+									<IoMdInformationCircleOutline size={18} className="flex-shrink-0" />
+									<span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span>
+									<span>delivery charge will be added to total</span>
 								</p>
 							)}
 						</div>
 
 						{/* Delivery Fee Payment Info */}
 						{hasDeliveryCharge ? (
-							<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
-								<IoMdInformationCircleOutline size={20} />
-								Please pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery fee to confirm the order.
+							<p className="flex flex-wrap items-center gap-1.5 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
+								<IoMdInformationCircleOutline size={20} className="flex-shrink-0" />
+								<span>Please pay</span>
+								<span className="digit-font font-bold">৳{formatBDT(totalDeliveryCharge, 0)}</span>
+								<span>delivery fee to confirm the order.</span>
 							</p>
 						) : (
 							<p className="flex items-center gap-2 bg-gray-100 text-gray-500 text-sm font-medium p-4 rounded-lg mt-4">
@@ -617,10 +622,10 @@ export default function OrderConfirmation() {
 						{/* Delivery Fee Payment Method */}
 						<div className="mt-5">
 							<p className="text-sm font-semibold text-gray-800 mb-3">Pay delivery fee via</p>
-							<div className="flex flex-wrap items-center w-full gap-3">
+							<div className="grid grid-cols-2 gap-3">
 								{/* Account Wallet */}
 								<label
-									className={`flex items-center gap-2 border rounded-md px-4 py-2.5 cursor-pointer transition-all flex-1 ${selected === "account"
+									className={`flex items-center gap-2 border rounded-md px-3 py-2.5 cursor-pointer transition-all text-sm ${selected === "account"
 										? "border-pink-500 text-pink-500 bg-pink-50"
 										: "border-gray-300 text-gray-700 hover:border-gray-400"
 										}`}
@@ -631,14 +636,14 @@ export default function OrderConfirmation() {
 										value="account"
 										checked={selected === "account"}
 										onChange={() => setSelected("account")}
-										className="accent-pink-500"
+										className="accent-pink-500 flex-shrink-0"
 									/>
-									Account Wallet
+									<span className="truncate">Account Wallet</span>
 								</label>
 
 								{/* SSL Commerz */}
 								<label
-									className={`flex items-center gap-2 border rounded-md px-4 py-2.5 cursor-pointer transition-all flex-1 ${selected === "ssl"
+									className={`flex items-center gap-2 border rounded-md px-3 py-2.5 cursor-pointer transition-all text-sm ${selected === "ssl"
 										? "border-pink-500 text-pink-500 bg-pink-50"
 										: "border-gray-300 text-gray-700 hover:border-gray-400"
 										}`}
@@ -649,9 +654,9 @@ export default function OrderConfirmation() {
 										value="ssl"
 										checked={selected === "ssl"}
 										onChange={() => setSelected("ssl")}
-										className="accent-pink-500"
+										className="accent-pink-500 flex-shrink-0"
 									/>
-									SSL Commerz
+									<span className="truncate">SSL Commerz</span>
 								</label>
 							</div>
 						</div>
@@ -761,7 +766,7 @@ export default function OrderConfirmation() {
 								Product Summary
 							</h2>
 							<div className="space-y-4">
-								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+								<div className="flex justify-between items-center text-gray-600">
 									<span>Subtotal</span>
 									<span className="flex items-center digit-font">
 										<TbCurrencyTaka size={20} />
@@ -769,7 +774,7 @@ export default function OrderConfirmation() {
 									</span>
 								</div>
 								{totalProfit > 0 && (
-									<div className="flex flex-col sm:flex-row justify-between text-pink-600 font-medium">
+									<div className="flex justify-between items-center text-pink-600 font-medium">
 										<span>Profit amount</span>
 										<span className="flex items-center digit-font">
 											<TbCurrencyTaka size={20} />
@@ -778,7 +783,7 @@ export default function OrderConfirmation() {
 									</div>
 								)}
 								{discount > 0 && (
-									<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+									<div className="flex justify-between items-center text-gray-600">
 										<span>Discount</span>
 										<span className="flex items-center text-green-600">
 											-<TbCurrencyTaka size={20} />
@@ -786,7 +791,7 @@ export default function OrderConfirmation() {
 										</span>
 									</div>
 								)}
-								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
+								<div className="flex justify-between items-start text-gray-600">
 									<span>Delivery Charge</span>
 									<span className="flex flex-col items-end">
 										{!hasDeliveryCharge ? (
@@ -802,7 +807,7 @@ export default function OrderConfirmation() {
 									</span>
 								</div>
 								<div className="border-t pt-4">
-									<div className="flex flex-col sm:flex-row justify-between text-lg font-semibold text-gray-900">
+									<div className="flex justify-between items-center text-lg font-semibold text-gray-900">
 										<span>Total</span>
 										<span className="flex items-center digit-font">
 											<TbCurrencyTaka size={20} />
@@ -811,7 +816,7 @@ export default function OrderConfirmation() {
 									</div>
 								</div>
 								<div className="border-t pt-4">
-									<div className={`flex flex-col sm:flex-row justify-between text-sm font-semibold p-3 rounded-lg ${hasDeliveryCharge ? "text-pink-700 bg-pink-50" : "text-gray-500 bg-gray-50"}`}>
+									<div className={`flex justify-between items-center text-sm font-semibold p-3 rounded-lg ${hasDeliveryCharge ? "text-pink-700 bg-pink-50" : "text-gray-500 bg-gray-50"}`}>
 										<span>Delivery fee (pay now)</span>
 										{hasDeliveryCharge ? (
 											<span className="flex items-center digit-font">
