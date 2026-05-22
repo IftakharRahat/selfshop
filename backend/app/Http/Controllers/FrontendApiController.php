@@ -3478,11 +3478,19 @@ class FrontendApiController extends Controller
             ], 404);
         }
 
-        // Enrich cart items with vendor_id from product table
+        // Enrich cart items with vendor_id and pickup_city_id from product/vendor tables
         // (shop_id is the admin who uploaded, vendor_id is the actual supplier)
         $carts->transform(function ($cart) {
             $product = Product::find($cart->product_id);
             $cart->vendor_id = $product ? ($product->vendor_id ?? $cart->shop_id) : $cart->shop_id;
+
+            // Attach vendor's pickup city for delivery charge calculation
+            if ($cart->vendor_id) {
+                $vendor = Vendor::find($cart->vendor_id);
+                $cart->pickup_city_id = $vendor->pickup_city_id ?? null;
+                $cart->shop_name = $vendor->public_name ?? $vendor->name ?? 'Supplier';
+            }
+
             return $cart;
         });
 
@@ -3525,6 +3533,46 @@ class FrontendApiController extends Controller
                 'total_price' => $carts * $variant->price,
             ]
         ], 200);
+    }
+
+    /**
+     * GET /api/delivery-charges?city_id=&vendor_ids=1,2,3
+     *
+     * Returns delivery charges based on CarryBee city matching between
+     * vendor pickup city and customer destination city.
+     */
+    public function deliveryCharges(Request $request)
+    {
+        $customerCityId = $request->input('city_id') ? (int) $request->input('city_id') : null;
+
+        // Parse vendor_ids from comma-separated string or from cart
+        $vendorIds = [];
+        if ($request->filled('vendor_ids')) {
+            $vendorIds = collect(explode(',', $request->input('vendor_ids')))
+                ->map(fn($id) => (int) trim($id))
+                ->filter(fn($id) => $id > 0)
+                ->unique()
+                ->values()
+                ->all();
+        } else {
+            // Auto-detect vendor IDs from the user's cart
+            $cartItems = Cart::where('user_id', Auth::id())->get();
+            foreach ($cartItems as $item) {
+                $product = Product::find($item->product_id);
+                if ($product && $product->vendor_id) {
+                    $vendorIds[] = (int) $product->vendor_id;
+                }
+            }
+            $vendorIds = array_unique(array_filter($vendorIds));
+        }
+
+        $service = app(\App\Services\DeliveryChargeService::class);
+        $result = $service->getChargesForCheckout($customerCityId, $vendorIds);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $result,
+        ]);
     }
 
     public function orderNow(Request $request)
@@ -3715,8 +3763,19 @@ class FrontendApiController extends Controller
             return $product ? ($product->vendor_id ?? $item->shop_id) : ($item->shop_id ?: 1);
         });
         $vendorCount = max(1, $vendorGroups->count());
-        $perVendorDelivery = round($request->deliveryCharge / $vendorCount);
         $groupId = $vendorCount > 1 ? 'GRP-' . strtoupper(substr(uniqid(), -8)) : null;
+
+        // Server-side delivery charge recalculation using CarryBee city matching
+        $deliveryService = app(\App\Services\DeliveryChargeService::class);
+        $customerCityId = $request->city_id ? (int) $request->city_id : null;
+        $vendorDeliveryMap = [];
+        $totalDeliveryCharge = 0;
+
+        foreach ($vendorGroups->keys() as $vendorId) {
+            $result = $deliveryService->resolveCharge((int) $vendorId, $customerCityId);
+            $vendorDeliveryMap[$vendorId] = $result['charge'];
+            $totalDeliveryCharge += $result['charge'];
+        }
 
         // Assign an active executive admin
         $admin = Admin::whereHas('roles', function ($q) {
@@ -3731,12 +3790,12 @@ class FrontendApiController extends Controller
         if ($request->balance_from == 'from_account') {
             $accountuser = User::find(Auth::id());
             if ($accountuser) {
-                $accountuser->account_balance -= $request->deliveryCharge;
+                $accountuser->account_balance -= $totalDeliveryCharge;
                 $accountuser->save();
                 $chargededucts = new Chargededuct();
                 $chargededucts->user_id = $accountuser->id;
-                $chargededucts->comment = 'You have charged ' . $request->deliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
-                $chargededucts->amount = $request->deliveryCharge;
+                $chargededucts->comment = 'You have charged ' . $totalDeliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
+                $chargededucts->amount = $totalDeliveryCharge;
                 $chargededucts->status = 'Success';
                 $chargededucts->save();
             }
@@ -3767,13 +3826,14 @@ class FrontendApiController extends Controller
             $order->order_group_id = $groupId;
             $order->invoiceID = $this->uniqueIDN();
             $order->subTotal = $sell;
-            $order->deliveryCharge = $perVendorDelivery;
+            $thisVendorDelivery = $vendorDeliveryMap[$vendorId] ?? round($totalDeliveryCharge / $vendorCount);
+            $order->deliveryCharge = $thisVendorDelivery;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
             $order->advance_delivery = $request->advance_delivery === 'yes' ? 1 : 0;
 
             if ($request->balance_from == 'from_account') {
-                $order->paymentAmount = $perVendorDelivery;
+                $order->paymentAmount = $thisVendorDelivery;
                 $order->payment_type_id = 5;
             }
 

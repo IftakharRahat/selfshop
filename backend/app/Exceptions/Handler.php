@@ -4,7 +4,6 @@ namespace App\Exceptions;
 
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Sentry\Laravel\Integration;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -37,7 +36,13 @@ class Handler extends ExceptionHandler
     public function register()
     {
         $this->reportable(function (Throwable $e) {
-            Integration::captureUnhandledException($e);
+            if (class_exists(\Sentry\Laravel\Integration::class)) {
+                try {
+                    \Sentry\Laravel\Integration::captureUnhandledException($e);
+                } catch (\Throwable $sentryError) {
+                    // Sentry not configured — silently ignore
+                }
+            }
         });
     }
 
