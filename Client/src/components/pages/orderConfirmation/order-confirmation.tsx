@@ -19,6 +19,7 @@ import {
 	useDeleteCartItemMutation,
 	useGetAllCartItemsQuery,
 	useUpdateCartItemMutation,
+	useGetDeliveryChargesQuery,
 } from "@/redux/features/cartApi";
 import { useGetBasicInfoQuery } from "@/redux/features/home/homeApi";
 import {
@@ -57,10 +58,18 @@ export default function OrderConfirmation() {
 		isSuccess: isCartSuccess,
 	} = useGetAllCartItemsQuery(undefined);
 
+	// Avoid redirecting on initial render — give RTK Query time to refetch after addToCart invalidation
+	const [ready, setReady] = useState(false);
+	useEffect(() => {
+		const timer = setTimeout(() => setReady(true), 1500);
+		return () => clearTimeout(timer);
+	}, []);
+
 	// Redirect only when cart fetch succeeds and is truly empty.
 	// Avoid redirecting on transient API/auth/network errors.
 	useEffect(() => {
 		if (
+			ready &&
 			!isLoading &&
 			isCartSuccess &&
 			!isCartError &&
@@ -68,29 +77,13 @@ export default function OrderConfirmation() {
 		) {
 			router.replace("/");
 		}
-	}, [cartItems, isLoading, isCartSuccess, isCartError, router]);
+	}, [cartItems, isLoading, isCartSuccess, isCartError, router, ready]);
 	const [updateCartItem] = useUpdateCartItemMutation();
 	const [deleteCartItem] = useDeleteCartItemMutation();
 	const [createOrder] = useCreateOrderMutation();
 	const [selected, setSelected] = useState("account");
 	const [agreedToTerms, setAgreedToTerms] = useState(false);
 	const [advanceDelivery, setAdvanceDelivery] = useState<"yes" | "no">("no");
-	const [deliveryZone, setDeliveryZone] = useState<"inside" | "near" | "outside" | null>(null);
-	const [deliveryZoneOpen, setDeliveryZoneOpen] = useState(false);
-	const { data: basicInfoData } = useGetBasicInfoQuery(undefined);
-	const insideDhakaCharge: number = Number(basicInfoData?.data?.inside_dhaka_charge) || 60;
-	const nearDhakaCharge: number = Number(basicInfoData?.data?.near_dhaka_charge) || 100;
-	const outsideDhakaCharge: number = Number(basicInfoData?.data?.outside_dhaka_charge) || 130;
-	const deliveryCharge: number = deliveryZone === "inside" ? insideDhakaCharge : deliveryZone === "near" ? nearDhakaCharge : deliveryZone === "outside" ? outsideDhakaCharge : 0;
-	const deliveryZoneLabel = deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : deliveryZone === "outside" ? "Outside Dhaka" : null;
-
-	// Count distinct suppliers in cart — delivery charge is multiplied by supplier count
-	const shopCount = (() => {
-		if (!cartItems?.data || cartItems.data.length === 0) return 1;
-		const uniqueSuppliers = new Set(cartItems.data.map((item: any) => item.vendor_id || item.shop_id));
-		return Math.max(1, uniqueSuppliers.size);
-	})();
-	const totalDeliveryCharge: number = deliveryCharge * shopCount;
 	const [customerData, setCustomerData] = useState({
 		name: "",
 		address: "",
@@ -124,6 +117,68 @@ export default function OrderConfirmation() {
 	const cities = citiesData?.data?.cities ?? [];
 	const zones = zonesData?.data?.zones ?? [];
 	const areas = areasData?.data?.areas ?? [];
+
+	// Auto-computed delivery charges from backend (CarryBee city matching)
+	const { data: deliveryChargeData, isFetching: chargesFetching, isError: chargesError } = useGetDeliveryChargesQuery(
+		{ cityId: selectedCityId! },
+		{ skip: !selectedCityId }
+	);
+
+	// Fallback: basic info charges for client-side computation when API unavailable
+	const { data: basicInfoData } = useGetBasicInfoQuery(undefined);
+	const insideDhakaCharge: number = Number(basicInfoData?.data?.default_same_city_charge || basicInfoData?.data?.inside_dhaka_charge) || 60;
+	const outsideDhakaCharge: number = Number(basicInfoData?.data?.default_inter_city_charge || basicInfoData?.data?.outside_dhaka_charge) || 130;
+
+	// Client-side fallback: compute delivery per vendor when API endpoint is unavailable
+	const clientFallbackCharges = (() => {
+		if (!selectedCityId || (!chargesError && deliveryChargeData)) return null;
+		if (!cartItems?.data || cartItems.data.length === 0) return null;
+
+		// Group by vendor and check city match
+		const vendorMap = new Map<number, { vendor_id: number; vendor_name: string; pickup_city_id?: number }>();
+		for (const item of cartItems.data) {
+			const vid = item.vendor_id || item.shop_id || 0;
+			if (!vendorMap.has(vid)) {
+				vendorMap.set(vid, {
+					vendor_id: vid,
+					vendor_name: item.shop_name || 'Supplier',
+					pickup_city_id: item.pickup_city_id,
+				});
+			}
+		}
+
+		let total = 0;
+		const vendors: Array<{ vendor_id: number; charge: number; zone: string; zone_label: string; vendor_name: string }> = [];
+		for (const [, v] of vendorMap) {
+			const isSameCity = v.pickup_city_id != null && v.pickup_city_id === selectedCityId;
+			const charge = isSameCity ? insideDhakaCharge : outsideDhakaCharge;
+			total += charge;
+			vendors.push({
+				vendor_id: v.vendor_id,
+				charge,
+				zone: isSameCity ? 'same_city' : 'inter_city',
+				zone_label: isSameCity ? 'Same City' : 'Inter-City',
+				vendor_name: v.vendor_name,
+			});
+		}
+
+		return { vendors, total_charge: total, same_city_charge: insideDhakaCharge, inter_city_charge: outsideDhakaCharge };
+	})();
+
+	// Use API data if available, otherwise use client-side fallback
+	const effectiveChargeData = deliveryChargeData ?? clientFallbackCharges;
+
+	// Delivery charge resolved — per vendor city matching
+	const deliveryCharge: number = selectedCityId && effectiveChargeData
+		? (effectiveChargeData.total_charge ?? effectiveChargeData.same_city_charge ?? 0)
+		: 0;
+	const deliveryZoneLabel: string | null = selectedCityId && effectiveChargeData
+		? (effectiveChargeData.vendors?.[0]?.zone_label
+			?? (effectiveChargeData.total_charge != null ? "Delivery Charge" : null))
+		: null;
+	const totalDeliveryCharge: number = deliveryCharge;
+	const hasDeliveryCharge = selectedCityId != null && deliveryCharge > 0;
+	const isChargeLoading = chargesFetching && !chargesError;
 
 	const handleSaveAddress = async () => {
 		if (!customerData.name || !customerData.address || !customerData.phone) return;
@@ -188,7 +243,7 @@ export default function OrderConfirmation() {
 			return total + (sellingPrice - costPrice) * item.qty;
 		}, 0) || 0;
 	const grandTotal =
-		advanceDelivery === "yes" || !deliveryZone
+		advanceDelivery === "yes" || !hasDeliveryCharge
 			? subtotal + totalProfit - discount
 			: subtotal + totalProfit - discount + totalDeliveryCharge;
 
@@ -210,8 +265,8 @@ export default function OrderConfirmation() {
 
 	const handleOrderConfirm = async () => {
 		if (!validateForm()) return;
-		if (!deliveryZone) {
-			Swal.fire({ icon: "warning", title: "Please select a delivery zone", confirmButtonText: "OK" });
+		if (!selectedCityId) {
+			Swal.fire({ icon: "warning", title: "Please select a delivery city", text: "Select a city to calculate delivery charges.", confirmButtonText: "OK" });
 			return;
 		}
 
@@ -221,8 +276,7 @@ export default function OrderConfirmation() {
 		formData.append("customerAddress", customerData.address);
 		formData.append("subTotal", subtotal.toString());
 		formData.append("deliveryCharge", totalDeliveryCharge.toString());
-		formData.append("shop_count", shopCount.toString());
-		formData.append("delivery_zone", deliveryZone === "inside" ? "Inside Dhaka" : deliveryZone === "near" ? "Surrounding Dhaka" : "Outside Dhaka");
+		formData.append("delivery_zone", deliveryZoneLabel ?? "Delivery Charge");
 		formData.append("advance_delivery", advanceDelivery);
 		if (selectedCityId) formData.append("city_id", selectedCityId.toString());
 		if (selectedZoneId) formData.append("zone_id", selectedZoneId.toString());
@@ -446,42 +500,48 @@ export default function OrderConfirmation() {
 							})()}
 						</div>
 
-						{/* Delivery Zone Selector */}
+						{/* Auto-computed Delivery Charge (from CarryBee city matching) */}
 						<div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
 							<p className="text-sm font-semibold text-gray-800 mb-3">
-								Delivery Zone
+								Delivery Charge
 							</p>
-							<div className="relative">
-								<button
-									type="button"
-									onClick={() => setDeliveryZoneOpen(!deliveryZoneOpen)}
-									className={`w-full flex items-center justify-between px-4 py-3 border rounded-lg text-sm font-medium bg-white cursor-pointer transition-all ${deliveryZone ? "border-pink-500 text-gray-800" : "border-gray-300 text-gray-500"} ${deliveryZoneOpen ? "ring-2 ring-pink-500 border-pink-500" : "hover:border-gray-400"}`}
-								>
-									<span>{deliveryZoneLabel ? `${deliveryZoneLabel} — ৳${formatBDT(deliveryCharge, 0)}` : "Choose Delivery Zone"}</span>
-									<svg className={`w-5 h-5 text-gray-400 transition-transform ${deliveryZoneOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-									</svg>
-								</button>
-								{deliveryZoneOpen && (
-									<div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
-										{([
-											{ value: "inside" as const, label: "Inside Dhaka", charge: insideDhakaCharge },
-											{ value: "near" as const, label: "Surrounding Dhaka", charge: nearDhakaCharge },
-											{ value: "outside" as const, label: "Outside Dhaka", charge: outsideDhakaCharge },
-										]).map((zone) => (
-											<button
-												key={zone.value}
-												type="button"
-												onClick={() => { setDeliveryZone(zone.value); setDeliveryZoneOpen(false); }}
-												className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors cursor-pointer ${deliveryZone === zone.value ? "bg-pink-50 text-pink-700" : "text-gray-700 hover:bg-pink-50 hover:text-pink-700"}`}
-											>
-												<span>{zone.label}</span>
-												<span className="digit-font text-xs font-semibold">৳{formatBDT(zone.charge, 0)}</span>
-											</button>
-										))}
-									</div>
-								)}
-							</div>
+							{!selectedCityId ? (
+								<div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+									<IoMdInformationCircleOutline size={18} className="text-amber-600 flex-shrink-0" />
+									<p className="text-sm text-amber-800">Please select a city above to calculate delivery charges</p>
+								</div>
+							) : isChargeLoading ? (
+								<div className="flex items-center justify-center gap-2 py-4">
+									<div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+									<span className="text-sm text-gray-500">Calculating delivery charge...</span>
+								</div>
+							) : effectiveChargeData?.vendors && effectiveChargeData.vendors.length > 0 ? (
+								<div className="space-y-2">
+									{effectiveChargeData.vendors.map((v, i) => (
+										<div
+											key={i}
+											className={`flex items-center justify-between p-3 rounded-lg ${v.zone === "same_city" ? "bg-green-50 border border-green-200" : "bg-orange-50 border border-orange-200"}`}
+										>
+											<div>
+												<p className="text-sm font-semibold text-gray-900">{v.vendor_name || "Supplier"}</p>
+												<p className={`text-xs font-medium ${v.zone === "same_city" ? "text-green-600" : "text-orange-600"}`}>{v.zone_label}</p>
+											</div>
+											<span className={`digit-font text-base font-bold ${v.zone === "same_city" ? "text-green-600" : "text-pink-600"}`}>৳{formatBDT(v.charge, 0)}</span>
+										</div>
+									))}
+									{effectiveChargeData.vendors.length > 1 && (
+										<div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-1">
+											<span className="text-sm font-bold text-gray-900">Total Delivery</span>
+											<span className="digit-font text-base font-bold text-pink-600">৳{formatBDT(totalDeliveryCharge, 0)}</span>
+										</div>
+									)}
+								</div>
+							) : hasDeliveryCharge ? (
+								<div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+									<span className="text-sm font-semibold text-gray-900">{deliveryZoneLabel ?? "Delivery Charge"}</span>
+									<span className="digit-font text-base font-bold text-green-600">৳{formatBDT(totalDeliveryCharge, 0)}</span>
+								</div>
+							) : null}
 						</div>
 
 						{/* Advance Delivery Toggle */}
@@ -523,34 +583,34 @@ export default function OrderConfirmation() {
 									No
 								</label>
 							</div>
-							{!deliveryZone ? (
+							{!hasDeliveryCharge ? (
 								<p className="flex items-center gap-2 text-gray-500 text-sm font-medium p-3 rounded-lg mt-3 bg-gray-100">
 									<IoMdInformationCircleOutline size={18} />
-									Please select a delivery zone first
+									Please select a delivery city first
 								</p>
 							) : advanceDelivery === "yes" ? (
 								<p className="flex items-center gap-2 text-green-700 text-sm font-medium p-3 rounded-lg mt-3 bg-green-100">
 									<FaCheckCircle size={16} />
-									Customer paid <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> advance delivery{shopCount > 1 && <span className="text-xs ml-1">(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops)</span>}
+									Customer paid <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> advance delivery
 								</p>
 							) : (
 								<p className="flex items-center gap-2 text-amber-700 text-sm font-medium p-3 rounded-lg mt-3 bg-amber-50">
 									<IoMdInformationCircleOutline size={18} />
-									<span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery charge will be added to total{shopCount > 1 && <span className="text-xs block mt-1">(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops — products ship from different suppliers)</span>}
+									<span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery charge will be added to total
 								</p>
 							)}
 						</div>
 
 						{/* Delivery Fee Payment Info */}
-						{deliveryZone ? (
+						{hasDeliveryCharge ? (
 							<p className="flex items-center gap-2 bg-[#FFE5E5] text-red-700 text-sm font-medium p-4 rounded-lg mt-4">
 								<IoMdInformationCircleOutline size={20} />
-								Please pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery fee to confirm the order.{shopCount > 1 && <span className="text-xs block mt-1">(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops)</span>}
+								Please pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> delivery fee to confirm the order.
 							</p>
 						) : (
 							<p className="flex items-center gap-2 bg-gray-100 text-gray-500 text-sm font-medium p-4 rounded-lg mt-4">
 								<IoMdInformationCircleOutline size={20} />
-								Select a delivery zone to see the delivery fee.
+								Select a delivery city to see the delivery fee.
 							</p>
 						)}
 
@@ -620,7 +680,7 @@ export default function OrderConfirmation() {
 								: "bg-gray-300 text-gray-500 cursor-not-allowed"
 								}`}
 						>
-							{deliveryZone ? <>Pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> {"&"} Confirm Order</> : "Confirm Order"}
+							{hasDeliveryCharge ? <>Pay <span className="digit-font">৳{formatBDT(totalDeliveryCharge, 0)}</span> {"&"} Confirm Order</> : "Confirm Order"}
 						</button>
 					</div>
 
@@ -729,22 +789,15 @@ export default function OrderConfirmation() {
 								<div className="flex flex-col sm:flex-row justify-between text-gray-600">
 									<span>Delivery Charge</span>
 									<span className="flex flex-col items-end">
-										{!deliveryZone ? (
-											<span className="text-gray-400 text-sm italic">Select a zone</span>
+										{!hasDeliveryCharge ? (
+											<span className="text-gray-400 text-sm italic">Select a city</span>
 										) : advanceDelivery === "yes" ? (
 											<span className="text-green-600 text-sm font-medium">Paid by customer</span>
 										) : (
-											<>
-												<span className="digit-font flex items-center">
-													<TbCurrencyTaka size={20} />
-													{formatBDT(totalDeliveryCharge, 0)}
-												</span>
-												{shopCount > 1 && (
-													<span className="text-xs text-gray-400 mt-0.5">
-														(৳{formatBDT(deliveryCharge, 0)} × {shopCount} shops)
-													</span>
-												)}
-											</>
+											<span className="digit-font flex items-center">
+												<TbCurrencyTaka size={20} />
+												{formatBDT(totalDeliveryCharge, 0)}
+											</span>
 										)}
 									</span>
 								</div>
@@ -758,15 +811,15 @@ export default function OrderConfirmation() {
 									</div>
 								</div>
 								<div className="border-t pt-4">
-									<div className={`flex flex-col sm:flex-row justify-between text-sm font-semibold p-3 rounded-lg ${deliveryZone ? "text-pink-700 bg-pink-50" : "text-gray-500 bg-gray-50"}`}>
+									<div className={`flex flex-col sm:flex-row justify-between text-sm font-semibold p-3 rounded-lg ${hasDeliveryCharge ? "text-pink-700 bg-pink-50" : "text-gray-500 bg-gray-50"}`}>
 										<span>Delivery fee (pay now)</span>
-										{deliveryZone ? (
+										{hasDeliveryCharge ? (
 											<span className="flex items-center digit-font">
 												<TbCurrencyTaka size={18} />
 												{formatBDT(totalDeliveryCharge, 0)}
 											</span>
 										) : (
-											<span className="text-gray-400 text-xs italic">Select a zone</span>
+											<span className="text-gray-400 text-xs italic">Select a city</span>
 										)}
 									</div>
 								</div>

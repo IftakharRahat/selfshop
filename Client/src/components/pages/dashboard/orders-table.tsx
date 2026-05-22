@@ -24,6 +24,9 @@ const statusColors: Record<string, string> = {
 	Delivered: "bg-green-50 text-green-700 border-green-200",
 	Canceled: "bg-red-50 text-red-700 border-red-200",
 	Return: "bg-gray-50 text-gray-700 border-gray-200",
+	"Payment Pending": "bg-amber-50 text-amber-700 border-amber-200",
+	"Payment Failed": "bg-red-50 text-red-700 border-red-200",
+	"Payment Canceled": "bg-rose-50 text-rose-700 border-rose-200",
 };
 
 interface OrdersTableProps {
@@ -77,6 +80,31 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 		return "Product";
 	};
 
+	const getCustomerMeta = (order: any) => {
+		const rawData = order?.data;
+		let parsed: any = {};
+		try {
+			parsed = typeof rawData === "string" ? JSON.parse(rawData) : (rawData || {});
+		} catch {
+			parsed = {};
+		}
+
+		return {
+			name: order?.customers?.customerName ?? parsed?.customer_name ?? parsed?.customerName ?? "-",
+			phone: order?.customers?.customerPhone ?? parsed?.customer_phone ?? parsed?.customerPhone ?? "-",
+			address: order?.customers?.customerAddress ?? parsed?.customer_address ?? parsed?.customerAddress ?? "-",
+		};
+	};
+
+	const toDisplayStatus = (order: any): string => {
+		const raw = String(order?.status ?? "");
+		if (raw === "Pending Payment") return "Payment Pending";
+		if (raw === "Failed") return "Payment Failed";
+		if (raw === "Canceled" || raw === "Cancelled") return "Payment Canceled";
+
+		return order?.customer_status ?? order?.display_status ?? raw;
+	};
+
 	if (isLoading) {
 		return (
 			<div className="flex justify-center py-10">
@@ -100,8 +128,8 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 			{/* Mobile view */}
 			<div className="md:hidden space-y-3">
 				{orders.map((order: any) => {
-					const displayStatus =
-						order.customer_status ?? order.display_status ?? order.status;
+					const displayStatus = toDisplayStatus(order);
+					const customer = getCustomerMeta(order);
 					const isDelivered = displayStatus === "Delivered";
 					const firstProductId = getFirstProductId(order);
 					const canReview =
@@ -141,7 +169,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 										{order.invoiceID}
 									</p>
 									<p className="text-xs text-gray-500 truncate">
-										{order.customers?.customerName ?? "-"}
+										{customer.name}
 									</p>
 								</div>
 								<span
@@ -155,7 +183,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 								<div>
 									<span className="text-gray-400">Phone</span>
 									<p className="text-gray-700 truncate">
-										{order.customers?.customerPhone ?? "-"}
+										{customer.phone}
 									</p>
 								</div>
 								<div>
@@ -165,7 +193,7 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 								<div className="col-span-2">
 									<span className="text-gray-400">Address</span>
 									<p className="text-gray-700 truncate">
-										{order.customers?.customerAddress ?? "-"}
+										{customer.address}
 									</p>
 								</div>
 							</div>
@@ -244,10 +272,8 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 
 					<tbody>
 						{orders.map((order: any) => {
-							const displayStatus =
-								order.customer_status ??
-								order.display_status ??
-								order.status;
+							const displayStatus = toDisplayStatus(order);
+							const customer = getCustomerMeta(order);
 							const isDelivered = displayStatus === "Delivered";
 							const firstProductId = getFirstProductId(order);
 							const canReview =
@@ -289,15 +315,15 @@ export default function OrdersTable({ status = "all" }: OrdersTableProps) {
 									</td>
 
 									<td className="p-4 text-sm text-gray-700">
-										{order.customers?.customerName ?? "-"}
+										{customer.name}
 									</td>
 
 									<td className="p-4 text-sm text-gray-500">
-										{order.customers?.customerAddress ?? "-"}
+										{customer.address}
 									</td>
 
 									<td className="p-4 text-sm text-gray-500">
-										{order.customers?.customerPhone ?? "-"}
+										{customer.phone}
 									</td>
 
 									<td className="p-4 text-sm text-gray-500">

@@ -85,6 +85,7 @@ class VendorProductController extends Controller
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
             'warranty_days' => 'nullable|integer|min:0|max:3650',
+            'extra_delivery_per_qty' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -162,6 +163,9 @@ class VendorProductController extends Controller
         // Warranty / Exchange (optional)
         if (Schema::hasColumn('products', 'warranty_days')) {
             $product->warranty_days = $request->filled('warranty_days') ? (int) $request->input('warranty_days') : null;
+        }
+        if (Schema::hasColumn('products', 'extra_delivery_per_qty')) {
+            $product->extra_delivery_per_qty = $request->input('extra_delivery_per_qty', 0);
         }
 
         if ($request->hasFile('ProductImage')) {
@@ -248,6 +252,7 @@ class VendorProductController extends Controller
             'allow_dropship' => 'nullable|boolean',
             'selling_type' => 'nullable|in:wholesale,dropshipping,both',
             'warranty_days' => 'nullable|integer|min:0|max:3650',
+            'extra_delivery_per_qty' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -320,6 +325,9 @@ class VendorProductController extends Controller
         }
         if (array_key_exists('minimum_qty', $data)) {
             $product->minimum_qty = (int) $data['minimum_qty'];
+        }
+        if (Schema::hasColumn('products', 'extra_delivery_per_qty') && $request->has('extra_delivery_per_qty')) {
+            $product->extra_delivery_per_qty = (float) $request->input('extra_delivery_per_qty', 0);
         }
         if (Schema::hasColumn('products', 'allow_dropship') && array_key_exists('allow_dropship', $data)) {
             $product->allow_dropship = (bool) $data['allow_dropship'];

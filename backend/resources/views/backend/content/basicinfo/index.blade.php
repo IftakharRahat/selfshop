@@ -348,17 +348,17 @@
 
                             <hr style="border-color: var(--admin-border, #e2e8f0); margin: 16px 0;">
 
-                            <p style="font-size: 13px; font-weight: 600; color: var(--admin-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Delivery Charges</p>
+                            <p style="font-size: 13px; font-weight: 600; color: var(--admin-text-muted, #64748b); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Delivery Charges <span style="font-weight: 400; text-transform: none; letter-spacing: normal; font-size: 11px; color: #94a3b8;">— auto-calculated based on supplier & customer city</span></p>
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Inside Dhaka</label>
+                                        <label>Same City <span class="text-muted" style="font-weight:400; font-size:11px;">— supplier & customer in same city</span></label>
                                         <input type="text" class="form-control" name="inside_dhaka_charge"
                                             value="{{ $webinfo->inside_dhaka_charge }}" id="inside_dhaka_charge"
-                                            placeholder="৳ 0">
+                                            placeholder="৳ 60">
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4" hidden>
                                     <div class="form-group">
                                         <label>Surrounding Dhaka</label>
                                         <input type="text" class="form-control" name="near_dhaka_charge"
@@ -368,10 +368,10 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label>Outside Dhaka</label>
+                                        <label>Inter-City <span class="text-muted" style="font-weight:400; font-size:11px;">— supplier & customer in different cities</span></label>
                                         <input type="text" class="form-control" name="outside_dhaka_charge"
                                             value="{{ $webinfo->outside_dhaka_charge }}" id="outside_dhaka_charge"
-                                            placeholder="৳ 0">
+                                            placeholder="৳ 130">
                                     </div>
                                 </div>
                             </div>

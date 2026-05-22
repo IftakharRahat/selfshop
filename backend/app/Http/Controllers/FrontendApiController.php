@@ -19,6 +19,7 @@ use App\Models\Faq;
 use App\Models\FlashSale;
 use App\Models\FlashSaleProduct;
 use App\Models\Fraud;
+use App\Models\Information;
 use App\Models\Income;
 use App\Models\Message;
 use App\Models\Minicategory;
@@ -221,6 +222,27 @@ class FrontendApiController extends Controller
                 'instagram'      => $info->linkedin ?? null,  // stored as linkedin in DB
                 'youtube'        => $info->youtube ?? null,
                 'tiktok'         => $info->rss ?? null,       // stored as rss in DB
+            ],
+        ], 200);
+    }
+
+    public function informationPage(string $key)
+    {
+        $value = Information::where('key', $key)->first();
+
+        if (!$value) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Information not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'key' => $value->key,
+                'value' => $value->value,
+                'updated_at' => $value->updated_at,
             ],
         ], 200);
     }
@@ -1326,8 +1348,23 @@ class FrontendApiController extends Controller
         }
 
 
+        $isCampaignCode = false;
         if ($referralCode !== '') {
             $validity = User::where('my_referral_code', $referralCode)->first();
+            // If no user has this referral code, check if it's a valid marketing campaign code.
+            if (!$validity) {
+                $campaign = \App\Models\MarketingCampaign::where('status', 'active')
+                    ->where(function ($q) use ($referralCode) {
+                        $q->where('code', $referralCode)
+                          ->orWhere('code', strtolower($referralCode));
+                    })
+                    ->first();
+                if ($campaign) {
+                    $isCampaignCode = true;
+                    // Use the first admin/user as fallback so validation passes.
+                    $validity = User::first();
+                }
+            }
         } else {
             $validity = User::first();
         }
@@ -1348,10 +1385,14 @@ class FrontendApiController extends Controller
                 $code = substr($string, 0, 3);
 
                 $user->my_referral_code = strtoupper($code) . $this->uniqueID();
-                if ($referralCode !== '') {
+                if ($referralCode !== '' && !$isCampaignCode) {
                     $user->refer_by = $referralCode;
                 } else {
-                    $user->refer_by = $validity->my_referral_code;;
+                    $user->refer_by = $validity->my_referral_code;
+                }
+                // When it's a campaign code, also ensure campaign_code is stored.
+                if ($isCampaignCode) {
+                    $user->campaign_code = strtolower($referralCode);
                 }
                 $otp = random_int(100000, 999999);
                 $user->otp = $otp;
@@ -1360,7 +1401,7 @@ class FrontendApiController extends Controller
                 $success = $user->save();
 
                 if ($success) {
-                    if ($referralCode !== '') {
+                    if ($referralCode !== '' && !$isCampaignCode) {
                         $createreferral = User::where('my_referral_code', $referralCode)->first();
                         if (isset($createreferral)) {
                             $createreferral->my_referral = $createreferral->my_referral + 1;
@@ -1904,18 +1945,23 @@ class FrontendApiController extends Controller
     {
         $id = Auth::user()->id;
         $query = Order::with(['customers', 'orderproducts.product:id,ProductName,ViewProductImage', 'couriers', 'cities', 'zones', 'admins'])
-            ->where('user_id', $id)
-            ->where('status', '!=', 'Pending Payment');
+            ->where('user_id', $id);
 
         $slugLower = strtolower((string) $slug);
         if (!in_array($slugLower, ['all', ''], true)) {
             if ($slugLower === 'accepted') {
                 $query->where('status', 'Confirmed');
             } elseif ($slugLower === 'rejected') {
-                $query->whereIn('status', ['Canceled', 'Cancelled', 'Rejected']);
+                // Rejected is a business rejection by supplier/admin, not gateway cancel/fail.
+                $query->where('status', 'Rejected');
+            } elseif ($slugLower === 'payment-issues') {
+                $query->whereIn('status', ['Pending Payment', 'Failed', 'Canceled', 'Cancelled']);
             } else {
                 $query->where('status', $slug);
             }
+        } else {
+            // Keep "All" focused on actual order lifecycle statuses.
+            $query->where('status', '!=', 'Pending Payment');
         }
 
         $search = trim((string) request()->query('search', ''));
@@ -1965,7 +2011,8 @@ class FrontendApiController extends Controller
                 'canceled' => Order::where('user_id', $id)->where('status', 'Canceled')->get()->count(),
                 'confirmed' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
                 'accepted' => Order::where('user_id', $id)->where('status', 'Confirmed')->get()->count(),
-                'rejected' => Order::where('user_id', $id)->whereIn('status', ['Canceled', 'Cancelled', 'Rejected'])->get()->count(),
+                'rejected' => Order::where('user_id', $id)->where('status', 'Rejected')->get()->count(),
+                'payment_issues' => Order::where('user_id', $id)->whereIn('status', ['Pending Payment', 'Failed', 'Canceled', 'Cancelled'])->get()->count(),
                 'packageing' => Order::where('user_id', $id)->where('status', 'Packageing')->get()->count(),
                 'ontheway' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
                 'shipped_to_warehouse' => Order::where('user_id', $id)->where('status', 'Ontheway')->get()->count(),
@@ -4104,6 +4151,12 @@ class FrontendApiController extends Controller
                 }
             } else {
             }
+
+            // Per-item extra delivery charge (for qty > 1)
+            $totalQtyForProduct = Cart::where('user_id', $userId)->where('product_id', $product_id)->sum('qty');
+            if ($totalQtyForProduct > 1 && ($product->extra_delivery_per_qty ?? 0) > 0) {
+                $extdv += ((float) $product->extra_delivery_per_qty * ((int) $totalQtyForProduct - 1));
+            }
         }
 
         if ($carts->isEmpty()) {
@@ -4115,11 +4168,19 @@ class FrontendApiController extends Controller
             ], 200);
         }
 
-        // Enrich cart items with vendor_id from product table
+        // Enrich cart items with vendor_id and pickup_city_id from product/vendor tables
         // (shop_id is the admin who uploaded, vendor_id is the actual supplier)
         $carts->transform(function ($cart) {
             $product = Product::find($cart->product_id);
             $cart->vendor_id = $product ? ($product->vendor_id ?? $cart->shop_id) : $cart->shop_id;
+
+            // Attach vendor's pickup city for delivery charge calculation
+            if ($cart->vendor_id) {
+                $vendor = Vendor::find($cart->vendor_id);
+                $cart->pickup_city_id = $vendor->pickup_city_id ?? null;
+                $cart->shop_name = $vendor->public_name ?? $vendor->name ?? 'Supplier';
+            }
+
             return $cart;
         });
 
@@ -4162,6 +4223,46 @@ class FrontendApiController extends Controller
                 'total_price' => $carts * $variant->price,
             ]
         ], 200);
+    }
+
+    /**
+     * GET /api/delivery-charges?city_id=&vendor_ids=1,2,3
+     *
+     * Returns delivery charges based on CarryBee city matching between
+     * vendor pickup city and customer destination city.
+     */
+    public function deliveryCharges(Request $request)
+    {
+        $customerCityId = $request->input('city_id') ? (int) $request->input('city_id') : null;
+
+        // Parse vendor_ids from comma-separated string or from cart
+        $vendorIds = [];
+        if ($request->filled('vendor_ids')) {
+            $vendorIds = collect(explode(',', $request->input('vendor_ids')))
+                ->map(fn($id) => (int) trim($id))
+                ->filter(fn($id) => $id > 0)
+                ->unique()
+                ->values()
+                ->all();
+        } else {
+            // Auto-detect vendor IDs from the user's cart
+            $cartItems = Cart::where('user_id', Auth::id())->get();
+            foreach ($cartItems as $item) {
+                $product = Product::find($item->product_id);
+                if ($product && $product->vendor_id) {
+                    $vendorIds[] = (int) $product->vendor_id;
+                }
+            }
+            $vendorIds = array_unique(array_filter($vendorIds));
+        }
+
+        $service = app(\App\Services\DeliveryChargeService::class);
+        $result = $service->getChargesForCheckout($customerCityId, $vendorIds);
+
+        return response()->json([
+            'status' => true,
+            'data'   => $result,
+        ]);
     }
 
     public function orderNow(Request $request)
@@ -4379,8 +4480,19 @@ class FrontendApiController extends Controller
             return $product ? ($product->vendor_id ?? $item->shop_id) : ($item->shop_id ?: 1);
         });
         $vendorCount = max(1, $vendorGroups->count());
-        $perVendorDelivery = round($request->deliveryCharge / $vendorCount);
         $groupId = $vendorCount > 1 ? 'GRP-' . strtoupper(substr(uniqid(), -8)) : null;
+
+        // Server-side delivery charge recalculation using CarryBee city matching
+        $deliveryService = app(\App\Services\DeliveryChargeService::class);
+        $customerCityId = $request->city_id ? (int) $request->city_id : null;
+        $vendorDeliveryMap = [];
+        $totalDeliveryCharge = 0;
+
+        foreach ($vendorGroups->keys() as $vendorId) {
+            $result = $deliveryService->resolveCharge((int) $vendorId, $customerCityId);
+            $vendorDeliveryMap[$vendorId] = $result['charge'];
+            $totalDeliveryCharge += $result['charge'];
+        }
 
         // Assign an active executive admin
         $admin = Admin::whereHas('roles', function ($q) {
@@ -4395,12 +4507,12 @@ class FrontendApiController extends Controller
         if ($request->balance_from == 'from_account') {
             $accountuser = User::find(Auth::id());
             if ($accountuser) {
-                $accountuser->account_balance -= $request->deliveryCharge;
+                $accountuser->account_balance -= $totalDeliveryCharge;
                 $accountuser->save();
                 $chargededucts = new Chargededuct();
                 $chargededucts->user_id = $accountuser->id;
-                $chargededucts->comment = 'You have charged ' . $request->deliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
-                $chargededucts->amount = $request->deliveryCharge;
+                $chargededucts->comment = 'You have charged ' . $totalDeliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
+                $chargededucts->amount = $totalDeliveryCharge;
                 $chargededucts->status = 'Success';
                 $chargededucts->save();
             }
@@ -4431,13 +4543,14 @@ class FrontendApiController extends Controller
             $order->order_group_id = $groupId;
             $order->invoiceID = $this->uniqueIDN();
             $order->subTotal = $sell;
-            $order->deliveryCharge = $perVendorDelivery;
+            $thisVendorDelivery = $vendorDeliveryMap[$vendorId] ?? round($totalDeliveryCharge / $vendorCount);
+            $order->deliveryCharge = $thisVendorDelivery;
             $order->customerNote = $request->customerNote ?? null;
             $order->status = 'Pending';
             $order->advance_delivery = $request->advance_delivery === 'yes' ? 1 : 0;
 
             if ($request->balance_from == 'from_account') {
-                $order->paymentAmount = $perVendorDelivery;
+                $order->paymentAmount = $thisVendorDelivery;
                 $order->payment_type_id = 5;
                 if (Schema::hasColumn('orders', 'payment_status')) {
                     $order->payment_status = 'Paid';

@@ -63,6 +63,28 @@ const courseApi = baseApi.injectEndpoints({
 			},
 			invalidatesTags: ["cartApi"],
 		}),
+		getDeliveryCharges: builder.query<
+			{
+				same_city_charge: number;
+				inter_city_charge: number;
+				vendors?: Array<{
+					vendor_id: number | null;
+					charge: number;
+					zone: string;
+					zone_label: string;
+					vendor_name: string;
+				}>;
+				total_charge?: number;
+			},
+			{ cityId: number }
+		>({
+			query: ({ cityId }) => ({
+				url: `/delivery-charges`,
+				method: "GET",
+				params: { city_id: cityId },
+			}),
+			transformResponse: (response: any) => response?.data ?? response,
+		}),
 	}),
 });
 
@@ -72,4 +94,5 @@ export const {
 	useUpdateCartItemMutation,
 	useDeleteCartItemMutation,
 	useCreateOrderMutation,
+	useGetDeliveryChargesQuery,
 } = courseApi;
