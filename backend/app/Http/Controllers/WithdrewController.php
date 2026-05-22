@@ -44,6 +44,13 @@ class WithdrewController extends Controller
                     return 'user not founds';
                 }
             })
+            ->editColumn('to_account_number', function ($invoices) {
+                $html = '<strong>' . e($invoices->to_account_number) . '</strong>';
+                if ($invoices->to_additional_info) {
+                    $html .= '<br><small class="text-muted">' . e($invoices->to_additional_info) . '</small>';
+                }
+                return $html;
+            })
             ->addColumn('action', function ($invoices) {
                 return '<a href="#" type="button" id="editFrdBtn" data-id="' . $invoices->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainFrd" ><i class="bi bi-pencil-square"></i></a>';
             })
