@@ -262,9 +262,20 @@ class CrmDashboardController extends Controller
             )
             ->groupBy('vendor_id');
 
+        $pendingPayouts = VendorPayoutRequest::query()
+            ->select(
+                'vendor_id',
+                DB::raw('SUM(COALESCE(amount, 0)) AS pending_payout_total')
+            )
+            ->where('status', 'pending')
+            ->groupBy('vendor_id');
+
         $suppliersQuery = Vendor::query()
             ->leftJoinSub($supplierEarnings, 'earnings', function ($join) {
                 $join->on('vendors.id', '=', 'earnings.vendor_id');
+            })
+            ->leftJoinSub($pendingPayouts, 'pending_payouts', function ($join) {
+                $join->on('vendors.id', '=', 'pending_payouts.vendor_id');
             })
             ->leftJoin('users', 'users.id', '=', 'vendors.user_id')
             ->select(
@@ -281,7 +292,9 @@ class CrmDashboardController extends Controller
                 DB::raw('COALESCE(earnings.commission_total, 0) AS commission_total'),
                 DB::raw('COALESCE(earnings.net_total, 0) AS net_total'),
                 DB::raw('COALESCE(earnings.order_count, 0) AS order_count'),
-                DB::raw('COALESCE(earnings.net_total, 0) - COALESCE(earnings.paid_total, 0) AS account_balance')
+                DB::raw('COALESCE(earnings.net_total, 0) - COALESCE(earnings.paid_total, 0) AS gross_account_balance'),
+                DB::raw('COALESCE(pending_payouts.pending_payout_total, 0) AS pending_payout_balance'),
+                DB::raw('COALESCE(earnings.net_total, 0) - COALESCE(earnings.paid_total, 0) - COALESCE(pending_payouts.pending_payout_total, 0) AS account_balance')
             )
             ->when(in_array($status, ['pending', 'approved', 'rejected', 'suspended'], true), function ($q) use ($status) {
                 $q->where('vendors.status', $status);
@@ -298,6 +311,9 @@ class CrmDashboardController extends Controller
 
         $suppliers = $suppliersQuery->paginate(30)->withQueryString();
 
+        $totalAvailableSupplierBalance = (float) VendorEarning::sum(DB::raw('COALESCE(net_amount, 0) - COALESCE(paid_amount, 0)'))
+            - (float) VendorPayoutRequest::where('status', 'pending')->sum('amount');
+
         return view('backend.content.crm.suppliers', [
             'suppliers' => $suppliers,
             'search' => $search,
@@ -307,7 +323,7 @@ class CrmDashboardController extends Controller
             'totalSuppliers' => Vendor::count(),
             'totalSupplierPayment' => (float) VendorPayout::where('status', 'completed')->sum('amount'),
             'pendingSupplierPayment' => (float) VendorPayoutRequest::where('status', 'pending')->sum('amount'),
-            'totalSupplierAccountBalance' => (float) VendorEarning::sum(DB::raw('COALESCE(net_amount, 0) - COALESCE(paid_amount, 0)')),
+            'totalSupplierAccountBalance' => $totalAvailableSupplierBalance,
             'totalProducts' => \App\Models\Product::whereNotNull('vendor_id')->count(),
         ]);
     }

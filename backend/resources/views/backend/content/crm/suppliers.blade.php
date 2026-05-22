@@ -68,7 +68,7 @@
         <div class="col">
             <div class="admin-content-card">
                 <div class="admin-card-body text-center px-1 py-3">
-                    <div class="small text-muted" style="font-size: 11px;">All App Balance</div>
+                    <div class="small text-muted" style="font-size: 11px;">All App Balance (Available)</div>
                     <div style="font-size: 18px; font-weight: 700;">{{ number_format($totalSupplierAccountBalance, 2) }}</div>
                 </div>
             </div>
@@ -114,7 +114,7 @@
                             <th>Orders</th>
                             <th>Sales</th>
                             <th>Commission</th>
-                            <th>Account Balance</th>
+                            <th>Account Balance (Available)</th>
                             <th>Created</th>
                             <th>Account Edit Option</th>
                         </tr>
