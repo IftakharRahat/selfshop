@@ -1914,6 +1914,7 @@ class OrderController extends Controller
         ];
 
         $trackedStatuses = array_values(array_unique(array_merge(...array_values($statusBuckets))));
+        $salesExcludedStatuses = ['Canceled', 'Cancelled', 'Return'];
 
         $baseQuery = DB::table('orders')->whereBetween('orderDate', [$start, $end]);
 
@@ -1934,6 +1935,8 @@ class OrderController extends Controller
         $response['allorder'] = (clone $baseQuery)->count();
         $response['all'] = $response['allorder'];
         $response['allamount'] = round((float) (clone $baseQuery)->sum('subTotal'), 2);
+        $response['totalsalesorders'] = (clone $baseQuery)->whereNotIn('status', $salesExcludedStatuses)->count();
+        $response['totalsalesamount'] = round((float) (clone $baseQuery)->whereNotIn('status', $salesExcludedStatuses)->sum('subTotal'), 2);
 
         foreach ($statusBuckets as $key => $statuses) {
             $response[$key] = (clone $baseQuery)->whereIn('status', $statuses)->count();

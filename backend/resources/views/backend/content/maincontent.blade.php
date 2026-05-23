@@ -115,10 +115,10 @@ $comments = Comment::latest()
 
             <div class="row g-2 mb-3">
                 <div class="col-6 col-md-4 col-xl">
-                    <a href="{{ url('admin_order/Delivered') }}" class="dash-card">
+                    <a href="{{ url('admin_order/orderall') }}" class="dash-card">
                         <span class="dash-card-label">Total Sales</span>
                         <div class="dash-card-value">৳ <span id="totalsalesamount">0</span></div>
-                        <div class="dash-card-sub"><span id="totalsalesorders">0</span> delivered orders</div>
+                        <div class="dash-card-sub"><span id="totalsalesorders">0</span> orders excluding canceled/return</div>
                         <div class="dash-card-icon"><i class="bi bi-cash-stack"></i></div>
                     </a>
                 </div>
@@ -663,8 +663,8 @@ $comments = Comment::latest()
                     $('#packageing').text(formatNumberWithCommas(data["packageing"]));
                     $('#all').text(formatNumberWithCommas(data["all"]));
                     $('#allorder').text(formatNumberWithCommas(data["allorder"]));
-                    $('#totalsalesamount').text(formatNumberWithCommas(data["deliveredamount"]));
-                    $('#totalsalesorders').text(formatNumberWithCommas(data["delivered"]));
+                    $('#totalsalesamount').text(formatNumberWithCommas(data["totalsalesamount"]));
+                    $('#totalsalesorders').text(formatNumberWithCommas(data["totalsalesorders"]));
                     $('#allamount').text(formatNumberWithCommas(data["allamount"]));
                     $('#pendingamount').text(formatNumberWithCommas(data["pendingamount"]));
                     $('#confirmedamount').text(formatNumberWithCommas(data["confirmedamount"]));
