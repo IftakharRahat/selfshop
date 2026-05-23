@@ -1275,7 +1275,7 @@ class OrderController extends Controller
         // Exclude SSLCommerz orders that haven't completed payment yet
         $orders = $orders->where('orders.status', '!=', 'Pending Payment');
 
-        return Datatables::of($orders->orderBy('orders.updated_at', 'DESC'))
+        return Datatables::of($orders->orderBy('orders.id', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {
                 $name = $orders->customerName ?? '—';
                 $phone = $orders->customerPhone ?? '—';
