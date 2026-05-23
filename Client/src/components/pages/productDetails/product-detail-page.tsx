@@ -183,6 +183,14 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		})(),
 	].filter(Boolean);
 
+	const storefrontDisplayPrice = parseFloat(
+		product.storefront_price ||
+			product.ProductResellerPrice ||
+			product.ProductSalePrice ||
+			product.ProductRegularPrice ||
+			"0",
+	);
+
 	const productData = {
 		name: product.ProductName,
 		category: product.categories?.category_name || `Category #${product.category_id}`,
@@ -190,7 +198,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		sku: product.ProductSku,
 		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
 		minimumPrice: parseFloat(product.min_sell_price || "0"),
-		currentPrice: parseFloat(product.ProductResellerPrice || product.ProductRegularPrice || "0"),
+		currentPrice: storefrontDisplayPrice,
 		msrpPrice: parseFloat(product.ProductRegularPrice || "0"),
 		description: product.ProductDetails,
 		images: {
