@@ -3500,7 +3500,10 @@ class FrontendApiController extends Controller
             'data' => [
                 'total_sales' => Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('subTotal') + Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('paymentAmount') - Order::where('user_id', $id)->where('status', '!=', 'Canceled')->get()->sum('deliveryCharge'),
                 'total_profit' => Order::where('user_id', $id)->where('status', 'Delivered')->get()->sum('profit'),
-            'pending_amount' => Order::where('user_id', $id)->whereNotIn('status', ['Delivered', 'Canceled', 'Cancelled'])->get()->sum('profit'),
+                'pending_amount' => Order::where('user_id', $id)
+                    ->whereIn('status', ['Pending', 'Confirmed', 'Processing', 'Packageing', 'Packaging', 'Ontheway', 'OnDelivery'])
+                    ->get()
+                    ->sum('profit'),
                 'blance' => Auth::user()->account_balance,
                 'withdraw' => Auth::user()->cashout_balance,
                 'shop_products' => Shopproduct::where('user_id', $id)->get()->count(),

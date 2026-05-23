@@ -71,7 +71,7 @@ export default function Dashboard() {
 				/>
 
 				<MetricCard
-					title="Pending Amount"
+					title="Pending Balance"
 					value={`৳ ${formatNumber(metrics.pending_amount ?? 0)}`}
 					subtitle="Awaiting delivery"
 					icon={pendingIcon}

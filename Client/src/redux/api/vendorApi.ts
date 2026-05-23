@@ -178,7 +178,7 @@ export interface VendorOrderDetail {
 		shipped_at?: string | null;
 		fulfillment_status?: string;
 		fulfillment_type?: string | null;
-		product: { id: number; ProductName: string; ViewProductImage: string | null } | null;
+		product: { id: number; ProductName: string; ViewProductImage: string | null; VariantImage?: string | null } | null;
 	}>;
 	vendor_subtotal: number;
 }
@@ -1135,6 +1135,17 @@ export const vendorApi = baseApi.injectEndpoints({
 					this_month_sales: number;
 					last_month_sales: number;
 					orders_this_month_by_status: Record<string, number>;
+					orders_this_month_summary: {
+						new_order: number;
+						accepted: number;
+						processing: number;
+						packaging: number;
+						on_delivery: number;
+						delivered: number;
+						cancelled: number;
+						rejected: number;
+						failed: number;
+					};
 					category_wise_product_count: { category_name: string; product_count: number }[];
 					sales_chart: { month: string; total: number }[];
 					top_products: {

@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\Orderproduct;
 use App\Models\Product;
 use App\Services\SslCommerzOrderFinalizer;
+use App\Services\SslCommerzStoreOrderService;
 use Cart;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -1008,200 +1009,18 @@ public function initiatePayment(Request $request)
 
 private function createOrderDetails($orderId, $cartData, $request)
 {
-    try {
-        // Get user_id from request
-        $userId = $request->user_id ?? $request->input('user_id') ?? null;
-        
-        Log::info('Creating order details with user_id: ' . $userId);
-        
-        # Convert cart data to proper format if it's an array
-        if (is_array($cartData)) {
-            // Convert array to collection-like object
-            $cartCollection = collect($cartData)->map(function ($item) {
-                // Convert array to object
-                return (object) $item;
-            });
-        } else {
-            $cartCollection = $cartData;
-        }
-        
-        # Group cart items by store/weight
-        $groupedItems = [];
-        
-        // Handle both array and collection
-        if (is_array($cartCollection)) {
-            foreach ($cartCollection as $item) {
-                $storeId = $item->weight ?? 0;
-                if (!isset($groupedItems[$storeId])) {
-                    $groupedItems[$storeId] = [];
-                }
-                $groupedItems[$storeId][] = $item;
-            }
-        } else {
-            // Original logic for collections
-            foreach ($cartCollection as $item) {
-                $storeId = $item->weight ?? 0;
-                if (!isset($groupedItems[$storeId])) {
-                    $groupedItems[$storeId] = [];
-                }
-                $groupedItems[$storeId][] = $item;
-            }
-        }
-        
-        # Process each store's items
-        foreach ($groupedItems as $storeId => $items) {
-            # Calculate totals for this store
-            $sellprice = 0;
-            $buy = 0;
-            $bonus = 0;
-            
-            foreach ($items as $item) {
-                // Handle both object and array access
-                $productId = is_object($item) ? $item->id : $item['id'];
-                $product = Product::find($productId);
-                
-                if ($product) {
-                    $quantity = is_object($item) ? $item->qty : $item['qty'];
-                    $price = is_object($item) ? $item->price : $item['price'];
-                    
-                    // Use selling_price from options if available for correct profit calculation
-                    $itemOptions = is_object($item) ? ($item->options ?? null) : ($item['options'] ?? null);
-                    if (is_string($itemOptions)) {
-                        $itemOptions = json_decode($itemOptions, true);
-                    } elseif (is_object($itemOptions)) {
-                        $itemOptions = (array) $itemOptions;
-                    }
-                    $itemSellingPrice = !empty($itemOptions['selling_price']) ? (float) $itemOptions['selling_price'] : (float) $price;
-                    
-                    $sellprice += $itemSellingPrice * $quantity;
-                    $buy += ($product->ProductResellerPrice ?? 0) * $quantity;
-                    $bonus += $product->reseller_bonus ?? 0;
-                }
-            }
-            
-            $shopamount = $sellprice;
-            $profit = $shopamount - $buy;
-            
-            # Get admin/executive for this store
-            $admin = Admin::where('id', $storeId)
-                ->where('status', 'Active')
-                ->first();
-            
-            if (!$admin) {
-                # Try to get a random executive
-                $admin = Admin::whereHas('roles', function ($q) {
-                    $q->where('name', 'Executive');
-                })
-                ->where('add_by', $storeId)
-                ->where('status', 'Active')
-                ->inRandomOrder()
-                ->first();
-            }
-            
-            # Create main order for this store - USE THE USER_ID FROM REQUEST
-            $storeOrder = new Order();
-            $storeOrder->profit = $profit;
-            $storeOrder->order_bonus = $bonus;
-            $storeOrder->user_id = $userId; // Use the user_id we got
-            $storeOrder->courier_id = 26; // Default courier
-            $storeOrder->store_id = $storeId;
-            $storeOrder->invoiceID = $this->uniqueID();
-            $storeOrder->subTotal = $shopamount;
-            $storeOrder->deliveryCharge = $request->delivery_charge ?? $request->deliveryCharge ?? 0;
-            $storeOrder->paymentAmount = $request->delivery_charge ?? $request->deliveryCharge ?? 0;
-            $storeOrder->payment_type_id = 6;
-            if (Schema::hasColumn('orders', 'payment_status')) {
-                $storeOrder->payment_status = 'Paid';
-            }
-            $storeOrder->transaction_id = 'STORE_' . $orderId . '_' . $storeId;
-            $storeOrder->orderDate = date('Y-m-d');
-            $storeOrder->admin_id = $admin->id ?? $storeId;
-            $storeOrder->save();
-            
-            Log::info('Store order created with user_id: ' . $userId);
-            
-            # Create customer record
-            $customer = new Customer();
-            $customer->order_id = $storeOrder->id;
-            $customer->customerName = $request->customer_name ?? $request->customerName;
-            $customer->customerPhone = $request->customer_phone ?? $request->customerPhone;
-            $customer->customerAddress = $request->customer_address ?? $request->customerAddress;
-            $customer->save();
-            
-            # Create order products
-            $vendorIds = [];
-            foreach ($items as $item) {
-                $orderProduct = new Orderproduct();
-                $orderProduct->order_id = $storeOrder->id;
-                $orderProduct->product_id = is_object($item) ? ($item->product_id ?? $item->id) : ($item['product_id'] ?? $item['id']);
-                $orderProduct->productCode = is_object($item) ? 
-                    ($item->options->code ?? '') : 
-                    ($item['options']['code'] ?? '');
-                $orderProduct->color = is_object($item) ? 
-                    ($item->options->color ?? null) : 
-                    ($item['options']['color'] ?? null);
-                $orderProduct->size = is_object($item) ? 
-                    ($item->options->size ?? null) : 
-                    ($item['options']['size'] ?? null);
-                $orderProduct->productName = is_object($item) ? $item->name : $item['name'];
-                $orderProduct->quantity = is_object($item) ? $item->qty : $item['qty'];
-                $orderProduct->productPrice = is_object($item) ? $item->price : $item['price'];
+    $context = [
+        'user_id' => $request->user_id ?? $request->input('user_id') ?? null,
+        'customer_name' => $request->customer_name ?? $request->customerName ?? null,
+        'customer_phone' => $request->customer_phone ?? $request->customerPhone ?? null,
+        'customer_address' => $request->customer_address ?? $request->customerAddress ?? null,
+        'delivery_charge' => $request->delivery_charge ?? $request->deliveryCharge ?? 0,
+        'deliveryCharge' => $request->deliveryCharge ?? $request->delivery_charge ?? 0,
+    ];
 
-                // Save selling_price from cart options
-                $opts = is_object($item) ? ($item->options ?? null) : ($item['options'] ?? null);
-                if (is_string($opts)) $opts = json_decode($opts, true);
-                elseif (is_object($opts)) $opts = (array) $opts;
-                if (!empty($opts['selling_price']) && $opts['selling_price'] !== 'undefined') {
-                    $orderProduct->selling_price = (float) $opts['selling_price'];
-                }
+    $result = app(SslCommerzStoreOrderService::class)->ensureStoreOrders($orderId, $cartData, $context);
 
-                $orderProduct->save();
-
-                // Track vendor IDs for supplier notification
-                $productId = is_object($item) ? ($item->product_id ?? $item->id) : ($item['product_id'] ?? $item['id']);
-                $vendorId = Product::where('id', $productId)->value('vendor_id');
-                if ($vendorId) {
-                    $vendorIds[(int) $vendorId] = true;
-                }
-                
-                # Create notification
-                $notification = new Comment();
-                $notification->order_id = $storeOrder->id;
-                $notification->comment = $storeOrder->invoiceID . ' Order Has Been Created for ' . ($admin->name ?? 'Store');
-                $notification->admin_id = $storeOrder->admin_id;
-                $notification->save();
-            }
-
-            // Decrement product stock for this store order
-            try {
-                app(\App\Services\StockService::class)->decrementForOrder($storeOrder->id);
-            } catch (\Throwable $e) {
-                Log::warning('Stock decrement failed for store order #' . $storeOrder->id, ['error' => $e->getMessage()]);
-            }
-
-            // Send SMS + Email to suppliers
-            try {
-                $supplierNotification = app(\App\Services\SupplierOrderNotificationService::class);
-                $customerName = $request->customer_name ?? $request->customerName ?? null;
-                $supplierNotification->notify($storeOrder, array_keys($vendorIds), $customerName);
-            } catch (\Throwable $e) {
-                Log::warning('Supplier SMS/Email notification failed (SSLCommerz)', ['error' => $e->getMessage()]);
-            }
-        }
-        
-        return true;
-        
-    } catch (\Exception $e) {
-        Log::error('Order details creation failed: ' . $e->getMessage());
-        Log::error('Error trace: ' . $e->getTraceAsString());
-        Log::error('Cart data type: ' . gettype($cartData));
-        
-        if (is_array($cartData)) {
-            Log::error('Cart data sample: ' . json_encode(array_slice($cartData, 0, 1)));
-        }
-        
-        throw $e;
-    }
+    return ($result['created_count'] ?? 0) >= 0;
 }
 
 public function success(Request $request)
@@ -1585,14 +1404,24 @@ public function success(Request $request)
         }
         
         if ($tran_id) {
-            # Update order status to Failed
-            DB::table('orders')
-                ->where('transaction_id', $tran_id)
-                ->update([
-                    'status' => 'Failed',
-                    'payment_status' => 'Failed',
-                    'updated_at' => now(),
+            $order = DB::table('orders')->where('transaction_id', $tran_id)->first();
+
+            if ($order && !$this->shouldIgnorePaymentFailureCallback($order)) {
+                DB::table('orders')
+                    ->where('id', $order->id)
+                    ->update([
+                        'status' => 'Failed',
+                        'payment_status' => 'Failed',
+                        'updated_at' => now(),
+                    ]);
+            } elseif ($order) {
+                Log::info('Ignoring SSLCommerz fail callback for already-finalized order.', [
+                    'order_id' => $order->id,
+                    'transaction_id' => $tran_id,
+                    'status' => $order->status ?? null,
+                    'payment_status' => $order->payment_status ?? null,
                 ]);
+            }
         }
         
         # Clear session
@@ -1614,13 +1443,23 @@ public function success(Request $request)
         }
         
         if ($tran_id) {
-            # Update order status to Canceled
-            DB::table('orders')
-                ->where('transaction_id', $tran_id)
-                ->update([
-                    'status' => 'Canceled',
-                    'updated_at' => now(),
+            $order = DB::table('orders')->where('transaction_id', $tran_id)->first();
+
+            if ($order && !$this->shouldIgnorePaymentFailureCallback($order)) {
+                DB::table('orders')
+                    ->where('id', $order->id)
+                    ->update([
+                        'status' => 'Canceled',
+                        'updated_at' => now(),
+                    ]);
+            } elseif ($order) {
+                Log::info('Ignoring SSLCommerz cancel callback for already-finalized order.', [
+                    'order_id' => $order->id,
+                    'transaction_id' => $tran_id,
+                    'status' => $order->status ?? null,
+                    'payment_status' => $order->payment_status ?? null,
                 ]);
+            }
         }
         
         # Clear session
@@ -1657,5 +1496,28 @@ public function success(Request $request)
             $orderID = 1;
         }
         return 'SS00' . $orderID;
+    }
+
+    private function shouldIgnorePaymentFailureCallback(object $order): bool
+    {
+        $data = [];
+        if (!empty($order->data) && is_string($order->data)) {
+            $decoded = json_decode($order->data, true);
+            $data = is_array($decoded) ? $decoded : [];
+        }
+
+        $paymentStatus = strtolower((string) ($order->payment_status ?? ($data['payment_status'] ?? '')));
+        if ($paymentStatus === 'paid') {
+            return true;
+        }
+
+        $status = (string) ($order->status ?? '');
+        if (!in_array($status, ['Pending Payment', 'Pending'], true)) {
+            return true;
+        }
+
+        return DB::table('orders')
+            ->where('transaction_id', 'like', 'STORE_' . $order->id . '_%')
+            ->exists();
     }
 }

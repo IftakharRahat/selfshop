@@ -16,6 +16,10 @@ import {
 	XCircle,
 	Truck,
 	CheckCircle2,
+	Clock3,
+	Archive,
+	AlertTriangle,
+	BadgeX,
 	Wallet,
 	Settings,
 	CreditCard,
@@ -32,6 +36,7 @@ export default function VendorHomePage() {
 	const carouselRef = useRef<HTMLDivElement>(null);
 	const { data, isLoading, isError } = useGetVendorDashboardQuery();
 	const dashboard = data?.data;
+	const orderSummary = dashboard?.orders_this_month_summary;
 
 	const scrollCarousel = (dir: "left" | "right") => {
 		if (!carouselRef.current) return;
@@ -175,16 +180,17 @@ export default function VendorHomePage() {
 						<p className="text-sm text-gray-500 mb-4">This Month</p>
 						<ul className="space-y-2 text-sm">
 							{[
-								{ key: "new", label: "New Order", icon: ShoppingBag, statuses: ["Pending", "New"] },
-								{ key: "accepted", label: "Accepted", icon: CheckCircle2, statuses: ["Confirmed"] },
-								{ key: "cancelled", label: "Cancelled", icon: XCircle, statuses: ["Canceled", "Cancelled"] },
-								{ key: "ondelivery", label: "On delivery", icon: Truck, statuses: ["Ontheway", "OnDelivery"] },
-								{ key: "delivered", label: "Delivered", icon: CheckCircle2, statuses: ["Delivered", "Complete"] },
-							].map(({ key, label, icon: Icon, statuses }) => {
-								const total = statuses.reduce(
-									(sum, s) => sum + (dashboard?.orders_this_month_by_status?.[s] ?? 0),
-									0
-								);
+								{ key: "new_order", label: "New Order", icon: ShoppingBag },
+								{ key: "accepted", label: "Accepted", icon: CheckCircle2 },
+								{ key: "processing", label: "Processing", icon: Clock3 },
+								{ key: "packaging", label: "Packaging", icon: Archive },
+								{ key: "on_delivery", label: "On delivery", icon: Truck },
+								{ key: "delivered", label: "Delivered", icon: CheckCircle2 },
+								{ key: "cancelled", label: "Cancelled", icon: XCircle },
+								{ key: "rejected", label: "Rejected", icon: BadgeX },
+								{ key: "failed", label: "Failed", icon: AlertTriangle },
+							].map(({ key, label, icon: Icon }) => {
+								const total = orderSummary ? orderSummary[key as keyof typeof orderSummary] : 0;
 								return (
 									<li key={key} className="flex items-center justify-between py-1">
 										<span className="flex items-center gap-3 text-gray-700">

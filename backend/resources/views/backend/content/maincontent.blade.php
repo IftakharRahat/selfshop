@@ -116,8 +116,17 @@ $comments = Comment::latest()
             <div class="row g-2 mb-3">
                 <div class="col-6 col-md-4 col-xl">
                     <a href="{{ url('admin_order/orderall') }}" class="dash-card">
+                        <span class="dash-card-label">Total Sales</span>
+                        <div class="dash-card-value">৳ <span id="totalsalesamount">0</span></div>
+                        <div class="dash-card-sub"><span id="totalsalesorders">0</span> orders excluding canceled/return</div>
+                        <div class="dash-card-icon"><i class="bi bi-cash-stack"></i></div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <a href="{{ url('admin_order/orderall') }}" class="dash-card">
                         <span class="dash-card-label">All Orders</span>
                         <div class="dash-card-value"><span id="all">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="allamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-stack"></i></div>
                     </a>
                 </div>
@@ -125,6 +134,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Pending') }}" class="dash-card">
                         <span class="dash-card-label">Pending</span>
                         <div class="dash-card-value"><span id="pending">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="pendingamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-clock"></i></div>
                     </a>
                 </div>
@@ -132,6 +142,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Confirmed') }}" class="dash-card">
                         <span class="dash-card-label">Confirmed</span>
                         <div class="dash-card-value"><span id="confirmed">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="confirmedamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-check-circle"></i></div>
                     </a>
                 </div>
@@ -139,6 +150,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Canceled') }}" class="dash-card">
                         <span class="dash-card-label">Canceled</span>
                         <div class="dash-card-value"><span id="canceled">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="canceledamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-x-circle"></i></div>
                     </a>
                 </div>
@@ -149,6 +161,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Processing') }}" class="dash-card">
                         <span class="dash-card-label">Processing</span>
                         <div class="dash-card-value"><span id="processing">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="processingamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-gear"></i></div>
                     </a>
                 </div>
@@ -156,6 +169,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Packageing') }}" class="dash-card">
                         <span class="dash-card-label">Packaging</span>
                         <div class="dash-card-value"><span id="packageing">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="packageingamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-box-seam"></i></div>
                     </a>
                 </div>
@@ -163,6 +177,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Ontheway') }}" class="dash-card">
                         <span class="dash-card-label">On the Way</span>
                         <div class="dash-card-value"><span id="ontheway">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="onthewayamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-truck"></i></div>
                     </a>
                 </div>
@@ -170,6 +185,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Delivered') }}" class="dash-card">
                         <span class="dash-card-label">Delivered</span>
                         <div class="dash-card-value"><span id="delivered">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="deliveredamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-check2-all"></i></div>
                     </a>
                 </div>
@@ -177,6 +193,7 @@ $comments = Comment::latest()
                     <a href="{{ url('admin_order/Return') }}" class="dash-card">
                         <span class="dash-card-label">Return</span>
                         <div class="dash-card-value"><span id="return">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="returnamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-arrow-return-left"></i></div>
                     </a>
                 </div>
@@ -184,6 +201,7 @@ $comments = Comment::latest()
                     <a href="#" class="dash-card">
                         <span class="dash-card-label">Others</span>
                         <div class="dash-card-value"><span id="others">0</span></div>
+                        <div class="dash-card-sub">৳ <span id="othersamount">0</span></div>
                         <div class="dash-card-icon"><i class="bi bi-three-dots"></i></div>
                     </a>
                 </div>
@@ -645,12 +663,21 @@ $comments = Comment::latest()
                     $('#packageing').text(formatNumberWithCommas(data["packageing"]));
                     $('#all').text(formatNumberWithCommas(data["all"]));
                     $('#allorder').text(formatNumberWithCommas(data["allorder"]));
+                    $('#totalsalesamount').text(formatNumberWithCommas(data["totalsalesamount"]));
+                    $('#totalsalesorders').text(formatNumberWithCommas(data["totalsalesorders"]));
+                    $('#allamount').text(formatNumberWithCommas(data["allamount"]));
+                    $('#pendingamount').text(formatNumberWithCommas(data["pendingamount"]));
+                    $('#confirmedamount').text(formatNumberWithCommas(data["confirmedamount"]));
+                    $('#canceledamount').text(formatNumberWithCommas(data["canceledamount"]));
+                    $('#processingamount').text(formatNumberWithCommas(data["processingamount"]));
+                    $('#packageingamount').text(formatNumberWithCommas(data["packageingamount"]));
+                    $('#onthewayamount').text(formatNumberWithCommas(data["onthewayamount"]));
+                    $('#deliveredamount').text(formatNumberWithCommas(data["deliveredamount"]));
+                    $('#returnamount').text(formatNumberWithCommas(data["returnamount"]));
+                    $('#othersamount').text(formatNumberWithCommas(data["othersamount"]));
 
                     // Calculate "Others" as difference between All and tracked statuses
-                    var tracked = (data["pending"]||0) + (data["confirmed"]||0) + (data["canceled"]||0) +
-                                  (data["processing"]||0) + (data["packageing"]||0) + (data["ontheway"]||0) +
-                                  (data["delivered"]||0) + (data["return"]||0);
-                    $('#others').text(formatNumberWithCommas(data["all"] - tracked));
+                    $('#others').text(formatNumberWithCommas(data["others"] || 0));
 
                     // Today's Report values are server-rendered and should NOT
                     // be overwritten by the Order Overview date filter.

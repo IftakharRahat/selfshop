@@ -14,6 +14,22 @@ use App\Models\VendorFollower;
 
 class VendorDashboardController extends Controller
 {
+    private const PENDING_ORDER_STATUSES = [
+        'Pending',
+        'Confirmed',
+        'Processing',
+        'Packageing',
+        'Packaging',
+        'Ontheway',
+        'OnDelivery',
+    ];
+
+    private const AVAILABLE_ORDER_STATUSES = [
+        'Delivered',
+        'Complete',
+        'Shipped',
+    ];
+
     // Need to include CommissionService
     private function getVendor()
     {
@@ -54,24 +70,28 @@ class VendorDashboardController extends Controller
             // Total orders (orders containing at least one vendor product)
             $total_orders = Order::whereHas('orderproducts.product', fn ($q) => $q->where('vendor_id', $vendorId))->count();
 
-            // Pending amount (Earnings synced but order not delivered yet)
-            $pending_amount = (float) VendorEarning::where('vendor_id', $vendorId)
-                ->where('status', 'pending')
+            // Pending amount should reflect active, pre-delivery orders only.
+            $pending_amount = (float) VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
+                ->join('orders', 'vendor_earnings.order_id', '=', 'orders.id')
+                ->whereIn('orders.status', self::PENDING_ORDER_STATUSES)
                 ->sum('net_amount');
 
-            // Total sales & last month / this month from vendor_earnings (ONLY available/delivered)
-            $total_sales = (float) VendorEarning::where('vendor_id', $vendorId)
-                ->where('status', 'available')
+            // Sales should use real delivered/completed order statuses to avoid stale earning status issues.
+            $total_sales = (float) VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
+                ->join('orders', 'vendor_earnings.order_id', '=', 'orders.id')
+                ->whereIn('orders.status', self::AVAILABLE_ORDER_STATUSES)
                 ->sum('net_amount');
 
-            $this_month_sales = (float) VendorEarning::where('vendor_id', $vendorId)
-                ->where('status', 'available')
-                ->whereBetween(DB::raw('DATE(created_at)'), [$thisMonthStart, $thisMonthEnd])
+            $this_month_sales = (float) VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
+                ->join('orders', 'vendor_earnings.order_id', '=', 'orders.id')
+                ->whereIn('orders.status', self::AVAILABLE_ORDER_STATUSES)
+                ->whereBetween(DB::raw('DATE(vendor_earnings.created_at)'), [$thisMonthStart, $thisMonthEnd])
                 ->sum('net_amount');
 
-            $last_month_sales = (float) VendorEarning::where('vendor_id', $vendorId)
-                ->where('status', 'available')
-                ->whereBetween(DB::raw('DATE(created_at)'), [$lastMonthStart, $lastMonthEnd])
+            $last_month_sales = (float) VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
+                ->join('orders', 'vendor_earnings.order_id', '=', 'orders.id')
+                ->whereIn('orders.status', self::AVAILABLE_ORDER_STATUSES)
+                ->whereBetween(DB::raw('DATE(vendor_earnings.created_at)'), [$lastMonthStart, $lastMonthEnd])
                 ->sum('net_amount');
 
             // Orders this month by status
@@ -83,6 +103,18 @@ class VendorDashboardController extends Controller
                 ->groupBy('status')
                 ->pluck('count', 'status')
                 ->all();
+
+            $normalized_order_summary = [
+                'new_order' => (int) (($orders_by_status['Pending'] ?? 0) + ($orders_by_status['New'] ?? 0)),
+                'accepted' => (int) ($orders_by_status['Confirmed'] ?? 0),
+                'processing' => (int) ($orders_by_status['Processing'] ?? 0),
+                'packaging' => (int) (($orders_by_status['Packageing'] ?? 0) + ($orders_by_status['Packaging'] ?? 0)),
+                'on_delivery' => (int) (($orders_by_status['Ontheway'] ?? 0) + ($orders_by_status['OnDelivery'] ?? 0)),
+                'delivered' => (int) (($orders_by_status['Delivered'] ?? 0) + ($orders_by_status['Complete'] ?? 0)),
+                'cancelled' => (int) (($orders_by_status['Canceled'] ?? 0) + ($orders_by_status['Cancelled'] ?? 0)),
+                'rejected' => (int) ($orders_by_status['Rejected'] ?? 0),
+                'failed' => (int) ($orders_by_status['Failed'] ?? 0),
+            ];
 
             // Category-wise product count (vendor's products)
             $category_counts = $vendor->products()
@@ -96,20 +128,22 @@ class VendorDashboardController extends Controller
 
             // Sales stat: last 6 months monthly totals for simple chart
             $sales_chart = VendorEarning::where('vendor_id', $vendorId)
-                ->where('status', 'available')
-                ->where(DB::raw('created_at'), '>=', now()->subMonths(5)->startOfMonth())
+                ->join('orders', 'vendor_earnings.order_id', '=', 'orders.id')
+                ->whereIn('orders.status', self::AVAILABLE_ORDER_STATUSES)
+                ->where('vendor_earnings.created_at', '>=', now()->subMonths(5)->startOfMonth())
                 ->select(
-                    DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                    DB::raw('DATE_FORMAT(vendor_earnings.created_at, "%Y-%m") as month'),
                     DB::raw('SUM(net_amount) as total')
                 )
-                ->groupBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'))
-                ->orderBy(DB::raw('DATE_FORMAT(created_at, "%Y-%m")'))
+                ->groupBy(DB::raw('DATE_FORMAT(vendor_earnings.created_at, "%Y-%m")'))
+                ->orderBy(DB::raw('DATE_FORMAT(vendor_earnings.created_at, "%Y-%m")'))
                 ->get()
                 ->map(fn ($r) => ['month' => $r->month, 'total' => (float) $r->total]);
 
             // Top 12 products by sales (from vendor_earnings + orderproducts)
             $top_products = VendorEarning::where('vendor_earnings.vendor_id', $vendorId)
-                ->where('vendor_earnings.status', 'available')
+                ->join('orders', 'vendor_earnings.order_id', '=', 'orders.id')
+                ->whereIn('orders.status', self::AVAILABLE_ORDER_STATUSES)
                 ->join('orderproducts', 'vendor_earnings.order_product_id', '=', 'orderproducts.id')
                 ->join('products', 'orderproducts.product_id', '=', 'products.id')
                 ->select(
@@ -165,6 +199,7 @@ class VendorDashboardController extends Controller
                 'this_month_sales' => round($this_month_sales, 2),
                 'last_month_sales' => round($last_month_sales, 2),
                 'orders_this_month_by_status' => $orders_by_status,
+                'orders_this_month_summary' => $normalized_order_summary,
                 'category_wise_product_count' => $category_counts,
                 'sales_chart' => $sales_chart->all(),
                 'top_products' => $top_products->all(),

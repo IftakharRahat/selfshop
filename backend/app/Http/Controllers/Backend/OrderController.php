@@ -1275,7 +1275,7 @@ class OrderController extends Controller
         // Exclude SSLCommerz orders that haven't completed payment yet
         $orders = $orders->where('orders.status', '!=', 'Pending Payment');
 
-        return Datatables::of($orders->orderBy('orders.updated_at', 'DESC'))
+        return Datatables::of($orders->orderBy('orders.id', 'DESC'))
             ->addColumn('customerInfo', function ($orders) {
                 $name = $orders->customerName ?? '—';
                 $phone = $orders->customerPhone ?? '—';
@@ -1902,88 +1902,60 @@ class OrderController extends Controller
         $adm = Admin::where('email', Auth::guard('admin')->user()->email)->first();
         $start = $request->startDate;
         $end = $request->endDate;
-        if ($adm->hasrole('Shop')) {
-            $response['allorder'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->whereBetween('orderDate', [$start, $end])->count();
-            $response['all'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->whereBetween('orderDate', [$start, $end])->count();
-            $response['pending'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Pending')->whereBetween('orderDate', [$start, $end])->count();
-            $response['canceled'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Canceled')->whereBetween('orderDate', [$start, $end])->count();
-            $response['confirmed'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->count();
-            $response['processing'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Processing')->whereBetween('orderDate', [$start, $end])->count();
-            $response['packageing'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Packageing')->whereBetween('orderDate', [$start, $end])->count();
-            $response['ontheway'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->count();
-            $response['delivered'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->count();
-            $response['return'] = DB::table('orders')->where('store_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->count();
-        } else {
-            if ($adm->hasrole('Manager')) {
-                if ($adm->add_by == 1) {
-                    $response['allorder'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['all'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['pending'] = DB::table('orders')->where('status', 'like', 'Pending')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['canceled'] = DB::table('orders')->where('status', 'like', 'Canceled')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['confirmed'] = DB::table('orders')->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['processing'] = DB::table('orders')->where('status', 'like', 'Processing')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['packageing'] = DB::table('orders')->where('status', 'like', 'Packageing')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['ontheway'] = DB::table('orders')->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['delivered'] = DB::table('orders')->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->whereBetween('orderDate', [$start, $end])->whereBetween('orderDate', [$start, $end])->count();
-                    $response['return'] = DB::table('orders')->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->count();
-                } else {
-                    $response['allorder'] = DB::table('orders')->where('store_id', $adm->add_by)->whereBetween('orderDate', [$start, $end])->count();
-                    $response['all'] = DB::table('orders')->where('store_id', $adm->add_by)->whereBetween('orderDate', [$start, $end])->count();
-                    $response['pending'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Pending')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['canceled'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Canceled')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['confirmed'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['processing'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Processing')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['packageing'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Packageing')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['ontheway'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['delivered'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['return'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->count();
-                }
-            } else {
-                if ($adm->hasrole('Superadmin')) {
-                    $response['allorder'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['all'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['pending'] = DB::table('orders')->where('status', 'like', 'Pending')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['canceled'] = DB::table('orders')->where('status', 'like', 'Canceled')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['confirmed'] = DB::table('orders')->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['processing'] = DB::table('orders')->where('status', 'like', 'Processing')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['packageing'] = DB::table('orders')->where('status', 'like', 'Packageing')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['ontheway'] = DB::table('orders')->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['delivered'] = DB::table('orders')->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['return'] = DB::table('orders')->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->count();
-                    $response['too'] = DB::table('orders')->whereIn('status', ['Pending', 'Canceled', 'Processing', 'Packageing'])->whereBetween('orderDate', [$start, $end])->count();
+        $statusBuckets = [
+            'pending' => ['Pending'],
+            'confirmed' => ['Confirmed'],
+            'canceled' => ['Canceled', 'Cancelled'],
+            'processing' => ['Processing'],
+            'packageing' => ['Packageing', 'Packaging'],
+            'ontheway' => ['Ontheway', 'OnDelivery'],
+            'delivered' => ['Delivered'],
+            'return' => ['Return'],
+        ];
 
-                    $response['toa'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->sum('subTotal');
-                    $response['tca'] = DB::table('orders')->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->sum('subTotal');
-                    $response['toda'] = DB::table('orders')->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->sum('subTotal');
-                    $response['tda'] = DB::table('orders')->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->sum('subTotal');
-                    $response['tra'] = DB::table('orders')->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->sum('subTotal');
-                    $response['tooa'] = DB::table('orders')->whereIn('status', ['Pending', 'Canceled', 'Processing', 'Packageing'])->whereBetween('orderDate', [$start, $end])->sum('subTotal');
-                } else {
-                    if ($adm->add_by == 1) {
-                        $response['allorder'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['all'] = DB::table('orders')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['pending'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Pending')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['canceled'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Canceled')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['confirmed'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['processing'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Processing')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['packageing'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Packageing')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['ontheway'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['delivered'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['return'] = DB::table('orders')->where('admin_id', Auth::guard('admin')->user()->id)->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->count();
-                    } else {
-                        $response['allorder'] = DB::table('orders')->where('store_id', $adm->add_by)->whereBetween('orderDate', [$start, $end])->count();
-                        $response['all'] = DB::table('orders')->where('store_id', $adm->add_by)->whereBetween('orderDate', [$start, $end])->count();
-                        $response['pending'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Pending')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['canceled'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Canceled')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['confirmed'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Confirmed')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['processing'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Processing')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['packageing'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Packageing')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['ontheway'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Ontheway')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['delivered'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Delivered')->whereBetween('orderDate', [$start, $end])->count();
-                        $response['return'] = DB::table('orders')->where('store_id', $adm->add_by)->where('status', 'like', 'Return')->whereBetween('orderDate', [$start, $end])->count();
-                    }
-                }
+        $trackedStatuses = array_values(array_unique(array_merge(...array_values($statusBuckets))));
+        $salesExcludedStatuses = ['Canceled', 'Cancelled', 'Return'];
+
+        $baseQuery = DB::table('orders')->whereBetween('orderDate', [$start, $end]);
+
+        if ($adm->hasrole('Shop')) {
+            $baseQuery->where('store_id', Auth::guard('admin')->user()->id);
+        } elseif ($adm->hasrole('Manager')) {
+            if ($adm->add_by != 1) {
+                $baseQuery->where('store_id', $adm->add_by);
             }
+        } elseif (!$adm->hasrole('Superadmin')) {
+            if ($adm->add_by == 1) {
+                $baseQuery->where('admin_id', Auth::guard('admin')->user()->id);
+            } else {
+                $baseQuery->where('store_id', $adm->add_by);
+            }
+        }
+
+        $response['allorder'] = (clone $baseQuery)->count();
+        $response['all'] = $response['allorder'];
+        $response['allamount'] = round((float) (clone $baseQuery)->sum('subTotal'), 2);
+        $response['totalsalesorders'] = (clone $baseQuery)->whereNotIn('status', $salesExcludedStatuses)->count();
+        $response['totalsalesamount'] = round((float) (clone $baseQuery)->whereNotIn('status', $salesExcludedStatuses)->sum('subTotal'), 2);
+
+        foreach ($statusBuckets as $key => $statuses) {
+            $response[$key] = (clone $baseQuery)->whereIn('status', $statuses)->count();
+            $response[$key . 'amount'] = round((float) (clone $baseQuery)->whereIn('status', $statuses)->sum('subTotal'), 2);
+        }
+
+        $response['others'] = (clone $baseQuery)->whereNotIn('status', $trackedStatuses)->count();
+        $response['othersamount'] = round((float) (clone $baseQuery)->whereNotIn('status', $trackedStatuses)->sum('subTotal'), 2);
+
+        if ($adm->hasrole('Superadmin')) {
+            $response['too'] = (clone $baseQuery)->whereIn('status', ['Pending', 'Canceled', 'Cancelled', 'Processing', 'Packageing', 'Packaging'])->count();
+            $response['toa'] = $response['allamount'];
+            $response['tca'] = $response['confirmedamount'];
+            $response['toda'] = $response['onthewayamount'];
+            $response['tda'] = $response['deliveredamount'];
+            $response['tra'] = $response['returnamount'];
+            $response['tooa'] = round((float) (clone $baseQuery)
+                ->whereIn('status', ['Pending', 'Canceled', 'Cancelled', 'Processing', 'Packageing', 'Packaging'])
+                ->sum('subTotal'), 2);
         }
 
         $response['status'] = 'success';
@@ -2208,8 +2180,45 @@ class OrderController extends Controller
         if (!isset($orders->parcel_id)) $orders->parcel_id = null;
         if (!isset($orders->shop_count)) $orders->shop_count = 1;
         if (!isset($orders->order_group_id)) $orders->order_group_id = null;
+        $orders->paymentTypeName = $this->resolveAdminPaymentTypeLabel($orders);
 
         return view('admin.content.order.edit')->with('order', $orders);
+    }
+
+    private function resolveAdminPaymentTypeLabel(object $order): string
+    {
+        $data = [];
+        if (!empty($order->data)) {
+            $decoded = json_decode($order->data, true);
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
+
+        $paymentType = trim((string) ($data['payment_type'] ?? ''));
+        if ($paymentType !== '') {
+            return $paymentType;
+        }
+
+        $balanceFrom = strtolower(trim((string) ($data['balance_from'] ?? '')));
+        if (in_array($balanceFrom, ['online_pay', 'online_payment'], true)) {
+            return 'SSLCommerz';
+        }
+        if (in_array($balanceFrom, ['from_account', 'account', 'account_balance'], true)) {
+            return 'Account Balance';
+        }
+
+        $looksLikeAdvanceDeliveryGatewayPayment =
+            (int) ($order->advance_delivery ?? 0) === 1 &&
+            (float) ($order->paymentAmount ?? 0) > 0 &&
+            (float) ($order->paymentAmount ?? 0) <= (float) ($order->deliveryCharge ?? 0) &&
+            !empty($order->transaction_id);
+
+        if ($looksLikeAdvanceDeliveryGatewayPayment) {
+            return 'SSLCommerz';
+        }
+
+        return (string) ($order->paymentTypeName ?? '');
     }
 
     //product
