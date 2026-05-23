@@ -178,7 +178,7 @@ export interface VendorOrderDetail {
 		shipped_at?: string | null;
 		fulfillment_status?: string;
 		fulfillment_type?: string | null;
-		product: { id: number; ProductName: string; ViewProductImage: string | null } | null;
+		product: { id: number; ProductName: string; ViewProductImage: string | null; VariantImage?: string | null } | null;
 	}>;
 	vendor_subtotal: number;
 }

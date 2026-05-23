@@ -271,7 +271,10 @@ class VendorOrderController extends Controller
             'users:id,name,shop_name',
             'orderproducts' => function ($q) use ($vendor) {
                 $q->whereHas('product', fn($p) => $p->where('vendor_id', $vendor->id))
-                    ->with('product:id,ProductName,ProductSku,ViewProductImage,vendor_id');
+                    ->with([
+                        'product:id,ProductName,ProductSku,ViewProductImage,vendor_id',
+                        'product.varients:id,product_id,title,color_name,image',
+                    ]);
             },
         ])->findOrFail($id);
 
@@ -318,26 +321,40 @@ class VendorOrderController extends Controller
                     'shipped_at' => $order->shipped_at?->toIso8601String(),
                 ],
 
-                'line_items' => $vendorOrderProducts->values()->map(fn($op) => [
-                    'id' => $op->id,
-                    'product_id' => $op->product_id,
-                    'productName' => $op->productName,
-                    'productCode' => $op->productCode,
-                    'color' => $op->color,
-                    'size' => $op->size,
-                    'productPrice' => $op->productPrice,
-                    'quantity' => $op->quantity,
-                    'line_total' => (float) $op->productPrice * (int) $op->quantity,
-                    'tracking_number' => $op->tracking_number,
-                    'shipped_at' => $op->shipped_at?->toIso8601String(),
-                    'fulfillment_status' => $op->fulfillment_status ?? 'pending',
-                    'fulfillment_type' => $op->fulfillment_type,
-                    'product' => $op->product ? [
-                        'id' => $op->product->id,
-                        'ProductName' => $op->product->ProductName,
-                        'ViewProductImage' => $op->product->ViewProductImage,
-                    ] : null,
-                ]),
+                'line_items' => $vendorOrderProducts->values()->map(function ($op) {
+                    $variantImage = null;
+                    if ($op->product && !empty($op->color) && $op->product->relationLoaded('varients')) {
+                        $matchedVariant = $op->product->varients->first(function ($variant) use ($op) {
+                            $needle = mb_strtolower(trim((string) $op->color));
+                            $title = mb_strtolower(trim((string) ($variant->title ?? '')));
+                            $colorName = mb_strtolower(trim((string) ($variant->color_name ?? '')));
+                            return $needle !== '' && ($needle === $title || $needle === $colorName);
+                        });
+                        $variantImage = $matchedVariant?->image;
+                    }
+
+                    return [
+                        'id' => $op->id,
+                        'product_id' => $op->product_id,
+                        'productName' => $op->productName,
+                        'productCode' => $op->productCode,
+                        'color' => $op->color,
+                        'size' => $op->size,
+                        'productPrice' => $op->productPrice,
+                        'quantity' => $op->quantity,
+                        'line_total' => (float) $op->productPrice * (int) $op->quantity,
+                        'tracking_number' => $op->tracking_number,
+                        'shipped_at' => $op->shipped_at?->toIso8601String(),
+                        'fulfillment_status' => $op->fulfillment_status ?? 'pending',
+                        'fulfillment_type' => $op->fulfillment_type,
+                        'product' => $op->product ? [
+                            'id' => $op->product->id,
+                            'ProductName' => $op->product->ProductName,
+                            'ViewProductImage' => $op->product->ViewProductImage,
+                            'VariantImage' => $variantImage,
+                        ] : null,
+                    ];
+                }),
                 'customer' => $customer ? [
                     'customerName' => $customer->customerName,
                     'customerPhone' => $customer->customerPhone
