@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
-import { cn, getImageUrl } from "@/lib/utils";
+import { cn, getImageUrl, pickFirstPositivePrice } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import type { TProductSectionProps } from "@/types/product";
@@ -56,9 +56,9 @@ function RowProductCard({ product, onAddToCart, isActive }: { product: any; onAd
 							{isActive ? (
 								<>
 									<span className="text-sm sm:text-base font-bold text-gray-900 digit-font">
-										৳{formatBDT(Number(product?.storefront_price || product?.ProductResellerPrice || product?.ProductSalePrice))}
+										৳{formatBDT(pickFirstPositivePrice(product?.storefront_price, product?.ProductResellerPrice, product?.ProductSalePrice, product?.ProductRegularPrice, product?.min_sell_price))}
 									</span>
-									{product?.ProductSalePrice && product.ProductSalePrice !== (product.storefront_price || product.ProductResellerPrice || product.ProductSalePrice) && (
+									{product?.ProductSalePrice && Number(product.ProductSalePrice) !== pickFirstPositivePrice(product.storefront_price, product.ProductResellerPrice, product.ProductSalePrice, product.ProductRegularPrice, product.min_sell_price) && (
 										<span className="text-[10px] sm:text-xs text-gray-400 line-through digit-font">
 											৳{formatBDT(Number(product?.ProductSalePrice))}
 										</span>
@@ -126,9 +126,9 @@ function FeaturedCard({ product, onAddToCart, isActive }: { product: any; onAddT
 						{isActive ? (
 							<>
 								<span className="text-xl lg:text-2xl font-bold text-gray-900 digit-font">
-									৳{formatBDT(Number(product?.storefront_price || product?.ProductResellerPrice || product?.ProductSalePrice))}
+									৳{formatBDT(pickFirstPositivePrice(product?.storefront_price, product?.ProductResellerPrice, product?.ProductSalePrice, product?.ProductRegularPrice, product?.min_sell_price))}
 								</span>
-								{product?.ProductSalePrice && product.ProductSalePrice !== (product.storefront_price || product.ProductResellerPrice || product.ProductSalePrice) && (
+								{product?.ProductSalePrice && Number(product.ProductSalePrice) !== pickFirstPositivePrice(product.storefront_price, product.ProductResellerPrice, product.ProductSalePrice, product.ProductRegularPrice, product.min_sell_price) && (
 									<span className="text-sm lg:text-base text-gray-400 line-through digit-font">
 										৳{formatBDT(Number(product?.ProductSalePrice))}
 									</span>
@@ -175,7 +175,16 @@ export default function ProductSection({
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		formData.append("price", (product.storefront_price || product.ProductResellerPrice || product.ProductRegularPrice).toString());
+		formData.append(
+			"price",
+			pickFirstPositivePrice(
+				product.storefront_price,
+				product.ProductResellerPrice,
+				product.ProductSalePrice,
+				product.ProductRegularPrice,
+				product.min_sell_price,
+			).toString(),
+		);
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
 
@@ -276,3 +285,4 @@ export default function ProductSection({
 		</div>
 	);
 }
+

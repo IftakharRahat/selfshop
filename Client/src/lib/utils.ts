@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+export function pickFirstPositivePrice(...values: Array<number | string | null | undefined>): number {
+	for (const value of values) {
+		if (value === null || value === undefined || value === "") continue;
+		const parsed = typeof value === "number" ? value : Number(value);
+		if (Number.isFinite(parsed) && parsed > 0) {
+			return parsed;
+		}
+	}
+
+	return 0;
+}
+
 /** Base URL for API requests (e.g. http://localhost:8000/api) */
 export const getApiBaseUrl = () =>
 	process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8000/api";

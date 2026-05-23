@@ -7,7 +7,7 @@ import Link from "next/link";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getImageUrl } from "@/lib/utils";
+import { getImageUrl, pickFirstPositivePrice } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
@@ -26,6 +26,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
 	if (!product) return null;
 
+	const displayPrice = pickFirstPositivePrice(
+		product.storefront_price,
+		product.ProductResellerPrice,
+		product.ProductSalePrice,
+		product.ProductRegularPrice,
+		product.min_sell_price,
+	);
+
 	const handleAddToCart = async () => {
 		if (!token) {
 			toast.info("Please log in to add to cart");
@@ -33,8 +41,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		const sellingPrice = product.storefront_price || product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice;
-		formData.append("price", sellingPrice.toString());
+		formData.append("price", displayPrice.toString());
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
 
@@ -77,13 +84,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 				{isResellerActive ? (
 					<div className="flex items-center justify-between w-full">
 						<div className="flex flex-col">
-							{product.ProductSalePrice > (product.storefront_price || product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice) && product.selling_type !== 'dropshipping' && (
+							{Number(product.ProductSalePrice) > displayPrice && product.selling_type !== 'dropshipping' && (
 								<span className="text-gray-400 line-through text-xs digit-font">
 									৳{formatBDT(product.ProductSalePrice)}
 								</span>
 							)}
 							<span className="text-gray-900 font-bold text-sm digit-font">
-								৳{formatBDT(product.storefront_price || product.ProductResellerPrice || product.ProductSalePrice || product.ProductRegularPrice)}
+								৳{formatBDT(displayPrice)}
 							</span>
 						</div>
 						<button
@@ -110,3 +117,4 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 };
 
 export default ProductCard;
+

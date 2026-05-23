@@ -22,7 +22,7 @@ import "swiper/css/thumbs";
 import { MdOutlineFileDownload } from "react-icons/md";
 import Swal from "sweetalert2";
 
-import { cn, getImageUrl } from "@/lib/utils";
+import { cn, getImageUrl, pickFirstPositivePrice } from "@/lib/utils";
 import { formatBDT } from "@/lib/format-currency";
 import { useAppSelector } from "@/redux/hooks";
 import { useRouter } from "next/navigation";
@@ -183,12 +183,12 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		})(),
 	].filter(Boolean);
 
-	const storefrontDisplayPrice = parseFloat(
-		product.storefront_price ||
-			product.ProductResellerPrice ||
-			product.ProductSalePrice ||
-			product.ProductRegularPrice ||
-			"0",
+	const storefrontDisplayPrice = pickFirstPositivePrice(
+		product.storefront_price,
+		product.ProductResellerPrice,
+		product.ProductSalePrice,
+		product.ProductRegularPrice,
+		product.min_sell_price,
 	);
 
 	const productData = {
@@ -361,7 +361,9 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		return false;
 	})();
 
-	// For display consistency in main section, we'll show the "current" effective unit price based on total qty
+	const commissionFactor = 1 + (productData.commission_percent / 100);
+
+	// For display consistency in main section, use the currently selected variant + size price
 	const activeTier = hasProductTiers
 		? productData.priceTiers
 			.slice()
@@ -369,18 +371,27 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			.find((t: any) => totalQuantity >= t.min_qty) ?? productData.priceTiers[0]
 		: null;
 	const activeTierId = activeTier?.id ?? null;
-	const firstSizePrice = (() => {
-		const fv = variants[0];
-		if (!fv) return productData.currentPrice;
-		const fs = fv.sizes?.[0];
-		if (!fs) return fv.price || productData.currentPrice;
-		return (fs.price > 0) ? fs.price : (fs.bulkPrices?.[0]?.bulk_price || fs.bulk_prices?.[0]?.bulk_price || productData.currentPrice);
-	})();
-
-	const commissionFactor = 1 + (productData.commission_percent / 100);
+	const currentVariant = variants[activeVariantIdx];
+	const currentVariantId = currentVariant?.id ?? 0;
+	const currentSelectedSize = currentVariant?.sizes?.[activeSizeIdx] ?? null;
+	const currentSelectedSizeName = currentSelectedSize?.size_name ?? null;
+	const currentSelectedQty = currentSelectedSizeName
+		? (variantQuantities[currentVariantId]?.[currentSelectedSizeName] || 0)
+		: 0;
+	const currentVariantBasePrice = pickFirstPositivePrice(
+		currentVariant?.price,
+		productData.currentPrice,
+		product.ProductSalePrice,
+		product.ProductRegularPrice,
+		product.min_sell_price,
+	);
 	const effectiveUnitPrice = flashSale && flashSale.flash_price > 0
 		? parseFloat(flashSale.flash_price)
-		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice)) * commissionFactor;
+		: currentSelectedSize
+			? getSizePrice(currentSelectedSize, currentSelectedQty)
+			: activeTier
+				? parseFloat(activeTier.unit_price) * commissionFactor
+				: currentVariantBasePrice * commissionFactor;
 
 	// Validate all selected items have valid selling prices (for dropshipping)
 	const validateAllSellingPrices = (): boolean => {
