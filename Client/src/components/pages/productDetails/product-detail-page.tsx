@@ -183,12 +183,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		})(),
 	].filter(Boolean);
 
-	const storefrontDisplayPrice = pickFirstPositivePrice(
-		product.storefront_price,
+	const rawBasePrice = pickFirstPositivePrice(
 		product.ProductResellerPrice,
+		product.min_sell_price,
 		product.ProductSalePrice,
 		product.ProductRegularPrice,
-		product.min_sell_price,
+	);
+
+	const storefrontDisplayPrice = pickFirstPositivePrice(
+		product.storefront_price,
+		rawBasePrice,
 	);
 
 	const productData = {
@@ -197,6 +201,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		quantity: product.qty,
 		sku: product.ProductSku,
 		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
+		basePrice: rawBasePrice,
 		minimumPrice: parseFloat(product.min_sell_price || "0"),
 		currentPrice: storefrontDisplayPrice,
 		msrpPrice: parseFloat(product.ProductRegularPrice || "0"),
@@ -343,8 +348,13 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			if (tier) return Math.round(parseFloat(tier.unit_price) * commissionFactor * 100) / 100;
 		}
 
-		// 5. Final fallback to product-level current price
-		return Math.round(productData.currentPrice * commissionFactor * 100) / 100;
+		// 5. Final fallback to product-level price. If only storefront_price exists,
+		// it already includes commission and should not be multiplied again.
+		if (productData.basePrice > 0) {
+			return Math.round(productData.basePrice * commissionFactor * 100) / 100;
+		}
+
+		return productData.currentPrice;
 	};
 
 	// Determine selling type
@@ -385,10 +395,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		: 0;
 	const currentVariantBasePrice = pickFirstPositivePrice(
 		currentVariant?.price,
-		productData.currentPrice,
-		product.ProductSalePrice,
-		product.ProductRegularPrice,
-		product.min_sell_price,
+		productData.basePrice,
 	);
 	const effectiveUnitPrice = flashSale && flashSale.flash_price > 0
 		? parseFloat(flashSale.flash_price)
@@ -396,7 +403,9 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			? getSizePrice(currentSelectedSize, currentSelectedQty, currentVariantBasePrice)
 			: activeTier
 				? parseFloat(activeTier.unit_price) * commissionFactor
-				: currentVariantBasePrice * commissionFactor;
+				: currentVariantBasePrice > 0
+					? Math.round(currentVariantBasePrice * commissionFactor * 100) / 100
+					: productData.currentPrice;
 
 	// Validate all selected items have valid selling prices (for dropshipping)
 	const validateAllSellingPrices = (): boolean => {
@@ -524,7 +533,13 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 					const variantLabel = v?.color_name || v?.title || "";
 					// Find the actual size object for price calculation
 					const sizeItem = v?.sizes?.find((s: any) => s.size_name === sizeName);
-					const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : effectiveUnitPrice;
+					const variantBasePrice = pickFirstPositivePrice(
+						v?.price,
+						productData.basePrice,
+					);
+					const itemPrice = sizeItem
+						? getSizePrice(sizeItem, qty, variantBasePrice)
+						: effectiveUnitPrice;
 					// Get per-item selling price
 					const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
 					const sp = spStr ? parseFloat(spStr) : null;
@@ -1147,8 +1162,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 						{(() => {
 							const currentVariant = variants[activeVariantIdx];
 							const selectedSize = currentVariant?.sizes?.[activeSizeIdx];
+							const selectedVariantBasePrice = pickFirstPositivePrice(
+								currentVariant?.price,
+								productData.basePrice,
+							);
 							const unitPrice = selectedSize
-								? getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0)
+								? getSizePrice(
+									selectedSize,
+									variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0,
+									selectedVariantBasePrice,
+								)
 								: effectiveUnitPrice;
 
 							const selectedItems = getSelectedItems();
@@ -1225,8 +1248,12 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 								const activeVar = variants[activeVariantIdx];
 								const activeSize = activeVar?.sizes?.[activeSizeIdx];
 								const activeVarQty = activeSize ? (variantQuantities[activeVar?.id]?.[activeSize.size_name] || 0) : 0;
+								const activeVarBasePrice = pickFirstPositivePrice(
+									activeVar?.price,
+									productData.basePrice,
+								);
 								const minSellingPrice = activeSize
-									? getSizePrice(activeSize, activeVarQty)
+									? getSizePrice(activeSize, activeVarQty, activeVarBasePrice)
 									: effectiveUnitPrice;
 								const isTooLow = singleSP !== "" && spNum < minSellingPrice;
 								return (
