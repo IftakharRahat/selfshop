@@ -79,7 +79,14 @@ export default function Navbar() {
 		setIsSearching(true);
 		try {
 			const res = await fetch(
-				`${process.env.NEXT_PUBLIC_BASE_URL}/search?keywords=${encodeURIComponent(query)}&limit=8`
+				`${process.env.NEXT_PUBLIC_BASE_URL}/search?keywords=${encodeURIComponent(query)}&limit=8`,
+				{
+					cache: "no-store",
+					headers: {
+						accept: "application/json",
+						...(token ? { authorization: `Bearer ${token}` } : {}),
+					},
+				},
 			);
 			const data = await res.json();
 			const items = data?.data?.data || data?.data || [];
@@ -89,7 +96,7 @@ export default function Navbar() {
 			setSuggestions([]);
 		}
 		setIsSearching(false);
-	}, []);
+	}, [token]);
 
 	const handleSearchInput = (value: string) => {
 		setSearchValue(value);

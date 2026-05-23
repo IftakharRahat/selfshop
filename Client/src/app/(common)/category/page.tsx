@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import { getApiBaseUrl } from "@/lib/utils";
+import { useAppSelector } from "@/redux/hooks";
 
 interface Product {
 	id: number;
@@ -25,6 +26,7 @@ const getCategoryFromURL = () => {
 
 const CategoryPage = () => {
 	const [category, setCategory] = useState(getCategoryFromURL());
+	const token = useAppSelector((state) => state.auth.access_token);
 
 	const [page, setPage] = useState(1);
 	const [products, setProducts] = useState<Product[]>([]);
@@ -53,6 +55,12 @@ const CategoryPage = () => {
 
 				const response = await fetch(
 					`${getApiBaseUrl()}/collection/${category}?${params}`,
+					{
+						headers: {
+							accept: "application/json",
+							...(token ? { Authorization: `Bearer ${token}` } : {}),
+						},
+					},
 				);
 
 				const result = await response.json();
@@ -79,7 +87,7 @@ const CategoryPage = () => {
 				setIsLoading(false);
 			}
 		},
-		[category, hasMore, isLoading, limit],
+		[category, hasMore, isLoading, limit, token],
 	);
 
 	// Reset when category changes
@@ -89,7 +97,7 @@ const CategoryPage = () => {
 		setHasMore(true);
 		setError(false);
 		fetchProducts(1);
-	}, [category]);
+	}, [category, token]);
 
 	// Intersection Observer for infinite scroll
 	useEffect(() => {

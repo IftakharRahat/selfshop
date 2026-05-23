@@ -1,37 +1,34 @@
 // app/products/[productId]/ProductDetailsComponent.tsx
+"use client";
 
+import { Loader2 } from "lucide-react";
 import MostPopularBrands from "../home/most-popular-brands";
 import ProductShowSection from "../home/product-show-section";
+import { useGetSingleProductQuery } from "@/redux/features/productDetails";
 import ProductDetailPage from "./product-detail-page";
 
 interface ProductDetailsComponentProps {
 	productId: string;
 }
 
-async function getSingleProduct(productId: string) {
-	try {
-		const res = await fetch(
-			`${process.env.NEXT_PUBLIC_BASE_URL}/product-details/${productId}`,
-			{
-				method: "GET",
-				cache: "no-store",
-			},
-		);
-
-		if (!res.ok) {
-			return null;
-		}
-
-		return res.json();
-	} catch {
-		return null;
-	}
-}
-
-export default async function ProductDetailsComponent({
+export default function ProductDetailsComponent({
 	productId,
 }: ProductDetailsComponentProps) {
-	const product = await getSingleProduct(productId);
+	const { data: product, isLoading, isFetching } = useGetSingleProductQuery(
+		productId,
+		{
+			skip: !productId,
+			refetchOnMountOrArgChange: true,
+		},
+	);
+
+	if (!product && (isLoading || isFetching)) {
+		return (
+			<div className="min-h-[50vh] flex items-center justify-center">
+				<Loader2 className="h-8 w-8 animate-spin text-pink-600" />
+			</div>
+		);
+	}
 
 	return (
 		<div>
