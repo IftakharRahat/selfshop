@@ -2208,8 +2208,45 @@ class OrderController extends Controller
         if (!isset($orders->parcel_id)) $orders->parcel_id = null;
         if (!isset($orders->shop_count)) $orders->shop_count = 1;
         if (!isset($orders->order_group_id)) $orders->order_group_id = null;
+        $orders->paymentTypeName = $this->resolveAdminPaymentTypeLabel($orders);
 
         return view('admin.content.order.edit')->with('order', $orders);
+    }
+
+    private function resolveAdminPaymentTypeLabel(object $order): string
+    {
+        $data = [];
+        if (!empty($order->data)) {
+            $decoded = json_decode($order->data, true);
+            if (is_array($decoded)) {
+                $data = $decoded;
+            }
+        }
+
+        $paymentType = trim((string) ($data['payment_type'] ?? ''));
+        if ($paymentType !== '') {
+            return $paymentType;
+        }
+
+        $balanceFrom = strtolower(trim((string) ($data['balance_from'] ?? '')));
+        if (in_array($balanceFrom, ['online_pay', 'online_payment'], true)) {
+            return 'SSLCommerz';
+        }
+        if (in_array($balanceFrom, ['from_account', 'account', 'account_balance'], true)) {
+            return 'Account Balance';
+        }
+
+        $looksLikeAdvanceDeliveryGatewayPayment =
+            (int) ($order->advance_delivery ?? 0) === 1 &&
+            (float) ($order->paymentAmount ?? 0) > 0 &&
+            (float) ($order->paymentAmount ?? 0) <= (float) ($order->deliveryCharge ?? 0) &&
+            !empty($order->transaction_id);
+
+        if ($looksLikeAdvanceDeliveryGatewayPayment) {
+            return 'SSLCommerz';
+        }
+
+        return (string) ($order->paymentTypeName ?? '');
     }
 
     //product

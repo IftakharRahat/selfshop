@@ -1110,12 +1110,23 @@ private function createOrderDetails($orderId, $cartData, $request)
             $storeOrder->deliveryCharge = $request->delivery_charge ?? $request->deliveryCharge ?? 0;
             $storeOrder->paymentAmount = $request->delivery_charge ?? $request->deliveryCharge ?? 0;
             $storeOrder->payment_type_id = 6;
+            if (Schema::hasColumn('orders', 'advance_delivery')) {
+                $storeOrder->advance_delivery = 1;
+            }
             if (Schema::hasColumn('orders', 'payment_status')) {
                 $storeOrder->payment_status = 'Paid';
             }
             $storeOrder->transaction_id = 'STORE_' . $orderId . '_' . $storeId;
             $storeOrder->orderDate = date('Y-m-d');
             $storeOrder->admin_id = $admin->id ?? $storeId;
+            if (Schema::hasColumn('orders', 'data')) {
+                $storeOrder->data = json_encode([
+                    'payment_type' => 'SSLCommerz',
+                    'balance_from' => 'online_pay',
+                    'advance_delivery' => 'yes',
+                    'parent_order_id' => $orderId,
+                ]);
+            }
             $storeOrder->save();
             
             Log::info('Store order created with user_id: ' . $userId);
