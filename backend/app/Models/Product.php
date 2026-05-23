@@ -25,12 +25,17 @@ class Product extends Model
     {
         $base = (float) ($this->ProductResellerPrice ?: 0);
 
-        // If base price is 0 (vendor relies on variant prices), use min_sell_price
+        // If base price is 0, prefer aggregated/storefront fields.
         if ($base <= 0) {
             $base = (float) ($this->min_sell_price
                 ?? $this->ProductSalePrice
                 ?? $this->ProductRegularPrice
                 ?? 0);
+        }
+
+        // If product-level fields are still 0, derive the lowest positive variant/size price.
+        if ($base <= 0) {
+            $base = (float) ($this->resolveVariantBasePrice() ?? 0);
         }
 
         if ($base <= 0 || !$this->vendor_id) {
@@ -39,6 +44,53 @@ class Product extends Model
 
         $service = app(\App\Services\VendorCommissionService::class);
         return $service->getStorefrontPrice($base, $this->vendor_id, $this->category_id);
+    }
+
+    protected function resolveVariantBasePrice(): ?float
+    {
+        $prices = [];
+
+        if ($this->relationLoaded('varients')) {
+            foreach ($this->varients as $variant) {
+                $variantPrice = (float) ($variant->price ?? 0);
+                if ($variantPrice > 0) {
+                    $prices[] = $variantPrice;
+                }
+
+                if ($variant->relationLoaded('sizes')) {
+                    foreach ($variant->sizes as $size) {
+                        $sizePrice = (float) ($size->price ?? 0);
+                        if ($sizePrice > 0) {
+                            $prices[] = $sizePrice;
+                        }
+                    }
+                }
+            }
+        } else {
+            $variantIds = $this->varients()->pluck('id');
+
+            $variantMin = $this->varients()
+                ->where('price', '>', 0)
+                ->min('price');
+            if ($variantMin > 0) {
+                $prices[] = (float) $variantMin;
+            }
+
+            if ($variantIds->isNotEmpty()) {
+                $sizeMin = \App\Models\VariantSize::whereIn('varient_id', $variantIds)
+                    ->where('price', '>', 0)
+                    ->min('price');
+                if ($sizeMin > 0) {
+                    $prices[] = (float) $sizeMin;
+                }
+            }
+        }
+
+        if (empty($prices)) {
+            return null;
+        }
+
+        return min($prices);
     }
 
     public function categories()
