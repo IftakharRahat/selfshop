@@ -40,7 +40,7 @@ import {
 } from "@/redux/features/home/homeApi";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
-import { getImageUrl } from "@/lib/utils";
+import { getImageUrl, pickFirstPositivePrice } from "@/lib/utils";
 import AuthModal from "../AuthModal";
 import CartDrawer from "../CartDrawer/CartDrawer";
 import DropDownBtn from "./DropDownBtn";
@@ -167,7 +167,15 @@ export default function Navbar() {
 								<div className="flex-1 min-w-0">
 									<p className="text-sm font-medium text-gray-800 truncate">{product.ProductName}</p>
 									{isResellerActive ? (
-										<p className="text-xs text-pink-600 font-semibold">৳ {product.ProductSalePrice || product.ProductRegularPrice}</p>
+										<p className="text-xs text-pink-600 font-semibold">
+											৳ {pickFirstPositivePrice(
+												product.storefront_price,
+												product.ProductResellerPrice,
+												product.ProductSalePrice,
+												product.ProductRegularPrice,
+												product.min_sell_price,
+											)}
+										</p>
 									) : (
 										<div className="flex items-center gap-1 mt-0.5">
 											<span className="text-gray-400 text-xs font-bold">***</span>

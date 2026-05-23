@@ -302,7 +302,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
 	// Helper: get unit price for a specific size based on its own bulk tiers OR product tiers
-	const getSizePrice = (sizeItem: any, qty: number) => {
+	const getSizePrice = (sizeItem: any, qty: number, variantBasePrice?: number) => {
 		// 0. If flash sale is active and valid, it overrides everything
 		if (flashSale && flashSale.flash_price > 0) {
 			return parseFloat(flashSale.flash_price);
@@ -329,7 +329,12 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			if (sPrice > 0) return Math.round(sPrice * commissionFactor * 100) / 100;
 		}
 
-		// 3. Fallback to product-level tiers based on total quantity
+		// 3. Fallback to active variant-level base price
+		if (variantBasePrice && variantBasePrice > 0) {
+			return Math.round(variantBasePrice * commissionFactor * 100) / 100;
+		}
+
+		// 4. Fallback to product-level tiers based on total quantity
 		if (productData.priceTiers && productData.priceTiers.length > 0) {
 			const tier = productData.priceTiers
 				.slice()
@@ -338,7 +343,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			if (tier) return Math.round(parseFloat(tier.unit_price) * commissionFactor * 100) / 100;
 		}
 
-		// 4. Final fallback to product-level current price
+		// 5. Final fallback to product-level current price
 		return Math.round(productData.currentPrice * commissionFactor * 100) / 100;
 	};
 
@@ -388,7 +393,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const effectiveUnitPrice = flashSale && flashSale.flash_price > 0
 		? parseFloat(flashSale.flash_price)
 		: currentSelectedSize
-			? getSizePrice(currentSelectedSize, currentSelectedQty)
+			? getSizePrice(currentSelectedSize, currentSelectedQty, currentVariantBasePrice)
 			: activeTier
 				? parseFloat(activeTier.unit_price) * commissionFactor
 				: currentVariantBasePrice * commissionFactor;
@@ -982,7 +987,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 											{sizesForTable.map((sz, szIdx) => {
 												const size = sz.size_name;
 												const qty = variantQuantities[currentVarId]?.[size] || 0;
-												const displayPrice = getSizePrice(sz, qty);
+												const displayPrice = getSizePrice(sz, qty, currentVariantBasePrice);
 												const isSelected = activeSizeIdx === szIdx;
 												// Per-row selling price state
 												const rowSellingPrice = variantSellingPrices[currentVarId]?.[size] || "";
