@@ -4,7 +4,7 @@
 
 import { toast } from "sonner";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
-import { cn } from "@/lib/utils";
+import { cn, pickFirstPositivePrice } from "@/lib/utils";
 import { useAddToCartMutation } from "@/redux/features/cartApi";
 import { useAppSelector } from "@/redux/hooks";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
@@ -28,7 +28,16 @@ export default function ProductShowSection({
 		}
 		const formData = new FormData();
 		formData.append("product_id", product.id);
-		formData.append("price", (product.storefront_price || product.ProductResellerPrice || product.ProductRegularPrice).toString());
+		formData.append(
+			"price",
+			pickFirstPositivePrice(
+				product.storefront_price,
+				product.ProductResellerPrice,
+				product.ProductSalePrice,
+				product.ProductRegularPrice,
+				product.min_sell_price,
+			).toString(),
+		);
 		formData.append("qty", "1");
 		formData.append("size", product.sizes?.[0] || "");
 
