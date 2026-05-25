@@ -259,6 +259,19 @@ export default function OrderConfirmationScreen() {
   const cartItems: any[] = checkoutCartIds.length > 0
     ? allCartItems.filter((item: any) => checkoutCartIds.includes(Number(item.id)))
     : allCartItems;
+
+  // Extra delivery charge per product (from backend cart API — separate query to avoid cache shape conflict)
+  const { data: extraDeliveryData } = useQuery({
+    queryKey: ["cart-extra-delivery"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/user-cart-content");
+      return Number(data?.extra_delivery_charge ?? 0);
+    },
+    enabled: isResellerActive,
+    staleTime: 30 * 1000,
+  });
+  const extraDeliveryCharge: number = extraDeliveryData ?? 0;
+
   const [deletingCartIds, setDeletingCartIds] = useState<Record<number, boolean>>({});
   const [confirmingDeleteIds, setConfirmingDeleteIds] = useState<Record<number, boolean>>({});
   const hasPendingDelete = Object.keys(deletingCartIds).length > 0 || Object.keys(confirmingDeleteIds).length > 0;
@@ -484,6 +497,7 @@ export default function OrderConfirmationScreen() {
     ? (effectiveChargeData.vendors?.[0]?.zone_label ?? (effectiveChargeData.total_charge != null ? "Delivery Charge" : null))
     : null;
   const hasDeliveryCharge = selectedCityId != null && deliveryCharge > 0;
+  const totalDeliveryCharge: number = hasDeliveryCharge ? deliveryCharge + extraDeliveryCharge : 0;
   const isChargeLoading = chargesFetching && !chargesError;
 
   const subtotal = cartItems.reduce(
@@ -498,7 +512,7 @@ export default function OrderConfirmationScreen() {
 
   const grandTotal = advanceDelivery === "yes" || !hasDeliveryCharge
     ? subtotal + totalProfit
-    : subtotal + totalProfit + deliveryCharge;
+    : subtotal + totalProfit + totalDeliveryCharge;
 
   const showOrderSuccess = (method: "account" | "ssl", orderId?: string) => {
     orderCompletedRef.current = true;
@@ -697,7 +711,7 @@ export default function OrderConfirmationScreen() {
     formData.append("customerPhone", customerData.phone);
     formData.append("customerAddress", customerData.address);
     formData.append("subTotal", subtotal.toString());
-    formData.append("deliveryCharge", deliveryCharge.toString());
+    formData.append("deliveryCharge", totalDeliveryCharge.toString());
     formData.append("delivery_zone", deliveryZoneLabel ?? "Delivery Charge");
     formData.append("advance_delivery", advanceDelivery);
     formData.append("balance_from", paymentMethod === "account" ? "from_account" : "online_pay");
@@ -1133,8 +1147,8 @@ export default function OrderConfirmationScreen() {
                 />
                 <Text fontSize={12} fontWeight="600" color={advanceDelivery === "yes" ? "#059669" : "#D97706"}>
                   {advanceDelivery === "yes"
-                    ? `Customer paid ৳${fmt(deliveryCharge)} advance delivery`
-                    : `৳${fmt(deliveryCharge)} delivery charge will be added to total`}
+                    ? `Customer paid ৳${fmt(totalDeliveryCharge)} advance delivery`
+                    : `৳${fmt(totalDeliveryCharge)} delivery charge will be added to total`}
                 </Text>
               </View>
             )}
@@ -1188,6 +1202,15 @@ export default function OrderConfirmationScreen() {
                 <Text fontSize={13} fontWeight="600" color={DARK}>৳{fmt(deliveryCharge)}</Text>
               )}
             </View>
+            {hasDeliveryCharge && extraDeliveryCharge > 0 && (
+              <View style={st.summaryRow}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Text fontSize={13} color={GREY}>Extra Delivery</Text>
+                  <Text fontSize={10} fontWeight="600" color="#3B82F6">(per qty)</Text>
+                </View>
+                <Text fontSize={13} fontWeight="600" color={DARK}>৳{fmt(extraDeliveryCharge)}</Text>
+              </View>
+            )}
             <View style={[st.summaryRow, { borderTopWidth: 1.5, borderTopColor: "#E5E5EA", paddingTop: 10, marginTop: 4 }]}>
               <Text fontSize={16} fontWeight="800" color={DARK}>Total</Text>
               <Text fontSize={20} fontWeight="800" color={ACCENT}>৳{fmt(grandTotal)}</Text>
@@ -1196,7 +1219,7 @@ export default function OrderConfirmationScreen() {
               <View style={[st.infoBox, { backgroundColor: "#FFF0F5", marginTop: 10 }]}>
                 <Ionicons name="information-circle" size={14} color={ACCENT} />
                 <Text fontSize={11} fontWeight="600" color={ACCENT}>
-                  Pay ৳{fmt(deliveryCharge)} delivery fee to confirm order
+                  Pay ৳{fmt(totalDeliveryCharge)} delivery fee to confirm order
                 </Text>
               </View>
             )}
@@ -1231,7 +1254,7 @@ export default function OrderConfirmationScreen() {
             <>
               <Ionicons name="bag-check-outline" size={20} color="#fff" />
               <Text fontSize="$4" fontWeight="bold" color="#fff">
-                {hasDeliveryCharge ? `Pay ৳${fmt(deliveryCharge)} & Confirm` : "Confirm Order"}
+                {hasDeliveryCharge ? `Pay ৳${fmt(totalDeliveryCharge)} & Confirm` : "Confirm Order"}
               </Text>
             </>
           )}
