@@ -148,6 +148,7 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('product-request/{id}/edit', [ProductrequestController::class, 'edit']);
     Route::get('product-request/data/{status}', [ProductrequestController::class, 'produtrqdata']);
     Route::post('product-request/update/{id}', [ProductrequestController::class, 'update']);
+    Route::delete('product-request/delete/{id}', [ProductrequestController::class, 'destroy']);
     // fraud
     Route::get('fraud/{status}', [FraudController::class, 'admindex']);
     Route::get('fraud/{id}/edit', [FraudController::class, 'edit']);

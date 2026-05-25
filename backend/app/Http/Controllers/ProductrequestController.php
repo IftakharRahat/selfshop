@@ -43,7 +43,7 @@ class ProductrequestController extends Controller
                 }
             })
             ->addColumn('action', function ($products) {
-                return '<a href="#" type="button" id="editRqBtn" data-id="' . $products->id . '"   class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainPrq" ><i class="bi bi-pencil-square"></i></a>';
+                return '<a href="#" type="button" id="editRqBtn" data-id="' . $products->id . '" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editmainPrq"><i class="bi bi-pencil-square"></i></a> <a href="#" type="button" class="btn btn-danger btn-sm deleteRqBtn" data-id="' . $products->id . '"><i class="bi bi-trash"></i></a>';
             })
             ->make(true);
     }
@@ -157,8 +157,10 @@ class ProductrequestController extends Controller
      * @param  \App\Models\Productrequest  $productrequest
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Productrequest $productrequest)
+    public function destroy($id)
     {
-        //
+        $product = Productrequest::findOrFail($id);
+        $product->delete();
+        return response()->json(['status' => 'success', 'message' => 'Product request deleted successfully.']);
     }
 }

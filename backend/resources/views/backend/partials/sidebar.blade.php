@@ -285,6 +285,9 @@
                     <a href="{{ url('admin/fraud/Cancel') }}" class="dropdown-item">Cancel</a>
                 </div>
             </div>
+            @endif
+
+            @if($isFullAdmin || $adm->hasDirectPermission('fraud.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-cart-plus"></i> Product RQ</a>
                 <div class="bg-transparent border-0 dropdown-menu">
