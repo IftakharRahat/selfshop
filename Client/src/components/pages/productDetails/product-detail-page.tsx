@@ -699,6 +699,31 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										</div>
 									</div>
 								</div>
+								{/* Flash sale pricing details */}
+								{isResellerActive && flashSale.flash_price > 0 && (
+									<div className="relative z-10 mt-3 pt-3 border-t border-white/20 flex flex-wrap items-center gap-3">
+										{flashSale.discount_percentage > 0 && (
+											<span className="bg-yellow-400 text-gray-900 font-extrabold text-sm px-2.5 py-1 rounded-lg shadow-sm">
+												{Math.round(flashSale.discount_percentage)}% OFF
+											</span>
+										)}
+										{flashSale.original_price > 0 && (
+											<span className="text-white/70 line-through text-sm flex items-center">
+												<TbCurrencyTaka size={16} />
+												{formatBDT(flashSale.original_price)}
+											</span>
+										)}
+										<span className="text-white font-bold text-lg flex items-center">
+											<TbCurrencyTaka size={20} />
+											{formatBDT(parseFloat(flashSale.flash_price))}
+										</span>
+										{flashSale.original_price > 0 && flashSale.original_price > parseFloat(flashSale.flash_price) && (
+											<span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+												Save ৳{formatBDT(flashSale.original_price - parseFloat(flashSale.flash_price))}
+											</span>
+										)}
+									</div>
+								)}
 							</div>
 						)}
 						{productData.vendor?.companyName && (
@@ -781,16 +806,39 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										</span>
 									) : (
 										<div className="flex flex-col">
-											{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
-												<span className="text-xs text-gray-400 line-through flex items-center">
-													<TbCurrencyTaka size={14} />
-													{formatBDT(productData.msrpPrice)}
-												</span>
+											{/* Flash sale: show original price strikethrough + discount badge */}
+											{flashSale && flashSale.flash_price > 0 && flashSale.original_price > 0 && flashSale.original_price > parseFloat(flashSale.flash_price) ? (
+												<>
+													<div className="flex items-center gap-2">
+														<span className="text-sm text-gray-400 line-through flex items-center">
+															<TbCurrencyTaka size={16} />
+															{formatBDT(flashSale.original_price)}
+														</span>
+														{flashSale.discount_percentage > 0 && (
+															<span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded">
+																-{Math.round(flashSale.discount_percentage)}%
+															</span>
+														)}
+													</div>
+													<div className="flex items-center text-pink-600 font-bold text-xl">
+														<TbCurrencyTaka size={24} />
+														{formatBDT(effectiveUnitPrice)}
+													</div>
+												</>
+											) : (
+												<>
+													{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
+														<span className="text-xs text-gray-400 line-through flex items-center">
+															<TbCurrencyTaka size={14} />
+															{formatBDT(productData.msrpPrice)}
+														</span>
+													)}
+													<div className="flex items-center text-pink-600 font-bold text-xl">
+														<TbCurrencyTaka size={24} />
+														{formatBDT(effectiveUnitPrice)}
+													</div>
+												</>
 											)}
-											<div className="flex items-center text-pink-600 font-bold text-xl">
-												<TbCurrencyTaka size={24} />
-												{formatBDT(effectiveUnitPrice)}
-											</div>
 										</div>
 									)}
 								</div>
