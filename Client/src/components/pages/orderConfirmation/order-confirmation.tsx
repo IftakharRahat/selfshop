@@ -179,8 +179,8 @@ export default function OrderConfirmation() {
 		? (effectiveChargeData.vendors?.[0]?.zone_label
 			?? (effectiveChargeData.total_charge != null ? "Delivery Charge" : null))
 		: null;
-	const totalDeliveryCharge: number = deliveryCharge + extraDeliveryCharge;
 	const hasDeliveryCharge = selectedCityId != null && deliveryCharge > 0;
+	const totalDeliveryCharge: number = hasDeliveryCharge ? deliveryCharge + extraDeliveryCharge : 0;
 	const isChargeLoading = chargesFetching && !chargesError;
 
 	const handleSaveAddress = async () => {
@@ -818,7 +818,7 @@ export default function OrderConfirmation() {
 										)}
 									</span>
 								</div>
-								{extraDeliveryCharge > 0 && (
+								{hasDeliveryCharge && extraDeliveryCharge > 0 && (
 									<div className="flex justify-between items-center text-gray-600">
 										<span className="flex items-center gap-1">
 											Extra Delivery
