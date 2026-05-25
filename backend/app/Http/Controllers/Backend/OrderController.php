@@ -1484,8 +1484,7 @@ class OrderController extends Controller
             app(\App\Services\StockService::class)->decrementForOrder($order->id);
 
             $user = User::where('id', $order->user_id)->first();
-            $user->account_balance = $user->account_balance - $order->deliveryCharge;
-            $user->update();
+            $user->decrement('account_balance', (float) $order->deliveryCharge);
             $comment = new Comment();
             $comment->order_id = $id;
             $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Reassign for delivery';
@@ -2345,8 +2344,7 @@ class OrderController extends Controller
 
                 if ($order->status == 'Canceled' && $status != 'Canceled') {
                     $user = User::where('id', $order->user_id)->first();
-                    $user->account_balance = $user->account_balance - $order->deliveryCharge;
-                    $user->update();
+                    $user->decrement('account_balance', (float) $order->deliveryCharge);
                     $comment = new Comment();
                     $comment->order_id = $id;
                     $comment->comment = 'Order ID : ' . $order->invoiceID . ', Customer Name : ' . $customer->customerName . ' is Reassign for delivery';

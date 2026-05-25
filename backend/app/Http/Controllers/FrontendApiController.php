@@ -4575,8 +4575,7 @@ class FrontendApiController extends Controller
         if ($request->balance_from == 'from_account') {
             $accountuser = User::find(Auth::id());
             if ($accountuser) {
-                $accountuser->account_balance -= $totalDeliveryCharge;
-                $accountuser->save();
+                $accountuser->decrement('account_balance', $totalDeliveryCharge);
                 $chargededucts = new Chargededuct();
                 $chargededucts->user_id = $accountuser->id;
                 $chargededucts->comment = 'You have charged ' . $totalDeliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';
