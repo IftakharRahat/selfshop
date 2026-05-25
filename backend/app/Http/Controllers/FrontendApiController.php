@@ -4520,6 +4520,20 @@ class FrontendApiController extends Controller
             $totalDeliveryCharge += $result['charge'];
         }
 
+        // Add extra delivery charge per product (for qty > 1)
+        $extraDeliveryCharge = 0;
+        $cartGroupsByProduct = $allCartItems->groupBy('product_id');
+        foreach ($cartGroupsByProduct as $productId => $items) {
+            $product = Product::find($productId);
+            if (!$product) continue;
+
+            $totalQtyForProduct = $items->sum('qty');
+            if ($totalQtyForProduct > 1 && ($product->extra_delivery_per_qty ?? 0) > 0) {
+                $extraDeliveryCharge += ((float) $product->extra_delivery_per_qty * ((int) $totalQtyForProduct - 1));
+            }
+        }
+        $totalDeliveryCharge += $extraDeliveryCharge;
+
         // Assign an active executive admin
         $admin = Admin::whereHas('roles', function ($q) {
             $q->where('name', 'Executive');

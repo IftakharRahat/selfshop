@@ -249,18 +249,19 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	};
 
 	// ---- Flash Sale Countdown ----
-	const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
+	const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
 	useEffect(() => {
 		if (!flashSale || !flashSale.flash_sale_end_time) return;
 
 		const timer = setInterval(() => {
 			const diff = new Date(flashSale.flash_sale_end_time).getTime() - Date.now();
 			if (diff <= 0) {
-				setTimeLeft({ h: 0, m: 0, s: 0 });
+				setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
 				clearInterval(timer);
 			} else {
 				setTimeLeft({
-					h: Math.floor((diff / (1000 * 60 * 60))),
+					d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+					h: Math.floor((diff / (1000 * 60 * 60)) % 24),
 					m: Math.floor((diff / (1000 * 60)) % 60),
 					s: Math.floor((diff / 1000) % 60),
 				});
@@ -690,12 +691,30 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 									</div>
 									<div className="flex flex-col items-start sm:items-end gap-1">
 										<p className="text-[10px] uppercase font-bold tracking-widest opacity-90">Ends In</p>
-										<div className="flex items-center gap-2">
-											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.h)}</div>
-											<span className="font-bold">:</span>
-											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.m)}</div>
-											<span className="font-bold">:</span>
-											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.s)}</div>
+										<div className="flex items-center gap-1.5">
+											{timeLeft.d > 0 && (
+												<>
+													<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+														<div className="font-bold text-lg leading-none">{timeLeft.d}</div>
+														<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Days</div>
+													</div>
+													<span className="font-bold text-white/60">:</span>
+												</>
+											)}
+											<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+												<div className="font-bold text-lg leading-none">{pad(timeLeft.h)}</div>
+												<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Hrs</div>
+											</div>
+											<span className="font-bold text-white/60">:</span>
+											<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+												<div className="font-bold text-lg leading-none">{pad(timeLeft.m)}</div>
+												<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Min</div>
+											</div>
+											<span className="font-bold text-white/60">:</span>
+											<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+												<div className="font-bold text-lg leading-none">{pad(timeLeft.s)}</div>
+												<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Sec</div>
+											</div>
 										</div>
 									</div>
 								</div>
