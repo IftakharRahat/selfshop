@@ -57,7 +57,7 @@ class WarrantyClaimAdminController extends Controller
                 'reseller_name'    => $claim->user->name ?? '—',
                 'reseller_phone'   => $claim->user->phone ?? '—',
                 'product_name'     => $claim->product->ProductName ?? ($claim->orderProduct->productName ?? '—'),
-                'product_code'     => $claim->product->ProductCode ?? ($claim->orderProduct->productCode ?? '—'),
+                'product_code'     => $claim->product->ProductSku ?? ($claim->orderProduct->productCode ?? '—'),
                 'supplier_name'    => $claim->vendor->company_name ?? ($claim->vendor->contact_name ?? '—'),
                 'warranty_days'    => $claim->warranty_days,
                 'delivered_at'     => $claim->delivered_at->format('d M Y'),

@@ -66,7 +66,7 @@ class WarrantyClaimController extends Controller
                     'order_product_id' => $op->id,
                     'product_id'       => $product->id,
                     'product_name'     => $op->productName ?? $product->ProductName,
-                    'product_code'     => $op->productCode ?? $product->ProductCode,
+                    'product_code'     => $op->productCode ?? $product->ProductSku,
                     'product_image'    => $product->ViewProductImage,
                     'product_price'    => $op->productPrice,
                     'quantity'         => $op->quantity,

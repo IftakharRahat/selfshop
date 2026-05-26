@@ -157,7 +157,7 @@
                                     <strong>Product:</strong> {{ $claim->product->ProductName ?? ($claim->orderProduct->productName ?? '—') }}
                                 </div>
                                 <div class="col-sm-6 mb-2">
-                                    <strong>Code:</strong> {{ $claim->product->ProductCode ?? ($claim->orderProduct->productCode ?? '—') }}
+                                    <strong>Code:</strong> {{ $claim->product->ProductSku ?? ($claim->orderProduct->productCode ?? '—') }}
                                 </div>
                                 <div class="col-sm-6 mb-2">
                                     <strong>Price:</strong> ৳{{ number_format($claim->orderProduct->productPrice ?? 0) }}
