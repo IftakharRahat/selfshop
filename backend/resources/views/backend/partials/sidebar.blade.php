@@ -129,6 +129,10 @@
                     <a href="{{ url('admin_order/Ontheway') }}" class="dropdown-item">On the Way @if($orderCounts->ontheway_count > 0)<span class="badge bg-info ms-1">{{ $orderCounts->ontheway_count }}</span>@endif</a>
                     <a href="{{ url('admin_order/Delivered') }}" class="dropdown-item">Delivered @if($orderCounts->delivered_count > 0)<span class="badge bg-success ms-1">{{ $orderCounts->delivered_count }}</span>@endif</a>
                     <a href="{{ url('admin_order/Return') }}" class="dropdown-item">Return @if($orderCounts->return_count > 0)<span class="badge bg-danger ms-1">{{ $orderCounts->return_count }}</span>@endif</a>
+                    @php
+                        $refundPendingCount = \App\Models\WarrantyClaim::where('status', 'pending')->count();
+                    @endphp
+                    <a href="{{ url('admin/warranty-claims/pending') }}" class="dropdown-item">Refund Claims @if($refundPendingCount > 0)<span class="badge bg-warning text-dark ms-1">{{ $refundPendingCount }}</span>@endif</a>
                 </div>
             </div>
             @endif

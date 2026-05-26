@@ -62,6 +62,7 @@ use App\Http\Controllers\Backend\AdminActivityController;
 use App\Http\Controllers\Backend\PromotionalSectionController;
 use App\Http\Controllers\Backend\MarketingCampaignController;
 use App\Http\Controllers\Backend\AnnouncementController;
+use App\Http\Controllers\Backend\WarrantyClaimAdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -384,6 +385,12 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('marketing-campaigns', [MarketingCampaignController::class, 'index'])->name('admin.marketing-campaigns.index');
     Route::post('marketing-campaigns', [MarketingCampaignController::class, 'store'])->name('admin.marketing-campaigns.store');
     Route::delete('marketing-campaigns/{id}', [MarketingCampaignController::class, 'destroy'])->name('admin.marketing-campaigns.destroy');
+
+    // Warranty / Refund Claims
+    Route::get('warranty-claims/{status?}', [WarrantyClaimAdminController::class, 'index'])->name('admin.warranty-claims.index');
+    Route::get('warranty-claims/data/{status}', [WarrantyClaimAdminController::class, 'claimData'])->name('admin.warranty-claims.data');
+    Route::get('warranty-claims/{id}/show', [WarrantyClaimAdminController::class, 'show'])->name('admin.warranty-claims.show');
+    Route::post('warranty-claims/{id}/respond', [WarrantyClaimAdminController::class, 'respond'])->name('admin.warranty-claims.respond');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {
