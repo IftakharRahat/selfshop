@@ -1887,21 +1887,20 @@ export default function ProductDetailScreen() {
         />
         <Sheet.Handle />
         <Sheet.Frame
-          paddingBottom={Math.max(insets.bottom, 16)}
           backgroundColor="#fff"
-          borderTopLeftRadius={24}
-          borderTopRightRadius={24}
+          borderTopLeftRadius={28}
+          borderTopRightRadius={28}
         >
 
             <View style={s.variantSheetHeader}>
               <View style={{ flex: 1 }}>
-                <Text fontSize={17} fontWeight="800" color={DARK}>Select Variants</Text>
-                <Text fontSize={12} color={GREY}>
-                  {normalizedVariants.length} variant{normalizedVariants.length !== 1 ? "s" : ""} - {selectedVariant.sizes.length} size{selectedVariant.sizes.length !== 1 ? "s" : ""}
+                <Text fontSize={18} fontWeight="800" color={DARK} letterSpacing={-0.3}>Select Variants</Text>
+                <Text fontSize={12} color={GREY} mt="$1">
+                  {normalizedVariants.length} variant{normalizedVariants.length !== 1 ? "s" : ""} · {selectedVariant.sizes.length} size{selectedVariant.sizes.length !== 1 ? "s" : ""}
                 </Text>
               </View>
               <Pressable onPress={closeVariantSheet} style={s.variantSheetCloseBtn}>
-                <Ionicons name="close" size={20} color={DARK} />
+                <Ionicons name="close" size={18} color="#666" />
               </Pressable>
             </View>
 
@@ -2010,9 +2009,9 @@ export default function ProductDetailScreen() {
             </View>
 
             <View style={s.sheetSizeHeader}>
-              <Text style={{ flex: 1.2 }} fontSize={13} fontWeight="800" color={DARK}>Size</Text>
-              <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Price</Text>
-              <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={13} fontWeight="800" color={DARK}>Quantity</Text>
+              <Text style={{ flex: 1.2 }} fontSize={11} fontWeight="700" color={GREY} letterSpacing={0.5} textTransform="uppercase">Size</Text>
+              <Text style={{ flex: 1 }} fontSize={11} fontWeight="700" color={GREY} letterSpacing={0.5} textTransform="uppercase">Price</Text>
+              <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={11} fontWeight="700" color={GREY} letterSpacing={0.5} textTransform="uppercase">Quantity</Text>
             </View>
 
             <KeyboardAwareScrollView
@@ -2042,21 +2041,25 @@ export default function ProductDetailScreen() {
                     key={rowKey}
                     style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}
                   >
+                    {qty > 0 && <View style={s.sheetSizeRowAccent} />}
                     <View style={s.sheetSizeRow}>
                       <View style={{ flex: 1.2 }}>
-                        <Text fontSize={14} fontWeight="700" color={DARK} numberOfLines={2}>
+                        <Text fontSize={15} fontWeight="700" color={DARK} numberOfLines={2}>
                           {size === "Default" ? "Std" : size}
                         </Text>
-                        <Text fontSize={10} color={sizeItem.sizeStock <= 0 ? "#EF4444" : GREY}>
+                        <Text fontSize={10} color={sizeItem.sizeStock <= 0 ? "#EF4444" : GREY} mt="$0.5">
                           {sizeItem.sizeStock <= 0 ? "Out of stock" : String(sizeItem.sizeStock) + " in stock"}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text fontSize={13} fontWeight="700" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
+                        <Text fontSize={14} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
                         {sizeItem.bulkPrices.length > 0 && (
-                          <Text fontSize={9} fontWeight="800" color={rowBulkTier ? ACCENT : "#059669"}>
-                            {rowBulkTier ? getTierQtyLabel(rowBulkTier).toUpperCase() : "BULK"}
-                          </Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: rowBulkTier ? ACCENT : "#059669" }} />
+                            <Text fontSize={9} fontWeight="800" color={rowBulkTier ? ACCENT : "#059669"}>
+                              {rowBulkTier ? getTierQtyLabel(rowBulkTier).toUpperCase() : "BULK"}
+                            </Text>
+                          </View>
                         )}
                       </View>
                       <View style={s.sheetStepperWrap}>
@@ -2065,15 +2068,15 @@ export default function ProductDetailScreen() {
                           onPress={() => handleQtyChange(selectedVariant.variantId, size, "decrease", sizeItem.sizeStock)}
                           disabled={qty <= 0}
                         >
-                          <Ionicons name="remove" size={15} color={qty <= 0 ? "#ccc" : DARK} />
+                          <Ionicons name="remove" size={16} color={qty <= 0 ? "#ccc" : DARK} />
                         </Pressable>
                         <View style={s.sheetStepVal}>
                           <TextInput
                             style={{
-                              fontSize: 14, fontWeight: "800" as any,
+                              fontSize: 15, fontWeight: "800" as any,
                               color: qty > 0 ? ACCENT : DARK,
                               textAlign: "center",
-                              minWidth: 34,
+                              minWidth: 36,
                               paddingVertical: 2,
                               paddingHorizontal: 0,
                             }}
@@ -2088,28 +2091,30 @@ export default function ProductDetailScreen() {
                           onPress={() => handleQtyChange(selectedVariant.variantId, size, "increase", sizeItem.sizeStock)}
                           disabled={qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0}
                         >
-                          <Ionicons name="add" size={15} color={(qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) ? "#ccc" : ACCENT} />
+                          <Ionicons name="add" size={16} color={(qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) ? "#ccc" : ACCENT} />
                         </Pressable>
                       </View>
                     </View>
-
-
                   </View>
                 );
               })}
             </KeyboardAwareScrollView>
 
             <View
-              style={s.variantSheetFooter}
+              style={[s.variantSheetFooter, { paddingBottom: Math.max(insets.bottom, 16) + 4 }]}
             >
-              <View style={s.sheetTotalRows}>
+              {/* ── Summary Card ── */}
+              <View style={s.sheetSummaryCard}>
                 <View style={s.sheetTotalRow}>
-                  <Text fontSize={12} color={GREY}>Total items: {totalQuantity} Pieces</Text>
-                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: totalQuantity > 0 ? ACCENT : "#ccc" }} />
+                    <Text fontSize={13} fontWeight="600" color={GREY}>Total items: {totalQuantity} Pieces</Text>
+                  </View>
+                  <Text fontSize={16} fontWeight="800" color={DARK} letterSpacing={-0.3}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
                 </View>
               </View>
 
-              {/* Total Selling Price Input in Sheet */}
+              {/* ── Total Selling Price Input in Sheet ── */}
               {showDropshipping && totalQuantity > 0 && (() => {
                 const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
                 const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
@@ -2140,22 +2145,20 @@ export default function ProductDetailScreen() {
                 };
 
                 return (
-                  <View style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F0F0F5" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                      <Ionicons name="pricetag" size={12} color={ACCENT} />
-                      <Text fontSize={12} fontWeight="700" color={DARK}>Your total selling price</Text>
+                  <View style={s.sheetSellingPriceSection}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <Ionicons name="pricetag" size={13} color={ACCENT} />
+                      <Text fontSize={13} fontWeight="700" color={DARK}>Your total selling price</Text>
                     </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text fontSize={14} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View style={s.sheetCurrencyBadge}>
+                        <Text fontSize={15} fontWeight="700" color={ACCENT}>{"\u09F3"}</Text>
+                      </View>
                       <TextInput
                         style={[
-                          {
-                            flex: 1, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: "#E5E5EA",
-                            fontSize: 16, fontWeight: "700" as any, backgroundColor: "#FAFAFA",
-                            paddingHorizontal: 12, color: DARK,
-                          },
+                          s.sheetSellingPriceInput,
                           isTooLow && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                          spNum >= selectedItemsTotal && singleSP ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                          spNum >= selectedItemsTotal && singleSP ? { borderColor: "#059669", backgroundColor: "#F0FDF9" } : {},
                         ]}
                         keyboardType="numeric"
                         value={singleSP}
@@ -2164,13 +2167,13 @@ export default function ProductDetailScreen() {
                         placeholderTextColor="#bbb"
                       />
                       {totalEarnings > 0 ? (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6 }}>
-                          <Ionicons name="trending-up" size={12} color="#059669" />
+                        <View style={s.sheetEarningsBadge}>
+                          <Ionicons name="trending-up" size={13} color="#059669" />
                           <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(totalEarnings, 0)}</Text>
                         </View>
                       ) : isTooLow ? (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FEF2F2", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6 }}>
-                          <Ionicons name="alert-circle" size={12} color="#EF4444" />
+                        <View style={s.sheetEarningsBadgeError}>
+                          <Ionicons name="alert-circle" size={13} color="#EF4444" />
                           <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
                         </View>
                       ) : null}
@@ -2179,13 +2182,15 @@ export default function ProductDetailScreen() {
                 );
               })()}
 
+              {/* ── Action Buttons ── */}
               <View style={s.sheetActionRow}>
                 <Pressable
                   onPress={handleBuyNow}
                   disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
                   style={({ pressed }) => [
                     s.sheetBuyBtn,
-                    (pressed || isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                    (isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.5 },
+                    pressed && !(isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.85, transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   <Text fontSize={15} fontWeight="800" color="#fff">Buy Now</Text>
@@ -2195,7 +2200,8 @@ export default function ProductDetailScreen() {
                   disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
                   style={({ pressed }) => [
                     s.sheetCartBtn,
-                    (pressed || isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                    (isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.5 },
+                    pressed && !(isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.85, transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   {addToCartMutation.isPending ? (
@@ -2947,15 +2953,16 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F5",
+    borderBottomColor: "#EEEEF2",
   },
   variantSheetCloseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: BG,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F0F0F5",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -3041,33 +3048,48 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#F0F0F5",
-    backgroundColor: "#fff",
+    borderColor: "#EEEEF2",
+    backgroundColor: "#FAFAFE",
   },
   sheetSizeRowWrap: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F5",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EEEEF2",
     backgroundColor: "#fff",
+    position: "relative" as const,
+    overflow: "hidden" as const,
   },
-  sheetSizeRowWrapActive: { backgroundColor: "#FFF8FB" },
+  sheetSizeRowWrapActive: {
+    backgroundColor: "#FFF8FB",
+    borderBottomColor: "#F8D9E8",
+  },
+  sheetSizeRowAccent: {
+    position: "absolute" as const,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: ACCENT,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
   sheetSizeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   sheetStepperWrap: {
     flex: 1.2,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 6,
+    gap: 4,
   },
   sheetStepBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: "#D8E1EF",
     alignItems: "center",
@@ -3075,7 +3097,7 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
   },
   sheetStepVal: {
-    minWidth: 34,
+    minWidth: 36,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -3085,43 +3107,105 @@ const s = StyleSheet.create({
   },
   variantSheetFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#E5E5EA",
+    borderTopColor: "#EEEEF2",
     backgroundColor: "#fff",
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
+    flexShrink: 0,
   },
-  sheetTotalRows: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+  sheetSummaryCard: {
+    backgroundColor: "#F8F8FC",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 12,
-    paddingBottom: 8,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: "#EEEEF2",
   },
   sheetTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+  sheetSellingPriceSection: {
+    marginBottom: 14,
+    paddingTop: 2,
+  },
+  sheetCurrencyBadge: {
+    width: 36,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: "#FFF0F5",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FECDD3",
+  },
+  sheetSellingPriceInput: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E5E5EA",
+    fontSize: 17,
+    fontWeight: "700" as any,
+    backgroundColor: "#FAFAFA",
+    paddingHorizontal: 14,
+    color: DARK,
+  },
+  sheetEarningsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+  },
+  sheetEarningsBadgeError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
   sheetActionRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginTop: 2,
   },
   sheetBuyBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 7,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 3,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   sheetCartBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 7,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: DARK,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 3,
+    shadowColor: DARK,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   downloadBadge: {
     position: "absolute",
