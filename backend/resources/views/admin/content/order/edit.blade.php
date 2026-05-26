@@ -267,7 +267,7 @@
                                  <div class="info-row">
                                      <i class="bi bi-shop"></i>
                                      <span class="info-label">Shop:</span>
-                                     <span class="info-value">{{ $assignedUser?->shop_name ?? 'N/A' }}</span>
+                                     <span class="info-value">{{ $assignedUser?->shop_name ?: 'N/A' }}</span>
                                  </div>
                                  <div class="info-row">
                                      <i class="bi bi-person"></i>
@@ -277,7 +277,7 @@
                                  <div class="info-row">
                                      <i class="bi bi-telephone"></i>
                                      <span class="info-label">Phone:</span>
-                                     <span class="info-value">{{ $assignedUser?->phone ?? 'N/A' }}</span>
+                                     <span class="info-value">{{ $assignedUser?->phone ?: ($assignedUser?->email ?? 'N/A') }}</span>
                                  </div>
                              </div>
                          </div>

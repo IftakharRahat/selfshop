@@ -168,7 +168,10 @@ export default function OrderConfirmation() {
 	// Use API data if available, otherwise use client-side fallback
 	const effectiveChargeData = deliveryChargeData ?? clientFallbackCharges;
 
-	// Delivery charge resolved — per vendor city matching
+	// Extra delivery charge per product (from backend cart API)
+	const extraDeliveryCharge: number = Number(cartItems?.extra_delivery_charge ?? 0);
+
+	// Delivery charge resolved — per vendor city matching + extra per-product charges
 	const deliveryCharge: number = selectedCityId && effectiveChargeData
 		? (effectiveChargeData.total_charge ?? effectiveChargeData.same_city_charge ?? 0)
 		: 0;
@@ -176,8 +179,8 @@ export default function OrderConfirmation() {
 		? (effectiveChargeData.vendors?.[0]?.zone_label
 			?? (effectiveChargeData.total_charge != null ? "Delivery Charge" : null))
 		: null;
-	const totalDeliveryCharge: number = deliveryCharge;
 	const hasDeliveryCharge = selectedCityId != null && deliveryCharge > 0;
+	const totalDeliveryCharge: number = hasDeliveryCharge ? deliveryCharge + extraDeliveryCharge : 0;
 	const isChargeLoading = chargesFetching && !chargesError;
 
 	const handleSaveAddress = async () => {
@@ -529,7 +532,16 @@ export default function OrderConfirmation() {
 											<span className={`digit-font text-base font-bold ${v.zone === "same_city" ? "text-green-600" : "text-pink-600"}`}>৳{formatBDT(v.charge, 0)}</span>
 										</div>
 									))}
-									{effectiveChargeData.vendors.length > 1 && (
+									{extraDeliveryCharge > 0 && (
+										<div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
+											<div>
+												<p className="text-sm font-semibold text-gray-900">Extra Delivery (per qty)</p>
+												<p className="text-xs font-medium text-blue-600">Additional charge for extra items</p>
+											</div>
+											<span className="digit-font text-base font-bold text-blue-600">৳{formatBDT(extraDeliveryCharge, 0)}</span>
+										</div>
+									)}
+									{(effectiveChargeData.vendors.length > 1 || extraDeliveryCharge > 0) && (
 										<div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-1">
 											<span className="text-sm font-bold text-gray-900">Total Delivery</span>
 											<span className="digit-font text-base font-bold text-pink-600">৳{formatBDT(totalDeliveryCharge, 0)}</span>
@@ -801,11 +813,23 @@ export default function OrderConfirmation() {
 										) : (
 											<span className="digit-font flex items-center">
 												<TbCurrencyTaka size={20} />
-												{formatBDT(totalDeliveryCharge, 0)}
+												{formatBDT(deliveryCharge, 0)}
 											</span>
 										)}
 									</span>
 								</div>
+								{hasDeliveryCharge && extraDeliveryCharge > 0 && (
+									<div className="flex justify-between items-center text-gray-600">
+										<span className="flex items-center gap-1">
+											Extra Delivery
+											<span className="text-xs text-blue-500 font-medium">(per qty)</span>
+										</span>
+										<span className="digit-font flex items-center">
+											<TbCurrencyTaka size={20} />
+											{formatBDT(extraDeliveryCharge, 0)}
+										</span>
+									</div>
+								)}
 								<div className="border-t pt-4">
 									<div className="flex justify-between items-center text-lg font-semibold text-gray-900">
 										<span>Total</span>

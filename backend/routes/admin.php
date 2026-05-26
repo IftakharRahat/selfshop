@@ -62,6 +62,7 @@ use App\Http\Controllers\Backend\AdminActivityController;
 use App\Http\Controllers\Backend\PromotionalSectionController;
 use App\Http\Controllers\Backend\MarketingCampaignController;
 use App\Http\Controllers\Backend\AnnouncementController;
+use App\Http\Controllers\Backend\RefundClaimController as AdminRefundClaimController;
 
 /*
 |--------------------------------------------------------------------------
@@ -143,11 +144,16 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::get('supporttikits', [TikitController::class, 'admindex']);
     Route::get('supporttikit/edit/{id}', [TikitController::class, 'edit']);
     Route::post('supporttikit/update/{id}', [TikitController::class, 'update']);
+    Route::get('refunds', [AdminRefundClaimController::class, 'index'])->name('admin.refunds.index')->middleware('admin.permission:refund.view');
+    Route::get('refunds/{claim}', [AdminRefundClaimController::class, 'show'])->name('admin.refunds.show')->middleware('admin.permission:refund.view');
+    Route::post('refunds/{claim}/reply', [AdminRefundClaimController::class, 'reply'])->name('admin.refunds.reply')->middleware('admin.permission:refund.edit');
+    Route::post('refunds/{claim}/status', [AdminRefundClaimController::class, 'updateStatus'])->name('admin.refunds.status')->middleware('admin.permission:refund.edit');
     // pr and frd
     Route::get('product-request/{status}', [ProductrequestController::class, 'admindex']);
     Route::get('product-request/{id}/edit', [ProductrequestController::class, 'edit']);
     Route::get('product-request/data/{status}', [ProductrequestController::class, 'produtrqdata']);
     Route::post('product-request/update/{id}', [ProductrequestController::class, 'update']);
+    Route::delete('product-request/delete/{id}', [ProductrequestController::class, 'destroy']);
     // fraud
     Route::get('fraud/{status}', [FraudController::class, 'admindex']);
     Route::get('fraud/{id}/edit', [FraudController::class, 'edit']);

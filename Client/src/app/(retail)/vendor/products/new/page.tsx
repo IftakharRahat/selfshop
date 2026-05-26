@@ -129,6 +129,7 @@ export default function VendorNewProductPage() {
 
 	const [sellingType, setSellingType] = useState<'wholesale' | 'dropshipping' | 'both'>('wholesale');
 	const [extraDeliveryPerQty, setExtraDeliveryPerQty] = useState("");
+	const [warrantyDays, setWarrantyDays] = useState("");
 	const [descriptionHtml, setDescriptionHtml] = useState<string>("");
 
 
@@ -172,7 +173,7 @@ export default function VendorNewProductPage() {
 		if (extraDeliveryPerQty) formData.append("extra_delivery_per_qty", extraDeliveryPerQty);
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
-		// warranty_days removed — feature not in use
+		formData.append("warranty_days", warrantyDays || "0");
 		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
 		if (galleryFiles.length > 0) {
 			for (let i = 0; i < galleryFiles.length; i++) {
@@ -380,6 +381,22 @@ export default function VendorNewProductPage() {
 											className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 										/>
 										<p className="mt-1 text-xs text-gray-400">Optional. Charged for each additional unit beyond the first</p>
+									</div>
+									<div>
+										<label className="mb-1 block text-sm font-medium text-gray-700">Warranty/Exchange</label>
+										<div className="flex">
+											<input
+												type="number"
+												min="0"
+												step="1"
+												placeholder="0"
+												value={warrantyDays}
+												onChange={(e) => setWarrantyDays(e.target.value)}
+												className="w-full rounded-l-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+											/>
+											<span className="inline-flex items-center rounded-r-lg border border-l-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-600">Days</span>
+										</div>
+										<p className="mt-1 text-xs text-gray-400">Blank or 0 means no claim window.</p>
 									</div>
 								</div>
 							</div>

@@ -112,6 +112,7 @@ export interface VendorProduct {
 	MetaKey?: string | null;
 	Discount?: number | string;
 	extra_delivery_per_qty?: number | string;
+	warranty_days?: number | string | null;
 	vendor_approval_status?: "pending" | "approved" | "rejected" | null;
 	selling_type?: "wholesale" | "dropshipping" | "both";
 	PostImage?: string | null;

@@ -97,6 +97,16 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'user_id');
     }
 
+    public function refundClaims()
+    {
+        return $this->hasMany(RefundClaim::class, 'user_id');
+    }
+
+    public function payoutAccounts()
+    {
+        return $this->hasMany(UserPayoutAccount::class, 'user_id');
+    }
+
     public function productrequests()
     {
         return $this->hasMany(Productrequest::class, 'from_id');

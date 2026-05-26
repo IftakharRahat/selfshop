@@ -133,7 +133,7 @@ class CrmDashboardController extends Controller
         $pendingSupplierPayment = (float) $pendingSupplierPaymentQuery
             ->sum('amount');
 
-        $supplierBalanceQuery = VendorEarning::query();
+        $supplierBalanceQuery = VendorEarning::query()->where('status', 'available');
         $applyDateRangeDatetime($supplierBalanceQuery, 'created_at');
         $totalSupplierAccountBalance = (float) $supplierBalanceQuery
             ->sum(DB::raw('COALESCE(net_amount, 0) - COALESCE(paid_amount, 0)'));
@@ -252,6 +252,7 @@ class CrmDashboardController extends Controller
         $status = strtolower(trim((string) $request->input('status', '')));
 
         $supplierEarnings = VendorEarning::query()
+            ->where('status', 'available')
             ->select(
                 'vendor_id',
                 DB::raw('SUM(COALESCE(line_total, 0)) AS sales_total'),
@@ -311,7 +312,7 @@ class CrmDashboardController extends Controller
 
         $suppliers = $suppliersQuery->paginate(30)->withQueryString();
 
-        $totalAvailableSupplierBalance = (float) VendorEarning::sum(DB::raw('COALESCE(net_amount, 0) - COALESCE(paid_amount, 0)'))
+        $totalAvailableSupplierBalance = (float) VendorEarning::where('status', 'available')->sum(DB::raw('COALESCE(net_amount, 0) - COALESCE(paid_amount, 0)'))
             - (float) VendorPayoutRequest::where('status', 'pending')->sum('amount');
 
         return view('backend.content.crm.suppliers', [

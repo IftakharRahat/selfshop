@@ -12,6 +12,7 @@ import {
 	Home,
 	LogOut,
 	Package,
+	RefreshCcw,
 	Settings,
 	Shield,
 	ShoppingBag,
@@ -44,6 +45,7 @@ const menuItems = [
 	{ icon: BarChart3, label: "Dashboard", href: "/dashboard" },
 	{ icon: CalendarDays, label: "Bonus", href: "/dashboard/event" },
 	{ icon: ShoppingBag, label: "My orders", href: "/dashboard/orders" },
+	{ icon: RefreshCcw, label: "Refund", href: "/dashboard/refund" },
 	{
 		icon: DollarSign,
 		label: "My Referral Income",

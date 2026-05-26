@@ -67,6 +67,7 @@ export default function VendorEditProductPage() {
 		sku: "",
 		discount: "",
 		extra_delivery_per_qty: "",
+		warranty_days: "",
 		unit: "",
 		product_weight: "",
 		minimum_qty: "",
@@ -130,6 +131,7 @@ export default function VendorEditProductPage() {
 				sku: String(p.ProductSku ?? ""),
 				discount: String(p.Discount ?? "0"),
 				extra_delivery_per_qty: String(p.extra_delivery_per_qty ?? ""),
+				warranty_days: String(p.warranty_days ?? ""),
 				unit: String(p.weight ?? ""),
 				product_weight: String(p.product_weight ?? "0"),
 				minimum_qty: String(p.minimum_qty ?? "1"),
@@ -257,9 +259,9 @@ export default function VendorEditProductPage() {
 		if (f.tags) formData.append("MetaKey", f.tags);
 		formData.append("Discount", f.discount || "0");
 		if (f.extra_delivery_per_qty) formData.append("extra_delivery_per_qty", f.extra_delivery_per_qty);
+		formData.append("warranty_days", f.warranty_days || "0");
 		formData.append("selling_type", sellingType);
 		formData.append("allow_dropship", sellingType === 'dropshipping' || sellingType === 'both' ? "1" : "0");
-		// warranty_days removed — feature not in use
 		formData.append("_method", "PUT");
 
 		if (thumbnailFile) formData.append("ProductImage", thumbnailFile);
@@ -391,6 +393,22 @@ export default function VendorEditProductPage() {
 											className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
 										/>
 										<p className="mt-1 text-xs text-gray-400">Optional. Charged for each additional unit beyond the first</p>
+									</div>
+									<div>
+										<label className="mb-1 block text-sm font-medium text-gray-700">Warranty/Exchange</label>
+										<div className="flex">
+											<input
+												type="number"
+												min="0"
+												step="1"
+												placeholder="0"
+												value={f.warranty_days}
+												onChange={(e) => setF(prev => ({ ...prev, warranty_days: e.target.value }))}
+												className="w-full rounded-l-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+											/>
+											<span className="inline-flex items-center rounded-r-lg border border-l-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-600">Days</span>
+										</div>
+										<p className="mt-1 text-xs text-gray-400">Blank or 0 means no claim window.</p>
 									</div>
 								</div>
 							</div>

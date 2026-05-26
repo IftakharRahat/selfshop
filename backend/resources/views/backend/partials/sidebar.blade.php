@@ -276,6 +276,11 @@
                 </div>
             </div>
             @endif
+            @if($isFullAdmin || $adm->hasDirectPermission('refund.view'))
+            <a href="{{ route('admin.refunds.index') }}" class="nav-item nav-link {{ request()->is('admin/refunds*') ? 'active-nav' : '' }}">
+                <i class="bi bi-arrow-counterclockwise"></i> Refund
+            </a>
+            @endif
             @if($isFullAdmin || $adm->hasDirectPermission('fraud.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-exclamation-triangle"></i> Frauds</a>
@@ -285,6 +290,9 @@
                     <a href="{{ url('admin/fraud/Cancel') }}" class="dropdown-item">Cancel</a>
                 </div>
             </div>
+            @endif
+
+            @if($isFullAdmin || $adm->hasDirectPermission('fraud.view'))
             <div class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-cart-plus"></i> Product RQ</a>
                 <div class="bg-transparent border-0 dropdown-menu">

@@ -186,13 +186,14 @@
             });
         });
 
-        $(document).on('click', '#deleteComplainBtn', function() {
+        $(document).on('click', '.deleteRqBtn', function() {
             let productrqsId = $(this).data('id');
             swal({ title: "Are you sure?", text: "Once deleted, you will not be able to recover this !", icon: "warning", buttons: true, dangerMode: true })
                 .then((willDelete) => {
                     if (willDelete) {
-                        $.ajax({ type: 'DELETE', url: 'productrqs/' + productrqsId,
-                            success: function(data) { swal("Poof! Your productrq has been deleted!", { icon: "success" }); productrqinfotbl.ajax.reload(); },
+                        $.ajax({ type: 'DELETE', url: '{{ url("admin/product-request/delete") }}/' + productrqsId,
+                            data: { _token: '{{ csrf_token() }}' },
+                            success: function(data) { swal("Poof! Product request has been deleted!", { icon: "success" }); productrqinfotbl.ajax.reload(); },
                             error: function(error) { console.log('error'); }
                         });
                     } else { swal("Your data is safe!"); }

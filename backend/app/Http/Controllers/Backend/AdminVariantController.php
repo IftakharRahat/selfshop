@@ -9,6 +9,7 @@ use App\Models\VariantSize;
 use App\Models\VariantSizeBulkPrice;
 use App\Helpers\StorageHelper;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 class AdminVariantController extends Controller
@@ -205,6 +206,7 @@ class AdminVariantController extends Controller
             'brand_id'        => 'nullable|exists:brands,id',
             'selling_type'    => 'nullable|in:wholesale,dropshipping,both',
             'ProductImage'    => 'nullable|image|max:5120',
+            'warranty_days'   => 'nullable|integer|min:0|max:3650',
         ]);
 
         if ($validator->fails()) {
@@ -302,6 +304,9 @@ class AdminVariantController extends Controller
         $product->ex_dvc = $request->input('ex_dvc', 0);
         $product->extra_delivery_per_qty = $request->extra_delivery_per_qty ?? 0;
         $product->shipping_days = $request->input('shipping_days');
+        if (Schema::hasColumn('products', 'warranty_days')) {
+            $product->warranty_days = $request->filled('warranty_days') ? (int) $request->input('warranty_days') : null;
+        }
 
         $product->save();
 

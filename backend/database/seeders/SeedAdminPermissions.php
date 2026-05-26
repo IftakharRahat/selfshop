@@ -101,6 +101,10 @@ class SeedAdminPermissions extends Seeder
                 'permissions' => ['ticket.view', 'ticket.edit'],
             ],
             [
+                'group_name' => 'refund',
+                'permissions' => ['refund.view', 'refund.edit'],
+            ],
+            [
                 'group_name' => 'fraud',
                 'permissions' => ['fraud.view', 'fraud.edit'],
             ],

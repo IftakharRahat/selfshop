@@ -4349,12 +4349,27 @@ class FrontendApiController extends Controller
             ], 400);
         }
 
+        // Calculate extra delivery charge per product (for qty > 1)
+        // This runs before both SSL and wallet paths
+        $extraDeliveryChargeForOrder = 0;
+        $cartGroupsByProduct = $cartItems->groupBy('product_id');
+        foreach ($cartGroupsByProduct as $productId => $items) {
+            $product = Product::find($productId);
+            if (!$product) continue;
+            $totalQtyForProduct = $items->sum('qty');
+            if ($totalQtyForProduct > 1 && ($product->extra_delivery_per_qty ?? 0) > 0) {
+                $extraDeliveryChargeForOrder += ((float) $product->extra_delivery_per_qty * ((int) $totalQtyForProduct - 1));
+            }
+        }
+        // Server-side delivery charge = frontend charge + extra per-qty charges
+        $serverDeliveryCharge = (float) $request->deliveryCharge + $extraDeliveryChargeForOrder;
+
         if ($request->balance_from == 'online_pay') {
 
             $shop = count($shopproducts);
-            $chargeamount = $shop * $request->deliveryCharge;
+            $chargeamount = $shop * $serverDeliveryCharge;
             $post_data = array();
-            $post_data['total_amount'] = $request->deliveryCharge > 10 ? $request->deliveryCharge : 10;
+            $post_data['total_amount'] = $serverDeliveryCharge > 10 ? $serverDeliveryCharge : 10;
             $post_data['currency'] = "BDT";
             $post_data['tran_id'] = uniqid(); // tran_id must be unique
 
@@ -4422,7 +4437,7 @@ class FrontendApiController extends Controller
                 'subTotal' => $sell,
                 'profit' => $profit,
                 'order_bonus' => $orderBonus,
-                'deliveryCharge' => $request->deliveryCharge,
+                'deliveryCharge' => $serverDeliveryCharge,
                 'paymentAmount' => $post_data['total_amount'],
                 'payment_type_id' => 6,
                 'advance_delivery' => $request->advance_delivery === 'yes' ? 1 : 0,
@@ -4431,7 +4446,7 @@ class FrontendApiController extends Controller
                     'customer_phone' => $request->customerPhone,
                     'customer_address' => $request->customerAddress,
                     'customer_note' => $request->customerNote ?? '',
-                    'delivery_charge_per_shop' => $request->deliveryCharge,
+                    'delivery_charge_per_shop' => $serverDeliveryCharge,
                     'cart_subtotal' => $request->subTotal,
                     'cart_ids' => $cartIdsForPayment,
                     'advance_delivery' => $request->advance_delivery,
@@ -4520,6 +4535,33 @@ class FrontendApiController extends Controller
             $totalDeliveryCharge += $result['charge'];
         }
 
+        // Add extra delivery charge per product (for qty > 1)
+        $extraDeliveryCharge = 0;
+        $cartGroupsByProduct = $allCartItems->groupBy('product_id');
+        foreach ($cartGroupsByProduct as $productId => $items) {
+            $product = Product::find($productId);
+            if (!$product) continue;
+
+            $totalQtyForProduct = $items->sum('qty');
+            if ($totalQtyForProduct > 1 && ($product->extra_delivery_per_qty ?? 0) > 0) {
+                $extraForProduct = (float) $product->extra_delivery_per_qty * ((int) $totalQtyForProduct - 1);
+                $extraDeliveryCharge += $extraForProduct;
+
+                // Add this product's extra charge to its vendor's delivery map entry
+                $prodVendorId = $product->vendor_id ?? $items->first()->shop_id ?? 1;
+                if (isset($vendorDeliveryMap[$prodVendorId])) {
+                    $vendorDeliveryMap[$prodVendorId] += $extraForProduct;
+                } else {
+                    // Find the matching vendor key in the map
+                    foreach ($vendorDeliveryMap as $vId => $charge) {
+                        $vendorDeliveryMap[$vId] += $extraForProduct;
+                        break; // Add to first vendor if no exact match
+                    }
+                }
+            }
+        }
+        $totalDeliveryCharge += $extraDeliveryCharge;
+
         // Assign an active executive admin
         $admin = Admin::whereHas('roles', function ($q) {
             $q->where('name', 'Executive');
@@ -4533,8 +4575,7 @@ class FrontendApiController extends Controller
         if ($request->balance_from == 'from_account') {
             $accountuser = User::find(Auth::id());
             if ($accountuser) {
-                $accountuser->account_balance -= $totalDeliveryCharge;
-                $accountuser->save();
+                $accountuser->decrement('account_balance', $totalDeliveryCharge);
                 $chargededucts = new Chargededuct();
                 $chargededucts->user_id = $accountuser->id;
                 $chargededucts->comment = 'You have charged ' . $totalDeliveryCharge . ' TK for delivery charge (' . $vendorCount . ' supplier' . ($vendorCount > 1 ? 's' : '') . ').';

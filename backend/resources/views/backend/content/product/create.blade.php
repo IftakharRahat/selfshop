@@ -204,6 +204,13 @@ body{background:#f3f4f6}
                         <div class="col-6"><label class="sp-label">Reseller Bonus ৳</label><input type="number" name="reseller_bonus" class="sp-input" value="0"></div>
                         <div class="col-6"><label class="sp-label">Shipping Days</label><input type="text" name="shipping_days" class="sp-input"></div>
                     </div>
+                    <div class="mt-2">
+                        <label class="sp-label">Warranty/Exchange</label>
+                        <div class="input-group">
+                            <input type="number" name="warranty_days" class="form-control" min="0" step="1" placeholder="0">
+                            <span class="input-group-text">Days</span>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- SEO --}}
