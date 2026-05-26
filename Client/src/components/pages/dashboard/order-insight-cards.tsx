@@ -27,7 +27,7 @@ export default function OrderInsightCards() {
 			icon: reseller,
 		},
 		{
-			title: "Pending amount",
+			title: "Pending Balance",
 			value: `৳ ${formatNumber(dashboardData?.data?.pending_amount ?? 0)}`,
 			icon: pendingIcon,
 		},

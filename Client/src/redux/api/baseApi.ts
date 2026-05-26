@@ -90,6 +90,7 @@ export const baseApi = createApi({
 		"shopProducts",
 		"vendorWarrantyClaims",
 		"warrantyApi",
+		"refundApi",
 	],
 	endpoints: () => ({}),
 });

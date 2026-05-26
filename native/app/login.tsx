@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { login } from "@/lib/auth-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { fetchUserProfilePayload, invalidateSubscriptionAccessQueries } from "@/lib/subscription-api";
+import { isSubscriptionActive, subscriptionDestinationFromProfile } from "@/lib/subscription-routing";
 
 const { width } = Dimensions.get("window");
 
@@ -37,14 +39,19 @@ export default function Login() {
     setError(null);
 
     try {
-      await login(form.email, form.password);
-      queryClient.invalidateQueries({ queryKey: ["auth-token"] });
-      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      const session = await login(form.email, form.password);
+      invalidateSubscriptionAccessQueries(queryClient);
+      const profilePayload = session.profilePayload?.subscription
+        ? session.profilePayload
+        : await queryClient.fetchQuery({
+            queryKey: ["user-profile"],
+            queryFn: fetchUserProfilePayload,
+          });
       setForm({ email: "", password: "" });
-      if (returnTo) {
+      if (returnTo && isSubscriptionActive(profilePayload)) {
         router.replace(returnTo as any);
       } else {
-        router.replace("/");
+        router.replace(subscriptionDestinationFromProfile(profilePayload) as any);
       }
     } catch (err: any) {
       const message =

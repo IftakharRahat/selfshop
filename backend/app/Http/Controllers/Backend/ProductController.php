@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use DataTables;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
@@ -236,6 +237,9 @@ class ProductController extends Controller
             $product->summer = 'Off';
         }
         $product->shipping_days = $request->shipping_days;
+        if (Schema::hasColumn('products', 'warranty_days')) {
+            $product->warranty_days = $request->filled('warranty_days') ? (int) $request->warranty_days : null;
+        }
 
         $product->ex_pack = $request->ex_pack ?? 0;
         $product->ex_dvc = $request->ex_dvc ?? 0;
@@ -547,6 +551,9 @@ class ProductController extends Controller
         }
 
         $product->shipping_days = $request->shipping_days;
+        if (Schema::hasColumn('products', 'warranty_days')) {
+            $product->warranty_days = $request->filled('warranty_days') ? (int) $request->warranty_days : null;
+        }
 
         $product->ex_pack = $request->ex_pack;
         $product->ex_dvc = $request->ex_dvc;

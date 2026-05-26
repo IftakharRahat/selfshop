@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient, { TOKEN_KEY } from "./api-client";
 import { queryClient } from "./query-client";
 import { unregisterDevicePushTokenAsync } from "./push-notifications";
+import type { SubscriptionState } from "./subscription-routing";
 
 interface User {
   id: number;
@@ -15,6 +16,8 @@ interface User {
 interface Session {
   user: User;
   token: string;
+  profilePayload?: any;
+  subscription?: SubscriptionState | null;
 }
 
 function parseAuthResponse(data: any) {
@@ -27,6 +30,7 @@ function parseAuthResponse(data: any) {
       data?.token ??
       data?.access_token,
     user: payload?.user ?? data?.user,
+    payload,
   };
 }
 
@@ -51,7 +55,7 @@ async function createSessionFromAuthResponse(data: any): Promise<Session> {
     throw new Error(data?.message ?? "Authentication failed");
   }
 
-  const { token, user: responseUser } = parseAuthResponse(data);
+  const { token, user: responseUser, payload } = parseAuthResponse(data);
 
   if (!token) throw new Error(data?.message ?? "No token received");
 
@@ -59,8 +63,16 @@ async function createSessionFromAuthResponse(data: any): Promise<Session> {
 
   try {
     const user = responseUser?.id ? responseUser : await fetchCurrentUser();
-    const session = { user, token };
+    const session = {
+      user,
+      token,
+      profilePayload: payload,
+      subscription: payload?.subscription ?? null,
+    };
     cacheSession(session);
+    if (payload?.subscription || payload?.profile) {
+      queryClient.setQueryData(["user-profile"], payload);
+    }
     return session;
   } catch (error) {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
@@ -81,12 +93,14 @@ export async function register(
   email: string,
   password: string,
   password_confirmation: string,
+  refer_by?: string,
 ): Promise<Session> {
   const { data } = await apiClient.post("/register", {
     name,
     email,
     password,
     password_confirmation,
+    refer_by: refer_by?.trim() || undefined,
   });
   return createSessionFromAuthResponse(data);
 }

@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Schema;
 
 class SslCommerzOrderFinalizer
 {
+    public function __construct(
+        private readonly SslCommerzStoreOrderService $storeOrderService
+    ) {
+    }
+
     public function finalizeFromCallback(Request $request, bool $validateWithGateway = false, bool $trustedGatewayStatus = false): array
     {
         $tranId = trim((string) $request->input('tran_id'));
@@ -105,18 +110,23 @@ class SslCommerzOrderFinalizer
 
                 $createdCustomer = $this->ensureCustomer($lockedOrder->id, $customerData);
                 $createdProducts = $this->ensureOrderProducts($lockedOrder->id, $cartData);
+                $storeOrderResult = $this->storeOrderService->ensureStoreOrders(
+                    (int) $lockedOrder->id,
+                    $cartData,
+                    [
+                        'user_id' => $userId,
+                        'customer_name' => $customerData['name'] ?? 'Customer',
+                        'customer_phone' => $customerData['phone'] ?? '',
+                        'customer_address' => $customerData['address'] ?? '',
+                        'delivery_charge' => $this->expectedPaymentAmount($lockedOrder, $request, $orderData),
+                    ],
+                    [
+                        'notify_suppliers' => false,
+                        'create_comments' => false,
+                    ]
+                );
 
-                if ($createdProducts) {
-                    try {
-                        app(StockService::class)->decrementForOrder($lockedOrder->id);
-                    } catch (\Throwable $e) {
-                        \Log::warning('Stock decrement failed during finalization for order #' . $lockedOrder->id, [
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-
-                if ($previousStatus === 'Pending Payment' && ($createdCustomer || $createdProducts)) {
+                if ($previousStatus === 'Pending Payment' && ($createdCustomer || $createdProducts || (($storeOrderResult['created_count'] ?? 0) > 0))) {
                     $freshOrder = Order::find($lockedOrder->id);
                     if ($freshOrder) {
                         $this->notifyFinalizedOrder($freshOrder, $customerData);
@@ -133,6 +143,7 @@ class SslCommerzOrderFinalizer
                     'status' => $updates['status'],
                     'created_customer' => $createdCustomer,
                     'created_products' => $createdProducts,
+                    'created_store_orders' => $storeOrderResult['created_count'] ?? 0,
                 ];
             });
 
@@ -212,6 +223,18 @@ class SslCommerzOrderFinalizer
 
     private function markPaymentFailed(object $order, Request $request, array $orderData): void
     {
+        $paymentStatus = strtolower((string) ($order->payment_status ?? ($orderData['payment_status'] ?? '')));
+        if ($paymentStatus === 'paid') {
+            return;
+        }
+
+        $storeOrdersExist = DB::table('orders')
+            ->where('transaction_id', 'like', 'STORE_' . $order->id . '_%')
+            ->exists();
+        if ($storeOrdersExist) {
+            return;
+        }
+
         if (!in_array((string) ($order->status ?? ''), ['Pending Payment', 'Pending'], true)) {
             return;
         }

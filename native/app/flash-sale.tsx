@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import apiClient from "@/lib/api-client";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const ACCENT = "#E5005F";
@@ -83,6 +84,7 @@ function useCountdown(endTime: string | null): TimeLeft {
 export default function FlashSaleScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
 
   const flashQuery = useQuery({
     queryKey: ["flash-sale"],
@@ -156,20 +158,31 @@ export default function FlashSaleScreen() {
           </Text>
 
           <View style={styles.priceRow}>
-            <View style={styles.priceStack}>
-              <Text style={styles.flashPrice}>
-                {TAKA}{formatBDT(product.FlashPrice)}
-              </Text>
-              {hasDiscount && (
-                <Text style={styles.originalPrice}>
-                  {TAKA}{formatBDT(product.SalePrice)}
-                </Text>
-              )}
-            </View>
-            {hasDiscount && (
-              <View style={styles.saveBadge}>
-                <Text style={styles.saveText}>
-                  SAVE {Math.round(product.discount_percentage)}%
+            {isResellerActive ? (
+              <>
+                <View style={styles.priceStack}>
+                  <Text style={styles.flashPrice}>
+                    {TAKA}{formatBDT(product.FlashPrice)}
+                  </Text>
+                  {hasDiscount && (
+                    <Text style={styles.originalPrice}>
+                      {TAKA}{formatBDT(product.SalePrice)}
+                    </Text>
+                  )}
+                </View>
+                {hasDiscount && (
+                  <View style={styles.saveBadge}>
+                    <Text style={styles.saveText}>
+                      SAVE {Math.round(product.discount_percentage)}%
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="lock-closed" size={12} color="#E5005F" />
+                <Text style={{ fontSize: 12, fontWeight: "700", color: "#E5005F" }}>
+                  {isLoggedIn ? "Activate to see price" : "Login to see price"}
                 </Text>
               </View>
             )}

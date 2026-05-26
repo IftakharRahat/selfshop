@@ -7,9 +7,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import logo from "@/assets/icons/NavLogo.png";
-import { setUser } from "@/redux/features/auth/authSlice";
+import { setUser, useCurrentToken } from "@/redux/features/auth/authSlice";
 import { useRegisterMutation } from "@/redux/features/auth/authApi";
-import { useAppDispatch } from "@/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { trackLead, trackViewRegistration } from "@/lib/trackingEvents";
 import { handleAsyncWithToast } from "@/utils/handleAsyncWithToast";
 
@@ -35,6 +35,14 @@ export default function ResellerRegisterPage({
 	const [form] = Form.useForm<RegisterFormValues>();
 	const [register, { isLoading }] = useRegisterMutation();
 	const lockedReferralCode = referralCode?.trim() ?? "";
+	const token = useAppSelector(useCurrentToken);
+
+	// Redirect to home if already logged in
+	useEffect(() => {
+		if (token) {
+			router.replace("/");
+		}
+	}, [token, router]);
 
 	useEffect(() => {
 		trackViewRegistration();
@@ -96,22 +104,22 @@ export default function ResellerRegisterPage({
 			}}
 		>
 			<main className="bg-[#FFF8FB]">
-				<section className="mx-auto grid min-h-[calc(100vh-160px)] max-w-6xl items-center px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+				<section className="mx-auto grid min-h-[calc(100vh-160px)] max-w-6xl items-center px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
 					<div className="grid overflow-hidden rounded-2xl border border-pink-100 bg-white shadow-[0_20px_60px_rgba(229,0,95,0.14)] lg:grid-cols-[0.9fr_1.1fr]">
-						<aside className="bg-[#E5005F] px-6 py-8 text-[#FFF7FB] sm:px-8 lg:px-10">
-							<div className="mb-8 inline-flex rounded-xl bg-white px-4 py-3">
-								<Image src={logo} alt="SelfShop" width={164} height={44} priority />
+						<aside className="bg-[#E5005F] px-5 py-5 text-[#FFF7FB] sm:px-8 sm:py-8 lg:px-10">
+							<div className="mb-4 inline-flex rounded-xl bg-white px-3 py-2 sm:mb-8 sm:px-4 sm:py-3">
+								<Image src={logo} alt="SelfShop" width={132} height={36} priority />
 							</div>
 
-							<h1 className="max-w-sm text-3xl font-black leading-tight sm:text-4xl">
+							<h1 className="max-w-sm text-2xl font-black leading-tight sm:text-4xl">
 								Create your reseller account
 							</h1>
-							<p className="mt-4 max-w-md text-sm leading-6 text-pink-50">
+							<p className="mt-2 max-w-md text-sm leading-6 text-pink-50 sm:mt-4">
 								Join SelfShop to source products, manage orders, and build your
 								reselling business from one dashboard.
 							</p>
 
-							<div className="mt-8 space-y-4">
+							<div className="mt-8 hidden space-y-4 sm:block">
 								<div className="flex gap-3">
 									<Store className="mt-0.5 h-5 w-5 flex-none" />
 									<div>
@@ -142,22 +150,22 @@ export default function ResellerRegisterPage({
 							</div>
 						</aside>
 
-						<div className="px-5 py-7 sm:px-8 lg:px-10">
-							<div className="mb-6">
+						<div className="px-5 py-6 sm:px-8 sm:py-7 lg:px-10">
+							<div className="mb-4 sm:mb-6">
 								<p className="text-xs font-bold uppercase tracking-[0.18em] text-[#E5005F]">
 									Registration
 								</p>
-								<h2 className="mt-2 text-2xl font-black text-gray-950">
+								<h2 className="mt-1.5 text-xl font-black text-gray-950 sm:mt-2 sm:text-2xl">
 									Start with your phone number
 								</h2>
-								<p className="mt-2 text-sm leading-6 text-gray-600">
+								<p className="mt-1.5 text-sm leading-6 text-gray-600 sm:mt-2">
 									Use an active Bangladeshi mobile number. You can complete your
 									subscription after account creation.
 								</p>
 							</div>
 
 							{lockedReferralCode ? (
-								<div className="mb-5 flex items-center gap-3 rounded-xl border border-pink-100 bg-pink-50 px-4 py-3">
+								<div className="mb-4 flex items-center gap-3 rounded-xl border border-pink-100 bg-pink-50 px-4 py-3 sm:mb-5">
 									<CheckCircle2 className="h-5 w-5 flex-none text-[#E5005F]" />
 									<div>
 										<p className="text-sm font-bold text-gray-950">

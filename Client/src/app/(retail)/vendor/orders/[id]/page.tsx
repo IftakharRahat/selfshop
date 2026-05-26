@@ -67,6 +67,12 @@ export default function VendorOrderDetailPage() {
 	const canAddTracking = !isRejected && !isDelivered;
 	const isShippedToWarehouse = !!order.warehouse_sent_at;
 
+	const formatVariantMeta = (item: (typeof line_items)[number]) =>
+		[
+			item.color && item.color !== "undefined" ? `Color: ${item.color}` : null,
+			item.size && item.size !== "undefined" ? `Size: ${item.size}` : null,
+		].filter(Boolean);
+
 	const handleDownloadInvoice = () => {
 		const maskedPhone = customer?.customerPhone
 			? `${'*'.repeat(Math.max(0, customer.customerPhone.length - 4))}${customer.customerPhone.slice(-4)}`
@@ -437,12 +443,30 @@ export default function VendorOrderDetailPage() {
 								{line_items.map((item) => (
 									<tr key={item.id}>
 										<td className="px-3 py-2">
-											<div className="flex items-center gap-2">
-												{item.product?.ViewProductImage && (
-													<img src={getImageUrl(item.product.ViewProductImage)} alt="" className="w-10 h-10 object-cover rounded" />
+											<div className="flex items-start gap-3">
+												{(item.product?.VariantImage || item.product?.ViewProductImage) && (
+													<img
+														src={getImageUrl(item.product?.VariantImage || item.product?.ViewProductImage || "")}
+														alt={item.productName}
+														className="w-12 h-12 object-cover rounded border border-gray-200 shrink-0"
+													/>
 												)}
-												<span className="font-medium">{item.productName}</span>
-												{item.productCode && <span className="text-gray-500 text-xs">({item.productCode})</span>}
+												<div className="min-w-0">
+													<div className="font-medium text-gray-900">{item.productName}</div>
+													{item.productCode && <div className="text-gray-500 text-xs mt-0.5">{item.productCode}</div>}
+													{formatVariantMeta(item).length > 0 && (
+														<div className="mt-1 flex flex-wrap gap-1.5">
+															{formatVariantMeta(item).map((meta) => (
+																<span
+																	key={`${item.id}-${meta}`}
+																	className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700"
+																>
+																	{meta}
+																</span>
+															))}
+														</div>
+													)}
+												</div>
 											</div>
 										</td>
 										<td className="px-3 py-2 text-right">৳{formatBDT(Number(item.productPrice))}</td>

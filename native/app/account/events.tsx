@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { toast } from "sonner-native";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -32,6 +34,7 @@ const formatTargetValue = (value: number | string | undefined, type: string): st
 
 export default function EventsScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
 
   const dashboardQuery = useQuery({
     queryKey: ["dashboard-data"],
@@ -39,6 +42,7 @@ export default function EventsScreen() {
       const { data } = await apiClient.get("/dashboard-data");
       return data?.data ?? data;
     },
+    enabled: isResellerActive,
   });
 
   const participateMut = useMutation({
@@ -97,6 +101,29 @@ export default function EventsScreen() {
       setClaimingId(null);
     }
   };
+
+  if (isSubscriptionLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Event Challenges", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Event Challenges", headerShadowVisible: false, headerStyle: { backgroundColor: "#F8F8FA" } }} />
+        <SubscriptionRequired
+          title="Activate to Join Events"
+          message="Activate your subscription to access reseller challenges and rewards."
+        />
+      </>
+    );
+  }
 
   return (
     <>

@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -33,6 +35,7 @@ function resolveImageUrl(path?: string | null): string | null {
 }
 
 export default function CourseDetailScreen() {
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const { slug } = useLocalSearchParams<{ slug: string }>();
 
   const courseQuery = useQuery({
@@ -41,19 +44,31 @@ export default function CourseDetailScreen() {
       const { data } = await apiClient.get(`/course-details/${slug}`);
       return data?.data ?? data;
     },
-    enabled: !!slug,
+    enabled: !!slug && isResellerActive,
   });
 
   const course = courseQuery.data;
   const lessons: any[] = course?.courses ?? course?.lessons ?? [];
 
-  if (courseQuery.isLoading) {
+  if (isSubscriptionLoading || courseQuery.isLoading) {
     return (
       <>
         <Stack.Screen options={{ headerShown: true, title: "Course", headerShadowVisible: false }} />
         <View style={styles.loadingState}>
           <ActivityIndicator size="large" color={ACCENT} />
         </View>
+      </>
+    );
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: true, title: "Course", headerShadowVisible: false }} />
+        <SubscriptionRequired
+          title="Activate to View Course"
+          message="Activate your subscription to access reseller learning content."
+        />
       </>
     );
   }

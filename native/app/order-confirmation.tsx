@@ -14,6 +14,8 @@ import { WebView } from "react-native-webview";
 
 import { AppDialog, useAppDialog } from "@/components/app-dialog";
 import apiClient from "@/lib/api-client";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 const DARK = "#1A1A2E";
@@ -40,8 +42,6 @@ function resolveImg(path?: string | null): string | undefined {
 const fmt = (n: number, d = 0) =>
   n.toLocaleString("en-BD", { minimumFractionDigits: d, maximumFractionDigits: d });
 
-type DeliveryZone = "inside" | "near" | "outside" | null;
-
 type OnlinePaymentReference = {
   orderId?: number;
   transactionId?: string;
@@ -52,6 +52,21 @@ type OrderSuccessState = {
   method: "account" | "ssl";
   orderId?: string;
   amount: number;
+};
+
+type DeliveryChargeVendor = {
+  vendor_id: number | null;
+  charge: number;
+  zone: string;
+  zone_label: string;
+  vendor_name: string;
+};
+
+type DeliveryChargeData = {
+  same_city_charge?: number;
+  inter_city_charge?: number;
+  vendors?: DeliveryChargeVendor[];
+  total_charge?: number;
 };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -216,6 +231,7 @@ export default function OrderConfirmationScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { dialog, showDialog, closeDialog } = useAppDialog();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const webViewRef = useRef<WebView>(null);
   const onlinePaymentRef = useRef<OnlinePaymentReference>({});
   const paymentHandledRef = useRef(false);
@@ -237,11 +253,25 @@ export default function OrderConfirmationScreen() {
       const { data } = await apiClient.get("/user-cart-content");
       return data?.data ?? [];
     },
+    enabled: isResellerActive,
   });
   const allCartItems: any[] = cartData ?? [];
   const cartItems: any[] = checkoutCartIds.length > 0
     ? allCartItems.filter((item: any) => checkoutCartIds.includes(Number(item.id)))
     : allCartItems;
+
+  // Extra delivery charge per product (from backend cart API — separate query to avoid cache shape conflict)
+  const { data: extraDeliveryData } = useQuery({
+    queryKey: ["cart-extra-delivery"],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/user-cart-content");
+      return Number(data?.extra_delivery_charge ?? 0);
+    },
+    enabled: isResellerActive,
+    staleTime: 30 * 1000,
+  });
+  const extraDeliveryCharge: number = extraDeliveryData ?? 0;
+
   const [deletingCartIds, setDeletingCartIds] = useState<Record<number, boolean>>({});
   const [confirmingDeleteIds, setConfirmingDeleteIds] = useState<Record<number, boolean>>({});
   const hasPendingDelete = Object.keys(deletingCartIds).length > 0 || Object.keys(confirmingDeleteIds).length > 0;
@@ -332,7 +362,7 @@ export default function OrderConfirmationScreen() {
     }
   }, [cartFetching, cartLoading, cartItems.length, hasPendingDelete]);
 
-  // ── Basic info (delivery charges) ──
+  // ── Basic info (fallback delivery charges) ──
   const { data: basicInfo } = useQuery({
     queryKey: ["basic-info"],
     queryFn: async () => {
@@ -343,7 +373,6 @@ export default function OrderConfirmationScreen() {
   });
 
   const insideDhakaCharge = Number(basicInfo?.inside_dhaka_charge) || 60;
-  const nearDhakaCharge = Number(basicInfo?.near_dhaka_charge) || 100;
   const outsideDhakaCharge = Number(basicInfo?.outside_dhaka_charge) || 130;
 
   // ── Saved addresses ──
@@ -359,11 +388,9 @@ export default function OrderConfirmationScreen() {
   // ── Form state ──
   const [customerData, setCustomerData] = useState({ name: "", address: "", phone: "", note: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [deliveryZone, setDeliveryZone] = useState<DeliveryZone>(null);
   const [advanceDelivery, setAdvanceDelivery] = useState<"yes" | "no">("no");
   const [paymentMethod, setPaymentMethod] = useState<"account" | "ssl">("account");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [showZonePicker, setShowZonePicker] = useState(false);
 
   // ── CarryBee city/zone/area for courier routing ──
   const [selectedCityId, setSelectedCityId] = useState<number | null>(null);
@@ -403,19 +430,75 @@ export default function OrderConfirmationScreen() {
   const selectedZoneName = cbZones.find(z => z.id === selectedZoneId)?.name ?? "";
   const selectedAreaName = cbAreas.find(a => a.id === selectedAreaId)?.name ?? "";
 
+  const {
+    data: deliveryChargeData,
+    isFetching: chargesFetching,
+    isError: chargesError,
+  } = useQuery<DeliveryChargeData | null>({
+    queryKey: ["delivery-charges", selectedCityId],
+    queryFn: async () => {
+      const { data } = await apiClient.get("/delivery-charges", { params: { city_id: selectedCityId! } });
+      return data?.data ?? data ?? null;
+    },
+    enabled: !!selectedCityId,
+  });
+
+  const clientFallbackChargeData: DeliveryChargeData | null = (() => {
+    if (!selectedCityId || (!chargesError && deliveryChargeData)) return null;
+    if (cartItems.length === 0) return null;
+
+    const vendorMap = new Map<number, { vendor_id: number; vendor_name: string; pickup_city_id?: number }>();
+    for (const item of cartItems) {
+      const vendorId = Number(item.vendor_id || item.shop_id || 0);
+      if (!vendorMap.has(vendorId)) {
+        vendorMap.set(vendorId, {
+          vendor_id: vendorId,
+          vendor_name: item.shop_name || "Supplier",
+          pickup_city_id: item.pickup_city_id,
+        });
+      }
+    }
+
+    let total = 0;
+    const vendors: DeliveryChargeVendor[] = [];
+    for (const [, vendor] of vendorMap) {
+      const isSameCity = vendor.pickup_city_id != null && Number(vendor.pickup_city_id) === Number(selectedCityId);
+      const charge = isSameCity ? insideDhakaCharge : outsideDhakaCharge;
+      total += charge;
+      vendors.push({
+        vendor_id: vendor.vendor_id,
+        charge,
+        zone: isSameCity ? "same_city" : "inter_city",
+        zone_label: isSameCity ? "Same City" : "Inter-City",
+        vendor_name: vendor.vendor_name,
+      });
+    }
+
+    return {
+      vendors,
+      total_charge: total,
+      same_city_charge: insideDhakaCharge,
+      inter_city_charge: outsideDhakaCharge,
+    };
+  })();
+
+  const effectiveChargeData: DeliveryChargeData | null = deliveryChargeData ?? clientFallbackChargeData;
+
   // WebView for SSLCommerz
   const [gatewayUrl, setGatewayUrl] = useState<string | null>(null);
   const [webViewLoading, setWebViewLoading] = useState(true);
   const [paymentVerificationLoading, setPaymentVerificationLoading] = useState(false);
 
-  // ── Calculations ──
-  const deliveryCharge = deliveryZone === "inside" ? insideDhakaCharge
-    : deliveryZone === "near" ? nearDhakaCharge
-    : deliveryZone === "outside" ? outsideDhakaCharge : 0;
-
-  const deliveryZoneLabel = deliveryZone === "inside" ? "Inside Dhaka"
-    : deliveryZone === "near" ? "Surrounding Dhaka"
-    : deliveryZone === "outside" ? "Outside Dhaka" : null;
+  // ── Calculations (city-based, matching web) ──
+  const deliveryCharge: number = selectedCityId && effectiveChargeData
+    ? (effectiveChargeData.total_charge ?? effectiveChargeData.same_city_charge ?? 0)
+    : 0;
+  const deliveryZoneLabel: string | null = selectedCityId && effectiveChargeData
+    ? (effectiveChargeData.vendors?.[0]?.zone_label ?? (effectiveChargeData.total_charge != null ? "Delivery Charge" : null))
+    : null;
+  const hasDeliveryCharge = selectedCityId != null && deliveryCharge > 0;
+  const totalDeliveryCharge: number = hasDeliveryCharge ? deliveryCharge + extraDeliveryCharge : 0;
+  const isChargeLoading = chargesFetching && !chargesError;
 
   const subtotal = cartItems.reduce(
     (total: number, item: any) => total + parseFloat(item.price || "0") * (item.qty || 0), 0
@@ -427,9 +510,9 @@ export default function OrderConfirmationScreen() {
     return total + (sp - cp) * (item.qty || 0);
   }, 0);
 
-  const grandTotal = advanceDelivery === "yes" || !deliveryZone
+  const grandTotal = advanceDelivery === "yes" || !hasDeliveryCharge
     ? subtotal + totalProfit
-    : subtotal + totalProfit + deliveryCharge;
+    : subtotal + totalProfit + totalDeliveryCharge;
 
   const showOrderSuccess = (method: "account" | "ssl", orderId?: string) => {
     orderCompletedRef.current = true;
@@ -605,15 +688,15 @@ export default function OrderConfirmationScreen() {
       checkoutRequestId: checkoutRequestIdRef.current,
       paymentMethod,
       deliveryCharge,
-      deliveryZone,
+      deliveryZone: deliveryZoneLabel,
       advanceDelivery,
       itemCount: cartItems.length,
       checkoutCartIds: checkoutCartIds.length,
     });
 
     if (!validateForm()) return;
-    if (!deliveryZone) {
-      toast.error("Please select a delivery zone");
+    if (!selectedCityId) {
+      toast.error("Please select a delivery city");
       return;
     }
     if (!agreedToTerms) {
@@ -628,8 +711,8 @@ export default function OrderConfirmationScreen() {
     formData.append("customerPhone", customerData.phone);
     formData.append("customerAddress", customerData.address);
     formData.append("subTotal", subtotal.toString());
-    formData.append("deliveryCharge", deliveryCharge.toString());
-    formData.append("delivery_zone", deliveryZoneLabel!);
+    formData.append("deliveryCharge", totalDeliveryCharge.toString());
+    formData.append("delivery_zone", deliveryZoneLabel ?? "Delivery Charge");
     formData.append("advance_delivery", advanceDelivery);
     formData.append("balance_from", paymentMethod === "account" ? "from_account" : "online_pay");
     formData.append("checkout_request_id", checkoutRequestIdRef.current);
@@ -730,7 +813,7 @@ export default function OrderConfirmationScreen() {
   };
 
   // ── Loading ──
-  if (cartLoading) {
+  if (isSubscriptionLoading || cartLoading) {
     return (
       <View style={[st.center, { paddingTop: insets.top }]}>
         <PulseLoader
@@ -742,11 +825,24 @@ export default function OrderConfirmationScreen() {
     );
   }
 
-  const deliveryZones = [
-    { value: "inside" as const, label: "Inside Dhaka", charge: insideDhakaCharge },
-    { value: "near" as const, label: "Surrounding Dhaka", charge: nearDhakaCharge },
-    { value: "outside" as const, label: "Outside Dhaka", charge: outsideDhakaCharge },
-  ];
+  if (!isResellerActive) {
+    return (
+      <View style={[st.root, { paddingTop: insets.top }]}>
+        <View style={st.header}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="arrow-back" size={22} color={DARK} />
+          </Pressable>
+          <Text fontSize="$5" fontWeight="bold" color={DARK}>Confirm Order</Text>
+          <View style={{ width: 22 }} />
+        </View>
+        <SubscriptionRequired
+          title="Activate to Checkout"
+          message="Activate your subscription to view cart pricing and place orders."
+          compact
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[st.root, { paddingTop: insets.top }]}>
@@ -972,34 +1068,49 @@ export default function OrderConfirmationScreen() {
             </View>
           </View>
 
-          {/* ═══ DELIVERY ZONE ═══ */}
+          {/* ═══ DELIVERY CHARGE (auto-computed from city) ═══ */}
           <View style={st.section}>
-            <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Delivery Zone</Text>
-            <Pressable style={st.zonePicker} onPress={() => setShowZonePicker(!showZonePicker)}>
-              <Text fontSize={14} fontWeight="500" color={deliveryZone ? DARK : GREY}>
-                {deliveryZoneLabel ? `${deliveryZoneLabel} — ৳${fmt(deliveryCharge)}` : "Choose Delivery Zone"}
-              </Text>
-              <Ionicons name={showZonePicker ? "chevron-up" : "chevron-down"} size={20} color={GREY} />
-            </Pressable>
-
-            {showZonePicker && (
-              <View style={st.zoneOptions}>
-                {deliveryZones.map((zone) => (
-                  <Pressable
-                    key={zone.value}
-                    style={[st.zoneOption, deliveryZone === zone.value && { backgroundColor: "#FFF0F5" }]}
-                    onPress={() => { setDeliveryZone(zone.value); setShowZonePicker(false); }}
-                  >
-                    <Text fontSize={14} fontWeight="500" color={deliveryZone === zone.value ? ACCENT : DARK}>
-                      {zone.label}
-                    </Text>
-                    <Text fontSize={12} fontWeight="700" color={deliveryZone === zone.value ? ACCENT : GREY}>
-                      ৳{fmt(zone.charge)}
-                    </Text>
-                  </Pressable>
-                ))}
+            <Text fontSize="$4" fontWeight="700" color={DARK} mb="$2">Delivery Charge</Text>
+            {!selectedCityId ? (
+              <View style={[st.infoBox, { backgroundColor: "#FFFBEB" }]}>
+                <Ionicons name="information-circle" size={16} color="#D97706" />
+                <Text fontSize={12} fontWeight="600" color="#D97706">Please select a city above to calculate delivery charges</Text>
               </View>
-            )}
+            ) : isChargeLoading ? (
+              <View style={{ alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16 }}>
+                <ActivityIndicator size="small" color={ACCENT} />
+                <Text fontSize={12} color={GREY}>Calculating delivery charge...</Text>
+              </View>
+            ) : effectiveChargeData?.vendors && effectiveChargeData.vendors.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {effectiveChargeData.vendors.map((v: any, i: number) => (
+                  <View
+                    key={i}
+                    style={[st.infoBox, {
+                      backgroundColor: v.zone === "same_city" ? "#ECFDF5" : "#FFF7ED",
+                      justifyContent: "space-between",
+                    }]}
+                  >
+                    <View>
+                      <Text fontSize={13} fontWeight="700" color={DARK}>{v.vendor_name || "Supplier"}</Text>
+                      <Text fontSize={11} fontWeight="600" color={v.zone === "same_city" ? "#059669" : "#EA580C"}>{v.zone_label}</Text>
+                    </View>
+                    <Text fontSize={14} fontWeight="800" color={v.zone === "same_city" ? "#059669" : ACCENT}>৳{fmt(v.charge)}</Text>
+                  </View>
+                ))}
+                {effectiveChargeData.vendors.length > 1 && (
+                  <View style={[st.summaryRow, { borderTopWidth: 1, borderTopColor: "#E5E5EA", paddingTop: 8 }]}>
+                    <Text fontSize={13} fontWeight="700" color={DARK}>Total Delivery</Text>
+                    <Text fontSize={14} fontWeight="800" color={ACCENT}>৳{fmt(deliveryCharge)}</Text>
+                  </View>
+                )}
+              </View>
+            ) : hasDeliveryCharge ? (
+              <View style={[st.infoBox, { backgroundColor: "#ECFDF5", justifyContent: "space-between" }]}>
+                <Text fontSize={13} fontWeight="700" color={DARK}>{deliveryZoneLabel ?? "Delivery Charge"}</Text>
+                <Text fontSize={14} fontWeight="800" color="#059669">৳{fmt(deliveryCharge)}</Text>
+              </View>
+            ) : null}
           </View>
 
           {/* ═══ ADVANCE DELIVERY ═══ */}
@@ -1027,7 +1138,7 @@ export default function OrderConfirmationScreen() {
                 </Pressable>
               ))}
             </View>
-            {deliveryZone && (
+            {hasDeliveryCharge && (
               <View style={[st.infoBox, { backgroundColor: advanceDelivery === "yes" ? "#ECFDF5" : "#FFFBEB", marginTop: 10 }]}>
                 <Ionicons
                   name={advanceDelivery === "yes" ? "checkmark-circle" : "information-circle"}
@@ -1036,8 +1147,8 @@ export default function OrderConfirmationScreen() {
                 />
                 <Text fontSize={12} fontWeight="600" color={advanceDelivery === "yes" ? "#059669" : "#D97706"}>
                   {advanceDelivery === "yes"
-                    ? `Customer paid ৳${fmt(deliveryCharge)} advance delivery`
-                    : `৳${fmt(deliveryCharge)} delivery charge will be added to total`}
+                    ? `Customer paid ৳${fmt(totalDeliveryCharge)} advance delivery`
+                    : `৳${fmt(totalDeliveryCharge)} delivery charge will be added to total`}
                 </Text>
               </View>
             )}
@@ -1083,23 +1194,32 @@ export default function OrderConfirmationScreen() {
             )}
             <View style={st.summaryRow}>
               <Text fontSize={13} color={GREY}>Delivery Charge</Text>
-              {!deliveryZone ? (
-                <Text fontSize={12} color={GREY} fontStyle="italic">Select a zone</Text>
+              {!hasDeliveryCharge ? (
+                <Text fontSize={12} color={GREY} fontStyle="italic">Select a city</Text>
               ) : advanceDelivery === "yes" ? (
                 <Text fontSize={12} fontWeight="600" color="#059669">Paid by customer</Text>
               ) : (
                 <Text fontSize={13} fontWeight="600" color={DARK}>৳{fmt(deliveryCharge)}</Text>
               )}
             </View>
+            {hasDeliveryCharge && extraDeliveryCharge > 0 && (
+              <View style={st.summaryRow}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Text fontSize={13} color={GREY}>Extra Delivery</Text>
+                  <Text fontSize={10} fontWeight="600" color="#3B82F6">(per qty)</Text>
+                </View>
+                <Text fontSize={13} fontWeight="600" color={DARK}>৳{fmt(extraDeliveryCharge)}</Text>
+              </View>
+            )}
             <View style={[st.summaryRow, { borderTopWidth: 1.5, borderTopColor: "#E5E5EA", paddingTop: 10, marginTop: 4 }]}>
               <Text fontSize={16} fontWeight="800" color={DARK}>Total</Text>
               <Text fontSize={20} fontWeight="800" color={ACCENT}>৳{fmt(grandTotal)}</Text>
             </View>
-            {deliveryZone && (
+            {hasDeliveryCharge && (
               <View style={[st.infoBox, { backgroundColor: "#FFF0F5", marginTop: 10 }]}>
                 <Ionicons name="information-circle" size={14} color={ACCENT} />
                 <Text fontSize={11} fontWeight="600" color={ACCENT}>
-                  Pay ৳{fmt(deliveryCharge)} delivery fee to confirm order
+                  Pay ৳{fmt(totalDeliveryCharge)} delivery fee to confirm order
                 </Text>
               </View>
             )}
@@ -1122,11 +1242,11 @@ export default function OrderConfirmationScreen() {
         <Pressable
           style={({ pressed }) => [
             st.confirmBtn,
-            (!agreedToTerms || !deliveryZone) && { opacity: 0.5 },
+            (!agreedToTerms || !selectedCityId) && { opacity: 0.5 },
             pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] },
           ]}
           onPress={handleConfirmOrder}
-          disabled={!agreedToTerms || !deliveryZone || createOrderMutation.isPending}
+          disabled={!agreedToTerms || !selectedCityId || createOrderMutation.isPending}
         >
           {createOrderMutation.isPending ? (
             <DotPulse />
@@ -1134,7 +1254,7 @@ export default function OrderConfirmationScreen() {
             <>
               <Ionicons name="bag-check-outline" size={20} color="#fff" />
               <Text fontSize="$4" fontWeight="bold" color="#fff">
-                {deliveryZone ? `Pay ৳${fmt(deliveryCharge)} & Confirm` : "Confirm Order"}
+                {hasDeliveryCharge ? `Pay ৳${fmt(totalDeliveryCharge)} & Confirm` : "Confirm Order"}
               </Text>
             </>
           )}

@@ -936,9 +936,9 @@
                             $("#productTable tbody tr").each(function (index) {
                                 subtotal = subtotal + +$(this).find(".productPrice").text() * +$(this).find(".productQuantity").val();
                             });
-                            $("#subtotal").text(formatBDT(subtotal)).attr('data-raw', subtotal);
+                            $("#subtotal").val(formatBDT(subtotal)).attr('data-raw', subtotal);
                             var totalDue = subtotal + deliveryCharge - paymentAmount - discountCharge;
-                            $("#total").text(formatBDT(totalDue)).attr('data-raw', totalDue);
+                            $("#total").val(formatBDT(totalDue)).attr('data-raw', totalDue);
                         }
 
                         $(document).on("click", ".delete-btn", function () {

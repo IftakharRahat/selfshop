@@ -22,7 +22,7 @@ import "swiper/css/thumbs";
 import { MdOutlineFileDownload } from "react-icons/md";
 import Swal from "sweetalert2";
 
-import { cn, getImageUrl } from "@/lib/utils";
+import { cn, getImageUrl, pickFirstPositivePrice } from "@/lib/utils";
 import { formatBDT } from "@/lib/format-currency";
 import { useAppSelector } from "@/redux/hooks";
 import { useRouter } from "next/navigation";
@@ -183,14 +183,27 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 		})(),
 	].filter(Boolean);
 
+	const rawBasePrice = pickFirstPositivePrice(
+		product.ProductResellerPrice,
+		product.min_sell_price,
+		product.ProductSalePrice,
+		product.ProductRegularPrice,
+	);
+
+	const storefrontDisplayPrice = pickFirstPositivePrice(
+		product.storefront_price,
+		rawBasePrice,
+	);
+
 	const productData = {
 		name: product.ProductName,
 		category: product.categories?.category_name || `Category #${product.category_id}`,
 		quantity: product.qty,
 		sku: product.ProductSku,
 		commission_percent: parseFloat(commissionPercent || product.commission_percent || "0"),
+		basePrice: rawBasePrice,
 		minimumPrice: parseFloat(product.min_sell_price || "0"),
-		currentPrice: parseFloat(product.ProductResellerPrice || product.ProductRegularPrice || "0"),
+		currentPrice: storefrontDisplayPrice,
 		msrpPrice: parseFloat(product.ProductRegularPrice || "0"),
 		description: product.ProductDetails,
 		images: {
@@ -236,18 +249,19 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	};
 
 	// ---- Flash Sale Countdown ----
-	const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
+	const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
 	useEffect(() => {
 		if (!flashSale || !flashSale.flash_sale_end_time) return;
 
 		const timer = setInterval(() => {
 			const diff = new Date(flashSale.flash_sale_end_time).getTime() - Date.now();
 			if (diff <= 0) {
-				setTimeLeft({ h: 0, m: 0, s: 0 });
+				setTimeLeft({ d: 0, h: 0, m: 0, s: 0 });
 				clearInterval(timer);
 			} else {
 				setTimeLeft({
-					h: Math.floor((diff / (1000 * 60 * 60))),
+					d: Math.floor(diff / (1000 * 60 * 60 * 24)),
+					h: Math.floor((diff / (1000 * 60 * 60)) % 24),
 					m: Math.floor((diff / (1000 * 60)) % 60),
 					s: Math.floor((diff / 1000) % 60),
 				});
@@ -294,7 +308,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
 
 	// Helper: get unit price for a specific size based on its own bulk tiers OR product tiers
-	const getSizePrice = (sizeItem: any, qty: number) => {
+	const getSizePrice = (sizeItem: any, qty: number, variantBasePrice?: number) => {
 		// 0. If flash sale is active and valid, it overrides everything
 		if (flashSale && flashSale.flash_price > 0) {
 			return parseFloat(flashSale.flash_price);
@@ -321,7 +335,12 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			if (sPrice > 0) return Math.round(sPrice * commissionFactor * 100) / 100;
 		}
 
-		// 3. Fallback to product-level tiers based on total quantity
+		// 3. Fallback to active variant-level base price
+		if (variantBasePrice && variantBasePrice > 0) {
+			return Math.round(variantBasePrice * commissionFactor * 100) / 100;
+		}
+
+		// 4. Fallback to product-level tiers based on total quantity
 		if (productData.priceTiers && productData.priceTiers.length > 0) {
 			const tier = productData.priceTiers
 				.slice()
@@ -330,8 +349,13 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			if (tier) return Math.round(parseFloat(tier.unit_price) * commissionFactor * 100) / 100;
 		}
 
-		// 4. Final fallback to product-level current price
-		return Math.round(productData.currentPrice * commissionFactor * 100) / 100;
+		// 5. Final fallback to product-level price. If only storefront_price exists,
+		// it already includes commission and should not be multiplied again.
+		if (productData.basePrice > 0) {
+			return Math.round(productData.basePrice * commissionFactor * 100) / 100;
+		}
+
+		return productData.currentPrice;
 	};
 
 	// Determine selling type
@@ -340,20 +364,9 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 	const showWholesale = (sellingType === 'wholesale' || sellingType === 'both') && hasProductTiers;
 	const showDropshipping = sellingType === 'dropshipping' || sellingType === 'both';
 
-	// Use per-row selling price inputs when there are multiple variants
-	// OR when a variant has multiple sizes (reseller may want different prices per size)
-	// Single input only for truly simple products (1 variant with 1 size)
-	const usePerRowPricing = (() => {
-		if (variants.length > 1) return true;
-		// Check if the single variant has multiple sizes
-		const v = variants[0];
-		if (v?.sizes && v.sizes.length > 1) return true;
-		// Also check product-level sizes
-		if (productData.sizes && productData.sizes.length > 1) return true;
-		return false;
-	})();
+	const commissionFactor = 1 + (productData.commission_percent / 100);
 
-	// For display consistency in main section, we'll show the "current" effective unit price based on total qty
+	// For display consistency in main section, use the currently selected variant + size price
 	const activeTier = hasProductTiers
 		? productData.priceTiers
 			.slice()
@@ -361,33 +374,43 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			.find((t: any) => totalQuantity >= t.min_qty) ?? productData.priceTiers[0]
 		: null;
 	const activeTierId = activeTier?.id ?? null;
-	const firstSizePrice = (() => {
-		const fv = variants[0];
-		if (!fv) return productData.currentPrice;
-		const fs = fv.sizes?.[0];
-		if (!fs) return fv.price || productData.currentPrice;
-		return (fs.price > 0) ? fs.price : (fs.bulkPrices?.[0]?.bulk_price || fs.bulk_prices?.[0]?.bulk_price || productData.currentPrice);
-	})();
-
-	const commissionFactor = 1 + (productData.commission_percent / 100);
+	const currentVariant = variants[activeVariantIdx];
+	const currentVariantId = currentVariant?.id ?? 0;
+	const currentSelectedSize = currentVariant?.sizes?.[activeSizeIdx] ?? null;
+	const currentSelectedSizeName = currentSelectedSize?.size_name ?? null;
+	const currentSelectedQty = currentSelectedSizeName
+		? (variantQuantities[currentVariantId]?.[currentSelectedSizeName] || 0)
+		: 0;
+	const currentVariantBasePrice = pickFirstPositivePrice(
+		currentVariant?.price,
+		productData.basePrice,
+	);
 	const effectiveUnitPrice = flashSale && flashSale.flash_price > 0
 		? parseFloat(flashSale.flash_price)
-		: (activeTier ? parseFloat(activeTier.unit_price) : (firstSizePrice || productData.currentPrice)) * commissionFactor;
+		: currentSelectedSize
+			? getSizePrice(currentSelectedSize, currentSelectedQty, currentVariantBasePrice)
+			: activeTier
+				? parseFloat(activeTier.unit_price) * commissionFactor
+				: currentVariantBasePrice > 0
+					? Math.round(currentVariantBasePrice * commissionFactor * 100) / 100
+					: productData.currentPrice;
 
-	// Validate all selected items have valid selling prices (for dropshipping)
+	// Validate total selling price (for dropshipping)
 	const validateAllSellingPrices = (): boolean => {
 		const items = getSelectedItems();
-		let allValid = true;
-		for (const item of items) {
-			if (!item.sellingPrice || item.sellingPrice < item.price) {
-				allValid = false;
-				break;
-			}
+		const totalCost = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+		// Get the total selling price from the single input
+		const fallbackVarId = variants[0]?.id ?? 0;
+		const fallbackSizes = variants[0]?.sizes?.length > 0
+			? variants[0].sizes.map((s: any) => s.size_name)
+			: (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
+		const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+		const totalSP = singleSP ? parseFloat(singleSP) : 0;
+		if (!totalSP || totalSP < totalCost) {
+			toast.error(`Please enter a total selling price ≥ ৳${Math.ceil(totalCost)}`);
+			return false;
 		}
-		if (!allValid) {
-			toast.error("Please enter a valid selling price for all selected items (must be ≥ cost price).");
-		}
-		return allValid;
+		return true;
 	};
 
 	const handleAddToCart = async () => {
@@ -498,23 +521,47 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 			for (const [sizeName, qty] of Object.entries(sizes)) {
 				if (qty > 0) {
 					const variantLabel = v?.color_name || v?.title || "";
-					// Find the actual size object for price calculation
 					const sizeItem = v?.sizes?.find((s: any) => s.size_name === sizeName);
-					const itemPrice = sizeItem ? getSizePrice(sizeItem, qty) : effectiveUnitPrice;
-					// Get per-item selling price
-					const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
-					const sp = spStr ? parseFloat(spStr) : null;
+					const variantBasePrice = pickFirstPositivePrice(
+						v?.price,
+						productData.basePrice,
+					);
+					const itemPrice = sizeItem
+						? getSizePrice(sizeItem, qty, variantBasePrice)
+						: effectiveUnitPrice;
 					items.push({
 						variantId: Number(vid),
 						variantTitle: variantLabel,
 						size: sizeName,
 						qty,
 						price: itemPrice,
-						sellingPrice: sp && !isNaN(sp) ? sp : null,
+						sellingPrice: null, // Will be derived from total below
 					});
 				}
 			}
 		}
+
+		// Derive per-unit selling price from the total selling price input
+		if (items.length > 0 && showDropshipping) {
+			const fallbackVarId = variants[0]?.id ?? 0;
+			const fallbackSizes = variants[0]?.sizes?.length > 0
+				? variants[0].sizes.map((s: any) => s.size_name)
+				: (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
+			const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+			const totalSP = singleSP ? parseFloat(singleSP) : 0;
+			if (totalSP > 0) {
+				const totalCost = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+				const totalQtyAll = items.reduce((sum, item) => sum + item.qty, 0);
+				if (totalQtyAll > 0 && totalCost > 0) {
+					// Distribute proportionally: each item gets selling_price = costPrice × (totalSP / totalCost)
+					const ratio = totalSP / totalCost;
+					for (const item of items) {
+						item.sellingPrice = Math.round(item.price * ratio * 100) / 100;
+					}
+				}
+			}
+		}
+
 		return items;
 	};
 
@@ -651,15 +698,58 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 									</div>
 									<div className="flex flex-col items-start sm:items-end gap-1">
 										<p className="text-[10px] uppercase font-bold tracking-widest opacity-90">Ends In</p>
-										<div className="flex items-center gap-2">
-											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.h)}</div>
-											<span className="font-bold">:</span>
-											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.m)}</div>
-											<span className="font-bold">:</span>
-											<div className="bg-white text-[#E5005F] font-bold px-2 py-1 rounded text-lg min-w-[40px] text-center">{pad(timeLeft.s)}</div>
+										<div className="flex items-center gap-1.5">
+											{timeLeft.d > 0 && (
+												<>
+													<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+														<div className="font-bold text-lg leading-none">{timeLeft.d}</div>
+														<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Days</div>
+													</div>
+													<span className="font-bold text-white/60">:</span>
+												</>
+											)}
+											<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+												<div className="font-bold text-lg leading-none">{pad(timeLeft.h)}</div>
+												<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Hrs</div>
+											</div>
+											<span className="font-bold text-white/60">:</span>
+											<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+												<div className="font-bold text-lg leading-none">{pad(timeLeft.m)}</div>
+												<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Min</div>
+											</div>
+											<span className="font-bold text-white/60">:</span>
+											<div className="bg-white text-[#E5005F] rounded text-center min-w-[44px] px-1.5 py-1">
+												<div className="font-bold text-lg leading-none">{pad(timeLeft.s)}</div>
+												<div className="text-[8px] font-semibold text-gray-500 uppercase tracking-wider">Sec</div>
+											</div>
 										</div>
 									</div>
 								</div>
+								{/* Flash sale pricing details */}
+								{isResellerActive && flashSale.flash_price > 0 && (
+									<div className="relative z-10 mt-3 pt-3 border-t border-white/20 flex flex-wrap items-center gap-3">
+										{flashSale.discount_percentage > 0 && (
+											<span className="bg-yellow-400 text-gray-900 font-extrabold text-sm px-2.5 py-1 rounded-lg shadow-sm">
+												{Math.round(flashSale.discount_percentage)}% OFF
+											</span>
+										)}
+										{flashSale.original_price > 0 && (
+											<span className="text-white/70 line-through text-sm flex items-center">
+												<TbCurrencyTaka size={16} />
+												{formatBDT(flashSale.original_price)}
+											</span>
+										)}
+										<span className="text-white font-bold text-lg flex items-center">
+											<TbCurrencyTaka size={20} />
+											{formatBDT(parseFloat(flashSale.flash_price))}
+										</span>
+										{flashSale.original_price > 0 && flashSale.original_price > parseFloat(flashSale.flash_price) && (
+											<span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+												Save ৳{formatBDT(flashSale.original_price - parseFloat(flashSale.flash_price))}
+											</span>
+										)}
+									</div>
+								)}
 							</div>
 						)}
 						{productData.vendor?.companyName && (
@@ -742,16 +832,39 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 										</span>
 									) : (
 										<div className="flex flex-col">
-											{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
-												<span className="text-xs text-gray-400 line-through flex items-center">
-													<TbCurrencyTaka size={14} />
-													{formatBDT(productData.msrpPrice)}
-												</span>
+											{/* Flash sale: show original price strikethrough + discount badge */}
+											{flashSale && flashSale.flash_price > 0 && flashSale.original_price > 0 && flashSale.original_price > parseFloat(flashSale.flash_price) ? (
+												<>
+													<div className="flex items-center gap-2">
+														<span className="text-sm text-gray-400 line-through flex items-center">
+															<TbCurrencyTaka size={16} />
+															{formatBDT(flashSale.original_price)}
+														</span>
+														{flashSale.discount_percentage > 0 && (
+															<span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded">
+																-{Math.round(flashSale.discount_percentage)}%
+															</span>
+														)}
+													</div>
+													<div className="flex items-center text-pink-600 font-bold text-xl">
+														<TbCurrencyTaka size={24} />
+														{formatBDT(effectiveUnitPrice)}
+													</div>
+												</>
+											) : (
+												<>
+													{productData.msrpPrice > 0 && productData.msrpPrice > effectiveUnitPrice && sellingType !== 'dropshipping' && (
+														<span className="text-xs text-gray-400 line-through flex items-center">
+															<TbCurrencyTaka size={14} />
+															{formatBDT(productData.msrpPrice)}
+														</span>
+													)}
+													<div className="flex items-center text-pink-600 font-bold text-xl">
+														<TbCurrencyTaka size={24} />
+														{formatBDT(effectiveUnitPrice)}
+													</div>
+												</>
 											)}
-											<div className="flex items-center text-pink-600 font-bold text-xl">
-												<TbCurrencyTaka size={24} />
-												{formatBDT(effectiveUnitPrice)}
-											</div>
 										</div>
 									)}
 								</div>
@@ -948,32 +1061,21 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 								return (
 									<div className="space-y-3">
 										<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-											<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
+											<div className="grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 bg-gray-50 text-[10px] sm:text-xs font-semibold text-gray-600 uppercase grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4">
 												<div>Size</div>
 												<div>Price</div>
 												<div className="text-center">Stock</div>
 												<div className="text-right">Quantity</div>
-												{showDropshipping && isResellerActive && usePerRowPricing && (
-													<>
-														<div className="text-center hidden sm:block">My Price</div>
-														<div className="text-right hidden sm:block">Earn</div>
-													</>
-												)}
 											</div>
 											{sizesForTable.map((sz, szIdx) => {
 												const size = sz.size_name;
 												const qty = variantQuantities[currentVarId]?.[size] || 0;
-												const displayPrice = getSizePrice(sz, qty);
+												const displayPrice = getSizePrice(sz, qty, currentVariantBasePrice);
 												const isSelected = activeSizeIdx === szIdx;
-												// Per-row selling price state
-												const rowSellingPrice = variantSellingPrices[currentVarId]?.[size] || "";
-												const rowSP = rowSellingPrice ? parseFloat(rowSellingPrice) : 0;
-												const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
-												const rowPriceInvalid = rowSellingPrice !== "" && rowSP < displayPrice;
 												return (
 													<div key={size} className={cn("border-t border-gray-100 cursor-pointer transition-colors", isSelected ? "bg-pink-50/50" : "hover:bg-gray-50/50")}>
-														{/* Main row: Size / Price / Stock / Qty — always 4 cols on mobile, 6 on sm+ when per-row pricing */}
-														<div onClick={() => setActiveSizeIdx(szIdx)} className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 items-center grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
+														{/* Main row: Size / Price / Stock / Qty */}
+														<div onClick={() => setActiveSizeIdx(szIdx)} className="grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 items-center grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4">
 															<div className="font-medium text-gray-900 text-sm">{size}</div>
 															<div className="text-gray-700 flex items-center text-sm gap-1">
 																<div className="flex items-center">
@@ -1017,54 +1119,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 																	<Plus className="w-3 h-3" />
 																</button>
 															</div>
-															{/* Desktop: inline My Price + Earn columns */}
-															{showDropshipping && isResellerActive && usePerRowPricing && (
-																<>
-																	<div className="hidden sm:flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-																		<input
-																			type="number"
-																			min={displayPrice}
-																			value={rowSellingPrice}
-																			onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
-																			placeholder={`≥${formatBDT(displayPrice)}`}
-																			className={`w-20 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
-																		/>
-																	</div>
-																	<div className="hidden sm:block text-right text-sm">
-																		{rowEarnings > 0 ? (
-																			<span className="text-green-600 font-semibold flex items-center justify-end">
-																				+৳{formatBDT(rowEarnings)}
-																			</span>
-																		) : rowPriceInvalid ? (
-																			<span className="text-red-500 text-[10px]">Too low</span>
-																		) : (
-																			<span className="text-gray-400 text-xs">—</span>
-																		)}
-																	</div>
-																</>
-															)}
 														</div>
-														{/* Mobile: My Price + Earn sub-row */}
-														{showDropshipping && isResellerActive && usePerRowPricing && (
-															<div className="sm:hidden flex items-center gap-2 px-2 pb-2 pt-1" onClick={(e) => e.stopPropagation()}>
-																<span className="text-[10px] text-gray-500 font-semibold uppercase shrink-0">My Price:</span>
-																<input
-																	type="number"
-																	min={displayPrice}
-																	value={rowSellingPrice}
-																	onChange={(e) => handleSellingPriceChange(currentVarId, size, e.target.value)}
-																	placeholder={`≥${formatBDT(displayPrice)}`}
-																	className={`w-24 h-8 rounded-lg text-center border text-sm font-medium outline-none focus:ring-1 focus:ring-pink-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${rowPriceInvalid ? 'border-red-400 bg-red-50 text-red-600' : rowSP >= displayPrice && rowSellingPrice ? 'border-green-400 bg-green-50 text-green-700' : 'bg-white border-gray-200'}`}
-																/>
-																<span className="text-sm shrink-0">
-																	{rowEarnings > 0 ? (
-																		<span className="text-green-600 font-semibold">+৳{formatBDT(rowEarnings)}</span>
-																	) : rowPriceInvalid ? (
-																		<span className="text-red-500 text-[10px]">Too low</span>
-																	) : null}
-																</span>
-															</div>
-														)}
 													</div>
 												);
 											})}
@@ -1073,7 +1128,7 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 												const selectedItems = getSelectedItems();
 												const totalPrice = selectedItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 												return (
-													<div className={`grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm grid-cols-[2fr_2fr_1fr_3fr] ${showDropshipping && isResellerActive && usePerRowPricing ? 'sm:grid-cols-[1.5fr_1.5fr_1fr_2fr_2fr_1.5fr]' : 'sm:grid-cols-4'}`}>
+													<div className="grid gap-0 sm:gap-3 px-2 sm:px-4 py-2 border-t-2 border-gray-200 bg-gray-50 font-semibold text-sm grid-cols-[2fr_2fr_1fr_3fr] sm:grid-cols-4">
 														<div className="text-gray-900">Total</div>
 														<div className="text-pink-600 flex items-center">
 															{isResellerActive ? (
@@ -1087,28 +1142,6 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 														</div>
 														<div></div>
 														<div className="text-right text-gray-700">{totalQuantity} pcs</div>
-														{showDropshipping && isResellerActive && usePerRowPricing && (
-															<>
-																<div className="hidden sm:block"></div>
-																<div className="hidden sm:block text-right">
-																	{(() => {
-																		// Calculate total earnings from all selected items across all variants
-																		const allItems = getSelectedItems();
-																		const totalEarn = allItems.reduce((sum, item) => {
-																			if (item.sellingPrice && item.sellingPrice >= item.price) {
-																				return sum + (item.sellingPrice - item.price) * item.qty;
-																			}
-																			return sum;
-																		}, 0);
-																		return totalEarn > 0 ? (
-																			<span className="text-green-600 font-bold">+৳{formatBDT(totalEarn)}</span>
-																		) : (
-																			<span className="text-gray-400">—</span>
-																		);
-																	})()}
-																</div>
-															</>
-														)}
 													</div>
 												);
 											})()}
@@ -1123,8 +1156,16 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 						{(() => {
 							const currentVariant = variants[activeVariantIdx];
 							const selectedSize = currentVariant?.sizes?.[activeSizeIdx];
+							const selectedVariantBasePrice = pickFirstPositivePrice(
+								currentVariant?.price,
+								productData.basePrice,
+							);
 							const unitPrice = selectedSize
-								? getSizePrice(selectedSize, variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0)
+								? getSizePrice(
+									selectedSize,
+									variantQuantities[currentVariant.id]?.[selectedSize.size_name] || 0,
+									selectedVariantBasePrice,
+								)
 								: effectiveUnitPrice;
 
 							const selectedItems = getSelectedItems();
@@ -1177,89 +1218,66 @@ export default function ProductDetailPage({ product, flashSale, commissionPercen
 							);
 						})()}
 
-						{/* Dropshipping: Total Earnings Summary (per-row mode) OR Single Input (simple mode) */}
+						{/* Dropshipping: Total Selling Price Input */}
 						{showDropshipping && isResellerActive && (() => {
 							const allItems = getSelectedItems();
-							const totalEarnings = allItems.reduce((sum, item) => {
-								if (item.sellingPrice && item.sellingPrice >= item.price) {
-									return sum + (item.sellingPrice - item.price) * item.qty;
-								}
-								return sum;
-							}, 0);
+							const totalCostPrice = allItems.reduce((sum, item) => sum + item.price * item.qty, 0);
 
-							if (!usePerRowPricing) {
-								// Single selling price input for simple products
-								// Use fallback variant ID 0 when no variants exist (matches size table logic)
-								const fallbackVarId = variants[0]?.id ?? 0;
-								const fallbackSizes = variants[0]?.sizes?.length > 0
-									? variants[0].sizes.map((s: any) => s.size_name)
-									: (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
-								const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
-								const spNum = singleSP ? parseFloat(singleSP) : 0;
+							const fallbackVarId = variants[0]?.id ?? 0;
+							const fallbackSizes = variants[0]?.sizes?.length > 0
+								? variants[0].sizes.map((s: any) => s.size_name)
+								: (productData.sizes?.length > 0 ? productData.sizes : ['Default']);
+							const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+							const spNum = singleSP ? parseFloat(singleSP) : 0;
 
-								// Compute the minimum selling price from the active variant/size (not the global effectiveUnitPrice)
-								const activeVar = variants[activeVariantIdx];
-								const activeSize = activeVar?.sizes?.[activeSizeIdx];
-								const activeVarQty = activeSize ? (variantQuantities[activeVar?.id]?.[activeSize.size_name] || 0) : 0;
-								const minSellingPrice = activeSize
-									? getSizePrice(activeSize, activeVarQty)
-									: effectiveUnitPrice;
-								const isTooLow = singleSP !== "" && spNum < minSellingPrice;
-								return (
-									<div className="space-y-3">
-										<h3 className="font-medium text-gray-900">Your selling price</h3>
-										<input
-											type="number"
-											placeholder={`Enter your selling price (≥${formatBDT(minSellingPrice)})`}
-											value={singleSP}
-											onChange={(e) => {
-												const val = e.target.value;
-												// Sync to ALL variant/size combinations (including fallback)
-												setVariantSellingPrices((prev) => {
-													const next = { ...prev };
-													if (variants.length > 0) {
-														for (const v of variants) {
-															const sizes = v.sizes?.length > 0 ? v.sizes.map((s: any) => s.size_name) : fallbackSizes;
-															const varSizes: Record<string, string> = {};
-															for (const sz of sizes) {
-																varSizes[sz] = val;
-															}
-															next[v.id] = varSizes;
-														}
-													} else {
-														// No variants — use fallback variant ID 0
+							const minTotalSellingPrice = totalCostPrice;
+							const isTooLow = singleSP !== "" && spNum < minTotalSellingPrice;
+							const totalEarnings = spNum > 0 && spNum >= totalCostPrice ? spNum - totalCostPrice : 0;
+
+							return (
+								<div className="space-y-3">
+									<h3 className="font-medium text-gray-900">Your total selling price</h3>
+									<input
+										type="number"
+										placeholder={totalQuantity > 0 ? `Enter your total selling price (≥৳${formatBDT(minTotalSellingPrice)})` : 'Select items first'}
+										value={singleSP}
+										disabled={totalQuantity === 0}
+										onChange={(e) => {
+											const val = e.target.value;
+											setVariantSellingPrices((prev) => {
+												const next = { ...prev };
+												if (variants.length > 0) {
+													for (const v of variants) {
+														const sizes = v.sizes?.length > 0 ? v.sizes.map((s: any) => s.size_name) : fallbackSizes;
 														const varSizes: Record<string, string> = {};
-														for (const sz of fallbackSizes) {
+														for (const sz of sizes) {
 															varSizes[sz] = val;
 														}
-														next[fallbackVarId] = varSizes;
+														next[v.id] = varSizes;
 													}
-													return next;
-												});
-											}}
-											className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isTooLow ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
-										/>
-										{isTooLow && (
-											<p className="text-red-500 text-sm mt-1">Price must be at least ৳{formatBDT(minSellingPrice)}</p>
-										)}
-										{totalEarnings > 0 && totalQuantity > 0 && (
-											<p className="text-green-600 text-sm mt-1">
-												Your total earn {formatBDT(totalEarnings)} TK
-											</p>
-										)}
-									</div>
-								);
-							}
-
-							// Per-row mode: show total earnings banner
-							const hasAnyPriceSet = allItems.some(i => i.sellingPrice && i.sellingPrice > 0);
-							if (!hasAnyPriceSet || totalQuantity === 0) return null;
-							return (
-								<div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
-									<span className="text-sm font-medium text-green-800">Total Earnings</span>
-									<span className="text-lg font-bold text-green-600 flex items-center">
-										+৳{formatBDT(totalEarnings)}
-									</span>
+												} else {
+													const varSizes: Record<string, string> = {};
+													for (const sz of fallbackSizes) {
+														varSizes[sz] = val;
+													}
+													next[fallbackVarId] = varSizes;
+												}
+												return next;
+											});
+										}}
+										className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${isTooLow ? 'border-red-400 bg-red-50' : 'border-gray-300'} ${totalQuantity === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+									/>
+									{isTooLow && (
+										<p className="text-red-500 text-sm mt-1">Total selling price must be at least ৳{formatBDT(minTotalSellingPrice)}</p>
+									)}
+									{totalEarnings > 0 && totalQuantity > 0 && (
+										<div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+											<span className="text-sm font-medium text-green-800">Your total earnings</span>
+											<span className="text-lg font-bold text-green-600 flex items-center">
+												+৳{formatBDT(totalEarnings)}
+											</span>
+										</div>
+									)}
 								</div>
 							);
 						})()}

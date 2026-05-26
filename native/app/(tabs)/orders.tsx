@@ -23,6 +23,8 @@ import apiClient from "@/lib/api-client";
 import { OrdersSkeleton } from "@/components/skeleton";
 import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
 import { TAB_BAR_HEIGHT } from "@/components/floating-tab-bar";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -92,6 +94,7 @@ function getOrderTotal(order: any): number {
 export default function OrdersTabScreen() {
   const insets = useSafeAreaInsets();
   const { data: session } = useSession();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const isLoggedIn = !!session?.user;
   const queryClient = useQueryClient();
   const [activeStatus, setActiveStatus] = useState("Pending");
@@ -115,7 +118,7 @@ export default function OrdersTabScreen() {
       const { data } = await apiClient.get("/order-count");
       return data?.data ?? data ?? {};
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 60 * 1000,
   });
 
@@ -129,7 +132,7 @@ export default function OrdersTabScreen() {
       const { data } = await apiClient.get(`/order-data/${activeStatus}?${params.toString()}`);
       return data;
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 30 * 1000,
   });
 
@@ -218,6 +221,25 @@ export default function OrdersTabScreen() {
             </Text>
           </Pressable>
         </View>
+      </View>
+    );
+  }
+
+  if (isSubscriptionLoading) {
+    return <OrdersSkeleton />;
+  }
+
+  if (!isResellerActive) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Orders</Text>
+        </View>
+        <SubscriptionRequired
+          title="Activate to View Orders"
+          message="Activate your subscription to view and manage your reseller orders."
+          compact
+        />
       </View>
     );
   }

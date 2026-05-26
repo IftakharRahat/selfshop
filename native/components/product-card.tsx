@@ -8,7 +8,7 @@ const CARD_WIDTH = (Dimensions.get("window").width - 48 - 12) / 2;
 
 interface ProductCardProps {
   name: string;
-  price: string | number;
+  price: string | number | null | undefined;
   image: string;
   slug?: string;
   category?: string;
@@ -16,7 +16,7 @@ interface ProductCardProps {
   variant?: "horizontal" | "grid";
 }
 
-function formatProductPrice(value: string | number): string {
+function formatProductPrice(value: string | number | null | undefined): string {
   const normalized = String(value ?? "").replace(/[^0-9.-]/g, "");
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed.toFixed(2) : "0.00";
@@ -32,7 +32,9 @@ export function ProductCard({
   variant = "grid",
 }: ProductCardProps) {
   const isHorizontal = variant === "horizontal";
-  const { isActive: isResellerActive, isLoading } = useIsActiveReseller();
+  const { isActive: isResellerActive, isLoading, isLoggedIn } = useIsActiveReseller();
+  const isPriceVisible = isResellerActive && price !== null && price !== undefined && price !== "";
+  const lockedLabel = isLoading ? "..." : isLoggedIn ? "Activate" : "Login";
 
   const handlePress = () => {
     if (onPress) {
@@ -65,7 +67,7 @@ export function ProductCard({
           {name}
         </Text>
 
-        {isResellerActive ? (
+        {isPriceVisible ? (
           <Text fontSize="$4" color="#1A1A2E" fontWeight="bold">
             {"\u09F3"}{formatProductPrice(price)}
           </Text>
@@ -74,7 +76,7 @@ export function ProductCard({
             <Text fontSize="$4" color="#999" fontWeight="bold">***</Text>
             <View style={styles.lockBadge}>
               <Ionicons name="lock-closed" size={11} color="#E5005F" />
-              <Text fontSize={11} fontWeight="700" color="#E5005F">Login</Text>
+              <Text fontSize={11} fontWeight="700" color="#E5005F">{lockedLabel}</Text>
             </View>
           </View>
         )}

@@ -48,13 +48,15 @@ class OrderDeliveryService
             return false;
         }
 
-        // 1. Credit reseller
+        // 1. Credit reseller (atomic update to avoid stale-read race conditions)
         $user = User::find($order->user_id);
         if ($user) {
-            $user->order_bonus = (float) $user->order_bonus + (float) $order->order_bonus;
-            $user->sell_profit = (float) $user->sell_profit + (float) $order->profit;
-            $user->account_balance = (float) $user->account_balance + (float) $order->profit;
-            $user->save();
+            \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update([
+                'order_bonus' => \Illuminate\Support\Facades\DB::raw('order_bonus + ' . (float) $order->order_bonus),
+                'sell_profit' => \Illuminate\Support\Facades\DB::raw('sell_profit + ' . (float) $order->profit),
+                'account_balance' => \Illuminate\Support\Facades\DB::raw('account_balance + ' . (float) $order->profit),
+            ]);
+            $user->refresh();
         }
 
         // 2. Record Income
@@ -111,10 +113,12 @@ class OrderDeliveryService
     {
         $user = User::find($order->user_id);
         if ($user) {
-            $user->order_bonus = (float) $user->order_bonus - (float) $order->order_bonus;
-            $user->sell_profit = (float) $user->sell_profit - (float) $order->profit;
-            $user->account_balance = (float) $user->account_balance - (float) $order->profit;
-            $user->save();
+            \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update([
+                'order_bonus' => \Illuminate\Support\Facades\DB::raw('GREATEST(0, order_bonus - ' . (float) $order->order_bonus . ')'),
+                'sell_profit' => \Illuminate\Support\Facades\DB::raw('sell_profit - ' . (float) $order->profit),
+                'account_balance' => \Illuminate\Support\Facades\DB::raw('account_balance - ' . (float) $order->profit),
+            ]);
+            $user->refresh();
         }
 
         $this->markIncomeCanceled($order);
@@ -167,9 +171,9 @@ class OrderDeliveryService
             return false;
         }
 
-        // Credit delivery charge back to wallet
-        $user->account_balance = (float) $user->account_balance + $deliveryCharge;
-        $user->save();
+        // Credit delivery charge back to wallet (atomic increment to avoid stale-read race conditions)
+        $user->increment('account_balance', $deliveryCharge);
+        $user->refresh(); // Reload to get the actual new balance for logging
 
         // Create audit record
         $chargededuct = new Chargededuct();

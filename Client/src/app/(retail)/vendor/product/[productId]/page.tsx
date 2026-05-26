@@ -96,15 +96,22 @@ export default function VendorProductPage() {
 	useEffect(() => {
 		if (!productId) return;
 		const base = getApiBaseUrl();
+		const requestHeaders = {
+			Accept: "application/json",
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
+		};
 		// Try vendor API first (product + price_tiers); on 401 use public product-details
 		fetch(`${base}/vendor/product-details/${productId}`, {
 			cache: "no-store",
 			credentials: "include",
+			headers: requestHeaders,
 		})
 			.then((r) => {
 				if (r.ok) return r.json();
 				if (r.status === 401)
-					return fetch(`${base}/product-details/${productId}`).then((res) =>
+					return fetch(`${base}/product-details/${productId}`, {
+						headers: requestHeaders,
+					}).then((res) =>
 						res.json(),
 					);
 				throw new Error("Failed to load");
@@ -116,7 +123,7 @@ export default function VendorProductPage() {
 			})
 			.catch(() => setError("Failed to load product"))
 			.finally(() => setLoading(false));
-	}, [productId]);
+	}, [productId, token]);
 
 	const handleConfirm = useCallback(
 		async (payload: {

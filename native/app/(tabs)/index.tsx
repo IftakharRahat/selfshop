@@ -22,6 +22,7 @@ import { CategoryChip } from "@/components/category-chip";
 import { ProductCard } from "@/components/product-card";
 import apiClient from "@/lib/api-client";
 import { useSession } from "@/lib/auth-client";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const TAKA = "\u09F3";
@@ -235,13 +236,14 @@ export default function HomeScreen() {
 
   /* ── Notification badge count ── */
   const { data: session } = useSession();
+  const { isActive: isResellerActive } = useIsActiveReseller();
   const notificationsQuery = useQuery({
     queryKey: ["notifications-count"],
     queryFn: async () => {
       const { data } = await apiClient.get("/user-notification?unread_only=true&per_page=1");
       return data?.unread_count ?? 0;
     },
-    enabled: !!session?.user,
+    enabled: !!session?.user && isResellerActive,
     staleTime: 30 * 1000,
   });
   const unreadCount = notificationsQuery.data ?? 0;
@@ -493,12 +495,19 @@ export default function HomeScreen() {
                       ) : null}
                     </View>
                     <View style={styles.flashProductInfo}>
-                      <View style={styles.flashPriceRow}>
-                        <Text numberOfLines={1} style={styles.flashPrice}>{TAKA}{formatBDT(item.FlashPrice)}</Text>
-                        {hasDiscount ? (
-                          <Text numberOfLines={1} style={styles.flashOriginalPrice}>{TAKA}{formatBDT(item.SalePrice)}</Text>
-                        ) : null}
-                      </View>
+                      {isResellerActive ? (
+                        <View style={styles.flashPriceRow}>
+                          <Text numberOfLines={1} style={styles.flashPrice}>{TAKA}{formatBDT(item.FlashPrice)}</Text>
+                          {hasDiscount ? (
+                            <Text numberOfLines={1} style={styles.flashOriginalPrice}>{TAKA}{formatBDT(item.SalePrice)}</Text>
+                          ) : null}
+                        </View>
+                      ) : (
+                        <View style={styles.flashPriceRow}>
+                          <Ionicons name="lock-closed" size={12} color="#fff" />
+                          <Text numberOfLines={1} style={[styles.flashPrice, { fontSize: 11 }]}>Login to see price</Text>
+                        </View>
+                      )}
                     </View>
                   </Pressable>
                 );
@@ -608,10 +617,17 @@ export default function HomeScreen() {
                   <Text numberOfLines={2} style={styles.promoProductName}>
                     {product.ProductName}
                   </Text>
-                  {(product.storefront_price || product.ProductSalePrice) && (
-                    <Text style={styles.promoProductPrice}>
-                      ৳{parseFloat(product.storefront_price ?? product.ProductSalePrice).toFixed(2)}
-                    </Text>
+                  {isResellerActive ? (
+                    (product.storefront_price || product.ProductSalePrice) ? (
+                      <Text style={styles.promoProductPrice}>
+                        ৳{parseFloat(product.storefront_price ?? product.ProductSalePrice).toFixed(2)}
+                      </Text>
+                    ) : null
+                  ) : (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
+                      <Ionicons name="lock-closed" size={10} color="#E5005F" />
+                      <Text style={{ fontSize: 10, fontWeight: "700", color: "#E5005F" }}>Login to see price</Text>
+                    </View>
                   )}
                 </Pressable>
               ))}

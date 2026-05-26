@@ -19,6 +19,8 @@ import { Ionicons } from "@expo/vector-icons";
 import apiClient from "@/lib/api-client";
 import { OrdersSkeleton } from "@/components/skeleton";
 import DateFilter, { DateFilterKey, isWithinDateRange } from "@/components/date-filter";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const ACCENT = "#E5005F";
 
@@ -99,6 +101,7 @@ function getPaymentStatus(order: any): "Paid" | "Unpaid" | null {
 
 export default function OrdersScreen() {
   const queryClient = useQueryClient();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -112,6 +115,7 @@ export default function OrdersScreen() {
       const { data } = await apiClient.get("/order-count");
       return data?.data ?? data ?? {};
     },
+    enabled: isResellerActive,
     staleTime: 60 * 1000,
   });
 
@@ -129,6 +133,7 @@ export default function OrdersScreen() {
       const { data } = await apiClient.get(`/order-data/${activeStatus}?${params.toString()}`);
       return data;
     },
+    enabled: isResellerActive,
     staleTime: 30 * 1000,
   });
 
@@ -207,6 +212,29 @@ export default function OrdersScreen() {
   function getCount(key: string): number {
     const k = key.toLowerCase();
     return Number(counts[key] ?? counts[k] ?? counts[`${k}_count`] ?? 0);
+  }
+
+  if (isSubscriptionLoading) {
+    return <OrdersSkeleton />;
+  }
+
+  if (!isResellerActive) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: "My Orders",
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: "#F8F8FA" },
+          }}
+        />
+        <SubscriptionRequired
+          title="Activate to View Orders"
+          message="Activate your subscription to view and manage your reseller orders."
+        />
+      </>
+    );
   }
 
   /* ── Render ── */

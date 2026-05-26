@@ -21,6 +21,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession, logout } from "@/lib/auth-client";
 import apiClient from "@/lib/api-client";
 import { DashboardSkeleton } from "@/components/skeleton";
+import { SubscriptionRequired } from "@/components/subscription-required";
+import { useIsActiveReseller } from "@/hooks/useIsActiveReseller";
 
 const { width } = Dimensions.get("window");
 const TAKA = "\u09F3";
@@ -97,6 +99,7 @@ function formatTargetValue(value: number | string | undefined, type?: string): s
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { data: session, signOut, isLoading: isSessionLoading } = useSession();
+  const { isActive: isResellerActive, isLoading: isSubscriptionLoading } = useIsActiveReseller();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user;
   /* â”€â”€ Data Queries â”€â”€ */
@@ -110,7 +113,7 @@ export default function DashboardScreen() {
         return { announcements: [] };
       }
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -120,7 +123,7 @@ export default function DashboardScreen() {
       const { data } = await apiClient.get("/dashboard-data");
       return data?.data ?? data;
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -130,7 +133,7 @@ export default function DashboardScreen() {
       const { data } = await apiClient.get("/user-profile");
       return data?.data ?? data;
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -140,7 +143,7 @@ export default function DashboardScreen() {
       const { data } = await apiClient.get("/order-data/Pending?page=1");
       return data?.data?.data ?? data?.data ?? [];
     },
-    enabled: isLoggedIn,
+    enabled: isLoggedIn && isResellerActive,
     staleTime: 60 * 1000,
   });
 
@@ -278,6 +281,21 @@ export default function DashboardScreen() {
             </Text>
           </Pressable>
         </View>
+      </View>
+    );
+  }
+
+  if (isSubscriptionLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (!isResellerActive) {
+    return (
+      <View style={styles.container}>
+        <SubscriptionRequired
+          title="Activate to View Dashboard"
+          message="Activate your subscription to unlock dashboard metrics, income, orders, and reseller tools."
+        />
       </View>
     );
   }

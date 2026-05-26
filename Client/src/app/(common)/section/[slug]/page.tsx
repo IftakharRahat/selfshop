@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import ProductCard from "@/components/shared/ProductCard/ProductCard";
 import { getApiBaseUrl } from "@/lib/utils";
+import { useAppSelector } from "@/redux/hooks";
 
 interface Product {
     id: number;
@@ -21,6 +22,7 @@ interface Product {
 const SectionPage = () => {
     const params = useParams();
     const slug = params.slug as string;
+    const token = useAppSelector((state) => state.auth.access_token);
 
     const [page, setPage] = useState(1);
     const [products, setProducts] = useState<Product[]>([]);
@@ -50,6 +52,12 @@ const SectionPage = () => {
 
                 const response = await fetch(
                     `${getApiBaseUrl()}/promotional-sections/${slug}?${params}`,
+                    {
+                        headers: {
+                            accept: "application/json",
+                            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        },
+                    },
                 );
 
                 const result = await response.json();
@@ -79,7 +87,7 @@ const SectionPage = () => {
                 setIsLoading(false);
             }
         },
-        [slug, hasMore, isLoading, limit],
+        [slug, hasMore, isLoading, limit, token],
     );
 
     // Reset when slug changes
@@ -89,7 +97,7 @@ const SectionPage = () => {
         setHasMore(true);
         setError(false);
         fetchProducts(1);
-    }, [slug]);
+    }, [slug, token]);
 
     // Intersection Observer for infinite scroll
     useEffect(() => {

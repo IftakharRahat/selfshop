@@ -135,6 +135,8 @@ function RootLayout() {
               <Stack.Screen name="account/referral" />
               <Stack.Screen name="account/withdraw" />
               <Stack.Screen name="account/track-order" />
+              <Stack.Screen name="account/refund" />
+              <Stack.Screen name="account/refund-detail" />
               <Stack.Screen name="account/push-test" />
             </Stack>
             <Toaster

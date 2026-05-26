@@ -276,7 +276,11 @@ export default function ProductDetailScreen() {
   const [descExpanded, setDescExpanded] = useState(false);
   const [showActivation, setShowActivation] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const { isActive: isResellerActive, isLoggedIn } = useIsActiveReseller();
+  const {
+    isActive: isResellerActive,
+    isLoggedIn,
+    subscriptionDestination,
+  } = useIsActiveReseller();
   const imgRef = useRef<FlatList>(null);
   const defaultQtySet = useRef(false);
 
@@ -354,7 +358,7 @@ export default function ProductDetailScreen() {
       const { data: d } = await apiClient.get(`/check-in-shop/${productId}`);
       return d;
     },
-    enabled: !!productId && isLoggedIn,
+    enabled: !!productId && isLoggedIn && isResellerActive,
     staleTime: 60 * 1000,
   });
   const isInShop = shopCheckQuery.data?.in_shop ?? false;
@@ -387,6 +391,10 @@ export default function ProductDetailScreen() {
   const handleToggleShop = () => {
     if (!isLoggedIn) {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
+      return;
+    }
+    if (!isResellerActive) {
+      setShowActivation(true);
       return;
     }
     if (!productId) {
@@ -823,20 +831,57 @@ export default function ProductDetailScreen() {
                 qty,
               )
             : salePrice;
-          const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
-          const sp = spStr ? parseFloat(spStr) : null;
           items.push({
             variantId: Number(vid),
             variantTitle: variantLabel,
             size: sizeName,
             qty,
             price: itemPrice,
-            sellingPrice: sp && !isNaN(sp) ? sp : null,
+            sellingPrice: null, // Will be derived from total below
           });
         }
       }
     }
+
+    // Derive per-unit selling price from the total selling price input
+    if (items.length > 0 && showDropshipping) {
+      const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+      const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+        ? variants[0].sizes.map((sz: any) => sz.size_name)
+        : sizesForTable.map((sz) => sz.size_name);
+      const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+      const totalSP = singleSP ? parseFloat(singleSP) : 0;
+      if (totalSP > 0) {
+        const totalCost = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const totalQtyAll = items.reduce((sum, item) => sum + item.qty, 0);
+        if (totalQtyAll > 0 && totalCost > 0) {
+          // Distribute proportionally: each item gets selling_price = costPrice × (totalSP / totalCost)
+          const ratio = totalSP / totalCost;
+          for (const item of items) {
+            item.sellingPrice = Math.round(item.price * ratio * 100) / 100;
+          }
+        }
+      }
+    }
+
     return items;
+  };
+
+  // ── Validate total selling price ──
+  const validateTotalSellingPrice = (): boolean => {
+    const items = getSelectedItems();
+    const totalCost = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+    const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+      ? variants[0].sizes.map((sz: any) => sz.size_name)
+      : sizesForTable.map((sz) => sz.size_name);
+    const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+    const totalSP = singleSP ? parseFloat(singleSP) : 0;
+    if (!totalSP || totalSP < totalCost) {
+      toast.error(`Please enter a total selling price ≥ ৳${Math.ceil(totalCost)}`);
+      return false;
+    }
+    return true;
   };
 
   // ── Add to Cart ──
@@ -846,6 +891,10 @@ export default function ProductDetailScreen() {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
       return;
     }
+    if (!isResellerActive) {
+      setShowActivation(true);
+      return;
+    }
 
     const items = getSelectedItems();
     if (items.length === 0) {
@@ -853,12 +902,8 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    if (showDropshipping) {
-      const invalid = items.find(i => !i.sellingPrice || i.sellingPrice < i.price);
-      if (invalid) {
-        toast.error("Please enter a valid selling price (≥ cost price) for all items");
-        return;
-      }
+    if (showDropshipping && !validateTotalSellingPrice()) {
+      return;
     }
 
     busyRef.current = true;
@@ -901,6 +946,10 @@ export default function ProductDetailScreen() {
       router.push({ pathname: "/login", params: { returnTo: `/product-detail?slug=${slug}` } });
       return;
     }
+    if (!isResellerActive) {
+      setShowActivation(true);
+      return;
+    }
 
     const items = getSelectedItems();
     if (items.length === 0) {
@@ -908,12 +957,8 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    if (showDropshipping) {
-      const invalid = items.find(i => !i.sellingPrice || i.sellingPrice < i.price);
-      if (invalid) {
-        toast.error("Please enter a valid selling price (≥ cost price) for all items");
-        return;
-      }
+    if (showDropshipping && !validateTotalSellingPrice()) {
+      return;
     }
 
     busyRef.current = true;
@@ -939,6 +984,7 @@ export default function ProductDetailScreen() {
       }
 
       if (lastSuccess) {
+        setSelectedVariantId(null); // close variant sheet before navigating
         router.push("/order-confirmation" as any);
       }
     } finally {
@@ -962,7 +1008,9 @@ export default function ProductDetailScreen() {
     try {
       await Share.share({
         title: productName,
-        message: `${productName} - \u09F3${formatBDT(salePrice, 0)}\n${productUrl}`,
+        message: isResellerActive
+          ? `${productName} - \u09F3${formatBDT(salePrice, 0)}\n${productUrl}`
+          : `${productName}\n${productUrl}`,
         url: productUrl,
       });
     } catch (error) {
@@ -987,12 +1035,13 @@ export default function ProductDetailScreen() {
     <View style={s.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      <Animated.ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 130 }}
         scrollEventThrottle={16}
-        keyboardDismissMode="interactive"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={80}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false }
@@ -1309,15 +1358,12 @@ export default function ProductDetailScreen() {
           const isSimpleProduct = variants.length <= 1 && sizesForTable.length === 1 && sizesForTable[0].size_name === "Default";
 
           if (isSimpleProduct) {
-            // ── SIMPLE PRODUCT: Inline qty + selling price ──
+            // ── SIMPLE PRODUCT: Inline qty ──
             const sz = sizesForTable[0];
             const size = sz.size_name;
             const qty = variantQuantities[currentVarId]?.[size] || 0;
             const displayPrice = getSizePrice(sz, qty);
-            const rowSPStr = variantSellingPrices[currentVarId]?.[size] || "";
-            const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
-            const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
-            const rowPriceInvalid = rowSPStr !== "" && rowSP < displayPrice;
+
 
             return (
               <View style={s.card}>
@@ -1379,51 +1425,7 @@ export default function ProductDetailScreen() {
                   </View>
                 )}
 
-                {/* Dropshipping selling price */}
-                {showDropshipping && qty > 0 && (
-                  <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#F0F0F5" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                      <Ionicons name="pricetag" size={14} color={ACCENT} />
-                      <Text fontSize={14} fontWeight="700" color={DARK}>Your Selling Price</Text>
-                    </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                      <Text fontSize={16} fontWeight="600" color={GREY}>৳</Text>
-                      <TextInput
-                        style={[
-                          {
-                            flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E5EA",
-                            fontSize: 18, fontWeight: "700" as any, backgroundColor: "#FAFAFA",
-                            paddingHorizontal: 14, color: DARK,
-                          },
-                          rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                          rowSP >= displayPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
-                        ]}
-                        keyboardType="numeric"
-                        value={rowSPStr}
-                        onChangeText={(v) => handleSellingPriceChange(currentVarId, size, v)}
-                        placeholder={`Min ${Math.ceil(displayPrice)}`}
-                        placeholderTextColor="#bbb"
-                      />
-                    </View>
-                    {/* Earnings feedback */}
-                    {rowEarnings > 0 ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                        <Ionicons name="trending-up" size={16} color="#059669" />
-                        <Text fontSize={14} fontWeight="800" color="#059669">
-                          Profit: ৳{formatBDT(rowEarnings, 0)}
-                        </Text>
-                        <Text fontSize={12} color="#059669" style={{ marginLeft: "auto" as any }}>
-                          (৳{formatBDT(rowSP - displayPrice, 0)}/pc × {qty})
-                        </Text>
-                      </View>
-                    ) : rowPriceInvalid ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FEF2F2", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                        <Ionicons name="alert-circle" size={16} color="#EF4444" />
-                        <Text fontSize={13} fontWeight="700" color="#EF4444">Price must be ≥ ৳{Math.ceil(displayPrice)}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                )}
+
               </View>
             );
           }
@@ -1530,6 +1532,89 @@ export default function ProductDetailScreen() {
           );
         })()}
 
+        {/* ═══ TOTAL SELLING PRICE (Dropshipping) ═══ */}
+        {showDropshipping && isResellerActive && (() => {
+          const allItems = getSelectedItems();
+          const totalCostPrice = allItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+          const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+          const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+            ? variants[0].sizes.map((sz: any) => sz.size_name)
+            : sizesForTable.map((sz) => sz.size_name);
+          const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+          const spNum = singleSP ? parseFloat(singleSP) : 0;
+
+          const minTotalSellingPrice = totalCostPrice;
+          const isTooLow = singleSP !== "" && spNum < minTotalSellingPrice;
+          const totalEarnings = spNum > 0 && spNum >= totalCostPrice ? spNum - totalCostPrice : 0;
+
+          const handleTotalSPChange = (val: string) => {
+            setVariantSellingPrices((prev) => {
+              const next = { ...prev };
+              if (variants.length > 0) {
+                for (const v of variants) {
+                  const sizes = v.sizes?.length > 0 ? v.sizes.map((sz: any) => sz.size_name) : fallbackSizes;
+                  const varSizes: Record<string, string> = {};
+                  for (const sz of sizes) {
+                    varSizes[sz] = val;
+                  }
+                  next[v.id] = varSizes;
+                }
+              } else {
+                const varSizes: Record<string, string> = {};
+                for (const sz of fallbackSizes) {
+                  varSizes[sz] = val;
+                }
+                next[fallbackVarId] = varSizes;
+              }
+              return next;
+            });
+          };
+
+          return (
+            <View style={s.card}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Ionicons name="pricetag" size={14} color={ACCENT} />
+                <Text fontSize={14} fontWeight="700" color={DARK}>Your total selling price</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text fontSize={16} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
+                <TextInput
+                  style={[
+                    {
+                      flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E5EA",
+                      fontSize: 18, fontWeight: "700" as any, backgroundColor: "#FAFAFA",
+                      paddingHorizontal: 14, color: DARK,
+                    },
+                    isTooLow && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                    spNum >= minTotalSellingPrice && singleSP ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                    totalQuantity === 0 && { backgroundColor: "#F0F0F5" },
+                  ]}
+                  keyboardType="numeric"
+                  value={singleSP}
+                  onChangeText={handleTotalSPChange}
+                  placeholder={totalQuantity > 0 ? `Enter total selling price (\u2265\u09F3${formatBDT(minTotalSellingPrice, 0)})` : "Select items first"}
+                  placeholderTextColor="#bbb"
+                  editable={totalQuantity > 0}
+                />
+              </View>
+              {isTooLow && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FEF2F2", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                  <Ionicons name="alert-circle" size={16} color="#EF4444" />
+                  <Text fontSize={13} fontWeight="700" color="#EF4444">Total selling price must be at least {"\u09F3"}{formatBDT(minTotalSellingPrice, 0)}</Text>
+                </View>
+              )}
+              {totalEarnings > 0 && totalQuantity > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                  <Ionicons name="trending-up" size={16} color="#059669" />
+                  <Text fontSize={14} fontWeight="800" color="#059669">
+                    Your total earnings: +{"\u09F3"}{formatBDT(totalEarnings, 0)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
 
         {/* ═══ YOUTUBE ═══ */}
         {youtubeLink ? (
@@ -1651,7 +1736,7 @@ export default function ProductDetailScreen() {
             />
           </View>
         )}
-      </Animated.ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* ═══ ANIMATED FIXED HEADER (fades in on scroll) ═══ */}
       <Animated.View
@@ -1771,7 +1856,7 @@ export default function ProductDetailScreen() {
               style={({ pressed }) => [s.sheetCta, pressed && { opacity: 0.85 }]}
               onPress={() => {
                 setShowActivation(false);
-                router.push("/pricing");
+                router.push(subscriptionDestination as any);
               }}
             >
               <Ionicons name="rocket" size={18} color="#fff" />
@@ -1802,21 +1887,20 @@ export default function ProductDetailScreen() {
         />
         <Sheet.Handle />
         <Sheet.Frame
-          paddingBottom={Math.max(insets.bottom, 16)}
           backgroundColor="#fff"
-          borderTopLeftRadius={24}
-          borderTopRightRadius={24}
+          borderTopLeftRadius={28}
+          borderTopRightRadius={28}
         >
 
             <View style={s.variantSheetHeader}>
               <View style={{ flex: 1 }}>
-                <Text fontSize={17} fontWeight="800" color={DARK}>Select Variants</Text>
-                <Text fontSize={12} color={GREY}>
-                  {normalizedVariants.length} variant{normalizedVariants.length !== 1 ? "s" : ""} - {selectedVariant.sizes.length} size{selectedVariant.sizes.length !== 1 ? "s" : ""}
+                <Text fontSize={18} fontWeight="800" color={DARK} letterSpacing={-0.3}>Select Variants</Text>
+                <Text fontSize={12} color={GREY} mt="$1">
+                  {normalizedVariants.length} variant{normalizedVariants.length !== 1 ? "s" : ""} · {selectedVariant.sizes.length} size{selectedVariant.sizes.length !== 1 ? "s" : ""}
                 </Text>
               </View>
               <Pressable onPress={closeVariantSheet} style={s.variantSheetCloseBtn}>
-                <Ionicons name="close" size={20} color={DARK} />
+                <Ionicons name="close" size={18} color="#666" />
               </Pressable>
             </View>
 
@@ -1925,9 +2009,9 @@ export default function ProductDetailScreen() {
             </View>
 
             <View style={s.sheetSizeHeader}>
-              <Text style={{ flex: 1.2 }} fontSize={13} fontWeight="800" color={DARK}>Size</Text>
-              <Text style={{ flex: 1 }} fontSize={13} fontWeight="800" color={DARK}>Price</Text>
-              <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={13} fontWeight="800" color={DARK}>Quantity</Text>
+              <Text style={{ flex: 1.2 }} fontSize={11} fontWeight="700" color={GREY} letterSpacing={0.5} textTransform="uppercase">Size</Text>
+              <Text style={{ flex: 1 }} fontSize={11} fontWeight="700" color={GREY} letterSpacing={0.5} textTransform="uppercase">Price</Text>
+              <Text style={{ flex: 1.2, textAlign: "right" }} fontSize={11} fontWeight="700" color={GREY} letterSpacing={0.5} textTransform="uppercase">Quantity</Text>
             </View>
 
             <KeyboardAwareScrollView
@@ -1949,10 +2033,6 @@ export default function ProductDetailScreen() {
                   },
                   qty,
                 );
-                const rowSPStr = variantSellingPrices[selectedVariant.variantId]?.[size] || "";
-                const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
-                const rowEarnings = qty > 0 && rowSP >= unitPrice ? (rowSP - unitPrice) * qty : 0;
-                const rowPriceInvalid = rowSPStr !== "" && rowSP < unitPrice;
                 const rowBulkTier = findApplicableTier(sizeItem.bulkPrices, qty);
                 const rowKey = String(selectedVariant.variantId) + "-" + size;
 
@@ -1961,21 +2041,25 @@ export default function ProductDetailScreen() {
                     key={rowKey}
                     style={[s.sheetSizeRowWrap, qty > 0 && s.sheetSizeRowWrapActive]}
                   >
+                    {qty > 0 && <View style={s.sheetSizeRowAccent} />}
                     <View style={s.sheetSizeRow}>
                       <View style={{ flex: 1.2 }}>
-                        <Text fontSize={14} fontWeight="700" color={DARK} numberOfLines={2}>
+                        <Text fontSize={15} fontWeight="700" color={DARK} numberOfLines={2}>
                           {size === "Default" ? "Std" : size}
                         </Text>
-                        <Text fontSize={10} color={sizeItem.sizeStock <= 0 ? "#EF4444" : GREY}>
+                        <Text fontSize={10} color={sizeItem.sizeStock <= 0 ? "#EF4444" : GREY} mt="$0.5">
                           {sizeItem.sizeStock <= 0 ? "Out of stock" : String(sizeItem.sizeStock) + " in stock"}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text fontSize={13} fontWeight="700" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
+                        <Text fontSize={14} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(unitPrice, 0)}</Text>
                         {sizeItem.bulkPrices.length > 0 && (
-                          <Text fontSize={9} fontWeight="800" color={rowBulkTier ? ACCENT : "#059669"}>
-                            {rowBulkTier ? getTierQtyLabel(rowBulkTier).toUpperCase() : "BULK"}
-                          </Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 }}>
+                            <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: rowBulkTier ? ACCENT : "#059669" }} />
+                            <Text fontSize={9} fontWeight="800" color={rowBulkTier ? ACCENT : "#059669"}>
+                              {rowBulkTier ? getTierQtyLabel(rowBulkTier).toUpperCase() : "BULK"}
+                            </Text>
+                          </View>
                         )}
                       </View>
                       <View style={s.sheetStepperWrap}>
@@ -1984,15 +2068,15 @@ export default function ProductDetailScreen() {
                           onPress={() => handleQtyChange(selectedVariant.variantId, size, "decrease", sizeItem.sizeStock)}
                           disabled={qty <= 0}
                         >
-                          <Ionicons name="remove" size={15} color={qty <= 0 ? "#ccc" : DARK} />
+                          <Ionicons name="remove" size={16} color={qty <= 0 ? "#ccc" : DARK} />
                         </Pressable>
                         <View style={s.sheetStepVal}>
                           <TextInput
                             style={{
-                              fontSize: 14, fontWeight: "800" as any,
+                              fontSize: 15, fontWeight: "800" as any,
                               color: qty > 0 ? ACCENT : DARK,
                               textAlign: "center",
-                              minWidth: 34,
+                              minWidth: 36,
                               paddingVertical: 2,
                               paddingHorizontal: 0,
                             }}
@@ -2007,72 +2091,106 @@ export default function ProductDetailScreen() {
                           onPress={() => handleQtyChange(selectedVariant.variantId, size, "increase", sizeItem.sizeStock)}
                           disabled={qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0}
                         >
-                          <Ionicons name="add" size={15} color={(qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) ? "#ccc" : ACCENT} />
+                          <Ionicons name="add" size={16} color={(qty >= sizeItem.sizeStock || sizeItem.sizeStock <= 0) ? "#ccc" : ACCENT} />
                         </Pressable>
                       </View>
                     </View>
-
-                    {showDropshipping && qty > 0 && (
-                      <View style={s.sheetSellingPricePanel}>
-                        <View style={s.sellingPriceLabel}>
-                          <Ionicons name="pricetag" size={12} color={ACCENT} />
-                          <Text fontSize={12} fontWeight="700" color={DARK}>Your Selling Price</Text>
-                        </View>
-                        <View style={s.sellingPriceInputRow}>
-                          <Text fontSize={14} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
-                          <TextInput
-                            style={[
-                              s.sellingPriceInput,
-                              rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                              rowSP >= unitPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
-                            ]}
-                            keyboardType="numeric"
-                            value={rowSPStr}
-                            onChangeText={(value) => handleSellingPriceChange(selectedVariant.variantId, size, value)}
-                            placeholder={"Min " + Math.ceil(unitPrice)}
-                            placeholderTextColor="#bbb"
-                          />
-                          {rowEarnings > 0 ? (
-                            <View style={s.earningsBadge}>
-                              <Ionicons name="trending-up" size={12} color="#059669" />
-                              <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(rowEarnings, 0)}</Text>
-                            </View>
-                          ) : rowPriceInvalid ? (
-                            <View style={s.earningsBadge}>
-                              <Ionicons name="alert-circle" size={12} color="#EF4444" />
-                              <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
-                            </View>
-                          ) : (
-                            <Text fontSize={11} color={GREY}>Profit</Text>
-                          )}
-                        </View>
-                      </View>
-                    )}
                   </View>
                 );
               })}
             </KeyboardAwareScrollView>
 
             <View
-              style={s.variantSheetFooter}
+              style={[s.variantSheetFooter, { paddingBottom: Math.max(insets.bottom, 16) + 4 }]}
             >
-              <View style={s.sheetTotalRows}>
+              {/* ── Summary Card ── */}
+              <View style={s.sheetSummaryCard}>
                 <View style={s.sheetTotalRow}>
-                  <Text fontSize={12} color={GREY}>Total items: {totalQuantity} Pieces</Text>
-                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
-                </View>
-                <View style={s.sheetTotalRow}>
-                  <Text fontSize={12} color={GREY}>Total:</Text>
-                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: totalQuantity > 0 ? ACCENT : "#ccc" }} />
+                    <Text fontSize={13} fontWeight="600" color={GREY}>Total items: {totalQuantity} Pieces</Text>
+                  </View>
+                  <Text fontSize={16} fontWeight="800" color={DARK} letterSpacing={-0.3}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
                 </View>
               </View>
+
+              {/* ── Total Selling Price Input in Sheet ── */}
+              {showDropshipping && totalQuantity > 0 && (() => {
+                const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+                const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+                  ? variants[0].sizes.map((sz: any) => sz.size_name)
+                  : sizesForTable.map((sz) => sz.size_name);
+                const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+                const spNum = singleSP ? parseFloat(singleSP) : 0;
+                const isTooLow = singleSP !== "" && spNum < selectedItemsTotal;
+                const totalEarnings = spNum > 0 && spNum >= selectedItemsTotal ? spNum - selectedItemsTotal : 0;
+
+                const handleSheetSPChange = (val: string) => {
+                  setVariantSellingPrices((prev) => {
+                    const next = { ...prev };
+                    if (variants.length > 0) {
+                      for (const v of variants) {
+                        const sizes = v.sizes?.length > 0 ? v.sizes.map((sz: any) => sz.size_name) : fallbackSizes;
+                        const varSizes: Record<string, string> = {};
+                        for (const sz of sizes) { varSizes[sz] = val; }
+                        next[v.id] = varSizes;
+                      }
+                    } else {
+                      const varSizes: Record<string, string> = {};
+                      for (const sz of fallbackSizes) { varSizes[sz] = val; }
+                      next[fallbackVarId] = varSizes;
+                    }
+                    return next;
+                  });
+                };
+
+                return (
+                  <View style={s.sheetSellingPriceSection}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <Ionicons name="pricetag" size={13} color={ACCENT} />
+                      <Text fontSize={13} fontWeight="700" color={DARK}>Your total selling price</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View style={s.sheetCurrencyBadge}>
+                        <Text fontSize={15} fontWeight="700" color={ACCENT}>{"\u09F3"}</Text>
+                      </View>
+                      <TextInput
+                        style={[
+                          s.sheetSellingPriceInput,
+                          isTooLow && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                          spNum >= selectedItemsTotal && singleSP ? { borderColor: "#059669", backgroundColor: "#F0FDF9" } : {},
+                        ]}
+                        keyboardType="numeric"
+                        value={singleSP}
+                        onChangeText={handleSheetSPChange}
+                        placeholder={`\u2265\u09F3${formatBDT(selectedItemsTotal, 0)}`}
+                        placeholderTextColor="#bbb"
+                      />
+                      {totalEarnings > 0 ? (
+                        <View style={s.sheetEarningsBadge}>
+                          <Ionicons name="trending-up" size={13} color="#059669" />
+                          <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(totalEarnings, 0)}</Text>
+                        </View>
+                      ) : isTooLow ? (
+                        <View style={s.sheetEarningsBadgeError}>
+                          <Ionicons name="alert-circle" size={13} color="#EF4444" />
+                          <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })()}
+
+              {/* ── Action Buttons ── */}
               <View style={s.sheetActionRow}>
                 <Pressable
                   onPress={handleBuyNow}
                   disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
                   style={({ pressed }) => [
                     s.sheetBuyBtn,
-                    (pressed || isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                    (isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.5 },
+                    pressed && !(isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.85, transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   <Text fontSize={15} fontWeight="800" color="#fff">Buy Now</Text>
@@ -2082,7 +2200,8 @@ export default function ProductDetailScreen() {
                   disabled={isBusy || addToCartMutation.isPending || totalQuantity === 0}
                   style={({ pressed }) => [
                     s.sheetCartBtn,
-                    (pressed || isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.75 },
+                    (isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.5 },
+                    pressed && !(isBusy || addToCartMutation.isPending || totalQuantity === 0) && { opacity: 0.85, transform: [{ scale: 0.98 }] },
                   ]}
                 >
                   {addToCartMutation.isPending ? (
@@ -2834,15 +2953,16 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F5",
+    borderBottomColor: "#EEEEF2",
   },
   variantSheetCloseBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: BG,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F0F0F5",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2928,33 +3048,48 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#F0F0F5",
-    backgroundColor: "#fff",
+    borderColor: "#EEEEF2",
+    backgroundColor: "#FAFAFE",
   },
   sheetSizeRowWrap: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F5",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#EEEEF2",
     backgroundColor: "#fff",
+    position: "relative" as const,
+    overflow: "hidden" as const,
   },
-  sheetSizeRowWrapActive: { backgroundColor: "#FFF8FB" },
+  sheetSizeRowWrapActive: {
+    backgroundColor: "#FFF8FB",
+    borderBottomColor: "#F8D9E8",
+  },
+  sheetSizeRowAccent: {
+    position: "absolute" as const,
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: ACCENT,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
   sheetSizeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   sheetStepperWrap: {
     flex: 1.2,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    gap: 6,
+    gap: 4,
   },
   sheetStepBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: "#D8E1EF",
     alignItems: "center",
@@ -2962,7 +3097,7 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
   },
   sheetStepVal: {
-    minWidth: 34,
+    minWidth: 36,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -2972,43 +3107,105 @@ const s = StyleSheet.create({
   },
   variantSheetFooter: {
     borderTopWidth: 1,
-    borderTopColor: "#E5E5EA",
+    borderTopColor: "#EEEEF2",
     backgroundColor: "#fff",
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
+    flexShrink: 0,
   },
-  sheetTotalRows: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+  sheetSummaryCard: {
+    backgroundColor: "#F8F8FC",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 12,
-    paddingBottom: 8,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: "#EEEEF2",
   },
   sheetTotalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+  sheetSellingPriceSection: {
+    marginBottom: 14,
+    paddingTop: 2,
+  },
+  sheetCurrencyBadge: {
+    width: 36,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: "#FFF0F5",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FECDD3",
+  },
+  sheetSellingPriceInput: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E5E5EA",
+    fontSize: 17,
+    fontWeight: "700" as any,
+    backgroundColor: "#FAFAFA",
+    paddingHorizontal: 14,
+    color: DARK,
+  },
+  sheetEarningsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#BBF7D0",
+  },
+  sheetEarningsBadgeError: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
   sheetActionRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginTop: 2,
   },
   sheetBuyBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 7,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: ACCENT,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 3,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   sheetCartBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 7,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: DARK,
     alignItems: "center",
     justifyContent: "center",
+    elevation: 3,
+    shadowColor: DARK,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   downloadBadge: {
     position: "absolute",

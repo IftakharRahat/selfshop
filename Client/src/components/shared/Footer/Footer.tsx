@@ -4,7 +4,7 @@
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HiOutlineSquares2X2 } from "react-icons/hi2";
 import { IoMdHome } from "react-icons/io";
 import { IoPersonOutline } from "react-icons/io5";
@@ -41,9 +41,32 @@ const mobileBottomNavbar = [
 		label: "Profile",
 	},
 ];
+
+interface ContactInfo {
+	facebook?: string;
+	instagram?: string;
+	youtube?: string;
+	tiktok?: string;
+}
+
 export default function Footer() {
 	const [email, setEmail] = useState("");
 	const [selectedTab, setSelectedTab] = useState("Home");
+	const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
+
+	useEffect(() => {
+		fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/contact-info`)
+			.then((res) => res.json())
+			.then((data) => setContactInfo(data?.data ?? null))
+			.catch(() => {});
+	}, []);
+
+	const normalizeSocialUrl = (url?: string) => {
+		if (!url) return "#";
+		const cleaned = url.trim().replace(/\\\//g, "/").replace(/\\/g, "");
+		if (!cleaned) return "#";
+		return /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+	};
 
 	const handleNewsletterSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -78,25 +101,33 @@ export default function Footer() {
 								<h3 className="text-lg font-semibold mb-4">SOCIAL MEDIA</h3>
 								<div className="flex space-x-3">
 									<a
-										href="#"
+										href={normalizeSocialUrl(contactInfo?.facebook)}
+										target="_blank"
+										rel="noopener noreferrer"
 										className="w-10 h-10 bg-gray-200 text-black rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors"
 									>
 										<Facebook className="w-5 h-5" />
 									</a>
 									<a
-										href="#"
+										href={normalizeSocialUrl(contactInfo?.tiktok)}
+										target="_blank"
+										rel="noopener noreferrer"
 										className="w-10 h-10 bg-gray-200 text-black rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors"
 									>
 										<Twitter className="w-5 h-5" />
 									</a>
 									<a
-										href="#"
+										href={normalizeSocialUrl(contactInfo?.youtube)}
+										target="_blank"
+										rel="noopener noreferrer"
 										className="w-10 h-10 bg-gray-200 text-black rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors"
 									>
 										<Linkedin className="w-5 h-5" />
 									</a>
 									<a
-										href="#"
+										href={normalizeSocialUrl(contactInfo?.instagram)}
+										target="_blank"
+										rel="noopener noreferrer"
 										className="w-10 h-10 bg-gray-200 text-black rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors"
 									>
 										<Instagram className="w-5 h-5" />
