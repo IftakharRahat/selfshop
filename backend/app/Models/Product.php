@@ -16,6 +16,10 @@ class Product extends Model
 
     protected $appends = ['storefront_price'];
 
+    protected $casts = [
+        'warranty_days' => 'integer',
+    ];
+
     /**
      * Commission-inclusive display price for resellers.
      * Uses ProductResellerPrice (or ProductSalePrice / ProductRegularPrice fallback)

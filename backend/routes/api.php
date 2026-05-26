@@ -9,6 +9,7 @@ use App\Http\Controllers\VendorApiController;
 use App\Http\Controllers\VendorAccountController;
 use App\Http\Controllers\VendorAuthController;
 use App\Http\Controllers\VendorProductController;
+use App\Http\Controllers\RefundClaimController;
 // use App\Http\Controllers\WarrantyClaimController;
 // use App\Http\Controllers\VendorWarrantyController;
 use App\Http\Controllers\R2TestController;
@@ -274,6 +275,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::get('/warranty/products', [WarrantyClaimController::class, 'products'])->name('api.warranty.products');
     // Route::post('/warranty/claims', [WarrantyClaimController::class, 'store'])->name('api.warranty.claims.store');
     // Route::get('/warranty/claims', [WarrantyClaimController::class, 'index'])->name('api.warranty.claims.index');
+
+    Route::prefix('refund')->group(function () {
+        Route::get('/eligible-orders', [RefundClaimController::class, 'eligibleOrders'])->name('api.refund.eligible-orders');
+        Route::get('/claims', [RefundClaimController::class, 'index'])->name('api.refund.claims.index');
+        Route::post('/claims', [RefundClaimController::class, 'store'])->name('api.refund.claims.store');
+        Route::get('/claims/{claim}', [RefundClaimController::class, 'show'])->name('api.refund.claims.show');
+        Route::post('/claims/{claim}/messages', [RefundClaimController::class, 'message'])->name('api.refund.claims.messages.store');
+    });
 
     // Vendor (Wholesale / Supplier) – vendor portal APIs
     });

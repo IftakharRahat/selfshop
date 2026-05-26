@@ -131,6 +131,9 @@ export default function ProductFormScreen() {
         setUnit(p.unit ?? "");
         setTags(p.MetaKey ?? "");
         setLowStock(String(p.low_stock ?? ""));
+        const warrantyValue = Number(p.warranty_days ?? 0);
+        setWarrantyEnabled(warrantyValue > 0);
+        setWarrantyDays(warrantyValue > 0 ? String(warrantyValue) : "");
         if (p.category_id) {
           setCategory({
             categoryId: Number(p.category_id),
@@ -204,7 +207,7 @@ export default function ProductFormScreen() {
       if (details) fd.append("ProductDetails", details);
       if (tags) fd.append("MetaKey", tags);
       fd.append("frature", isFeatured ? "1" : "0");
-      if (warrantyEnabled && warrantyDays) fd.append("warranty_days", warrantyDays);
+      fd.append("warranty_days", warrantyEnabled && warrantyDays ? warrantyDays : "0");
       if (thumbnailUri) {
         const fn = thumbnailUri.split("/").pop() ?? "thumb.jpg";
         fd.append("ProductImage", { uri: thumbnailUri, name: fn, type: "image/jpeg" } as any);

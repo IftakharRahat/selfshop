@@ -185,6 +185,12 @@ export default function SettingsScreen() {
               onPress={() => router.push("/account/order-income" as any)}
             />
             <MenuItem
+              icon="refresh-circle-outline"
+              label="Refund"
+              subtitle="Warranty, exchange, and refund claims"
+              onPress={() => router.push("/account/refund" as any)}
+            />
+            <MenuItem
               icon="shield-checkmark-outline"
               label="Fraud Checker"
               subtitle="Verify customer phone numbers"
