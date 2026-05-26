@@ -12,6 +12,7 @@ import {
 	Home,
 	LogOut,
 	Package,
+	RotateCcw,
 	Settings,
 	Shield,
 	ShoppingBag,
@@ -66,6 +67,7 @@ const menuItems = [
 	{ icon: GraduationCap, label: "Free course", href: "/dashboard/free-course" },
 	{ icon: Shield, label: "Fraud checker", href: "/dashboard/fraud-checker" },
 	{ icon: TrainTrack, label: "Track orders", href: "/dashboard/track-orders" },
+	{ icon: RotateCcw, label: "Refund", href: "/dashboard/refund" },
 	{ icon: Ticket, label: "Ticket", href: "/dashboard/ticket" },
 	{
 		icon: MdDeveloperBoard,
