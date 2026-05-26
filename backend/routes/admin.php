@@ -387,10 +387,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth.admin:admin']], functi
     Route::delete('marketing-campaigns/{id}', [MarketingCampaignController::class, 'destroy'])->name('admin.marketing-campaigns.destroy');
 
     // Warranty / Refund Claims
-    Route::get('warranty-claims/{status?}', [WarrantyClaimAdminController::class, 'index'])->name('admin.warranty-claims.index');
+    // Specific routes must come BEFORE the {status?} wildcard
     Route::get('warranty-claims/data/{status}', [WarrantyClaimAdminController::class, 'claimData'])->name('admin.warranty-claims.data');
-    Route::get('warranty-claims/{id}/show', [WarrantyClaimAdminController::class, 'show'])->name('admin.warranty-claims.show');
-    Route::post('warranty-claims/{id}/respond', [WarrantyClaimAdminController::class, 'respond'])->name('admin.warranty-claims.respond');
+    Route::get('warranty-claims/{id}/show', [WarrantyClaimAdminController::class, 'show'])->name('admin.warranty-claims.show')->where('id', '[0-9]+');
+    Route::post('warranty-claims/{id}/respond', [WarrantyClaimAdminController::class, 'respond'])->name('admin.warranty-claims.respond')->where('id', '[0-9]+');
+    Route::get('warranty-claims/{status?}', [WarrantyClaimAdminController::class, 'index'])->name('admin.warranty-claims.index');
 });
 
 Route::group(['middleware' => ['auth.admin:admin']], function () {

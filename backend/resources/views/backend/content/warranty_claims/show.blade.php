@@ -183,16 +183,16 @@
                 <div class="admin-card-body">
                     <div class="row">
                         <div class="col-sm-6 mb-2">
-                            <strong>Shop Name:</strong> {{ $claim->vendor->shop_name ?? '—' }}
+                            <strong>Company:</strong> {{ $claim->vendor->company_name ?? '—' }}
                         </div>
                         <div class="col-sm-6 mb-2">
-                            <strong>Contact:</strong> {{ $claim->vendor->name ?? '—' }}
+                            <strong>Contact:</strong> {{ $claim->vendor->contact_name ?? '—' }}
                         </div>
                         <div class="col-sm-6 mb-2">
-                            <strong>Phone:</strong> {{ $claim->vendor->phone ?? '—' }}
+                            <strong>Phone:</strong> {{ $claim->vendor->contact_phone ?? '—' }}
                         </div>
                         <div class="col-sm-6 mb-2">
-                            <strong>Email:</strong> {{ $claim->vendor->email ?? '—' }}
+                            <strong>Email:</strong> {{ $claim->vendor->contact_email ?? '—' }}
                         </div>
                     </div>
                 </div>
