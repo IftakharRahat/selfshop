@@ -831,20 +831,57 @@ export default function ProductDetailScreen() {
                 qty,
               )
             : salePrice;
-          const spStr = variantSellingPrices[Number(vid)]?.[sizeName] || "";
-          const sp = spStr ? parseFloat(spStr) : null;
           items.push({
             variantId: Number(vid),
             variantTitle: variantLabel,
             size: sizeName,
             qty,
             price: itemPrice,
-            sellingPrice: sp && !isNaN(sp) ? sp : null,
+            sellingPrice: null, // Will be derived from total below
           });
         }
       }
     }
+
+    // Derive per-unit selling price from the total selling price input
+    if (items.length > 0 && showDropshipping) {
+      const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+      const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+        ? variants[0].sizes.map((sz: any) => sz.size_name)
+        : sizesForTable.map((sz) => sz.size_name);
+      const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+      const totalSP = singleSP ? parseFloat(singleSP) : 0;
+      if (totalSP > 0) {
+        const totalCost = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const totalQtyAll = items.reduce((sum, item) => sum + item.qty, 0);
+        if (totalQtyAll > 0 && totalCost > 0) {
+          // Distribute proportionally: each item gets selling_price = costPrice × (totalSP / totalCost)
+          const ratio = totalSP / totalCost;
+          for (const item of items) {
+            item.sellingPrice = Math.round(item.price * ratio * 100) / 100;
+          }
+        }
+      }
+    }
+
     return items;
+  };
+
+  // ── Validate total selling price ──
+  const validateTotalSellingPrice = (): boolean => {
+    const items = getSelectedItems();
+    const totalCost = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+    const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+    const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+      ? variants[0].sizes.map((sz: any) => sz.size_name)
+      : sizesForTable.map((sz) => sz.size_name);
+    const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+    const totalSP = singleSP ? parseFloat(singleSP) : 0;
+    if (!totalSP || totalSP < totalCost) {
+      toast.error(`Please enter a total selling price ≥ ৳${Math.ceil(totalCost)}`);
+      return false;
+    }
+    return true;
   };
 
   // ── Add to Cart ──
@@ -865,12 +902,8 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    if (showDropshipping) {
-      const invalid = items.find(i => !i.sellingPrice || i.sellingPrice < i.price);
-      if (invalid) {
-        toast.error("Please enter a valid selling price (≥ cost price) for all items");
-        return;
-      }
+    if (showDropshipping && !validateTotalSellingPrice()) {
+      return;
     }
 
     busyRef.current = true;
@@ -924,12 +957,8 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    if (showDropshipping) {
-      const invalid = items.find(i => !i.sellingPrice || i.sellingPrice < i.price);
-      if (invalid) {
-        toast.error("Please enter a valid selling price (≥ cost price) for all items");
-        return;
-      }
+    if (showDropshipping && !validateTotalSellingPrice()) {
+      return;
     }
 
     busyRef.current = true;
@@ -955,6 +984,7 @@ export default function ProductDetailScreen() {
       }
 
       if (lastSuccess) {
+        setSelectedVariantId(null); // close variant sheet before navigating
         router.push("/order-confirmation" as any);
       }
     } finally {
@@ -1328,15 +1358,12 @@ export default function ProductDetailScreen() {
           const isSimpleProduct = variants.length <= 1 && sizesForTable.length === 1 && sizesForTable[0].size_name === "Default";
 
           if (isSimpleProduct) {
-            // ── SIMPLE PRODUCT: Inline qty + selling price ──
+            // ── SIMPLE PRODUCT: Inline qty ──
             const sz = sizesForTable[0];
             const size = sz.size_name;
             const qty = variantQuantities[currentVarId]?.[size] || 0;
             const displayPrice = getSizePrice(sz, qty);
-            const rowSPStr = variantSellingPrices[currentVarId]?.[size] || "";
-            const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
-            const rowEarnings = qty > 0 && rowSP >= displayPrice ? (rowSP - displayPrice) * qty : 0;
-            const rowPriceInvalid = rowSPStr !== "" && rowSP < displayPrice;
+
 
             return (
               <View style={s.card}>
@@ -1398,51 +1425,7 @@ export default function ProductDetailScreen() {
                   </View>
                 )}
 
-                {/* Dropshipping selling price */}
-                {showDropshipping && qty > 0 && (
-                  <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#F0F0F5" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                      <Ionicons name="pricetag" size={14} color={ACCENT} />
-                      <Text fontSize={14} fontWeight="700" color={DARK}>Your Selling Price</Text>
-                    </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                      <Text fontSize={16} fontWeight="600" color={GREY}>৳</Text>
-                      <TextInput
-                        style={[
-                          {
-                            flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E5EA",
-                            fontSize: 18, fontWeight: "700" as any, backgroundColor: "#FAFAFA",
-                            paddingHorizontal: 14, color: DARK,
-                          },
-                          rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                          rowSP >= displayPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
-                        ]}
-                        keyboardType="numeric"
-                        value={rowSPStr}
-                        onChangeText={(v) => handleSellingPriceChange(currentVarId, size, v)}
-                        placeholder={`Min ${Math.ceil(displayPrice)}`}
-                        placeholderTextColor="#bbb"
-                      />
-                    </View>
-                    {/* Earnings feedback */}
-                    {rowEarnings > 0 ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                        <Ionicons name="trending-up" size={16} color="#059669" />
-                        <Text fontSize={14} fontWeight="800" color="#059669">
-                          Profit: ৳{formatBDT(rowEarnings, 0)}
-                        </Text>
-                        <Text fontSize={12} color="#059669" style={{ marginLeft: "auto" as any }}>
-                          (৳{formatBDT(rowSP - displayPrice, 0)}/pc × {qty})
-                        </Text>
-                      </View>
-                    ) : rowPriceInvalid ? (
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FEF2F2", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                        <Ionicons name="alert-circle" size={16} color="#EF4444" />
-                        <Text fontSize={13} fontWeight="700" color="#EF4444">Price must be ≥ ৳{Math.ceil(displayPrice)}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                )}
+
               </View>
             );
           }
@@ -1549,6 +1532,89 @@ export default function ProductDetailScreen() {
           );
         })()}
 
+        {/* ═══ TOTAL SELLING PRICE (Dropshipping) ═══ */}
+        {showDropshipping && isResellerActive && (() => {
+          const allItems = getSelectedItems();
+          const totalCostPrice = allItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+
+          const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+          const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+            ? variants[0].sizes.map((sz: any) => sz.size_name)
+            : sizesForTable.map((sz) => sz.size_name);
+          const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+          const spNum = singleSP ? parseFloat(singleSP) : 0;
+
+          const minTotalSellingPrice = totalCostPrice;
+          const isTooLow = singleSP !== "" && spNum < minTotalSellingPrice;
+          const totalEarnings = spNum > 0 && spNum >= totalCostPrice ? spNum - totalCostPrice : 0;
+
+          const handleTotalSPChange = (val: string) => {
+            setVariantSellingPrices((prev) => {
+              const next = { ...prev };
+              if (variants.length > 0) {
+                for (const v of variants) {
+                  const sizes = v.sizes?.length > 0 ? v.sizes.map((sz: any) => sz.size_name) : fallbackSizes;
+                  const varSizes: Record<string, string> = {};
+                  for (const sz of sizes) {
+                    varSizes[sz] = val;
+                  }
+                  next[v.id] = varSizes;
+                }
+              } else {
+                const varSizes: Record<string, string> = {};
+                for (const sz of fallbackSizes) {
+                  varSizes[sz] = val;
+                }
+                next[fallbackVarId] = varSizes;
+              }
+              return next;
+            });
+          };
+
+          return (
+            <View style={s.card}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <Ionicons name="pricetag" size={14} color={ACCENT} />
+                <Text fontSize={14} fontWeight="700" color={DARK}>Your total selling price</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <Text fontSize={16} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
+                <TextInput
+                  style={[
+                    {
+                      flex: 1, height: 48, borderRadius: 12, borderWidth: 1.5, borderColor: "#E5E5EA",
+                      fontSize: 18, fontWeight: "700" as any, backgroundColor: "#FAFAFA",
+                      paddingHorizontal: 14, color: DARK,
+                    },
+                    isTooLow && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                    spNum >= minTotalSellingPrice && singleSP ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                    totalQuantity === 0 && { backgroundColor: "#F0F0F5" },
+                  ]}
+                  keyboardType="numeric"
+                  value={singleSP}
+                  onChangeText={handleTotalSPChange}
+                  placeholder={totalQuantity > 0 ? `Enter total selling price (\u2265\u09F3${formatBDT(minTotalSellingPrice, 0)})` : "Select items first"}
+                  placeholderTextColor="#bbb"
+                  editable={totalQuantity > 0}
+                />
+              </View>
+              {isTooLow && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#FEF2F2", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                  <Ionicons name="alert-circle" size={16} color="#EF4444" />
+                  <Text fontSize={13} fontWeight="700" color="#EF4444">Total selling price must be at least {"\u09F3"}{formatBDT(minTotalSellingPrice, 0)}</Text>
+                </View>
+              )}
+              {totalEarnings > 0 && totalQuantity > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 10, backgroundColor: "#ECFDF5", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+                  <Ionicons name="trending-up" size={16} color="#059669" />
+                  <Text fontSize={14} fontWeight="800" color="#059669">
+                    Your total earnings: +{"\u09F3"}{formatBDT(totalEarnings, 0)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          );
+        })()}
 
         {/* ═══ YOUTUBE ═══ */}
         {youtubeLink ? (
@@ -1968,10 +2034,6 @@ export default function ProductDetailScreen() {
                   },
                   qty,
                 );
-                const rowSPStr = variantSellingPrices[selectedVariant.variantId]?.[size] || "";
-                const rowSP = rowSPStr ? parseFloat(rowSPStr) : 0;
-                const rowEarnings = qty > 0 && rowSP >= unitPrice ? (rowSP - unitPrice) * qty : 0;
-                const rowPriceInvalid = rowSPStr !== "" && rowSP < unitPrice;
                 const rowBulkTier = findApplicableTier(sizeItem.bulkPrices, qty);
                 const rowKey = String(selectedVariant.variantId) + "-" + size;
 
@@ -2031,42 +2093,7 @@ export default function ProductDetailScreen() {
                       </View>
                     </View>
 
-                    {showDropshipping && qty > 0 && (
-                      <View style={s.sheetSellingPricePanel}>
-                        <View style={s.sellingPriceLabel}>
-                          <Ionicons name="pricetag" size={12} color={ACCENT} />
-                          <Text fontSize={12} fontWeight="700" color={DARK}>Your Selling Price</Text>
-                        </View>
-                        <View style={s.sellingPriceInputRow}>
-                          <Text fontSize={14} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
-                          <TextInput
-                            style={[
-                              s.sellingPriceInput,
-                              rowPriceInvalid && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
-                              rowSP >= unitPrice && rowSPStr ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
-                            ]}
-                            keyboardType="numeric"
-                            value={rowSPStr}
-                            onChangeText={(value) => handleSellingPriceChange(selectedVariant.variantId, size, value)}
-                            placeholder={"Min " + Math.ceil(unitPrice)}
-                            placeholderTextColor="#bbb"
-                          />
-                          {rowEarnings > 0 ? (
-                            <View style={s.earningsBadge}>
-                              <Ionicons name="trending-up" size={12} color="#059669" />
-                              <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(rowEarnings, 0)}</Text>
-                            </View>
-                          ) : rowPriceInvalid ? (
-                            <View style={s.earningsBadge}>
-                              <Ionicons name="alert-circle" size={12} color="#EF4444" />
-                              <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
-                            </View>
-                          ) : (
-                            <Text fontSize={11} color={GREY}>Profit</Text>
-                          )}
-                        </View>
-                      </View>
-                    )}
+
                   </View>
                 );
               })}
@@ -2080,11 +2107,78 @@ export default function ProductDetailScreen() {
                   <Text fontSize={12} color={GREY}>Total items: {totalQuantity} Pieces</Text>
                   <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
                 </View>
-                <View style={s.sheetTotalRow}>
-                  <Text fontSize={12} color={GREY}>Total:</Text>
-                  <Text fontSize={13} fontWeight="800" color={DARK}>{"\u09F3"}{formatBDT(selectedItemsTotal, 0)}</Text>
-                </View>
               </View>
+
+              {/* Total Selling Price Input in Sheet */}
+              {showDropshipping && totalQuantity > 0 && (() => {
+                const fallbackVarId = variants.length > 0 ? (variants[0]?.id ?? 0) : 0;
+                const fallbackSizes = variants.length > 0 && variants[0]?.sizes?.length > 0
+                  ? variants[0].sizes.map((sz: any) => sz.size_name)
+                  : sizesForTable.map((sz) => sz.size_name);
+                const singleSP = variantSellingPrices[fallbackVarId]?.[fallbackSizes[0]] || "";
+                const spNum = singleSP ? parseFloat(singleSP) : 0;
+                const isTooLow = singleSP !== "" && spNum < selectedItemsTotal;
+                const totalEarnings = spNum > 0 && spNum >= selectedItemsTotal ? spNum - selectedItemsTotal : 0;
+
+                const handleSheetSPChange = (val: string) => {
+                  setVariantSellingPrices((prev) => {
+                    const next = { ...prev };
+                    if (variants.length > 0) {
+                      for (const v of variants) {
+                        const sizes = v.sizes?.length > 0 ? v.sizes.map((sz: any) => sz.size_name) : fallbackSizes;
+                        const varSizes: Record<string, string> = {};
+                        for (const sz of sizes) { varSizes[sz] = val; }
+                        next[v.id] = varSizes;
+                      }
+                    } else {
+                      const varSizes: Record<string, string> = {};
+                      for (const sz of fallbackSizes) { varSizes[sz] = val; }
+                      next[fallbackVarId] = varSizes;
+                    }
+                    return next;
+                  });
+                };
+
+                return (
+                  <View style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: "#F0F0F5" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <Ionicons name="pricetag" size={12} color={ACCENT} />
+                      <Text fontSize={12} fontWeight="700" color={DARK}>Your total selling price</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text fontSize={14} fontWeight="600" color={GREY}>{"\u09F3"}</Text>
+                      <TextInput
+                        style={[
+                          {
+                            flex: 1, height: 40, borderRadius: 10, borderWidth: 1.5, borderColor: "#E5E5EA",
+                            fontSize: 16, fontWeight: "700" as any, backgroundColor: "#FAFAFA",
+                            paddingHorizontal: 12, color: DARK,
+                          },
+                          isTooLow && { borderColor: "#EF4444", backgroundColor: "#FEF2F2" },
+                          spNum >= selectedItemsTotal && singleSP ? { borderColor: "#059669", backgroundColor: "#ECFDF5" } : {},
+                        ]}
+                        keyboardType="numeric"
+                        value={singleSP}
+                        onChangeText={handleSheetSPChange}
+                        placeholder={`\u2265\u09F3${formatBDT(selectedItemsTotal, 0)}`}
+                        placeholderTextColor="#bbb"
+                      />
+                      {totalEarnings > 0 ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF5", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6 }}>
+                          <Ionicons name="trending-up" size={12} color="#059669" />
+                          <Text fontSize={12} fontWeight="800" color="#059669">+{"\u09F3"}{formatBDT(totalEarnings, 0)}</Text>
+                        </View>
+                      ) : isTooLow ? (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#FEF2F2", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6 }}>
+                          <Ionicons name="alert-circle" size={12} color="#EF4444" />
+                          <Text fontSize={11} fontWeight="700" color="#EF4444">Too low</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })()}
+
               <View style={s.sheetActionRow}>
                 <Pressable
                   onPress={handleBuyNow}
